@@ -2,10 +2,14 @@ package ai.features.haiku
 
 import kotlinx.coroutines.runBlocking
 import org.example.ai.features.haiku.generateHaiku
+import org.example.ai.mlflow.createRun
+import org.junit.jupiter.api.extension.*
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import java.util.*
 import kotlin.test.assertEquals
 
+@ExtendWith(EvaluationLogger::class)
 class HaikuGeneratorTest {
     companion object {
         private val testCases = listOf<String>("table", "computer", "horse")
@@ -41,6 +45,35 @@ object ConsistsOfThreeLines : EvaluationCriteria<String, Int>("consists of three
     }
 }
 
+
+/**
+ * Part of the library. Logs test as evaluation runs to the tracking server.
+ */
+class EvaluationLogger : TestWatcher, BeforeAllCallback, AfterAllCallback {
+    override fun beforeAll(context: ExtensionContext?) {
+        runBlocking { createRun("My First Run") }
+    }
+
+    override fun testSuccessful(context: ExtensionContext) {
+        println("✅ Test '${context.displayName}' PASSED.")
+    }
+
+    override fun testFailed(context: ExtensionContext, cause: Throwable?) {
+        println("❌ Test '${context.displayName}' FAILED with error: ${cause?.message}")
+    }
+
+    override fun testDisabled(context: ExtensionContext, reason: Optional<String>) {
+        println("⚠️ Test '${context.displayName}' SKIPPED. Reason: ${reason.orElse("No reason provided")}")
+    }
+
+    override fun testAborted(context: ExtensionContext, cause: Throwable?) {
+        println("⏹️ Test '${context.displayName}' ABORTED.")
+    }
+
+    override fun afterAll(context: ExtensionContext?) {
+        println("EVALUATION FINISHED!")
+    }
+}
 
 /* API */
 
