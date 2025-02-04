@@ -2,7 +2,9 @@ package ai.features.haiku
 
 import kotlinx.coroutines.runBlocking
 import org.example.ai.features.haiku.generateHaiku
+import org.example.ai.mlflow.RunStatus
 import org.example.ai.mlflow.createRun
+import org.example.ai.mlflow.updateRun
 import org.junit.jupiter.api.extension.*
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
@@ -50,8 +52,14 @@ object ConsistsOfThreeLines : EvaluationCriteria<String, Int>("consists of three
  * Part of the library. Logs test as evaluation runs to the tracking server.
  */
 class EvaluationLogger : TestWatcher, BeforeAllCallback, AfterAllCallback {
+    private val EXPERIMENT_ID = "259381197825368132"
+    private var runId: String? = null
+
     override fun beforeAll(context: ExtensionContext?) {
-        runBlocking { createRun("My First Run") }
+        runBlocking {
+            val run = createRun(context!!.displayName ?: "Test Run", EXPERIMENT_ID)
+            runId = run.info.runId
+        }
     }
 
     override fun testSuccessful(context: ExtensionContext) {
@@ -71,7 +79,9 @@ class EvaluationLogger : TestWatcher, BeforeAllCallback, AfterAllCallback {
     }
 
     override fun afterAll(context: ExtensionContext?) {
-        println("EVALUATION FINISHED!")
+        runBlocking {
+            updateRun(runId!!, RunStatus.FINISHED)
+        }
     }
 }
 

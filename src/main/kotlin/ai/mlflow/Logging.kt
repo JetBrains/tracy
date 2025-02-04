@@ -10,10 +10,18 @@ import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import org.example.ai.model.ModelData
+import org.example.ai.model.createModelYaml
+import java.net.URI
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.time.Instant
 
-private const val ML_FLOW_API = "http://localhost:5000/api/2.0/mlflow"
-private const val EXPERIMENT_ID = "400879250576949711"
+private const val ML_FLOW_API = "http://localhost:5001/api/2.0/mlflow"
 private const val USER_ID = "Anton.Bragin"
 
 private val client = HttpClient(CIO) {
@@ -28,7 +36,13 @@ data class RunCreationData(
     @SerialName("user_id") val userId: String,
     @SerialName("run_name") val runName: String,
     @SerialName("start_time") val startTime: Long,
-    @SerialName("tags") val tags: List<String> = emptyList()
+    @SerialName("tags") val tags: List<Tag> = emptyList()
+)
+
+@Serializable
+data class Tag(
+    @SerialName("key") val key: String,
+    @SerialName("value") val value: String
 )
 
 @Serializable
@@ -63,12 +77,6 @@ data class RunData(
 )
 
 @Serializable
-data class Tag(
-    @SerialName("key") val key: String,
-    @SerialName("value") val value: String
-)
-
-@Serializable
 data class Inputs(
     val pass: String? = null
 )
@@ -81,16 +89,29 @@ enum class RunStatus {
     KILLED
 }
 
-private fun getCurrentTimestamp(): Long {
+fun getCurrentTimestamp(): Long {
     return Instant.now().toEpochMilli()
 }
 
-suspend fun createRun(name: String): RunResponse {
+private fun getCallerInfo(): String? {
+    val stackTrace = Throwable().stackTrace
+    return stackTrace.getOrNull(1)?.let {
+        "${it.className}.${it.methodName}"
+    }
+}
+
+suspend fun createRun(name: String, experimentId: String, source: String? = getCallerInfo()): Run {
+    val tags = listOfNotNull(
+        Tag(key = "mlflow.user", value = USER_ID),
+        source?.let { Tag(key = "mlflow.source.name", value = it) },
+        Tag(key = "mlflow.source.type", value = "LOCAL")
+    )
     val run = RunCreationData(
-        experimentId = EXPERIMENT_ID,
+        experimentId = experimentId,
         userId = USER_ID,
         runName = name,
-        startTime = getCurrentTimestamp()
+        startTime = getCurrentTimestamp(),
+        tags = tags
     )
 
     val result = client.post("${ML_FLOW_API}/runs/create") {
@@ -98,8 +119,8 @@ suspend fun createRun(name: String): RunResponse {
         setBody(run)
     }
 
-    val runResult = kotlinx.serialization.json.Json.decodeFromString<RunResponse>(result.bodyAsText())
-    return runResult
+    val runResult = Json.decodeFromString<RunResponse>(result.bodyAsText())
+    return runResult.run
 }
 
 suspend fun updateRun(runId: String, runStatus: RunStatus) {
@@ -115,12 +136,85 @@ suspend fun updateRun(runId: String, runStatus: RunStatus) {
     }
 }
 
-suspend fun getExperiment() {
+suspend fun logModel(runId: String, modelJson: String) {
+    client.post("${ML_FLOW_API}/runs/log-model") {
+        contentType(ContentType.Application.Json)
+        setBody(
+            mapOf(
+                "run_id" to runId,
+                "model_json" to modelJson
+            )
+        )
+    }
+}
+
+fun logModelData(artifactUri: String, modelData: ModelData) {
+    val artifactPath = Paths.get(URI(artifactUri))
+    val modelPath = artifactPath.resolve("model")
+    val modelFilePath = modelPath.resolve("MLmodel")
+
+    Files.createDirectories(modelPath)
+    Files.createFile(modelFilePath)
+
+    val yamlString = createModelYaml(modelData)
+    Files.write(modelFilePath, yamlString.toByteArray(StandardCharsets.UTF_8))
+}
+
+suspend fun createExperiment(name: String): String {
+    val response: HttpResponse = client.post("${ML_FLOW_API}/experiments/create") {
+        contentType(ContentType.Application.Json)
+        setBody(
+            mapOf(
+                "name" to name,
+                "artifact_location" to "file:///Users/Anton.Bragin/PycharmProjects/mlflow-test/mlruns/0"
+            )
+        )
+    }
+
+    return Json.parseToJsonElement(response.bodyAsText()).jsonObject["experiment_id"]?.jsonPrimitive?.content!!
+}
+
+suspend fun getExperiment(experimentId: String): Experiment {
     val response: HttpResponse = client.get("${ML_FLOW_API}/experiments/get") {
         contentType(ContentType.Application.Json)
-        setBody(mapOf("experiment_id" to EXPERIMENT_ID))
+        setBody(mapOf("experiment_id" to experimentId))
+    }
+
+    val experimentResponse = Json.decodeFromString<ExperimentResponse>(response.bodyAsText())
+    return experimentResponse.experiment
+}
+
+@Serializable
+data class ExperimentResponse(
+    @SerialName("experiment") val experiment: Experiment
+)
+
+@Serializable
+data class Experiment(
+    @SerialName("experiment_id") val experimentId: String,
+    @SerialName("name") val name: String,
+    @SerialName("artifact_location") val artifactLocation: String,
+    @SerialName("lifecycle_stage") val lifecycleStage: String,
+    @SerialName("last_update_time") val lastUpdateTime: Long,
+    @SerialName("creation_time") val creationTime: Long
+)
+
+
+suspend fun getRun(runId: String): Run {
+    val response: HttpResponse = client.get("${ML_FLOW_API}/runs/get") {
+        contentType(ContentType.Application.Json)
+        setBody(mapOf("run_id" to runId))
+    }
+
+    val runResult = Json.decodeFromString<RunResponse>(response.bodyAsText())
+    return runResult.run
+}
+
+suspend fun getModel(runId: String) {
+    val response: HttpResponse = client.get("${ML_FLOW_API}/runs/get") {
+        contentType(ContentType.Application.Json)
+        setBody(mapOf("run_id" to runId))
     }
 
     println(response.bodyAsText())
-    client.close()
 }
