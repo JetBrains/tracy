@@ -18,6 +18,19 @@ data class ModelData(
     @SerialName("utc_time_created") val utcTimeCreated: String = getCurrentTimestamp().toString(),
     @SerialName("flavors") val flavors: Flavors,
     @SerialName("signature") val signature: Signature,
+    @SerialName("model_parameters") val modelParameters: ModelParameters? = null,
+)
+
+/**
+ * This is NOT a part of the API.
+ *
+ * The class purpose is to mimic model serialization.
+ */
+@Serializable
+data class ModelParameters(
+    @SerialName("prompt") val prompt: String? = null,
+    @SerialName("model") val model: String? = null,
+    @SerialName("temperature") val temperature: Double? = null,
 )
 
 @Serializable

@@ -3,12 +3,7 @@ package org.example.ai.features.haiku
 import org.example.ai.AIModel
 import org.example.ai.createAIClient
 
-/**
-Generate a haiku using the [word] provided.
- */
-suspend fun generateHaiku(word: String): String {
-    val client = createAIClient()
-
+class HaikuGenerator(val model: AIModel) {
     val prompt = """
     You are a creative and talented poet proficient in Japanese versification.
     
@@ -23,8 +18,16 @@ suspend fun generateHaiku(word: String): String {
     * The haiku must contain the word provided.
     
     Adhere to all the rules listed above.
-    Generate a haiku about "$word".
+    Generate a haiku about "%s".
     """.trimIndent()
 
-    return client.chatRequest(AIModel.GPT_4O_MINI, prompt)
+    val temperature = 1.0
+
+    /**
+    Generate a haiku using the [word] provided.
+     */
+    suspend fun generateHaiku(word: String): String {
+        val client = createAIClient()
+        return client.chatRequest(model, String.format(prompt, word), temperature = temperature)
+    }
 }

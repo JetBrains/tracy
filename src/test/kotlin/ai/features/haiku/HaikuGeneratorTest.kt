@@ -1,17 +1,27 @@
 package ai.features.haiku
 
 import kotlinx.coroutines.runBlocking
-import org.example.ai.features.haiku.generateHaiku
+import org.example.ai.AIModel
+import org.example.ai.features.haiku.HaikuGenerator
 import org.example.ai.mlflow.RunStatus
 import org.example.ai.mlflow.createRun
+import org.example.ai.mlflow.getRun
+import org.example.ai.mlflow.logModel
+import org.example.ai.mlflow.logModelData
 import org.example.ai.mlflow.updateRun
+import org.example.ai.model.Flavors
+import org.example.ai.model.ModelData
+import org.example.ai.model.ModelParameters
+import org.example.ai.model.OpenAI
+import org.example.ai.model.Signature
+import org.example.ai.model.createModelJson
 import org.junit.jupiter.api.extension.*
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.*
 import kotlin.test.assertEquals
 
-@ExtendWith(EvaluationLogger::class)
+
 class HaikuGeneratorTest {
     companion object {
         private val testCases = listOf<String>("table", "computer", "horse")
@@ -22,21 +32,38 @@ class HaikuGeneratorTest {
                 it to 1
             }
         }
+
+        fun getModel(): HaikuGenerator {
+            return HaikuGenerator(AIModel.GPT_4O_MINI)
+        }
+
+        @SuppressWarnings("unused")
+        @JvmField
+        @RegisterExtension
+        val evaluationLogger = EvaluationLogger(getModel())
     }
 
+    /**
+     * This test should be dynamically generated.
+     */
     @ParameterizedTest
     @MethodSource("provideTestCases")
     fun `test consists of three lines`(testCase: Pair<String, Int>) {
         val (input, expected) = testCase
 
-        val haiku = runBlocking { generateHaiku(input) }
+        // This in the framework code, so model logging could be implemented there.
+        val model = getModel()
+
+        val haiku = runBlocking { model.generateHaiku(input) }
         val result = ConsistsOfThreeLines.evaluate(haiku)
 
         assertEquals(expected, result, "The evaluation did not match for input: $input")
     }
 }
 
-
+/**
+ * The user defines this.
+ */
 object ConsistsOfThreeLines : EvaluationCriteria<String, Int>("consists of three lines") {
     override fun evaluate(result: String): Int {
         return if (result.split("\n").size == 3) {
@@ -51,14 +78,45 @@ object ConsistsOfThreeLines : EvaluationCriteria<String, Int>("consists of three
 /**
  * Part of the library. Logs test as evaluation runs to the tracking server.
  */
-class EvaluationLogger : TestWatcher, BeforeAllCallback, AfterAllCallback {
+class EvaluationLogger(val model: HaikuGenerator) : TestWatcher, BeforeAllCallback, AfterAllCallback {
     private val EXPERIMENT_ID = "259381197825368132"
+    // TODO: should be passed via ExtensionContext.Store
     private var runId: String? = null
 
     override fun beforeAll(context: ExtensionContext?) {
         runBlocking {
             val run = createRun(context!!.displayName ?: "Test Run", EXPERIMENT_ID)
             runId = run.info.runId
+            val id = runId!!
+
+            val modelData = ModelData(
+                runId = id,
+                artifactPath = "model",
+                flavors = Flavors(
+                    openai = OpenAI(
+                        openaiVersion = "1.60.2",
+                        data = "model.yaml",
+                        code = "print(0)"
+                    )
+                ),
+                signature = Signature(
+                    inputs = "[{\"type\": \"string\", \"required\": true}]",
+                    outputs = "[{\"type\": \"string\", \"required\": true}]",
+                    params = null
+                ),
+                modelParameters = ModelParameters(
+                    prompt = model.prompt,
+                    model = model.model.name,
+                    temperature = model.temperature
+                )
+            )
+
+            logModel(id, modelJson = createModelJson(modelData))
+
+            val loggedRun = getRun(id)
+            val artifactUri = loggedRun.info.artifactUri
+
+            logModelData(artifactUri, modelData)
         }
     }
 

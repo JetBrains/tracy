@@ -26,9 +26,6 @@ class AIClient(val apiKey: String) {
             ),
             temperature = temperature
         )
-        
-//        logRun()
-//        logModel()
 
         val response = client.post("https://api.openai.com/v1/chat/completions") {
             header(HttpHeaders.Authorization, "Bearer $apiKey")
@@ -91,12 +88,3 @@ data class Result(
     val status: Int,
     val payload: String?
 )
-
-private fun logRun() {
-    TODO("Not yet implemented")
-}
-
-private fun logModel() {
-    TODO("Not yet implemented")
-}
-
