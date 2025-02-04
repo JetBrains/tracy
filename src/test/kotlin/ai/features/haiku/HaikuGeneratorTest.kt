@@ -3,11 +3,14 @@ package ai.features.haiku
 import kotlinx.coroutines.runBlocking
 import org.example.ai.AIModel
 import org.example.ai.features.haiku.HaikuGenerator
+import org.example.ai.mlflow.Metric
 import org.example.ai.mlflow.RunStatus
 import org.example.ai.mlflow.createRun
 import org.example.ai.mlflow.getRun
+import org.example.ai.mlflow.logBatch
 import org.example.ai.mlflow.logModel
 import org.example.ai.mlflow.logModelData
+import org.example.ai.mlflow.setTag
 import org.example.ai.mlflow.updateRun
 import org.example.ai.model.Flavors
 import org.example.ai.model.ModelData
@@ -84,8 +87,10 @@ class EvaluationLogger(val model: HaikuGenerator) : TestWatcher, BeforeAllCallba
     private var runId: String? = null
 
     override fun beforeAll(context: ExtensionContext?) {
+        context!!.getStore(ExtensionContext.Namespace.GLOBAL).put("evaluationLogger", mutableListOf<Double>())
+
         runBlocking {
-            val run = createRun(context!!.displayName ?: "Test Run", EXPERIMENT_ID)
+            val run = createRun(context.displayName ?: "Test Run", EXPERIMENT_ID)
             runId = run.info.runId
             val id = runId!!
 
@@ -121,10 +126,14 @@ class EvaluationLogger(val model: HaikuGenerator) : TestWatcher, BeforeAllCallba
     }
 
     override fun testSuccessful(context: ExtensionContext) {
+        val results = context.getStore(ExtensionContext.Namespace.GLOBAL).get("evaluationLogger") as MutableList<Double>
+        results.add(1.0)
         println("✅ Test '${context.displayName}' PASSED.")
     }
 
     override fun testFailed(context: ExtensionContext, cause: Throwable?) {
+        val results = context.getStore(ExtensionContext.Namespace.GLOBAL).get("evaluationLogger") as MutableList<Double>
+        results.add(0.0)
         println("❌ Test '${context.displayName}' FAILED with error: ${cause?.message}")
     }
 
@@ -139,6 +148,27 @@ class EvaluationLogger(val model: HaikuGenerator) : TestWatcher, BeforeAllCallba
     override fun afterAll(context: ExtensionContext?) {
         runBlocking {
             updateRun(runId!!, RunStatus.FINISHED)
+
+            val results = context!!.getStore(ExtensionContext.Namespace.GLOBAL).get("evaluationLogger") as MutableList<Double>
+
+            val average = results.average()
+            logBatch(
+                runId!!,
+                listOf(
+                    Metric(
+                        "Consists of three lines",
+                        average
+                    )
+                )
+            )
+
+            // TODO: store eval data here
+
+            setTag(
+                runId!!,
+                "mlflow.loggedArtifacts",
+                "[{\"path\": \"eval_results_table.json\", \"type\": \"table\"}]"
+            )
         }
     }
 }

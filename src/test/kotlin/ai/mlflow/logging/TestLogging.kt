@@ -47,6 +47,23 @@ class TestLogging {
             val artifactUri = loggedRun.info.artifactUri
 
             logModelData(artifactUri, modelData)
+
+            logBatch(
+                runId = runId,
+                metrics = listOf(
+                    Metric(
+                        "metric",
+                        1.0
+                    )
+                )
+            )
+
+            setTag(
+                runId,
+                "mlflow.loggedArtifacts",
+                "[{\"path\": \"eval_results_table.json\", \"type\": \"table\"}]"
+            )
+
             updateRun(runId, RunStatus.FINISHED)
         }
     }

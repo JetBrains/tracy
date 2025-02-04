@@ -184,6 +184,54 @@ suspend fun getExperiment(experimentId: String): Experiment {
     return experimentResponse.experiment
 }
 
+suspend fun logBatch(runId: String, metrics: List<Metric>, params: List<Param> = emptyList()) {
+    val runData = RunMetricsData(
+        runId = runId,
+        metrics = metrics,
+        params = params
+    )
+
+    client.post("${ML_FLOW_API}/runs/log-batch") {
+        contentType(ContentType.Application.Json)
+        setBody(runData)
+    }
+}
+
+suspend fun setTag(runId: String, key: String, value: String) {
+    client.post("${ML_FLOW_API}/runs/set-tag") {
+        contentType(ContentType.Application.Json)
+        setBody(
+            mapOf(
+                "run_id" to runId,
+                "run_uuid" to runId,
+                "key" to key,
+                "value" to value
+            )
+        )
+    }
+}
+
+@Serializable
+data class RunMetricsData(
+    @SerialName("run_id") val runId: String,
+    val metrics: List<Metric>,
+    val params: List<Param>,
+    val tags: List<Tag> = emptyList()
+)
+
+@Serializable
+data class Metric(
+    val key: String,
+    val value: Double,
+    val timestamp: Long = getCurrentTimestamp()
+)
+
+@Serializable
+data class Param(
+    val key: String,
+    val value: String
+)
+
 @Serializable
 data class ExperimentResponse(
     @SerialName("experiment") val experiment: Experiment
