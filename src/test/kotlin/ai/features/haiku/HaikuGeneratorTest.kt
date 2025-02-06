@@ -28,7 +28,7 @@ class HaikuGeneratorTest {
     }
 
     companion object {
-        private val testCases = listOf<String>("table", "computer", "horse")
+        private val testCases = listOf<String>("table", "computer", "horse", "flower")
 
         @JvmStatic
         fun provideTestCases(): List<Pair<String, Int>> {
