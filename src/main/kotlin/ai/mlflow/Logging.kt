@@ -9,15 +9,20 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.example.ai.mlflow.dataclasses.Attributes
 import org.example.ai.mlflow.dataclasses.RequestMetadata
+import org.example.ai.mlflow.dataclasses.Span
+import org.example.ai.mlflow.dataclasses.SpanArtifactsRequest
+import org.example.ai.mlflow.dataclasses.SpanContext
 import org.example.ai.mlflow.dataclasses.TraceInfoResponse
 import org.example.ai.mlflow.dataclasses.TracePatchRequest
+import org.example.ai.mlflow.dataclasses.TracePatchTagRequest
 import org.example.ai.mlflow.dataclasses.TracePostRequest
+import org.example.ai.mlflow.fluent.TraceInfo
+import org.example.ai.mlflow.fluent.formatArgumentsAsJson
 import org.example.ai.model.ModelData
 import org.example.ai.model.createModelYaml
 import java.net.URI
@@ -188,16 +193,16 @@ suspend fun logBatch(runId: String, metrics: List<Metric>, params: List<Param> =
     }
 }
 
-suspend fun trace(experimentId: String, runId: String? = null, source: String? = null, tracingJson: JsonObject) {
+suspend fun trace(experimentId: String, runId: String? = null, traceInfo: TraceInfo) {
     val trace = TracePostRequest(
         experimentId = experimentId,
         requestMetadata = buildList {
             add(RequestMetadata(key = "mlflow.trace_schema.version", value = "2"))
         },
-        tags = listOfNotNull(
-            source?.let { org.example.ai.mlflow.dataclasses.Tag("mlflow.source.name", it) },
-            source?.let { org.example.ai.mlflow.dataclasses.Tag("mlflow.source.type", "LOCAL") },
-            org.example.ai.mlflow.dataclasses.Tag("mlflow.traceName", "trace_test")
+        tags = listOf(
+            org.example.ai.mlflow.dataclasses.Tag("mlflow.source.name", traceInfo.path),
+            org.example.ai.mlflow.dataclasses.Tag("mlflow.source.type", "LOCAL"),
+            org.example.ai.mlflow.dataclasses.Tag("mlflow.traceName", traceInfo.methodName)
         )
     )
 
@@ -208,98 +213,68 @@ suspend fun trace(experimentId: String, runId: String? = null, source: String? =
 
     val traceResponse = Json.decodeFromString<TraceInfoResponse>(postResponse.bodyAsText()).traceInfo
 
-//    val patch = TracePatchRequest(
-//        traceResponse.requestId, status = "OK", requestMetadata = buildList {
-//            add(RequestMetadata("mlflow.trace_schema.version", "2"))
-//            runId?.let {
-//                add(RequestMetadata("mlflow.sourceRun", it))
-//            }
-//            add(RequestMetadata("mlflow.traceInputs", Json.encodeToString(tracingJson.jsonObject["request"])))
-//            add(RequestMetadata("mlflow.traceOutputs", Json.encodeToString(tracingJson.jsonObject["response"])))
-//        }, tags = emptyList()
-//    )
-
-    val addTag = Tag(key = "mlflow.traceSpans", value = "[{\"name\": \"trace_test\", \"type\": \"UNKNOWN\", \"inputs\": [\"x\"]}]")
-
     client.patch("${ML_FLOW_API}/traces/${traceResponse.requestId}/tags") {
         contentType(ContentType.Application.Json)
-        setBody(addTag)
+        setBody(
+            Tag(
+                key = "mlflow.traceSpans",
+                value = listOf(
+                    TracePatchTagRequest(
+                        name = traceInfo.methodName,
+                        inputs = traceInfo.arguments.map { it.name }
+                    )
+                ).toString()
+            )
+        )
     }
 
     // Add artifacts
+    val spanArtifacts = SpanArtifactsRequest(
+        spans = listOf(
+            Span(
+                name = traceInfo.methodName,
+                context = SpanContext(
+                    spanId = "0xce27bc8769488bd9",
+                    traceId = "0xe432fc687caada44530eed8bccd3971b"
+                ),
+                parentId = null,
+                startTime = getCurrentTimestamp(),
+                endTime = getCurrentTimestamp().plus(10000),
+                statusCode = "OK",
+                attributes = Attributes(
+                    traceRequestId = traceResponse.requestId,
+                    spanFunctionName = traceInfo.methodName,
+                    spanInputs = formatArgumentsAsJson(traceInfo.arguments),
+                    spanOutputs = traceInfo.result.toString()
+                ),
+                events = emptyList()
+            )
+
+        ),
+        request = formatArgumentsAsJson(traceInfo.arguments),
+        response = traceInfo.result.toString()
+    )
+
     client.put("${ML_FLOW_ARTIFACTS_API}/artifacts/${traceResponse.experimentId}/traces/${traceResponse.requestId}/artifacts/traces.json") {
         contentType(ContentType.Application.Json)
-        setBody("""
-{
-  "spans": [
-    {
-      "name": "trace_test",
-      "context": {
-        "span_id": "0xce27bc8769488bd9",
-        "trace_id": "0xe432fc687caada44530eed8bccd3971b"
-      },
-      "parent_id": null,
-      "start_time": 1739789241055481000,
-      "end_time": 1739789241055608000,
-      "status_code": "OK",
-      "status_message": "",
-      "attributes": {
-        "mlflow.traceRequestId": "${traceResponse.requestId}",
-        "mlflow.spanType": "\"UNKNOWN\"",
-        "mlflow.spanFunctionName": "\"trace_test\"",
-        "mlflow.spanInputs": "{\"x\": 4}",
-        "mlflow.spanOutputs": "4"
-      },
-      "events": []
-    }
-  ],
-  "request": "{\"x\": 4}",
-  "response": "4"
-}
-        """.trimIndent())
+        setBody(spanArtifacts)
     }
 
-    val request = """
-{
-    "request_id": "${traceResponse.requestId}",
-    "timestamp_ms": ${getCurrentTimestamp()},
-    "status": "OK",
-    "request_metadata": [
-        {
-            "key": "mlflow.trace_schema.version",
-            "value": "2"
-        },
-        {
-            "key": "mlflow.traceInputs",
-            "value": "{\"x\": 4}"
-        },
-        {
-            "key": "mlflow.traceOutputs",
-            "value": "4"
-        }
-    ],
-    "tags": [
-        {
-            "key": "mlflow.source.name",
-            "value": "/Users/Viacheslav.Suvorov/PythonProject3/test.py"
-        },
-        {
-            "key": "mlflow.source.type",
-            "value": "LOCAL"
-        },
-        {
-            "key": "mlflow.traceName",
-            "value": "trace_test"
-        }
-    ]
-}
-    """.trimIndent()
+    val tracePatchRequest = TracePatchRequest(
+        requestId = traceResponse.requestId,
+        status = "OK",
+        requestMetadata = trace.requestMetadata +
+            listOf(
+                RequestMetadata("mlflow.traceInputs", formatArgumentsAsJson(traceInfo.arguments)),
+                RequestMetadata("mlflow.traceOutputs", traceInfo.result.toString())
+            ),
+        tags = trace.tags
+    )
 
     client.patch("${ML_FLOW_API}/traces/${traceResponse.requestId}") {
         contentType(ContentType.Application.Json)
-        setBody(request)
+        setBody(tracePatchRequest)
     }
-
 }
 
 suspend fun setTag(runId: String, key: String, value: String) {
