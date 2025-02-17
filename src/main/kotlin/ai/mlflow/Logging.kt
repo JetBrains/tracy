@@ -21,13 +21,15 @@ import org.example.ai.mlflow.dataclasses.TracePatchRequest
 import org.example.ai.mlflow.dataclasses.TracePostRequest
 import org.example.ai.model.ModelData
 import org.example.ai.model.createModelYaml
+import org.mlflow.api.proto.Service
+import org.mlflow.tracking.MlflowClient
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.Instant
 
-private const val ML_FLOW_API = "http://localhost:5001/api/2.0/mlflow"
+const val ML_FLOW_API = "http://localhost:5001/api/2.0/mlflow"
 private const val USER_ID = "Anton.Bragin"
 
 private val client = HttpClient(CIO) {
@@ -127,6 +129,26 @@ suspend fun createRun(name: String, experimentId: String, source: String? = getC
 
     val runResult = Json.decodeFromString<RunResponse>(result.bodyAsText())
     return runResult.run
+}
+
+fun createRun(client: MlflowClient, name: String, experimentId: String, source: String? = getCallerInfo()): Service.RunInfo? {
+    val runData = Service.CreateRun.newBuilder().apply {
+        setExperimentId(experimentId)
+        setUserId(USER_ID)
+        setRunName(name)
+        setStartTime(getCurrentTimestamp())
+
+        listOfNotNull(
+            Tag(key = "mlflow.user", value = USER_ID),
+            source?.let { Tag(key = "mlflow.source.name", value = it) },
+            Tag(key = "mlflow.source.type", value = "LOCAL")
+        ).forEach { tag ->
+            addTags(Service.RunTag.newBuilder().setKey(tag.key).setValue(tag.value).build())
+        }
+    }.build()
+
+    val runInfo = client.createRun(runData)
+    return runInfo
 }
 
 suspend fun updateRun(runId: String, runStatus: RunStatus) {

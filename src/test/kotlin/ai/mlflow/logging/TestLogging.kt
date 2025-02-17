@@ -4,7 +4,9 @@ import kotlinx.coroutines.runBlocking
 import org.example.ai.mlflow.*
 import org.example.ai.model.*
 import org.junit.jupiter.api.Test
+import org.mlflow.tracking.MlflowClient
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 private const val EXPERIMENT_ID = "259381197825368132"
 
@@ -71,10 +73,15 @@ class TestLogging {
     @Test
     fun testGetRun() {
         runBlocking {
-            val run = createRun("TestLogging.testLogModel", EXPERIMENT_ID)
-            val runData = getRun(run.info.runId)
+            val mlFlowClient = MlflowClient("http://localhost:5001")
 
-            assertEquals(run, runData)
+            val run = createRun(mlFlowClient, "TestLogging.testLogModel", EXPERIMENT_ID)
+            assertNotNull(run, "Run was not created")
+
+            val runData = mlFlowClient.getRun(run.runId)
+            assertEquals(run, runData.info)
+
+            mlFlowClient.close()
         }
     }
 
