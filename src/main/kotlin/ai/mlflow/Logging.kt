@@ -22,7 +22,6 @@ import org.example.ai.mlflow.dataclasses.TracePatchRequest
 import org.example.ai.mlflow.dataclasses.TracePatchTagRequest
 import org.example.ai.mlflow.dataclasses.TracePostRequest
 import org.example.ai.mlflow.fluent.TraceInfo
-import org.example.ai.mlflow.fluent.formatArgumentsAsJson
 import org.example.ai.model.ModelData
 import org.example.ai.model.createModelYaml
 import java.net.URI
@@ -244,14 +243,14 @@ suspend fun trace(experimentId: String, runId: String? = null, traceInfo: TraceI
                 attributes = Attributes(
                     traceRequestId = traceResponse.requestId,
                     spanFunctionName = traceInfo.methodName,
-                    spanInputs = formatArgumentsAsJson(traceInfo.arguments),
+                    spanInputs = traceInfo.argumentsAsJson().toString(),
                     spanOutputs = traceInfo.result.toString()
                 ),
                 events = emptyList()
             )
 
         ),
-        request = formatArgumentsAsJson(traceInfo.arguments),
+        request = traceInfo.argumentsAsJson().toString(),
         response = traceInfo.result.toString()
     )
 
@@ -265,7 +264,7 @@ suspend fun trace(experimentId: String, runId: String? = null, traceInfo: TraceI
         status = "OK",
         requestMetadata = trace.requestMetadata +
             listOf(
-                RequestMetadata("mlflow.traceInputs", formatArgumentsAsJson(traceInfo.arguments)),
+                RequestMetadata("mlflow.traceInputs", traceInfo.argumentsAsJson().toString()),
                 RequestMetadata("mlflow.traceOutputs", traceInfo.result.toString())
             ),
         tags = trace.tags

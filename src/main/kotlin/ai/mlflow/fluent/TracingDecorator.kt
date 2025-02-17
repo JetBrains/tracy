@@ -4,6 +4,8 @@ import com.google.inject.AbstractModule
 import com.google.inject.BindingAnnotation
 import com.google.inject.matcher.Matchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import org.aopalliance.intercept.MethodInterceptor
 import org.aopalliance.intercept.MethodInvocation
 import org.example.ai.mlflow.trace
@@ -24,18 +26,19 @@ data class Argument(
     val name: String, val value: Any
 )
 
-fun formatArgumentsAsJson(arguments: List<Argument>): String {
-    return arguments.joinToString(
-        prefix = "{",
-        postfix = "}",
-        separator = ", "
-    ) { "\"${it.name}\": ${it.value}" }
-}
-
 
 data class TraceInfo(
     val path: String, val methodName: String, val arguments: List<Argument>, val result: Any
-)
+) {
+    fun argumentsAsJson(): kotlinx.serialization.json.JsonObject {
+        return buildJsonObject {
+            arguments.forEach { argument ->
+                put(argument.name, JsonPrimitive(argument.value.toString()))
+            }
+        }
+    }
+
+}
 
 class KotlinFlowTracer : MethodInterceptor {
     private val mlflowClient = MlflowClient("http://127.0.0.1:5000")
