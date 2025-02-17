@@ -8,7 +8,9 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import org.aopalliance.intercept.MethodInterceptor
 import org.aopalliance.intercept.MethodInvocation
-import org.example.ai.mlflow.trace
+import org.example.ai.mlflow.createTrace
+import org.example.ai.mlflow.getCurrentTimestamp
+import org.example.ai.mlflow.updateTrace
 import org.mlflow.tracking.MlflowClient
 
 
@@ -27,8 +29,20 @@ data class Argument(
 )
 
 
-data class TraceInfo(
-    val path: String, val methodName: String, val arguments: List<Argument>, val result: Any
+data class StartTraceInfo(
+    val path: String,
+    val methodName: String,
+    val startTime: Long,
+    val arguments: List<Argument>,
+)
+
+data class EndTraceInfo(
+    val path: String,
+    val methodName: String,
+    val startTime: Long,
+    val endTime: Long,
+    val arguments: List<Argument>,
+    val result: Any
 ) {
     fun argumentsAsJson(): kotlinx.serialization.json.JsonObject {
         return buildJsonObject {
@@ -37,7 +51,6 @@ data class TraceInfo(
             }
         }
     }
-
 }
 
 class KotlinFlowTracer : MethodInterceptor {
@@ -45,30 +58,43 @@ class KotlinFlowTracer : MethodInterceptor {
 
     @Throws(Throwable::class)
     override fun invoke(invocation: MethodInvocation): Any {
-        val methodName = invocation.method.name
-        println("Starting MLflow run for method: $methodName")
-
-        // Start a new MLflow run
         val experimentId = mlflowClient.createExperiment(generateRandomString(10))
 
-        val result = invocation.proceed()
-
-        runBlocking {
-            val arguments = buildList {
-                invocation.arguments.forEachIndexed { index, arg ->
-                    add(Argument("arg$index", arg))
-                }
+        val arguments = buildList {
+            invocation.arguments.forEachIndexed { index, arg ->
+                add(Argument("arg$index", arg))
             }
+        }
 
-            trace(
-                experimentId, traceInfo = TraceInfo(
+        val startTime = getCurrentTimestamp()
+        val createdTraceResponse = runBlocking {
+            createTrace(
+                experimentId = experimentId,
+                traceInfo = StartTraceInfo(
                     path = invocation.method.declaringClass.name,
                     methodName = invocation.method.name,
                     arguments = arguments,
-                    result = result
+                    startTime = startTime,
                 )
             )
         }
+        val result = invocation.proceed()
+        val endTime = getCurrentTimestamp()
+
+        runBlocking {
+            updateTrace(
+                traceResponse = createdTraceResponse,
+                traceInfo = EndTraceInfo(
+                    path = invocation.method.declaringClass.name,
+                    methodName = invocation.method.name,
+                    arguments = arguments,
+                    result = result,
+                    startTime = startTime,
+                    endTime = endTime
+                )
+            )
+        }
+
         return result
     }
 }

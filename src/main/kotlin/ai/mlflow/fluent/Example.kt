@@ -5,6 +5,7 @@ import com.google.inject.Injector
 open class MyClass {
     @KotlinFlowTrace
     open fun someFunction(x: Int, y: Int, z: Int = 2): Int {
+        Thread.sleep(5000)
         return x + (y - z)
     }
 }
