@@ -3,21 +3,17 @@ package org.example.ai.mlflow.fluent
 import com.google.inject.AbstractModule
 import com.google.inject.BindingAnnotation
 import com.google.inject.matcher.Matchers
-import kotlinx.coroutines.runBlocking
+import io.opentelemetry.api.GlobalOpenTelemetry
+import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.api.trace.Tracer
+import io.opentelemetry.context.Context
+import io.opentelemetry.context.Scope
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import org.aopalliance.intercept.MethodInterceptor
 import org.aopalliance.intercept.MethodInvocation
-import org.example.ai.mlflow.createTrace
-import org.example.ai.mlflow.getCurrentTimestamp
-import org.example.ai.mlflow.updateTrace
-import org.mlflow.tracking.MlflowClient
-
-
-@BindingAnnotation
-@Target(AnnotationTarget.FUNCTION)
-@Retention(AnnotationRetention.RUNTIME) // required for Guice
-annotation class KotlinFlowTrace
+import java.time.Instant
 
 fun generateRandomString(length: Int = 10): String {
     val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
@@ -53,49 +49,54 @@ data class EndTraceInfo(
     }
 }
 
+@BindingAnnotation
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class KotlinFlowTrace
+
 class KotlinFlowTracer : MethodInterceptor {
-    private val mlflowClient = MlflowClient("http://127.0.0.1:5000")
+
+    private val tracer: Tracer = GlobalOpenTelemetry.getTracer("org.example.ai.mlflow")
+
+    private fun createSpan(spanName: String): Span {
+        val spanBuilder = tracer.spanBuilder(spanName)
+        val parentSpan = Span.current()
+        // If parent exists, set parent
+        if (parentSpan.spanContext.isValid) {
+            spanBuilder.setParent(Context.current())
+        } else {
+            spanBuilder.setNoParent()
+            // Report root span
+
+        }
+        spanBuilder.setAttribute("sdet.tool", "MLFlow")
+        return spanBuilder.startSpan()
+    }
 
     @Throws(Throwable::class)
     override fun invoke(invocation: MethodInvocation): Any {
-        val experimentId = mlflowClient.createExperiment(generateRandomString(10))
+        val methodName = invocation.method.name
+        val span = createSpan(methodName)
 
-        val arguments = buildList {
-            invocation.arguments.forEachIndexed { index, arg ->
-                add(Argument("arg$index", arg))
-            }
+        invocation.arguments.forEachIndexed { index, argument ->
+            span.setAttribute("arg$index", argument.toString())
         }
 
-        val startTime = getCurrentTimestamp()
-        val createdTraceResponse = runBlocking {
-            createTrace(
-                experimentId = experimentId,
-                traceInfo = StartTraceInfo(
-                    path = invocation.method.declaringClass.name,
-                    methodName = invocation.method.name,
-                    arguments = arguments,
-                    startTime = startTime,
-                )
-            )
+        val scope: Scope = span.makeCurrent()
+        val startTime = Instant.now().toEpochMilli()
+        return try {
+            val result = invocation.proceed()
+            span.setAttribute("result", result.toString())
+            result
+        } catch (exception: Throwable) {
+            span.recordException(exception)
+            span.setStatus(StatusCode.ERROR, exception.message ?: "Message not found")
+            throw exception
+        } finally {
+            val endTime = Instant.now().toEpochMilli()
+            span.end()
+            scope.close()
         }
-        val result = invocation.proceed()
-        val endTime = getCurrentTimestamp()
-
-        runBlocking {
-            updateTrace(
-                traceResponse = createdTraceResponse,
-                traceInfo = EndTraceInfo(
-                    path = invocation.method.declaringClass.name,
-                    methodName = invocation.method.name,
-                    arguments = arguments,
-                    result = result,
-                    startTime = startTime,
-                    endTime = endTime
-                )
-            )
-        }
-
-        return result
     }
 }
 

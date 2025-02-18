@@ -27,6 +27,7 @@ dependencies {
     implementation("io.opentelemetry:opentelemetry-api:$opentelemetry_version")
     implementation("io.opentelemetry:opentelemetry-sdk:$opentelemetry_version")
     implementation("io.opentelemetry:opentelemetry-exporter-logging:$opentelemetry_version")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.9.10")
     implementation("org.yaml:snakeyaml:2.3")
 
     testImplementation(kotlin("test"))
