@@ -13,7 +13,6 @@ class RootSpanExporter : SpanExporter {
 
     override fun export(spans: Collection<SpanData>): CompletableResultCode {
         val tracesToExport = mutableListOf<List<SpanData>>()
-
         for (span in spans) {
             val traceId = span.traceId
             val spanList = spanGroups.computeIfAbsent(traceId) { mutableListOf() }
@@ -23,11 +22,9 @@ class RootSpanExporter : SpanExporter {
                 spanGroups.remove(traceId)
             }
         }
-
         for (trace in tracesToExport) {
             exportTrace(trace)
         }
-
         return CompletableResultCode.ofSuccess()
     }
 

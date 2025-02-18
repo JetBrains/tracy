@@ -15,6 +15,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import org.example.ai.mlflow.dataclasses.*
 import org.example.ai.mlflow.fluent.EndTraceInfo
 import org.example.ai.mlflow.fluent.StartTraceInfo
+import org.example.ai.mlflow.fluent.TraceCreationInfo
 import org.example.ai.model.ModelData
 import org.example.ai.model.createModelYaml
 import java.net.URI
@@ -185,24 +186,13 @@ suspend fun logBatch(runId: String, metrics: List<Metric>, params: List<Param> =
     }
 }
 
-suspend fun createTrace(experimentId: String, runId: String? = null, traceInfo: StartTraceInfo): TraceInfo {
-    val trace = TracePostRequest(
-        experimentId = experimentId, timestampMs = traceInfo.startTime, requestMetadata = buildList {
-            add(RequestMetadata(key = "mlflow.trace_schema.version", value = "2"))
-        }, tags = listOf(
-            org.example.ai.mlflow.dataclasses.Tag("mlflow.source.name", traceInfo.path),
-            org.example.ai.mlflow.dataclasses.Tag("mlflow.source.type", "LOCAL"),
-            org.example.ai.mlflow.dataclasses.Tag("mlflow.traceName", traceInfo.methodName)
-        )
-    )
-
+suspend fun createTrace(traceInfo: TraceCreationInfo): TraceInfo {
+    val traceRequest = traceInfo.createTracePostRequest()
     val postResponse = client.post("${ML_FLOW_API}/traces") {
         contentType(ContentType.Application.Json)
-        setBody(trace)
+        setBody(traceRequest)
     }
-
     val traceResponse = Json.decodeFromString<TraceInfoResponse>(postResponse.bodyAsText()).traceInfo
-
     return traceResponse
 }
 

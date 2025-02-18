@@ -9,10 +9,17 @@ import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
 import io.opentelemetry.context.Scope
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import org.aopalliance.intercept.MethodInterceptor
 import org.aopalliance.intercept.MethodInvocation
+import org.example.ai.mlflow.createTrace
+import org.example.ai.mlflow.dataclasses.RequestMetadata
+import org.example.ai.mlflow.dataclasses.Tag
+import org.example.ai.mlflow.dataclasses.TracePostRequest
+import org.mlflow.tracking.MlflowClient
 import java.time.Instant
 
 fun generateRandomString(length: Int = 10): String {
@@ -24,14 +31,6 @@ data class Argument(
     val name: String, val value: Any
 )
 
-
-data class StartTraceInfo(
-    val path: String,
-    val methodName: String,
-    val startTime: Long,
-    val arguments: List<Argument>,
-)
-
 data class EndTraceInfo(
     val path: String,
     val methodName: String,
@@ -40,13 +39,31 @@ data class EndTraceInfo(
     val arguments: List<Argument>,
     val result: Any
 ) {
-    fun argumentsAsJson(): kotlinx.serialization.json.JsonObject {
+    fun argumentsAsJson(): JsonObject {
         return buildJsonObject {
             arguments.forEach { argument ->
                 put(argument.name, JsonPrimitive(argument.value.toString()))
             }
         }
     }
+}
+
+data class TraceCreationInfo(
+    val experimentId: String,
+    val startTime: Long = Instant.now().toEpochMilli(),
+    val traceCreationPath: String,
+    val traceName: String
+) {
+    fun createTracePostRequest() = TracePostRequest(
+        experimentId = experimentId, timestampMs = startTime, requestMetadata = listOf(
+            RequestMetadata(key = "mlflow.trace_schema.version", value = "2")
+        ), tags = listOf(
+            Tag("mlflow.source.name", traceCreationPath),
+            Tag("mlflow.source.type", "LOCAL"),
+            Tag("mlflow.traceName", traceName)
+        )
+    )
+
 }
 
 @BindingAnnotation
@@ -57,8 +74,9 @@ annotation class KotlinFlowTrace
 class KotlinFlowTracer : MethodInterceptor {
 
     private val tracer: Tracer = GlobalOpenTelemetry.getTracer("org.example.ai.mlflow")
+    private val mlflowClient = MlflowClient("http://127.0.0.1:5000")
 
-    private fun createSpan(spanName: String): Span {
+    private fun createSpan(spanName: String, invocation: MethodInvocation): Span {
         val spanBuilder = tracer.spanBuilder(spanName)
         val parentSpan = Span.current()
         // If parent exists, set parent
@@ -66,24 +84,33 @@ class KotlinFlowTracer : MethodInterceptor {
             spanBuilder.setParent(Context.current())
         } else {
             spanBuilder.setNoParent()
-            // Report root span
-
+            // TODO: Do not create new experiment here. Create mlflow service
+            val experimentId = mlflowClient.createExperiment(generateRandomString(10))
+            val traceCreationInfo = TraceCreationInfo(
+                experimentId = experimentId,
+                traceCreationPath = invocation.method.declaringClass.name,
+                traceName = spanName
+            )
+            // Get rid of run blocking
+            val traceInfoResponse = runBlocking {
+                createTrace(traceCreationInfo)
+            }
+            spanBuilder.setAttribute("traceInfoResponse", traceInfoResponse.toString())
         }
-        spanBuilder.setAttribute("sdet.tool", "MLFlow")
         return spanBuilder.startSpan()
     }
 
     @Throws(Throwable::class)
     override fun invoke(invocation: MethodInvocation): Any {
         val methodName = invocation.method.name
-        val span = createSpan(methodName)
+        val span = createSpan(methodName, invocation)
 
         invocation.arguments.forEachIndexed { index, argument ->
             span.setAttribute("arg$index", argument.toString())
         }
 
         val scope: Scope = span.makeCurrent()
-        val startTime = Instant.now().toEpochMilli()
+        Instant.now().toEpochMilli()
         return try {
             val result = invocation.proceed()
             span.setAttribute("result", result.toString())
@@ -93,7 +120,7 @@ class KotlinFlowTracer : MethodInterceptor {
             span.setStatus(StatusCode.ERROR, exception.message ?: "Message not found")
             throw exception
         } finally {
-            val endTime = Instant.now().toEpochMilli()
+            Instant.now().toEpochMilli()
             span.end()
             scope.close()
         }
