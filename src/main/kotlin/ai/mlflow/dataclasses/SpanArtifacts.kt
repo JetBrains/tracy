@@ -29,34 +29,6 @@ fun List<SpanData>.toSpanArtifactsRequest(requestId: String) = this.map { spanDa
     )
 }
 
-fun List<SpanData>.toTracePatchTagRequest() =
-    Tag(
-        key = "mlflow.traceSpans",
-        value = this.map { spanData ->
-            TracePatchTagRequest(
-                // TODO change to function name, not a name of the span
-                name = spanData.name,
-                type = "UNKNOWN",
-                inputs = spanData.attributes[AttributeKey.stringKey("mlflow.spanInputs")].toString()
-            )
-        }.toString()
-    )
-
-fun List<SpanData>.toTracePatchRequest() =
-    Tag(
-        key = "mlflow.traceSpans",
-        value = this.map { spanData ->
-            TracePatchTagRequest(
-                // TODO change to function name, not a name of the span
-                name = spanData.name,
-                type = "UNKNOWN",
-                inputs = spanData.attributes[AttributeKey.stringKey("mlflow.spanInputs")].toString()
-            )
-        }.toString()
-    )
-
-
-
 @Serializable
 data class SpanArtifactsRequest(
     @SerialName("spans") val spans: List<Span>,

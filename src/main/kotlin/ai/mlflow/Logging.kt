@@ -7,7 +7,6 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
-import io.ktor.util.AttributeKey
 import io.opentelemetry.sdk.trace.data.SpanData
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -15,7 +14,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.example.ai.mlflow.dataclasses.*
-import org.example.ai.mlflow.fluent.TraceCreationInfo
 import org.example.ai.model.ModelData
 import org.example.ai.model.createModelYaml
 import java.net.URI
@@ -186,54 +184,54 @@ suspend fun logBatch(runId: String, metrics: List<Metric>, params: List<Param> =
     }
 }
 
-suspend fun createTrace(traceInfo: TraceCreationInfo): TraceInfo {
-    val traceRequest = traceInfo.createTracePostRequest()
+suspend fun createTrace(tracePostRequest: TracePostRequest): TraceInfo {
     val postResponse = client.post("${ML_FLOW_API}/traces") {
         contentType(ContentType.Application.Json)
-        setBody(traceRequest)
+        setBody(tracePostRequest)
     }
     val traceResponse = Json.decodeFromString<TraceInfoResponse>(postResponse.bodyAsText()).traceInfo
     return traceResponse
 }
 
 suspend fun updateTrace(parentSpan: SpanData, trace: List<SpanData>) {
-    val traceCreationInfoJson = parentSpan.attributes[io.opentelemetry.api.common.AttributeKey.stringKey("traceCreationInfo")]
+    val traceCreationInfoJson =
+        parentSpan.attributes[io.opentelemetry.api.common.AttributeKey.stringKey("traceCreationInfo")]
+    if (traceCreationInfoJson == null) {
+        throw IllegalStateException("Missing traceCreationInfo attribute in the parent span.")
+    }
+    val traceResponse: TraceInfo = Json.decodeFromString(TraceInfo.serializer(), traceCreationInfoJson)
 
-    val traceResponse: TraceInfo = traceCreationInfoJson?.let {
-        Json.decodeFromString(TraceInfo.serializer(), it)
-    }!!
+    val rootInputs =
+        parentSpan.attributes[io.opentelemetry.api.common.AttributeKey.stringKey("mlflow.spanInputs")]?.toString()
+    val rootResult =
+        parentSpan.attributes[io.opentelemetry.api.common.AttributeKey.stringKey("mlflow.spanOutputs")]?.toString()
 
     client.patch("${ML_FLOW_API}/traces/${traceResponse.requestId}/tags") {
         contentType(ContentType.Application.Json)
         setBody(trace.toTracePatchTagRequest())
     }
 
-    // TODO get rid of !!
-    val arguments = parentSpan.attributes[io.opentelemetry.api.common.AttributeKey.stringKey("mlflow.spanInputs")]?.toString()!!
-    val result = parentSpan.attributes[io.opentelemetry.api.common.AttributeKey.stringKey("mlflow.spanOutputs")]?.toString()!!
-
-    // Add artifacts
-    val spanArtifacts = SpanArtifactsRequest(
-        spans = trace.toSpanArtifactsRequest(traceResponse.requestId),
-        request = arguments,
-        response =  result
-    )
-
-
     client.put("${ML_FLOW_ARTIFACTS_API}/artifacts/${traceResponse.experimentId}/traces/${traceResponse.requestId}/artifacts/traces.json") {
         contentType(ContentType.Application.Json)
-        setBody(spanArtifacts)
+        setBody(
+            SpanArtifactsRequest(
+                spans = trace.toSpanArtifactsRequest(traceResponse.requestId),
+                request = rootInputs,
+                response = rootResult
+            )
+        )
     }
 
-    val tracePatchRequest = TracePatchRequest(
+    TracePatchRequest(
         requestId = traceResponse.requestId,
         status = "OK",
         timestampMs = parentSpan.endEpochNanos,
         requestMetadata = listOf(
             RequestMetadata(key = "mlflow.trace_schema.version", value = "2"),
-            RequestMetadata("mlflow.traceInputs", arguments),
-            RequestMetadata("mlflow.traceOutputs", result)
-        ), tags = listOf(
+            RequestMetadata("mlflow.traceInputs", rootInputs ?: "null"),
+            RequestMetadata("mlflow.traceOutputs", rootResult ?: "null")
+        ),
+        tags = listOf(
             org.example.ai.mlflow.dataclasses.Tag("mlflow.source.name", "some_function"),
             org.example.ai.mlflow.dataclasses.Tag("mlflow.source.type", "LOCAL"),
             org.example.ai.mlflow.dataclasses.Tag("mlflow.traceName", "some_function")
@@ -242,7 +240,23 @@ suspend fun updateTrace(parentSpan: SpanData, trace: List<SpanData>) {
 
     client.patch("${ML_FLOW_API}/traces/${traceResponse.requestId}") {
         contentType(ContentType.Application.Json)
-        setBody(tracePatchRequest)
+        setBody(
+            TracePatchRequest(
+                requestId = traceResponse.requestId,
+                status = "OK",
+                timestampMs = parentSpan.endEpochNanos,
+                requestMetadata = listOf(
+                    RequestMetadata(key = "mlflow.trace_schema.version", value = "2"),
+                    RequestMetadata("mlflow.traceInputs", rootInputs ?: "null"),
+                    RequestMetadata("mlflow.traceOutputs", rootResult ?: "null")
+                ),
+                tags = listOf(
+                    org.example.ai.mlflow.dataclasses.Tag("mlflow.source.name", "some_function"),
+                    org.example.ai.mlflow.dataclasses.Tag("mlflow.source.type", "LOCAL"),
+                    org.example.ai.mlflow.dataclasses.Tag("mlflow.traceName", "some_function")
+                )
+            )
+        )
     }
 }
 

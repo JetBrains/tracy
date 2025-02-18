@@ -14,39 +14,14 @@ import kotlinx.serialization.json.Json
 import org.aopalliance.intercept.MethodInterceptor
 import org.aopalliance.intercept.MethodInvocation
 import org.example.ai.mlflow.createTrace
-import org.example.ai.mlflow.dataclasses.RequestMetadata
-import org.example.ai.mlflow.dataclasses.Tag
 import org.example.ai.mlflow.dataclasses.TraceInfo
-import org.example.ai.mlflow.dataclasses.TracePostRequest
+import org.example.ai.mlflow.dataclasses.createTracePostRequest
 import org.mlflow.tracking.MlflowClient
-import java.time.Instant
+import java.util.logging.LogManager
+import java.util.logging.Logger
+import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter.Kind
 import kotlin.reflect.full.declaredFunctions
-
-fun generateRandomString(length: Int = 10): String {
-    val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-    return (1..length).map { chars.random() }.joinToString("")
-}
-
-data class TraceCreationInfo(
-    val experimentId: String,
-    val startTime: Long = Instant.now().toEpochMilli(),
-    val traceCreationPath: String,
-    val traceName: String
-) {
-    fun createTracePostRequest() = TracePostRequest(
-        experimentId = experimentId,
-        timestampMs = startTime,
-        requestMetadata = listOf(
-            RequestMetadata(key = "mlflow.trace_schema.version", value = "2")
-        ),
-        tags = listOf(
-            Tag("mlflow.source.name", traceCreationPath),
-            Tag("mlflow.source.type", "LOCAL"),
-            Tag("mlflow.traceName", traceName)
-        )
-    )
-}
 
 @BindingAnnotation
 @Target(AnnotationTarget.FUNCTION)
@@ -58,26 +33,33 @@ class KotlinFlowTracer : MethodInterceptor {
     private val tracer: Tracer = GlobalOpenTelemetry.getTracer("org.example.ai.mlflow")
     private val mlflowClient = MlflowClient("http://127.0.0.1:5000")
 
+    // TODO: Do not create new experiment here. Create mlflow service
+    private fun getCurrentExperimentId(): String = mlflowClient.createExperiment(generateRandomString(10))
+
+    private fun generateRandomString(length: Int = 10): String {
+        val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+        return (1..length).map { chars.random() }.joinToString("")
+    }
+
     private fun createSpan(spanName: String, invocation: MethodInvocation): Span {
         val spanBuilder = tracer.spanBuilder(spanName)
         val parentSpan = Span.current()
-        // If parent exists, set parent
         if (parentSpan.spanContext.isValid) {
+            // If parent exists, set parent
             spanBuilder.setParent(Context.current())
         } else {
+            // If root, then create a Trace and add traceCreationInfo to attribute
             spanBuilder.setNoParent()
-            // TODO: Do not create new experiment here. Create mlflow service
-            val experimentId = mlflowClient.createExperiment(generateRandomString(10))
-            val traceCreationInfo = TraceCreationInfo(
-                experimentId = experimentId,
-                traceCreationPath = invocation.method.declaringClass.name,
-                traceName = spanName
-            )
             // TODO Get rid of run blocking
-            val traceInfo = runBlocking {
-                createTrace(traceCreationInfo)
+             runBlocking {
+                val tracePostRequest = createTracePostRequest(
+                    experimentId = getCurrentExperimentId(),
+                    traceCreationPath = invocation.method.declaringClass.name,
+                    traceName = spanName
+                )
+                val traceInfo = createTrace(tracePostRequest)
+                spanBuilder.setAttribute("traceCreationInfo", Json.encodeToString(TraceInfo.serializer(), traceInfo))
             }
-            spanBuilder.setAttribute("traceCreationInfo", Json.encodeToString(TraceInfo.serializer(), traceInfo))
         }
         return spanBuilder.startSpan()
     }
@@ -97,6 +79,7 @@ class KotlinFlowTracer : MethodInterceptor {
         } catch (exception: Throwable) {
             span.recordException(exception)
             span.setStatus(StatusCode.ERROR, exception.message ?: "Message not found")
+            logger.warning("Failed to start span on $methodName")
             throw exception
         } finally {
             span.end()
@@ -106,14 +89,27 @@ class KotlinFlowTracer : MethodInterceptor {
 
     private fun extractInputs(invocation: MethodInvocation): String {
         val methodName = invocation.method.name
-        return invocation.method.declaringClass.kotlin.declaredFunctions.find { it.name == methodName }!!.parameters
-            .filter { it.kind != Kind.INSTANCE }
-            .mapIndexed { index, parameter ->
+        val declaringClass = invocation.method.declaringClass.kotlin
+
+        val methodFunction: KFunction<*>? = declaringClass.declaredFunctions.find { it.name == methodName }
+
+        if (methodFunction == null) {
+            logger.warning("Failed to find method '$methodName' in class '${declaringClass.qualifiedName}'. Returning an empty JSON object.")
+            return "{}"
+        }
+
+        return methodFunction.parameters.filter { it.kind != Kind.INSTANCE }.mapIndexed { index, parameter ->
                 val paramName = parameter.name ?: "arg$index"
-                "\"$paramName\": ${invocation.arguments[index]}"
-            }
-            .joinToString(prefix = "{", postfix = "}")
+                val argumentValue = invocation.arguments.getOrNull(index)?.toString() ?: "null"
+                "\"$paramName\": $argumentValue"
+            }.joinToString(", ", prefix = "{", postfix = "}")
     }
+
+    companion object {
+        private val logger: Logger = LogManager.getLogManager().getLogger(Logger.GLOBAL_LOGGER_NAME)
+            ?: Logger.getLogger(KotlinFlowTracer::class.java.name)
+    }
+
 }
 
 class KotlinFlowTraceModule : AbstractModule() {
