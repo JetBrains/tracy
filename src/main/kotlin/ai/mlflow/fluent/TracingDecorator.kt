@@ -17,7 +17,6 @@ import org.example.ai.mlflow.MlflowClients
 import org.example.ai.mlflow.createTrace
 import org.example.ai.mlflow.dataclasses.TraceInfo
 import org.example.ai.mlflow.dataclasses.createTracePostRequest
-import org.mlflow.tracking.MlflowClient
 import java.util.logging.LogManager
 import java.util.logging.Logger
 import kotlin.reflect.KFunction
@@ -27,13 +26,19 @@ import kotlin.reflect.full.declaredFunctions
 @BindingAnnotation
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class KotlinFlowTrace
+annotation class KotlinFlowTrace(val name: String = "", val spanType: String = SpanType.UNKNOWN)
+
 
 class KotlinFlowTracer : MethodInterceptor {
     private val tracer: Tracer = GlobalOpenTelemetry.getTracer("org.example.ai.mlflow")
 
-    private fun createSpan(spanName: String, invocation: MethodInvocation): Span {
+    private fun createSpan(invocation: MethodInvocation): Span {
+        val traceAnnotation = invocation.method.getAnnotation(KotlinFlowTrace::class.java)
+        val spanName = traceAnnotation.name.ifBlank { invocation.method.name }
+
         val spanBuilder = tracer.spanBuilder(spanName)
+        spanBuilder.setAttribute("mlflow.spanType", traceAnnotation.spanType)
+
         val parentSpan = Span.current()
         if (parentSpan.spanContext.isValid) {
             // If parent exists, set parent
@@ -44,7 +49,7 @@ class KotlinFlowTracer : MethodInterceptor {
             // TODO Get rid of run blocking
              runBlocking {
                 val tracePostRequest = createTracePostRequest(
-                    experimentId = MlflowClients.getCurrentExperimentId(),
+                    experimentId = MlflowClients.currentExperimentId,
                     traceCreationPath = invocation.method.declaringClass.name,
                     traceName = spanName
                 )
@@ -59,7 +64,7 @@ class KotlinFlowTracer : MethodInterceptor {
     override fun invoke(invocation: MethodInvocation): Any {
         val methodName = invocation.method.name
 
-        val span = createSpan(methodName, invocation)
+        val span = createSpan(invocation)
         span.setAttribute("mlflow.spanInputs", extractInputs(invocation))
 
         val scope: Scope = span.makeCurrent()
@@ -71,7 +76,6 @@ class KotlinFlowTracer : MethodInterceptor {
             span.recordException(exception)
             span.setStatus(StatusCode.ERROR, exception.message ?: "Message not found")
             logger.warning("Failed to start span on $methodName")
-            throw exception
         } finally {
             span.end()
             scope.close()

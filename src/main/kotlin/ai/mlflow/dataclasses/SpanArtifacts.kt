@@ -5,6 +5,7 @@ import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.sdk.trace.data.SpanData
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.example.ai.mlflow.fluent.SpanType
 
 fun List<SpanData>.toSpanArtifactsRequest(requestId: String) = this.map { spanData ->
     Span(
@@ -19,10 +20,12 @@ fun List<SpanData>.toSpanArtifactsRequest(requestId: String) = this.map { spanDa
         statusCode = "OK",
         attributes = Attributes(
             traceRequestId = requestId,
+            spanType = spanData.attributes[AttributeKey.stringKey("mlflow.spanType")] ?: SpanType.UNKNOWN,
             // TODO change to function name, not a name of the span
             spanFunctionName = spanData.name,
             spanInputs = spanData.attributes[AttributeKey.stringKey("mlflow.spanInputs")],
             spanOutputs = spanData.attributes[AttributeKey.stringKey("mlflow.spanOutputs")]
+
         ),
         events = emptyList()
     )
