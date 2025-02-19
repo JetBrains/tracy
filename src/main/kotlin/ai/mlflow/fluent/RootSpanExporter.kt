@@ -1,6 +1,7 @@
 package org.example.ai.mlflow.fluent
 
 import io.opentelemetry.api.GlobalOpenTelemetry
+import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.common.CompletableResultCode
 import io.opentelemetry.sdk.trace.SdkTracerProvider
@@ -24,7 +25,7 @@ class RootSpanExporter : SpanExporter {
             val traceId = span.traceId
             val spanList = spanGroups.computeIfAbsent(traceId) { mutableListOf() }
             spanList.add(span)
-            if (span.parentSpanId == EMPTY_PARENT_ID) {
+            if (span.parentSpanId == SpanId.getInvalid()) {
                 tracesToExport.add(TraceInfo(parent = span, spans = spanList.toList()))
                 spanGroups.remove(traceId)
             }
@@ -44,10 +45,6 @@ class RootSpanExporter : SpanExporter {
 
     override fun shutdown(): CompletableResultCode {
         return CompletableResultCode.ofSuccess()
-    }
-
-    companion object {
-        const val EMPTY_PARENT_ID = "0000000000000000"
     }
 }
 

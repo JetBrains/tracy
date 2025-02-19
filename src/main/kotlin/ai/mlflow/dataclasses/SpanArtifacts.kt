@@ -1,10 +1,10 @@
 package org.example.ai.mlflow.dataclasses
 
 import io.opentelemetry.api.common.AttributeKey
+import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.sdk.trace.data.SpanData
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.example.ai.mlflow.fluent.RootSpanExporter
 
 fun List<SpanData>.toSpanArtifactsRequest(requestId: String) = this.map { spanData ->
     Span(
@@ -13,7 +13,7 @@ fun List<SpanData>.toSpanArtifactsRequest(requestId: String) = this.map { spanDa
             spanId = spanData.spanId,
             traceId = spanData.traceId
         ),
-        parentId = spanData.parentSpanId.takeUnless { it == RootSpanExporter.EMPTY_PARENT_ID },
+        parentId = spanData.parentSpanId.takeUnless { it == SpanId.getInvalid() },
         startTime = spanData.startEpochNanos,
         endTime = spanData.endEpochNanos,
         statusCode = "OK",
