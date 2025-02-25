@@ -8,6 +8,7 @@ version = "1.0-SNAPSHOT"
 val ktor_version: String by project
 val opentelemetry_version: String by project
 val logback_version: String by project
+val bytebuddy_version: String by project
 val mlflow_client_version: String by project
 
 repositories {
@@ -26,10 +27,8 @@ dependencies {
     implementation("org.mlflow:mlflow-client:$mlflow_client_version")
     implementation("io.opentelemetry:opentelemetry-api:$opentelemetry_version")
     implementation("io.opentelemetry:opentelemetry-sdk:$opentelemetry_version")
-    implementation("io.opentelemetry:opentelemetry-exporter-logging:$opentelemetry_version")
-    implementation("net.bytebuddy:byte-buddy:1.14.5")
-    implementation("net.bytebuddy:byte-buddy-agent:1.14.5")
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.9.10")
+    implementation("net.bytebuddy:byte-buddy:$bytebuddy_version")
+    implementation("net.bytebuddy:byte-buddy-agent:$bytebuddy_version")
     implementation("org.yaml:snakeyaml:2.3")
 
     testImplementation(kotlin("test"))
