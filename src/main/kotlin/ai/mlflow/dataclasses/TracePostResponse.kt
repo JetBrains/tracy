@@ -22,6 +22,6 @@ data class TraceInfo(
     @SerialName("timestamp_ms") val timestampMs: Long,
     @SerialName("execution_time_ms") val executionTimeMs: Int,
     @SerialName("status") val status: String,
-    @SerialName("request_metadata") val requestMetadata: List<RequestMetadata>? = null,
+    @SerialName("request_metadata") val requestMetadata: List<RequestMetadata>,
     @SerialName("tags") val tags: List<Tag>
 )
