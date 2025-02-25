@@ -7,13 +7,15 @@ import io.opentelemetry.sdk.trace.data.SpanData
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.example.ai.mlflow.MlflowClients.USER_ID
 import org.example.ai.mlflow.dataclasses.*
 import org.example.ai.mlflow.fluent.FluentSpanAttributes
 import org.example.ai.model.ModelData
 import org.example.ai.model.createModelYaml
+import org.mlflow.api.proto.Service
+import org.mlflow.tracking.MlflowClient
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
@@ -112,6 +114,27 @@ suspend fun createRun(name: String, experimentId: String, source: String? = getC
 
     val runResult = Json.decodeFromString<RunResponse>(result.bodyAsText())
     return runResult.run
+}
+
+
+fun createRun(client: MlflowClient, name: String, experimentId: String, source: String? = getCallerInfo()): Service.RunInfo? {
+    val runData = Service.CreateRun.newBuilder().apply {
+        setExperimentId(experimentId)
+        setUserId(USER_ID)
+        setRunName(name)
+        setStartTime(getCurrentTimestamp())
+
+        listOfNotNull(
+            Tag(key = "mlflow.user", value = USER_ID),
+            source?.let { Tag(key = "mlflow.source.name", value = it) },
+            Tag(key = "mlflow.source.type", value = "LOCAL")
+        ).forEach { tag ->
+            addTags(Service.RunTag.newBuilder().setKey(tag.key).setValue(tag.value).build())
+        }
+    }.build()
+
+    val runInfo = client.createRun(runData)
+    return runInfo
 }
 
 suspend fun updateRun(runId: String, runStatus: RunStatus) {
