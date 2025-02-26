@@ -85,13 +85,13 @@ class TestLogging {
         }
     }
 
-//    @Test
-//    fun testCreateExperiment() {
-//        runBlocking {
-//            val experiment = createExperiment("New Experiment")
-//            val experimentData = getExperiment(experiment)
-//
-//            assertEquals(experiment, experimentData.experimentId)
-//        }
-//    }
+    @Test
+    fun testCreateExperiment() {
+        runBlocking {
+            val experiment = createExperiment("New Experiment")
+            val experimentData = getExperiment(experiment)
+
+            assertEquals(experiment, experimentData.experimentId)
+        }
+    }
 }

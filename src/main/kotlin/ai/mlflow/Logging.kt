@@ -184,14 +184,14 @@ suspend fun createExperiment(name: String): String {
     return Json.parseToJsonElement(response.bodyAsText()).jsonObject["experiment_id"]?.jsonPrimitive?.content!!
 }
 
-suspend fun getTraces(experimentIds: String, maxResults: Int): List<TraceInfo> {
-    val response: HttpResponse = MlflowClients.client.get("${MlflowClients.ML_FLOW_API}/mlflow/traces") {
-        parameter("experiment_ids", experimentIds)
-        parameter("max_results", maxResults)
+suspend fun getExperiment(experimentId: String): Experiment {
+    val response: HttpResponse = MlflowClients.client.get("${MlflowClients.ML_FLOW_API}/experiments/get") {
         contentType(ContentType.Application.Json)
+        setBody(mapOf("experiment_id" to experimentId))
     }
 
-    return Json.decodeFromString(response.bodyAsText())
+    val experimentResponse = Json.decodeFromString<ExperimentResponse>(response.bodyAsText())
+    return experimentResponse.experiment
 }
 
 suspend fun getTraces(experimentIds: List<String>, maxResults: Int = 10): TracesResponse {

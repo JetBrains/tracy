@@ -36,7 +36,7 @@ internal class MyTestClass {
     }
 }
 
-class TestTracing {
+class TestFluentTracing {
     companion object {
         @BeforeAll
         @JvmStatic
@@ -119,8 +119,6 @@ class TestTracing {
 
     @Test
     fun `test parent child trace`() {
-        val arg = "RandomString"
-
         MyTestClass().parentTestFunction("RandomString")
 
         val tracesResponse = runBlocking {
