@@ -16,7 +16,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okio.Buffer
-import org.example.ai.mlflow.trace
 
 fun createOpenAIClient(): OpenAIClient {
     val openAIClient = OpenAIOkHttpClient.builder()
@@ -122,9 +121,9 @@ class MLFlowOpenAILogger : Interceptor {
 //            trace(experimentId, runId, source = "MLFlowOpenAILogger", tracingJson)
 //        }
 
-        runBlocking {
-            trace(experimentId, runId, source = "MLFlowOpenAILogger", tracingJson)
-        }
+//        runBlocking {
+//            trace(experimentId, runId, source = "MLFlowOpenAILogger", tracingJson)
+//        }
 
         return response
     }

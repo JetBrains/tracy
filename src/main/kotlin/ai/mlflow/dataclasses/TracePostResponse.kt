@@ -2,7 +2,13 @@ package org.example.ai.mlflow.dataclasses
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.example.ai.mlflow.RequestMetadata
+import org.example.ai.mlflow.Tag
 
+@Serializable
+data class TracesResponse(
+    @SerialName("traces") val traces: List<TraceInfo>
+)
 
 @Serializable
 data class TraceInfoResponse(
@@ -16,18 +22,6 @@ data class TraceInfo(
     @SerialName("timestamp_ms") val timestampMs: Long,
     @SerialName("execution_time_ms") val executionTimeMs: Int,
     @SerialName("status") val status: String,
-    @SerialName("request_metadata") val requestMetadata: List<RequestMetadata>? = null,
+    @SerialName("request_metadata") val requestMetadata: List<RequestMetadata>,
     @SerialName("tags") val tags: List<Tag>
-)
-
-@Serializable
-data class RequestMetadata(
-    @SerialName("key") val key: String,
-    @SerialName("value") val value: String
-)
-
-@Serializable
-data class Tag(
-    @SerialName("key") val key: String,
-    @SerialName("value") val value: String
 )

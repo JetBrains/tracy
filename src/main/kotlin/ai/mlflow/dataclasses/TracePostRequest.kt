@@ -2,7 +2,28 @@ package org.example.ai.mlflow.dataclasses
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.example.ai.mlflow.RequestMetadata
+import org.example.ai.mlflow.Tag
 import org.example.ai.mlflow.getCurrentTimestamp
+import java.time.Instant
+
+internal fun createTracePostRequest(
+    experimentId: String,
+    startTime: Long = Instant.now().toEpochMilli(),
+    traceCreationPath: String,
+    traceName: String
+)  = TracePostRequest(
+        experimentId = experimentId,
+        timestampMs = startTime,
+        requestMetadata = listOf(
+            RequestMetadata(key = "mlflow.trace_schema.version", value = "2")
+        ),
+        tags = listOf(
+            Tag("mlflow.source.name", traceCreationPath),
+            Tag("mlflow.source.type", "LOCAL"),
+            Tag("mlflow.traceName", traceName)
+        )
+    )
 
 @Serializable
 data class TracePostRequest(

@@ -6,7 +6,9 @@ plugins {
 group = "com.jetbrains"
 version = "1.0-SNAPSHOT"
 val ktor_version: String by project
+val opentelemetry_version: String by project
 val logback_version: String by project
+val bytebuddy_version: String by project
 val mlflow_client_version: String by project
 
 repositories {
@@ -18,12 +20,15 @@ dependencies {
     implementation("com.google.inject:guice:7.0.0")
     implementation("com.openai:openai-java:0.21.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("org.mlflow:mlflow-client:2.8.0")
     implementation("io.ktor:ktor-client-core:$ktor_version")
     implementation("io.ktor:ktor-client-cio:$ktor_version")
     implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
     implementation("org.mlflow:mlflow-client:$mlflow_client_version")
+    implementation("io.opentelemetry:opentelemetry-api:$opentelemetry_version")
+    implementation("io.opentelemetry:opentelemetry-sdk:$opentelemetry_version")
+    implementation("net.bytebuddy:byte-buddy:$bytebuddy_version")
+    implementation("net.bytebuddy:byte-buddy-agent:$bytebuddy_version")
     implementation("org.yaml:snakeyaml:2.3")
 
     testImplementation(kotlin("test"))
@@ -35,4 +40,10 @@ tasks.test {
 }
 kotlin {
     jvmToolchain(21)
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    compilerOptions {
+        freeCompilerArgs.add("-java-parameters")
+    }
 }
