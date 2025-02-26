@@ -1,20 +1,76 @@
 package ai.mlflow.logging
 
+import com.github.dockerjava.api.model.ExposedPort
+import com.github.dockerjava.api.model.HostConfig
+import com.github.dockerjava.api.model.Ports
 import kotlinx.coroutines.runBlocking
 import org.example.ai.mlflow.*
 import org.example.ai.model.*
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.*
+import org.testcontainers.containers.GenericContainer
+import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.junit.jupiter.Testcontainers
+import org.testcontainers.containers.wait.strategy.Wait
 import org.mlflow.tracking.MlflowClient
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-private const val EXPERIMENT_ID = "259381197825368132"
+private const val MLFLOW_PORT = 5001
+private const val MLFLOW_VERSION = "2.10.0"
 
+@Testcontainers
 class TestLogging {
+
+    private lateinit var experimentId: String
+
+    @BeforeEach
+    fun setupTestData() {
+        runBlocking {
+            experimentId = createTestExperiment()
+        }
+    }
+
+    companion object {
+        @Container
+        val mlflowContainer = GenericContainer("ghcr.io/mlflow/mlflow:v$MLFLOW_VERSION")
+            .withExposedPorts(8090)
+            .withCommand("mlflow server --host 0.0.0.0 --port 8090")
+            .waitingFor(Wait.forListeningPort())
+            .withCreateContainerCmdModifier { cmd ->
+                cmd.withHostConfig(
+                    HostConfig().withPortBindings(
+                        Ports.Binding.bindPort(MLFLOW_PORT).let { binding ->
+                            Ports().apply { bindings[ExposedPort.tcp(8090)] = arrayOf(binding) }
+                        }
+                    )
+                )
+            }
+
+        @BeforeAll
+        @JvmStatic
+        fun setup() {
+            mlflowContainer.start()
+        }
+
+        @AfterAll
+        @JvmStatic
+        fun teardown() {
+            mlflowContainer.stop()
+        }
+    }
+
+    @Test
+    fun testCreateExperiment() {
+        runBlocking {
+            val experimentData = getExperiment(experimentId)
+            assertEquals(experimentId, experimentData.experimentId)
+        }
+    }
+
     @Test
     fun testCreateRun() {
         runBlocking {
-            val run = createRun("TestLogging.testCreateRun", EXPERIMENT_ID)
+            val run = createRun("TestLogging.testCreateRun", experimentId)
             val runId = run.info.runId
             updateRun(runId, RunStatus.FINISHED)
         }
@@ -23,7 +79,7 @@ class TestLogging {
     @Test
     fun testLogModel() {
         runBlocking {
-            val run = createRun("TestLogging.testLogModel", EXPERIMENT_ID)
+            val run = createRun("TestLogging.testLogModel", experimentId)
             val runId = run.info.runId
 
             val modelData = ModelData(
@@ -75,7 +131,7 @@ class TestLogging {
         runBlocking {
             val mlFlowClient = MlflowClient("http://localhost:5001")
 
-            val run = createRun(mlFlowClient, "TestLogging.testLogModel", EXPERIMENT_ID)
+            val run = createRun(mlFlowClient, "TestLogging.testLogModel", experimentId)
             assertNotNull(run, "Run was not created")
 
             val runData = mlFlowClient.getRun(run.runId)
@@ -85,13 +141,8 @@ class TestLogging {
         }
     }
 
-    @Test
-    fun testCreateExperiment() {
-        runBlocking {
-            val experiment = createExperiment("New Experiment")
-            val experimentData = getExperiment(experiment)
-
-            assertEquals(experiment, experimentData.experimentId)
-        }
+    private suspend fun createTestExperiment(): String {
+        val experimentName = "Test Experiment ${System.currentTimeMillis()}"
+        return createExperiment(experimentName)
     }
 }

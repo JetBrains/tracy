@@ -10,6 +10,7 @@ val opentelemetry_version: String by project
 val logback_version: String by project
 val bytebuddy_version: String by project
 val mlflow_client_version: String by project
+val testcontainers_version: String by project
 
 repositories {
     mavenCentral()
@@ -33,6 +34,8 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+    testImplementation("org.testcontainers:junit-jupiter:$testcontainers_version")
+    testImplementation("org.testcontainers:testcontainers:$testcontainers_version")
 }
 
 tasks.test {
