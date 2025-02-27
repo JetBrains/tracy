@@ -4,6 +4,7 @@ import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.coroutines.runBlocking
 import org.example.ai.mlflow.KotlinMlflowClient.ML_FLOW_URL
 import org.mlflow.api.proto.Service
 import org.mlflow.tracking.MlflowClient
@@ -37,9 +38,14 @@ internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL) {
         }
     }
 
-    override fun createRun(): Service.RunInfo? {
-        return super.createRun(currentExperimentId).also {
-            currentRunId = it?.runId
+    fun withRun(experimentId: String) = object : AutoCloseable {
+        val myRunId = createRun(experimentId)?.runId
+
+        override fun close() {
+            // TODO GET RID OF RUN BLOCKING
+            runBlocking {
+                myRunId?.let { updateRun(myRunId, RunStatus.FINISHED) }
+            }
         }
     }
 

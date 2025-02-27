@@ -27,20 +27,22 @@ class TestAutologTracing {
 
     @AfterEach
     fun cleaning() {
-        KotlinMlflowClient.deleteExperiment(KotlinMlflowClient.currentExperimentId)
+//        KotlinMlflowClient.deleteExperiment(KotlinMlflowClient.currentExperimentId)
     }
 
     @Test
     fun testOpenAIAutoTracing() {
-        val client = createOpenAIClient()
-        val params = ChatCompletionCreateParams.Companion.builder()
-            .addUserMessage("Generate polite greeting and introduce yourself")
-            .model(ChatModel.Companion.GPT_4O_MINI)
-            .temperature(1.1)
-            .build()
-        val completions = client.chat().completions().create(params)
+        KotlinMlflowClient.withRun(KotlinMlflowClient.currentExperimentId).use {
+            val client = createOpenAIClient()
+            val params = ChatCompletionCreateParams.Companion.builder()
+                .addUserMessage("Generate polite greeting and introduce yourself")
+                .model(ChatModel.Companion.GPT_4O_MINI)
+                .temperature(1.1)
+                .build()
+            val completions = client.chat().completions().create(params)
 
-        println(completions.choices().first().message().content().get())
+            println(completions.choices().first().message().content().get())
+        }
     }
 
     fun generateRandomString(length: Int = 10): String {
