@@ -12,7 +12,7 @@ import net.bytebuddy.implementation.bind.annotation.AllArguments
 import net.bytebuddy.implementation.bind.annotation.Origin
 import net.bytebuddy.implementation.bind.annotation.RuntimeType
 import net.bytebuddy.implementation.bind.annotation.SuperCall
-import org.example.ai.mlflow.MlflowClients
+import org.example.ai.mlflow.KotlinMlflowClient
 import org.example.ai.mlflow.createTrace
 import org.example.ai.mlflow.dataclasses.TraceInfo
 import org.example.ai.mlflow.dataclasses.createTracePostRequest
@@ -20,13 +20,9 @@ import org.example.ai.mlflow.fluent.FluentSpanAttributes
 import org.example.ai.mlflow.fluent.KotlinFlowTrace
 import java.lang.reflect.Method
 import java.util.concurrent.Callable
-import java.util.logging.LogManager
-import java.util.logging.Logger
 
 object TracedMethodInterceptor {
     private val tracer: Tracer = GlobalOpenTelemetry.getTracer("org.example.ai.mlflow")
-    private val logger: Logger = LogManager.getLogManager().getLogger(Logger.GLOBAL_LOGGER_NAME)
-        ?: Logger.getLogger(TracedMethodInterceptor::class.java.name)
 
     @JvmStatic
     @RuntimeType
@@ -34,13 +30,21 @@ object TracedMethodInterceptor {
                   @Origin method: Method,
                   @AllArguments args: Array<Any?>
     ): Any? {
-        val span = createSpan(method)
-        span.setAttribute(FluentSpanAttributes.MLFLOW_SPAN_INPUTS.asAttributeKey(), extractInputs(method, args))
+        val traceAnnotation = method.getAnnotation(KotlinFlowTrace::class.java)
+        val spanName = traceAnnotation.name.ifBlank { method.name }
+        val span = createSpan(spanName, method)
 
+        span.setAttribute(FluentSpanAttributes.MLFLOW_SPAN_SOURCE_NAME.asAttributeKey(), method.declaringClass.name)
+        span.setAttribute(FluentSpanAttributes.MLFLOW_SPAN_TYPE.asAttributeKey(), traceAnnotation.spanType)
+        span.setAttribute(FluentSpanAttributes.MLFLOW_SPAN_FUNCTION_NAME.asAttributeKey(), method.name)
+
+        val argumentHandler = traceAnnotation.attributeHandler.handler
+
+        span.setAttribute(FluentSpanAttributes.MLFLOW_SPAN_INPUTS.asAttributeKey(), argumentHandler.processInput(method, args))
         val scope: Scope = span.makeCurrent()
         return try {
             val result = originalMethod.call()
-            span.setAttribute(FluentSpanAttributes.MLFLOW_SPAN_OUTPUTS.asAttributeKey(), result.toString())
+            span.setAttribute(FluentSpanAttributes.MLFLOW_SPAN_OUTPUTS.asAttributeKey(), argumentHandler.processOutput(result))
             result
         } catch (exception: Throwable) {
             span.recordException(exception)
@@ -52,15 +56,8 @@ object TracedMethodInterceptor {
         }
     }
 
-    private fun createSpan(method: Method): Span {
-        val traceAnnotation = method.getAnnotation(KotlinFlowTrace::class.java)
-        val spanName = traceAnnotation.name.ifBlank { method.name }
-
+    private fun createSpan(spanName: String, method: Method): Span {
         val spanBuilder = tracer.spanBuilder(spanName)
-
-        spanBuilder.setAttribute(FluentSpanAttributes.MLFLOW_SPAN_SOURCE_NAME.asAttributeKey(), method.declaringClass.name)
-        spanBuilder.setAttribute(FluentSpanAttributes.MLFLOW_SPAN_TYPE.asAttributeKey(), traceAnnotation.spanType)
-        spanBuilder.setAttribute(FluentSpanAttributes.MLFLOW_SPAN_FUNCTION_NAME.asAttributeKey(), method.name)
 
         val parentSpan = Span.current()
         if (parentSpan.spanContext.isValid) {
@@ -72,7 +69,7 @@ object TracedMethodInterceptor {
             // TODO Get rid of run blocking
             runBlocking {
                 val tracePostRequest = createTracePostRequest(
-                    experimentId = MlflowClients.currentExperimentId,
+                    experimentId = KotlinMlflowClient.currentExperimentId,
                     traceCreationPath = method.declaringClass.name,
                     traceName = spanName
                 )
@@ -82,11 +79,4 @@ object TracedMethodInterceptor {
         }
         return spanBuilder.startSpan()
     }
-
-    private fun extractInputs(method: Method, args: Array<Any?>): String =
-        method.parameters.mapIndexed { index, parameter ->
-            val paramName = parameter.name ?: "arg$index"
-            val argumentValue = args.getOrNull(index)?.toString() ?: "null"
-            "\"$paramName\": $argumentValue"
-        }.joinToString(", ", prefix = "{", postfix = "}")
 }

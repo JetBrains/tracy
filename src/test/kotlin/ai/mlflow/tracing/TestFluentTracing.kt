@@ -1,7 +1,7 @@
 package ai.mlflow.tracing
 
 import kotlinx.coroutines.runBlocking
-import org.example.ai.mlflow.MlflowClients
+import org.example.ai.mlflow.KotlinMlflowClient
 import org.example.ai.mlflow.fluent.KotlinFlowTrace
 import org.example.ai.mlflow.fluent.processor.TracingFlowProcessor
 import org.example.ai.mlflow.getTraces
@@ -47,25 +47,25 @@ class TestFluentTracing {
 
     @BeforeEach
     fun setup() {
-        MlflowClients.setExperimentByName(generateRandomString())
+        KotlinMlflowClient.setExperimentByName(generateRandomString())
     }
 
     @AfterEach
     fun cleaning() {
-        MlflowClients.mlflowClient.deleteExperiment(MlflowClients.currentExperimentId)
+        KotlinMlflowClient.deleteExperiment(KotlinMlflowClient.currentExperimentId)
     }
 
     @Test
     fun `test trace creation`() {
         MyTestClass().testFunction(1)
         val tracesResponse = runBlocking {
-            getTraces(listOf(MlflowClients.currentExperimentId))
+            getTraces(listOf(KotlinMlflowClient.currentExperimentId))
         }
 
         assertEquals(1, tracesResponse.traces.size)
         val trace = tracesResponse.traces.first()
         assertNotNull(trace)
-        assertEquals(MlflowClients.currentExperimentId, trace.experimentId)
+        assertEquals(KotlinMlflowClient.currentExperimentId, trace.experimentId)
     }
 
     @Test
@@ -75,7 +75,7 @@ class TestFluentTracing {
         val result = testClass.testFunction(arg)
 
         val tracesResponse = runBlocking {
-            getTraces(listOf(MlflowClients.currentExperimentId))
+            getTraces(listOf(KotlinMlflowClient.currentExperimentId))
         }
         var trace = tracesResponse.traces.firstOrNull()
         trace = assertNotNull(trace)
@@ -106,7 +106,7 @@ class TestFluentTracing {
         testClass.anotherTestFunction("OpenTelemetry")
 
         val tracesResponse = runBlocking {
-            getTraces(listOf(MlflowClients.currentExperimentId))
+            getTraces(listOf(KotlinMlflowClient.currentExperimentId))
         }
 
         assertEquals(2, tracesResponse.traces.size)
@@ -122,7 +122,7 @@ class TestFluentTracing {
         MyTestClass().parentTestFunction("RandomString")
 
         val tracesResponse = runBlocking {
-            getTraces(listOf(MlflowClients.currentExperimentId))
+            getTraces(listOf(KotlinMlflowClient.currentExperimentId))
         }
 
         var trace = tracesResponse.traces.firstOrNull()
