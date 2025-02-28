@@ -15,8 +15,8 @@ import org.mlflow.tracking.MlflowClient
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-private const val MLFLOW_PORT = 5001
-private const val MLFLOW_VERSION = "2.10.0"
+private const val MLFLOW_PORT = 8080
+private const val MLFLOW_VERSION = "2.20.2"
 
 @Testcontainers
 class TestLogging {
@@ -33,14 +33,14 @@ class TestLogging {
     companion object {
         @Container
         val mlflowContainer: GenericContainer<*> = GenericContainer("ghcr.io/mlflow/mlflow:v$MLFLOW_VERSION")
-            .withExposedPorts(8090)
-            .withCommand("mlflow server --host 0.0.0.0 --port 8090")
+            .withExposedPorts(8080)
+            .withCommand("mlflow server --host 0.0.0.0 --port 8080")
             .waitingFor(Wait.forListeningPort())
             .withCreateContainerCmdModifier { cmd ->
                 cmd.withHostConfig(
                     HostConfig().withPortBindings(
                         Ports.Binding.bindPort(MLFLOW_PORT).let { binding ->
-                            Ports().apply { bindings[ExposedPort.tcp(8090)] = arrayOf(binding) }
+                            Ports().apply { bindings[ExposedPort.tcp(8080)] = arrayOf(binding) }
                         }
                     )
                 )
