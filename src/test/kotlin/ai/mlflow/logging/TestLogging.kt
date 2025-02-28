@@ -32,7 +32,7 @@ class TestLogging {
 
     companion object {
         @Container
-        val mlflowContainer = GenericContainer("ghcr.io/mlflow/mlflow:v$MLFLOW_VERSION")
+        val mlflowContainer: GenericContainer<*> = GenericContainer("ghcr.io/mlflow/mlflow:v$MLFLOW_VERSION")
             .withExposedPorts(8090)
             .withCommand("mlflow server --host 0.0.0.0 --port 8090")
             .waitingFor(Wait.forListeningPort())
