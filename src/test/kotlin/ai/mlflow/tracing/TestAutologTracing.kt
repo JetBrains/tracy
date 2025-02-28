@@ -2,14 +2,22 @@ package ai.mlflow.tracing
 
 import com.openai.models.ChatCompletionCreateParams
 import com.openai.models.ChatModel
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.example.ai.createOpenAIClient
 import org.example.ai.mlflow.KotlinMlflowClient
 import org.example.ai.mlflow.fluent.processor.TracingFlowProcessor
+import org.example.ai.mlflow.getTraces
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class TestAutologTracing {
     companion object {
@@ -27,7 +35,7 @@ class TestAutologTracing {
 
     @AfterEach
     fun cleaning() {
-//        KotlinMlflowClient.deleteExperiment(KotlinMlflowClient.currentExperimentId)
+        KotlinMlflowClient.deleteExperiment(KotlinMlflowClient.currentExperimentId)
     }
 
     @Test
@@ -39,10 +47,24 @@ class TestAutologTracing {
                 .model(ChatModel.Companion.GPT_4O_MINI)
                 .temperature(1.1)
                 .build()
-            val completions = client.chat().completions().create(params)
-
-            println(completions.choices().first().message().content().get())
+            client.chat().completions().create(params)
         }
+
+        val tracesResponse = runBlocking {
+            getTraces(listOf(KotlinMlflowClient.currentExperimentId))
+        }
+
+        assertEquals(1, tracesResponse.traces.size)
+        val chatTrace = tracesResponse.traces.first()
+        val traceInput = chatTrace.tags.firstOrNull { it.key == "mlflow.traceSpans" }?.value
+        assertNotNull(traceInput)
+        val jsonInput = (Json.parseToJsonElement(traceInput) as? JsonArray)?.firstOrNull() as? JsonObject
+        assertNotNull(jsonInput)
+        assertEquals("CHAT_MODEL", (jsonInput["type"] as? JsonPrimitive)?.content)
+        assertEquals(
+            "{\"messages\":[{\"content\":\"Generate polite greeting and introduce yourself\",\"role\":\"user\"}],\"model\":\"gpt-4o-mini\",\"temperature\":1.1}",
+            (jsonInput["inputs"] as? JsonPrimitive)?.content
+        )
     }
 
     fun generateRandomString(length: Int = 10): String {
