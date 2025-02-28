@@ -256,19 +256,22 @@ suspend fun updateTrace(parentSpan: SpanData, traces: List<SpanData>) {
         requestId = traceResponse.requestId,
         status = "OK",
         timestampMs = parentSpan.endEpochNanos / 1_000_000,
-        requestMetadata = listOf(
-            RequestMetadata("mlflow.trace_schema.version", "2"),
-            RequestMetadata("mlflow.traceInputs", rootInputs ?: "null"),
-            RequestMetadata("mlflow.traceOutputs", rootResult ?: "null")
-        ),
-        tags = listOf(
-            Tag(
+        requestMetadata = buildList {
+            add(RequestMetadata("mlflow.trace_schema.version", "2"))
+            rootInputs?.let { add(RequestMetadata("mlflow.traceInputs", it)) }
+            rootResult?.let { add(RequestMetadata("mlflow.traceOutputs", it)) }
+            parentSpan.getAttribute(FluentSpanAttributes.MLFLOW_SOURCE_RUN)?.let {
+                add(RequestMetadata("mlflow.sourceRun", it))
+            }
+        },
+        tags = buildList {
+            add(Tag(
                 "mlflow.source.name",
                 parentSpan.getAttribute(FluentSpanAttributes.MLFLOW_SPAN_SOURCE_NAME) ?: "null"
-            ),
-            Tag("mlflow.source.type", "LOCAL"),
-            Tag("mlflow.traceName", parentSpan.name)
-        )
+            ))
+            add(Tag("mlflow.source.type", "LOCAL"))
+            add(Tag("mlflow.traceName", parentSpan.name))
+        }
     ))
 }
 

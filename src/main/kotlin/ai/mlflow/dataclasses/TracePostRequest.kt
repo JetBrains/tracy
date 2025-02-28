@@ -11,18 +11,22 @@ internal fun createTracePostRequest(
     experimentId: String,
     startTime: Long = Instant.now().toEpochMilli(),
     traceCreationPath: String,
-    traceName: String
+    traceName: String,
+    runId: String? = null
 )  = TracePostRequest(
         experimentId = experimentId,
         timestampMs = startTime,
         requestMetadata = listOf(
             RequestMetadata(key = "mlflow.trace_schema.version", value = "2")
         ),
-        tags = listOf(
-            Tag("mlflow.source.name", traceCreationPath),
-            Tag("mlflow.source.type", "LOCAL"),
-            Tag("mlflow.traceName", traceName)
-        )
+        tags = buildList {
+            add(Tag("mlflow.source.name", traceCreationPath))
+            add(Tag("mlflow.source.type", "LOCAL"))
+            add(Tag("mlflow.traceName", traceName))
+            runId?.let {
+                add(Tag("mlflow.sourceRun", runId))
+            }
+        }
     )
 
 @Serializable

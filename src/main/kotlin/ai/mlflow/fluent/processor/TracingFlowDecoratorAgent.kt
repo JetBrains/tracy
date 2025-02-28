@@ -15,7 +15,7 @@ object TracingFlowDecoratorAgent {
     fun premain(arguments: String?, instrumentation: Instrumentation) {
         AgentBuilder.Default()
             // TODO FIX PACKAGE NAMES
-            .type(ElementMatchers.nameStartsWith("ai")).or(ElementMatchers.nameStartsWith("com.example"))
+            .type(ElementMatchers.nameStartsWith("ai")).or(ElementMatchers.nameStartsWith("org.example"))
             .transform(object : AgentBuilder.Transformer {
                 override fun transform(
                     p0: DynamicType.Builder<*>,

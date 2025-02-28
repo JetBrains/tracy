@@ -37,6 +37,9 @@ object TracedMethodInterceptor {
         span.setAttribute(FluentSpanAttributes.MLFLOW_SPAN_SOURCE_NAME.asAttributeKey(), method.declaringClass.name)
         span.setAttribute(FluentSpanAttributes.MLFLOW_SPAN_TYPE.asAttributeKey(), traceAnnotation.spanType)
         span.setAttribute(FluentSpanAttributes.MLFLOW_SPAN_FUNCTION_NAME.asAttributeKey(), method.name)
+        KotlinMlflowClient.currentRunId?.let {
+            span.setAttribute(FluentSpanAttributes.MLFLOW_SOURCE_RUN.asAttributeKey(), it)
+        }
 
         val argumentHandler = traceAnnotation.attributeHandler.handler
 
@@ -71,7 +74,8 @@ object TracedMethodInterceptor {
                 val tracePostRequest = createTracePostRequest(
                     experimentId = KotlinMlflowClient.currentExperimentId,
                     traceCreationPath = method.declaringClass.name,
-                    traceName = spanName
+                    traceName = spanName,
+                    runId = KotlinMlflowClient.currentRunId,
                 )
                 val jsonTraceInfo = Json.encodeToString(TraceInfo.serializer(), createTrace(tracePostRequest))
                 spanBuilder.setAttribute(FluentSpanAttributes.TRACE_CREATION_INFO.asAttributeKey(), jsonTraceInfo)
