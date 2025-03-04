@@ -13,7 +13,7 @@ import org.yaml.snakeyaml.representer.Representer
 
 @Serializable
 data class ModelData(
-    @SerialName("run_id") val runId: String,
+    @SerialName("run_id") var runId: String,
     @SerialName("artifact_path") val artifactPath: String,
     @SerialName("utc_time_created") val utcTimeCreated: String = getCurrentTimestamp().toString(),
     @SerialName("flavors") val flavors: Flavors,
@@ -75,4 +75,4 @@ fun createModelJson(modelData: ModelData): String {
     return json.encodeToString(ModelData.serializer(), modelData)
 }
 
-private val json = Json { encodeDefaults = true }
+val json = Json { encodeDefaults = true }

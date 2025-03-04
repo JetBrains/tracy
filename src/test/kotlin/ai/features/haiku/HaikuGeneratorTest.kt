@@ -1,50 +1,37 @@
 package ai.features.haiku
 
-import kotlinx.coroutines.runBlocking
 import org.example.ai.AIModel
 import org.example.ai.features.haiku.HaikuGenerator
-import org.junit.jupiter.api.extension.*
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.MethodSource
-import kotlin.test.assertEquals
+import org.example.ai.mlflow.BaseEvaluationTest
+import org.example.ai.mlflow.dataclasses.EvaluationCriteria
+import org.example.ai.mlflow.dataclasses.RunTag
+import org.example.ai.mlflow.dataclasses.TestCase
 
 
-class HaikuGeneratorTest {
-    /**
-     * This test will be generated dynamically.
-     */
-    @ParameterizedTest
-    @MethodSource("provideTestCases")
-    fun `test consists of three lines`(testCase: Pair<String, Int>) {
-        val (input, expected) = testCase
-
-        // This in the framework code, so model logging could be implemented there.
-        val model = getModel()
-
-        val haiku = runBlocking { model.generateHaiku(input) }
-        val result = ConsistsOfThreeLines.evaluate(haiku)
-
-        assertEquals(expected, result, "The evaluation did not match for input: $input")
+class HaikuGeneratorTest :
+    BaseEvaluationTest<String, String, Double>(
+        "HaikuGeneratorTest",
+        numberOfRuns = 1,
+        tags = listOf(RunTag(color = "#000000"))
+    ) {
+    override fun testCases(): List<TestCase<String, Double>> {
+        return listOf(
+            TestCase("table", 1.0),
+            TestCase("computer", 1.0),
+            TestCase("flower", 1.0),
+            TestCase("horse", 1.0)
+        )
     }
 
-    companion object {
-        private val testCases = listOf<String>("table", "computer", "horse", "flower")
+    override fun model(): HaikuGenerator {
+        return HaikuGenerator(AIModel.GPT_4O_MINI)
+    }
 
-        @JvmStatic
-        fun provideTestCases(): List<Pair<String, Int>> {
-            return testCases.map {
-                it to 1
-            }
-        }
-
-        fun getModel(): HaikuGenerator {
-            return HaikuGenerator(AIModel.GPT_4O_MINI)
-        }
-
-        @JvmField
-        @RegisterExtension
-        @Suppress("unused")
-        val evaluationLogger = EvaluationLogger(getModel())
+    override fun testFunctions(): List<EvaluationCriteria<String, Double>> {
+        return listOf(
+            ConsistsOfThreeLines,
+            ContainsTheWordIs,
+        )
     }
 }
 
@@ -53,12 +40,18 @@ class HaikuGeneratorTest {
  *
  * In English tradition haiku should consist of three lines.
  */
-object ConsistsOfThreeLines : EvaluationCriteria<String, Int>("consists of three lines") {
-    override fun evaluate(result: String): Int {
+object ConsistsOfThreeLines : EvaluationCriteria<String, Double>("consists of three lines") {
+    override fun evaluate(result: String): Double {
         return if (result.split("\n").size == 3) {
-            1
+            1.0
         } else {
-            0
+            0.0
         }
+    }
+}
+
+object ContainsTheWordIs : EvaluationCriteria<String, Double>("contains the word is") {
+    override fun evaluate(result: String): Double {
+        return if (result.split(" ").map { it.trim().lowercase() }.contains("is")) 1.0 else 0.0
     }
 }

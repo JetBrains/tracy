@@ -17,11 +17,13 @@ import org.example.ai.model.ModelData
 import org.example.ai.model.createModelYaml
 import org.mlflow.api.proto.Service
 import org.mlflow.tracking.MlflowClient
+import java.io.File
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.Instant
+import kotlin.jvm.optionals.getOrNull
 
 @Serializable
 data class RunCreationData(
@@ -105,7 +107,11 @@ suspend fun createRun(name: String, experimentId: String, source: String? = getC
         Tag(key = "mlflow.source.type", value = "LOCAL")
     )
     val run = RunCreationData(
-        experimentId = experimentId, userId = MlflowClients.USER_ID, runName = name, startTime = getCurrentTimestamp(), tags = tags
+        experimentId = experimentId,
+        userId = MlflowClients.USER_ID,
+        runName = name,
+        startTime = getCurrentTimestamp(),
+        tags = tags
     )
 
     val result = MlflowClients.client.post("${MlflowClients.ML_FLOW_API}/runs/create") {
@@ -185,6 +191,18 @@ suspend fun createExperiment(name: String): String {
     return Json.parseToJsonElement(response.bodyAsText()).jsonObject["experiment_id"]?.jsonPrimitive?.content!!
 }
 
+fun createExperiment(client: MlflowClient, name: String, artifactLocation: String): String? {
+    val experimentData = Service.CreateExperiment.newBuilder().apply {
+        setName(name)
+        setArtifactLocation(artifactLocation)
+    }.build()
+
+    // todo: throws when experiment already exists
+    val experimentId = client.createExperiment(experimentData)
+
+    return experimentId
+}
+
 suspend fun getExperiment(experimentId: String): Experiment {
     val response: HttpResponse = MlflowClients.client.get("${MlflowClients.ML_FLOW_API}/experiments/get") {
         contentType(ContentType.Application.Json)
@@ -253,24 +271,26 @@ suspend fun updateTrace(parentSpan: SpanData, traces: List<SpanData>) {
         )
     )
 
-    patchTrace(TracePatchRequest(
-        requestId = traceResponse.requestId,
-        status = "OK",
-        timestampMs = parentSpan.endEpochNanos / 1_000_000,
-        requestMetadata = listOf(
-            RequestMetadata("mlflow.trace_schema.version", "2"),
-            RequestMetadata("mlflow.traceInputs", rootInputs ?: "null"),
-            RequestMetadata("mlflow.traceOutputs", rootResult ?: "null")
-        ),
-        tags = listOf(
-            Tag(
-                "mlflow.source.name",
-                parentSpan.getAttribute(FluentSpanAttributes.MLFLOW_SPAN_SOURCE_NAME) ?: "null"
+    patchTrace(
+        TracePatchRequest(
+            requestId = traceResponse.requestId,
+            status = "OK",
+            timestampMs = parentSpan.endEpochNanos / 1_000_000,
+            requestMetadata = listOf(
+                RequestMetadata("mlflow.trace_schema.version", "2"),
+                RequestMetadata("mlflow.traceInputs", rootInputs ?: "null"),
+                RequestMetadata("mlflow.traceOutputs", rootResult ?: "null")
             ),
-            Tag("mlflow.source.type", "LOCAL"),
-            Tag("mlflow.traceName", parentSpan.name)
+            tags = listOf(
+                Tag(
+                    "mlflow.source.name",
+                    parentSpan.getAttribute(FluentSpanAttributes.MLFLOW_SPAN_SOURCE_NAME) ?: "null"
+                ),
+                Tag("mlflow.source.type", "LOCAL"),
+                Tag("mlflow.traceName", parentSpan.name)
+            )
         )
-    ))
+    )
 }
 
 private suspend fun updateTraceTags(requestId: String, updateTagRequest: Tag) {
@@ -307,6 +327,22 @@ suspend fun setTag(runId: String?, key: String, value: String) {
             )
         )
     }
+}
+
+fun getExperimentByName(client: MlflowClient, experimentName: String): Service.Experiment? {
+    return client.getExperimentByName(experimentName).getOrNull()
+}
+
+fun getExperiment(client: MlflowClient, experimentId: String): Service.Experiment? {
+    return client.getExperiment(experimentId)
+}
+
+fun logMetric(client: MlflowClient, runId: String, key: String, value: Double) {
+    client.logMetric(runId, key, value)
+}
+
+fun logArtifact(client: MlflowClient, runId: String, file: File) {
+    client.logArtifact(runId, file)
 }
 
 @Serializable
@@ -351,6 +387,10 @@ suspend fun getRun(runId: String): Run {
 
     val runResult = Json.decodeFromString<RunResponse>(response.bodyAsText())
     return runResult.run
+}
+
+fun getRun(client: MlflowClient, runId: String): Service.Run? {
+    return client.getRun(runId)
 }
 
 suspend fun getModel(runId: String) {

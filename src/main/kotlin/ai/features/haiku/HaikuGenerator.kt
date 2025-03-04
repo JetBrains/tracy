@@ -2,9 +2,10 @@ package org.example.ai.features.haiku
 
 import org.example.ai.AIModel
 import org.example.ai.createAIClient
+import org.example.ai.mlflow.dataclasses.Generator
 
-class HaikuGenerator(val model: AIModel) {
-    val prompt = """
+class HaikuGenerator(override val model: AIModel) : Generator<String, String> {
+    override val prompt = """
     You are a creative and talented poet proficient in Japanese versification.
     
     You goal is to create a haiku about the given word. Haiku should follow the typical haiku structure in English adaptation.
@@ -21,13 +22,13 @@ class HaikuGenerator(val model: AIModel) {
     Generate a haiku about "%s".
     """.trimIndent()
 
-    val temperature = 1.0
+    override val temperature = 1.0
 
     /**
-    Generate a haiku using the [word] provided.
+    Generate a haiku using the [input] provided.
      */
-    suspend fun generateHaiku(word: String): String {
+    override suspend fun generate(input: String): String {
         val client = createAIClient()
-        return client.chatRequest(model, String.format(prompt, word), temperature = temperature)
+        return client.chatRequest(model, String.format(prompt, input), temperature = temperature)
     }
 }

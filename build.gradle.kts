@@ -32,8 +32,8 @@ dependencies {
     implementation("net.bytebuddy:byte-buddy-agent:$bytebuddy_version")
     implementation("org.yaml:snakeyaml:2.3")
 
-    testImplementation(kotlin("test"))
-    testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+    implementation(kotlin("test"))
+    implementation("org.junit.jupiter:junit-jupiter:5.10.0")
     testImplementation("org.testcontainers:junit-jupiter:$testcontainers_version")
     testImplementation("org.testcontainers:testcontainers:$testcontainers_version")
 }
