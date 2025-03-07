@@ -50,7 +50,7 @@ abstract class BaseEvaluationTest<I, O, R>(
         if (artifactLocation == null) artifactLocation = getMLflowRunsDir()
 
         experimentId = getExperimentByName(mlFlowClient, experimentName)?.experimentId
-            ?: createExperiment(mlFlowClient, experimentName, artifactLocation!!)
+            ?: createExperiment(mlFlowClient, experimentName)
                     ?: throw IllegalStateException("Failed to create or retrieve experiment '$experimentName' at $baseUrl")
 
         KotlinMlflowClient.currentExperimentId = experimentId
@@ -149,9 +149,9 @@ abstract class BaseEvaluationTest<I, O, R>(
         logModel(runId, modelJson = createModelJson(modelData))
 
         val loggedRun = getRun(runId)
-        val artifactUri = loggedRun.info.artifactUri
+        val modelArtifactPath = "${loggedRun.info.experimentId}/${runId}/artifacts/model/MLmodel"
 
-        logModelData(artifactUri, modelData)
+        uploadArtifact(modelArtifactPath, createModelYaml(modelData))
     }
 
     @AfterAll
@@ -189,9 +189,11 @@ abstract class BaseEvaluationTest<I, O, R>(
                 )
 
                 val evalResultsJson = Json.encodeToString(evalResultsTable)
-                val artifactUri = "${mlFlowClient.getRun(runId).info.artifactUri}/eval_results_table.json"
 
-                logArtifact(artifactUri, evalResultsJson)
+                val loggedRun = runBlocking { getRun(runId) }
+                val artifactPath = "${loggedRun.info.experimentId}/${runId}/artifacts/eval_results_table.json"
+
+                uploadArtifact(artifactPath, evalResultsJson)
 
                 runBlocking {
                     setTag(

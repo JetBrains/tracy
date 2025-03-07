@@ -4,6 +4,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.opentelemetry.sdk.trace.data.SpanData
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -12,13 +13,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import org.example.ai.mlflow.KotlinMlflowClient.USER_ID
 import org.example.ai.mlflow.dataclasses.*
 import org.example.ai.mlflow.fluent.FluentSpanAttributes
-import org.example.ai.model.ModelData
-import org.example.ai.model.createModelYaml
 import org.mlflow.api.proto.Service
 import org.mlflow.tracking.MlflowClient
-import java.nio.charset.StandardCharsets
-import java.nio.file.Files
-import java.nio.file.Paths
 import java.time.Instant
 import kotlin.jvm.optionals.getOrNull
 
@@ -99,13 +95,13 @@ private fun getCallerInfo(): String? {
 
 suspend fun createRun(name: String, experimentId: String, source: String? = getCallerInfo()): Run {
     val tags = listOfNotNull(
-        Tag(key = "mlflow.user", value = KotlinMlflowClient.USER_ID),
+        Tag(key = "mlflow.user", value = USER_ID),
         source?.let { Tag(key = "mlflow.source.name", value = it) },
         Tag(key = "mlflow.source.type", value = "LOCAL")
     )
     val run = RunCreationData(
         experimentId = experimentId,
-        userId = KotlinMlflowClient.USER_ID,
+        userId = USER_ID,
         runName = name,
         startTime = getCurrentTimestamp(),
         tags = tags
@@ -163,18 +159,13 @@ suspend fun logModel(runId: String, modelJson: String, mlFlowUrl: String = Kotli
     }
 }
 
-fun logModelData(artifactUri: String, modelData: ModelData) {
-    val modelFilePath = Paths.get(artifactUri).resolve("model").resolve("MLmodel")
-    val modelFileContent = createModelYaml(modelData).toByteArray(StandardCharsets.UTF_8)
-
-    logArtifact(modelFilePath.toString(), modelFileContent.decodeToString())
-}
-
-fun logArtifact(artifactUri: String, fileContent: String) {
-    val artifactPath = Paths.get(artifactUri)
-
-    Files.createDirectories(artifactPath.parent)
-    Files.write(artifactPath, fileContent.toByteArray(StandardCharsets.UTF_8))
+fun uploadArtifact(path: String, content: String) {
+    runBlocking {
+        KotlinMlflowClient.client.put("${KotlinMlflowClient.ML_FLOW_ARTIFACTS_API}/artifacts/$path") {
+            contentType(ContentType.Application.Json)
+            setBody(content)
+        }
+    }
 }
 
 fun logMetric(client: MlflowClient, runId: String, key: String, value: Double) {
@@ -194,10 +185,9 @@ suspend fun createExperiment(name: String): String {
     return Json.parseToJsonElement(response.bodyAsText()).jsonObject["experiment_id"]?.jsonPrimitive?.content!!
 }
 
-fun createExperiment(client: MlflowClient, name: String, artifactLocation: String): String? {
+fun createExperiment(client: MlflowClient, name: String): String? {
     val experimentData = Service.CreateExperiment.newBuilder().apply {
         setName(name)
-        setArtifactLocation(artifactLocation)
     }.build()
 
     // todo: throws when experiment already exists
