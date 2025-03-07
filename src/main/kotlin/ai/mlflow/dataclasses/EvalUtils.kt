@@ -9,13 +9,12 @@ import org.mlflow.tracking.MlflowClient
 import java.nio.file.Paths
 
 
-data class TestCase<I, O>(
-    val input: I,
-    val expected: O
+data class TestCase<I>(
+    val input: I
 )
 
-abstract class EvaluationCriteria<O, R>(val name: String) {
-    abstract fun evaluate(result: O): R
+abstract class EvaluationCriteria<O, R>(val name: String, val resultExpected: R? = null) {
+    abstract fun evaluate(output: O): R
 }
 
 interface Generator<I, O> {
