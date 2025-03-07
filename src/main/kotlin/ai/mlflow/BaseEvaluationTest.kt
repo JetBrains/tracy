@@ -7,6 +7,8 @@ import org.example.ai.AIModel
 import org.example.ai.createAIClient
 import org.example.ai.mlflow.dataclasses.*
 import org.example.ai.mlflow.dataclasses.TestInfo
+import org.example.ai.mlflow.fluent.KotlinFlowTrace
+import org.example.ai.mlflow.fluent.processor.TracingFlowProcessor
 import org.example.ai.model.*
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -19,7 +21,6 @@ import java.util.stream.Stream
  * @param O The output produced by the model.
  * @param R The evaluation result produced based on the model output.
  */
-
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class BaseEvaluationTest<I, O, R>(
     private val experimentName: String = "Evaluation test",
@@ -39,6 +40,9 @@ abstract class BaseEvaluationTest<I, O, R>(
     @BeforeAll
     fun beforeAll() {
         println("🔄 Setting up before all tests")
+
+        TracingFlowProcessor.setup()
+        MlflowClients.setExperimentByName(experimentName)
 
         if (tags.isNotEmpty()) assertEquals(tags.size, numberOfRuns, "The number of tags must match the number of runs")
 
@@ -66,7 +70,9 @@ abstract class BaseEvaluationTest<I, O, R>(
                     experimentId
                 )?.runId.toString()
 
-                modelData?.runId = runId
+                MlflowClients.currentRunId = runId
+
+                    modelData?.runId = runId
                 setupMlflow(modelData, runId)
 
                 runResults.add(RunResults(mutableListOf(), runId, RunStatus.FINISHED))
@@ -203,6 +209,7 @@ abstract class BaseEvaluationTest<I, O, R>(
 
 
     @TestFactory
+    @KotlinFlowTrace(name = "Evaluation")
     fun Runs(): Stream<DynamicContainer> =
         runResults.mapIndexed { runNum, runResult ->
             DynamicContainer.dynamicContainer(
@@ -217,6 +224,7 @@ abstract class BaseEvaluationTest<I, O, R>(
                 })
         }.stream()
 
+    @KotlinFlowTrace(name = "Test")
     private fun executeSingleTest(
         testFunction: EvaluationCriteria<O, R>,
         testCase: TestCase<I, R>,

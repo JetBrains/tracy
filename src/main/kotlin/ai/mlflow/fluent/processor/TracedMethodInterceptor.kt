@@ -73,6 +73,7 @@ object TracedMethodInterceptor {
             runBlocking {
                 val tracePostRequest = createTracePostRequest(
                     experimentId = MlflowClients.currentExperimentId,
+                    runId = MlflowClients.currentRunId!!,
                     traceCreationPath = method.declaringClass.name,
                     traceName = spanName
                 )

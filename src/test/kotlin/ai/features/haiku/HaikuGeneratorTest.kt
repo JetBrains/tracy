@@ -6,6 +6,7 @@ import org.example.ai.mlflow.BaseEvaluationTest
 import org.example.ai.mlflow.dataclasses.EvaluationCriteria
 import org.example.ai.mlflow.dataclasses.RunTag
 import org.example.ai.mlflow.dataclasses.TestCase
+import org.example.ai.mlflow.fluent.KotlinFlowTrace
 
 
 class HaikuGeneratorTest :
@@ -43,6 +44,7 @@ class HaikuGeneratorTest :
  * In English tradition haiku should consist of three lines.
  */
 object ConsistsOfThreeLines : EvaluationCriteria<String, Double>("consists of three lines") {
+    @KotlinFlowTrace(name = "Three Lines")
     override fun evaluate(result: String): Double {
         return if (result.split("\n").size == 3) {
             1.0

@@ -20,6 +20,8 @@ internal object MlflowClients {
     internal var currentExperimentId: String = "0"
         private set
 
+    internal var currentRunId: String? = null
+
     val client = HttpClient(CIO) {
         install(ContentNegotiation) {
             json()
