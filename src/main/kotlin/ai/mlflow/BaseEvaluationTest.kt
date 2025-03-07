@@ -26,7 +26,7 @@ abstract class BaseEvaluationTest<I, O, R>(
     private val runName: String? = null,
     private val numberOfRuns: Int = 1,
     private val tags: List<RunTag> = listOf(),
-    private val baseUrl: String = "http://localhost:8080",
+    private val baseUrl: String = "http://localhost:5001",
     private var artifactLocation: String? = null
 ) {
     private lateinit var mlFlowClient: MlflowClient
@@ -44,7 +44,7 @@ abstract class BaseEvaluationTest<I, O, R>(
 
         mlFlowClient = MlflowClient(baseUrl)
 
-        if(artifactLocation == null) artifactLocation = getDefaultArtifactLocation(mlFlowClient)
+        if(artifactLocation == null) artifactLocation = getMLflowRunsDir()
 
         experimentId = getExperimentByName(mlFlowClient, experimentName)?.experimentId
             ?: createExperiment(mlFlowClient, experimentName, artifactLocation!!)
@@ -185,11 +185,9 @@ abstract class BaseEvaluationTest<I, O, R>(
             )
 
             val evalResultsJson = Json.encodeToString(evalResultsTable)
+            val artifactUri = "${mlFlowClient.getRun(runId).info.artifactUri}/eval_results_table.json"
 
-            val evalResultsPath = "/tmp/eval_results_table.json"
-            File(evalResultsPath).writeText(evalResultsJson)
-
-            logArtifact(mlFlowClient, runId, File(evalResultsPath))
+            logArtifact(artifactUri, evalResultsJson)
 
             runBlocking {
                 setTag(
@@ -274,6 +272,10 @@ abstract class BaseEvaluationTest<I, O, R>(
 
             println("📈 Results logged to MLFlow for Run ID: $runId")
         }
+    }
+
+    open fun getMLflowRunsDir(): String {
+        return getDefaultArtifactLocation(mlFlowClient)
     }
 
     abstract fun testCases(): List<TestCase<I, R>>

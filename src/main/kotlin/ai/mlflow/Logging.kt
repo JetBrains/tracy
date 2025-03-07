@@ -1,6 +1,5 @@
 package org.example.ai.mlflow
 
-import io.ktor.client.HttpClient
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -17,8 +16,6 @@ import org.example.ai.model.ModelData
 import org.example.ai.model.createModelYaml
 import org.mlflow.api.proto.Service
 import org.mlflow.tracking.MlflowClient
-import java.io.File
-import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -167,15 +164,21 @@ suspend fun logModel(runId: String, modelJson: String, mlFlowUrl: String = Mlflo
 }
 
 fun logModelData(artifactUri: String, modelData: ModelData) {
-    val artifactPath = Paths.get(URI(artifactUri))
-    val modelPath = artifactPath.resolve("model")
-    val modelFilePath = modelPath.resolve("MLmodel")
+    val modelFilePath = Paths.get(artifactUri).resolve("model").resolve("MLmodel")
+    val modelFileContent = createModelYaml(modelData).toByteArray(StandardCharsets.UTF_8)
 
-    Files.createDirectories(modelPath)
-    Files.createFile(modelFilePath)
+    logArtifact(modelFilePath.toString(), modelFileContent.decodeToString())
+}
 
-    val yamlString = createModelYaml(modelData)
-    Files.write(modelFilePath, yamlString.toByteArray(StandardCharsets.UTF_8))
+fun logArtifact(artifactUri: String, fileContent: String) {
+    val artifactPath = Paths.get(artifactUri)
+
+    Files.createDirectories(artifactPath.parent)
+    Files.write(artifactPath, fileContent.toByteArray(StandardCharsets.UTF_8))
+}
+
+fun logMetric(client: MlflowClient, runId: String, key: String, value: Double) {
+    client.logMetric(runId, key, value)
 }
 
 suspend fun createExperiment(name: String): String {
@@ -337,14 +340,6 @@ fun getExperiment(client: MlflowClient, experimentId: String): Service.Experimen
     return client.getExperiment(experimentId)
 }
 
-fun logMetric(client: MlflowClient, runId: String, key: String, value: Double) {
-    client.logMetric(runId, key, value)
-}
-
-fun logArtifact(client: MlflowClient, runId: String, file: File) {
-    client.logArtifact(runId, file)
-}
-
 @Serializable
 data class RunMetricsData(
     @SerialName("run_id") val runId: String,
@@ -387,10 +382,6 @@ suspend fun getRun(runId: String): Run {
 
     val runResult = Json.decodeFromString<RunResponse>(response.bodyAsText())
     return runResult.run
-}
-
-fun getRun(client: MlflowClient, runId: String): Service.Run? {
-    return client.getRun(runId)
 }
 
 suspend fun getModel(runId: String) {

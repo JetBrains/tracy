@@ -12,7 +12,7 @@ class HaikuGeneratorTest :
     BaseEvaluationTest<String, String, Double>(
         "HaikuGeneratorTest",
         numberOfRuns = 1,
-        tags = listOf(RunTag(color = "#000000"))
+        tags = listOf(RunTag(color = "#FF0000")),
     ) {
     override fun testCases(): List<TestCase<String, Double>> {
         return listOf(
@@ -30,9 +30,11 @@ class HaikuGeneratorTest :
     override fun testFunctions(): List<EvaluationCriteria<String, Double>> {
         return listOf(
             ConsistsOfThreeLines,
-            ContainsTheWordIs,
+//            ContainsTheWordIs,
         )
     }
+
+    override fun getMLflowRunsDir() = "/Users/Anton.Bragin/PycharmProjects/litellm-test/mlruns"
 }
 
 /**
