@@ -48,7 +48,7 @@ abstract class BaseEvaluationTest<I, O, R>(
 
         mlFlowClient = MlflowClient(baseUrl)
 
-        if(artifactLocation == null) artifactLocation = getMLflowRunsDir()
+        if (artifactLocation == null) artifactLocation = getMLflowRunsDir()
 
         experimentId = getExperimentByName(mlFlowClient, experimentName)?.experimentId
             ?: createExperiment(mlFlowClient, experimentName, artifactLocation!!)
@@ -72,7 +72,7 @@ abstract class BaseEvaluationTest<I, O, R>(
 
                 MlflowClients.currentRunId = runId
 
-                    modelData?.runId = runId
+                modelData?.runId = runId
                 setupMlflow(modelData, runId)
 
                 runResults.add(RunResults(mutableListOf(), runId, RunStatus.FINISHED))
@@ -160,50 +160,53 @@ abstract class BaseEvaluationTest<I, O, R>(
 
         runResults.forEachIndexed { index, runResult ->
             val (testResults, runId, runStatus) = runResult
+            try {
+                runBlocking {
+                    if (tags.isNotEmpty())
+                        setTag(
+                            runId,
+                            "mlflow.runColor",
+                            tags[index].color,
+                        )
+                }
 
-            runBlocking {
-                updateRun(runId, runStatus)
+                val metricsLookup = testResults.associate { (it.testName to it.input) to (it.result to it.output) }
 
-                if (tags.isNotEmpty())
+                val testNames = testResults.map { it.testName }.distinct()
+                val testCases = testResults.map { it.input }.distinct()
+
+                val tableData: List<List<String>> = testCases.map { testCase ->
+                    val output = metricsLookup[testNames.firstOrNull() to testCase]?.second
+                    listOf(testCase.toString(), output.toString()) + testNames.map { testName ->
+                        val resultInfo = metricsLookup[testName to testCase]
+                        resultInfo?.first?.toString() ?: "N/A"
+                    }
+                }
+
+                val evalResultsTable = EvalResultsTable(
+                    columns = listOf("inputs", "output") + testNames,
+                    data = tableData
+                )
+
+                val evalResultsJson = Json.encodeToString(evalResultsTable)
+                val artifactUri = "${mlFlowClient.getRun(runId).info.artifactUri}/eval_results_table.json"
+
+                logArtifact(artifactUri, evalResultsJson)
+
+                runBlocking {
                     setTag(
                         runId,
-                        "mlflow.runColor",
-                        tags[index].color,
+                        "mlflow.loggedArtifacts",
+                        "[{\"path\": \"eval_results_table.json\", \"type\": \"table\"}]"
                     )
-            }
-
-            val metricsLookup = testResults.associate { (it.testName to it.input) to (it.result to it.output) }
-
-            val testNames = testResults.map { it.testName }.distinct()
-            val testCases = testResults.map { it.input }.distinct()
-
-            val tableData: List<List<String>> = testCases.map { testCase ->
-                val output = metricsLookup[testNames.firstOrNull() to testCase]?.second
-                listOf(testCase.toString(), output.toString()) + testNames.map { testName ->
-                    val resultInfo = metricsLookup[testName to testCase]
-                    resultInfo?.first?.toString() ?: "N/A"
                 }
+
+                logAveragePlot(runId, testResults)
+            } catch (e: Exception) {
+                runResults[index].finalStatus = RunStatus.FAILED
+            } finally {
+                runBlocking { updateRun(runId, runStatus) }
             }
-
-            val evalResultsTable = EvalResultsTable(
-                columns = listOf("inputs", "output") + testNames,
-                data = tableData
-            )
-
-            val evalResultsJson = Json.encodeToString(evalResultsTable)
-            val artifactUri = "${mlFlowClient.getRun(runId).info.artifactUri}/eval_results_table.json"
-
-            logArtifact(artifactUri, evalResultsJson)
-
-            runBlocking {
-                setTag(
-                    runId,
-                    "mlflow.loggedArtifacts",
-                    "[{\"path\": \"eval_results_table.json\", \"type\": \"table\"}]"
-                )
-            }
-
-            logAveragePlot(runId, testResults)
         }
     }
 
@@ -227,7 +230,7 @@ abstract class BaseEvaluationTest<I, O, R>(
     @KotlinFlowTrace(name = "Test")
     private fun executeSingleTest(
         testFunction: EvaluationCriteria<O, R>,
-        testCase: TestCase<I, R>,
+        testCase: TestCase<I>,
         runNum: Int,
         runId: String,
         output: O
@@ -238,15 +241,20 @@ abstract class BaseEvaluationTest<I, O, R>(
         try {
             result = testFunction.evaluate(output)
 
-            assertEquals(
-                testCase.expected,
-                result
-            )
+            message = if (testFunction.resultExpected != null) {
+                assertEquals(
+                    testFunction.resultExpected,
+                    result
+                )
+                "✅ Test Passed: ${testFunction.name} | Case: ${testCase.input} | Result: $result"
+            } else {
+                "🎯 Test Executed: ${testFunction.name} | Case: ${testCase.input} | Result: $result"
+            }
 
-            message = "✅ Test Passed: ${testFunction.name} | Case: ${testCase.input}"
+
         } catch (e: Throwable) {
-            runResults[runNum].finalStatus = RunStatus.FAILED
-            message = "❌ Test Failed: ${testFunction.name} | Case: ${testCase.input} | Reason: ${e.message}"
+            message =
+                "❌ Test Failed: ${testFunction.name} | Case: ${testCase.input} | Result: $result | Reason: ${e.message}"
             throw e
         } finally {
             logTest(message, runId)
@@ -286,7 +294,7 @@ abstract class BaseEvaluationTest<I, O, R>(
         return getDefaultArtifactLocation(mlFlowClient)
     }
 
-    abstract fun testCases(): List<TestCase<I, R>>
+    abstract fun testCases(): List<TestCase<I>>
 
     abstract fun model(): Generator<I, O>
 
