@@ -3,12 +3,7 @@ package ai.mlflow.tracing
 import kotlinx.coroutines.runBlocking
 import org.example.ai.mlflow.KotlinMlflowClient
 import org.example.ai.mlflow.fluent.KotlinFlowTrace
-import org.example.ai.mlflow.fluent.processor.TracingFlowProcessor
 import org.example.ai.mlflow.getTraces
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
-import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -36,25 +31,8 @@ internal class MyTestClass {
     }
 }
 
-class TestFluentTracing {
-    companion object {
-        @BeforeAll
-        @JvmStatic
-        fun setupProcessor() {
-            TracingFlowProcessor.setup()
-        }
-    }
 
-    @BeforeEach
-    fun setup() {
-        KotlinMlflowClient.setExperimentByName(generateRandomString())
-    }
-
-    @AfterEach
-    fun cleaning() {
-        KotlinMlflowClient.deleteExperiment(KotlinMlflowClient.currentExperimentId)
-    }
-
+class TestFluentTracing: MlflowTracingTests() {
     @Test
     fun `test trace creation`() {
         MyTestClass().testFunction(1)
@@ -82,7 +60,7 @@ class TestFluentTracing {
 
         assertEquals("OK", trace.status)
         assertEquals(
-            "{\"paramName\": $arg}",
+            "{\"paramName\":$arg}",
             trace.requestMetadata.firstOrNull { it.key == "mlflow.traceInputs" }?.value ?: ""
         )
         assertEquals(
@@ -94,7 +72,7 @@ class TestFluentTracing {
             trace.tags.firstOrNull { it.key == "mlflow.traceName" }?.value ?: ""
         )
         assertEquals(
-            "[{\"name\":\"Main Span\",\"type\":\"mySpanType\",\"inputs\":\"{\\\"paramName\\\": $arg}\"}]",
+            "[{\"name\":\"Main Span\",\"type\":\"mySpanType\",\"inputs\":\"{\\\"paramName\\\":$arg}\"}]",
             trace.tags.firstOrNull { it.key == "mlflow.traceSpans" }?.value ?: ""
         )
     }
@@ -129,13 +107,8 @@ class TestFluentTracing {
         trace = assertNotNull(trace)
 
         assertEquals(
-            "[{\"name\":\"Child Span\",\"type\":\"UNKNOWN\",\"inputs\":\"{\\\"x\\\": gnirtSmodnaR}\"},{\"name\":\"Parent Span\",\"type\":\"UNKNOWN\",\"inputs\":\"{\\\"x\\\": RandomString}\"}]",
+            "[{\"name\":\"Child Span\",\"type\":\"UNKNOWN\",\"inputs\":\"{\\\"x\\\":\\\"gnirtSmodnaR\\\"}\"},{\"name\":\"Parent Span\",\"type\":\"UNKNOWN\",\"inputs\":\"{\\\"x\\\":\\\"RandomString\\\"}\"}]",
             trace.tags.firstOrNull { it.key == "mlflow.traceSpans" }?.value ?: ""
         )
-    }
-
-    fun generateRandomString(length: Int = 10): String {
-        val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-        return (1..length).map { chars[Random.nextInt(chars.length)] }.joinToString("")
     }
 }

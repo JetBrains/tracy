@@ -1,7 +1,7 @@
 package ai.features.haiku
 
-import com.openai.models.ChatCompletionCreateParams
 import com.openai.models.ChatModel
+import com.openai.models.chat.completions.ChatCompletionCreateParams
 import kotlinx.coroutines.runBlocking
 import org.example.ai.AIModel
 import org.example.ai.createAIClient
