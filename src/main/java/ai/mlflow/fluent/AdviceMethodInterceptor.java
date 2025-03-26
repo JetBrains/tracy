@@ -1,13 +1,11 @@
 package ai.mlflow.fluent;
 
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.context.Scope;
 import kotlin.Pair;
+import kotlin.coroutines.intrinsics.IntrinsicsKt;
 import kotlin.jvm.JvmStatic;
 import net.bytebuddy.asm.Advice;
 import net.bytebuddy.implementation.bytecode.assign.Assigner;
 import org.example.ai.mlflow.fluent.KotlinFlowTrace;
-import org.example.ai.mlflow.fluent.processor.TracedMethodInterceptor;
 import org.example.ai.mlflow.fluent.processor.TraceInfo;
 
 import java.lang.reflect.Method;
@@ -38,12 +36,13 @@ public class AdviceMethodInterceptor {
             @Advice.Enter TraceInfo traceInfo,
             @Advice.Return Object result
     ) {
-        KotlinFlowTrace traceAnnotation = method.getAnnotation(KotlinFlowTrace.class);
-        traceInfo.addOutputAttribute(traceAnnotation, result);
-        System.out.printf("I am in method exit with result %s\n", result);
-        traceInfo.close();
-//        System.out.printf("I am in method exit with result %s\n", result);
-//        long elapsedTime = System.nanoTime() - startTime;
-//        System.out.printf("Method %s executed in %s ms\n", method.getName(), TimeUnit.NANOSECONDS.toMillis(elapsedTime));
+        if (result != IntrinsicsKt.getCOROUTINE_SUSPENDED()) {
+            KotlinFlowTrace traceAnnotation = method.getAnnotation(KotlinFlowTrace.class);
+            traceInfo.addOutputAttribute(traceAnnotation, result);
+            System.out.printf("I am in method exit with result %s\n", result);
+            traceInfo.close();
+        } else {
+            System.out.println("I am in method exit with suspended result\n");
+        }
     }
 }

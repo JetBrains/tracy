@@ -6,6 +6,7 @@ import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
 import io.opentelemetry.context.Scope
 import io.opentelemetry.extension.kotlin.asContextElement
+import io.opentelemetry.extension.kotlin.getOpenTelemetryContext
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.example.ai.mlflow.KotlinMlflowClient
