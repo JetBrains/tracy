@@ -13,7 +13,7 @@ object TracingFlowProcessor {
     }
 
     private fun setupTracingFlowAgent() {
-        TracingFlowDecoratorAgent.premain(null, ByteBuddyAgent.install())
+        TracingFlowDecoratorAgent.premain(ByteBuddyAgent.install())
     }
 
     private fun setupTracing() {

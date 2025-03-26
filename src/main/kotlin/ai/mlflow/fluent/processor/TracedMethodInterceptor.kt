@@ -31,14 +31,15 @@ object TracedMethodInterceptor {
                   @AllArguments args: Array<Any?>
     ): Any? {
         val traceAnnotation = method.getAnnotation(KotlinFlowTrace::class.java)
-
         val span = createSpan(traceAnnotation, method, args)
         val scope: Scope = span.makeCurrent()
+
         return try {
             val result = originalMethod.call()
             span.setAttribute(
                 FluentSpanAttributes.MLFLOW_SPAN_OUTPUTS.asAttributeKey(),
-                traceAnnotation.attributeHandler.handler.processOutput(result))
+                traceAnnotation.attributeHandler.handler.processOutput(result)
+            )
             result
         } catch (exception: Throwable) {
             span.recordException(exception)
@@ -50,7 +51,7 @@ object TracedMethodInterceptor {
         }
     }
 
-    private fun createSpan(traceAnnotation: KotlinFlowTrace, method: Method, args: Array<Any?>): Span {
+    fun createSpan(traceAnnotation: KotlinFlowTrace, method: Method, args: Array<Any?>): Span {
         val spanName = traceAnnotation.name.ifBlank { method.name }
         val spanBuilder = tracer.spanBuilder(spanName)
 
@@ -94,5 +95,21 @@ object TracedMethodInterceptor {
             }
         }
         return spanBuilder.startSpan()
+    }
+}
+
+data class TraceInfo(
+    val span: Span,
+    val scope: Scope
+) {
+    fun addOutputAttribute(traceAnnotation: KotlinFlowTrace, result: Any?) {
+        span.setAttribute(
+            FluentSpanAttributes.MLFLOW_SPAN_OUTPUTS.asAttributeKey(),
+            traceAnnotation.attributeHandler.handler.processOutput(result)
+        )
+    }
+    fun close() {
+        span.end()
+        scope.close()
     }
 }

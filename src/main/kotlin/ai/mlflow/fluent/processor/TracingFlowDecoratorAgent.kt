@@ -1,9 +1,10 @@
 package org.example.ai.mlflow.fluent.processor
 
+import ai.mlflow.fluent.AdviceMethodInterceptor
 import net.bytebuddy.agent.builder.AgentBuilder
+import net.bytebuddy.asm.Advice
 import net.bytebuddy.description.type.TypeDescription
 import net.bytebuddy.dynamic.DynamicType
-import net.bytebuddy.implementation.MethodDelegation
 import net.bytebuddy.matcher.ElementMatchers
 import net.bytebuddy.matcher.ElementMatchers.isAnnotatedWith
 import net.bytebuddy.utility.JavaModule
@@ -12,7 +13,7 @@ import java.lang.instrument.Instrumentation
 import java.security.ProtectionDomain
 
 object TracingFlowDecoratorAgent {
-    fun premain(arguments: String?, instrumentation: Instrumentation) {
+    fun premain(instrumentation: Instrumentation) {
         AgentBuilder.Default()
             // TODO FIX PACKAGE NAMES
             .type(ElementMatchers.nameStartsWith("ai")).or(ElementMatchers.nameStartsWith("org.example"))
@@ -26,7 +27,7 @@ object TracingFlowDecoratorAgent {
                 ): DynamicType.Builder<*> {
                     return p0
                         .method(isAnnotatedWith(KotlinFlowTrace::class.java))
-                        .intercept(MethodDelegation.to(TracedMethodInterceptor::class.java))
+                        .intercept(Advice.to(AdviceMethodInterceptor::class.java))
                 }
             })
             .installOn(instrumentation)
