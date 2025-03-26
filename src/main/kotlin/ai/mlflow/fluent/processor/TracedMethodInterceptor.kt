@@ -80,7 +80,6 @@ val a = ConcurrentHashMap<Method, org.example.ai.mlflow.fluent.processor.TraceIn
 
 fun deleteContinuation(method: Any?) = a.remove(method)
 
-
 fun argsProcessor(traceAnnotation: KotlinFlowTrace,
                   method: Method,
                   args: Array<Any?>)
@@ -90,9 +89,8 @@ fun argsProcessor(traceAnnotation: KotlinFlowTrace,
         a[method] = TraceInfo(span, span.makeCurrent())
         return args
     }
+
     val continuation = args.last() as Continuation<*>
-    print(continuation)
-//    val parentSpan = Span.fromContext(continuation.context.getOpenTelemetryContext())
     if (!a.containsKey(method)) {
         val span = createSpan(
             traceAnnotation = traceAnnotation,
@@ -100,16 +98,10 @@ fun argsProcessor(traceAnnotation: KotlinFlowTrace,
             args = args,
             context = continuation.context.getOpenTelemetryContext()
         )
-        a[method] = TraceInfo(span, span.makeCurrent())//, span.makeCurrent())
-        args[args.size - 1] = continuation
-            .withContext(span.asContextElement())
-        return args
+        a[method] = TraceInfo(span, span.makeCurrent())
+        args[args.size - 1] = continuation.withContext(span.asContextElement())
     }
     return args
-}
-
-class TraceInfoContextElement(val traceInfo: org.example.ai.mlflow.fluent.processor.TraceInfo) : AbstractCoroutineContextElement(Key) {
-    companion object Key : CoroutineContext.Key<TraceInfoContextElement>
 }
 
 fun <T> Continuation<T>.withContext(context: CoroutineContext) = object: Continuation<T> {

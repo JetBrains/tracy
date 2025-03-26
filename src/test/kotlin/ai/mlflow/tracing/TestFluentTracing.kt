@@ -29,6 +29,12 @@ internal class MyTestClass {
     fun childTestFunction(x: String): String {
         return x.reversed()
     }
+
+    @KotlinFlowTrace(name = "Child Span")
+    fun testRecursion(level: Int): Int {
+        if (level == 0) return 0
+        return testRecursion(level - 1)
+    }
 }
 
 
@@ -98,6 +104,23 @@ class TestFluentTracing: MlflowTracingTests() {
     @Test
     fun `test parent child trace`() {
         MyTestClass().parentTestFunction("RandomString")
+
+        val tracesResponse = runBlocking {
+            getTraces(listOf(KotlinMlflowClient.currentExperimentId))
+        }
+
+        var trace = tracesResponse.traces.firstOrNull()
+        trace = assertNotNull(trace)
+
+        assertEquals(
+            "[{\"name\":\"Child Span\",\"type\":\"UNKNOWN\",\"inputs\":\"{\\\"x\\\":\\\"gnirtSmodnaR\\\"}\"},{\"name\":\"Parent Span\",\"type\":\"UNKNOWN\",\"inputs\":\"{\\\"x\\\":\\\"RandomString\\\"}\"}]",
+            trace.tags.firstOrNull { it.key == "mlflow.traceSpans" }?.value ?: ""
+        )
+    }
+
+    @Test
+    fun `test recurssion`() {
+        MyTestClass().testRecursion(1)
 
         val tracesResponse = runBlocking {
             getTraces(listOf(KotlinMlflowClient.currentExperimentId))
