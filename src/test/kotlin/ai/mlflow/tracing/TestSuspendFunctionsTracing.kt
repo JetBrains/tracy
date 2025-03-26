@@ -34,6 +34,17 @@ internal class MyTestClassWithSuspend {
         delay(10)
         return x.reversed()
     }
+
+    @KotlinFlowTrace(name = "Parent Span Non Suspend")
+    suspend fun parentTestFunctionWithNonSuspendKid(x: String): String {
+        delay(50)
+        return childTestFunctionNonSuspend(x.reversed())
+    }
+
+    @KotlinFlowTrace(name = "Child Span Non Suspend")
+    fun childTestFunctionNonSuspend(x: String): String {
+        return x.reversed()
+    }
 }
 
 
@@ -113,6 +124,23 @@ class TestSuspendFunctionsTracing: MlflowTracingTests() {
 
         assertEquals(
             "[{\"name\":\"Child Span\",\"type\":\"UNKNOWN\",\"inputs\":\"{\\\"x\\\":\\\"gnirtSmodnaR\\\"}\"},{\"name\":\"Parent Span\",\"type\":\"UNKNOWN\",\"inputs\":\"{\\\"x\\\":\\\"RandomString\\\"}\"}]",
+            trace.tags.firstOrNull { it.key == "mlflow.traceSpans" }?.value ?: ""
+        )
+    }
+
+    @Test
+    fun `test parent child trace with non suspend`() = runBlocking {
+        MyTestClassWithSuspend().parentTestFunctionWithNonSuspendKid("RandomString")
+
+        val tracesResponse = runBlocking {
+            getTraces(listOf(KotlinMlflowClient.currentExperimentId))
+        }
+
+        var trace = tracesResponse.traces.firstOrNull()
+        trace = assertNotNull(trace)
+
+        assertEquals(
+            "[{\"name\":\"Child Span Non Suspend\",\"type\":\"UNKNOWN\",\"inputs\":\"{\\\"x\\\":\\\"gnirtSmodnaR\\\"}\"},{\"name\":\"Parent Span Non Suspend\",\"type\":\"UNKNOWN\",\"inputs\":\"{\\\"x\\\":\\\"RandomString\\\"}\"}]",
             trace.tags.firstOrNull { it.key == "mlflow.traceSpans" }?.value ?: ""
         )
     }

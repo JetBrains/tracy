@@ -28,7 +28,7 @@ object TracedMethodInterceptor {
     fun createSpan(traceAnnotation: KotlinFlowTrace,
                    method: Method,
                    args: Array<Any?>,
-                   parentSpan: Span = Span.current()
+                   context: Context = Context.current()
     ): Span {
         val spanName = traceAnnotation.name.ifBlank { method.name }
         val spanBuilder = tracer.spanBuilder(spanName)
@@ -53,9 +53,10 @@ object TracedMethodInterceptor {
             method.name
         )
 
+        val parentSpan = Span.fromContext(context)
         if (parentSpan.spanContext.isValid) {
             // If parent exists, set parent
-            spanBuilder.setParent(Context.current())
+            spanBuilder.setParent(context)
         } else {
             // If root, then create a Trace and add traceCreationInfo to attribute
             spanBuilder.setNoParent()
@@ -93,13 +94,17 @@ fun argsProcessor(traceAnnotation: KotlinFlowTrace,
     print(continuation)
 //    val parentSpan = Span.fromContext(continuation.context.getOpenTelemetryContext())
     if (!a.containsKey(method)) {
-        val span = createSpan(traceAnnotation, method, args)
-        a[method] = TraceInfo(span, span.makeCurrent())
+        val span = createSpan(
+            traceAnnotation = traceAnnotation,
+            method = method,
+            args = args,
+            context = continuation.context.getOpenTelemetryContext()
+        )
+        a[method] = TraceInfo(span, span.makeCurrent())//, span.makeCurrent())
         args[args.size - 1] = continuation
             .withContext(span.asContextElement())
         return args
     }
-    // Либо батин вписан либо мой
     return args
 }
 
