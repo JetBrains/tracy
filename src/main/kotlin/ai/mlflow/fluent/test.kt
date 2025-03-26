@@ -29,7 +29,7 @@ class TargetClass {
     @TrackExecution2
     suspend fun testMethod(s: String, f: String): Int {
         delay(20)
-        println("In method: $s")
+        println("In method testMethod: $s")
         return 4
     }
 }
@@ -38,8 +38,7 @@ val argsProcessor: ArgsProcessor = object : ArgsProcessor {
     override fun process(args: Array<Any?>) {
         val lastArg = args.lastOrNull()
         if (lastArg is Continuation<*>) {
-            println(lastArg.context)
-            println("HIHI")
+            println("I am in arg processor, processing coroutine with context: ${lastArg.context}")
             args[args.size - 1] = lastArg.withContext(MyContext())
         }
         args[0] = "${args[0]}-suffixe"
