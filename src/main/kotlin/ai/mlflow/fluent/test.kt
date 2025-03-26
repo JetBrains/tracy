@@ -39,7 +39,9 @@ val argsProcessor: ArgsProcessor = object : ArgsProcessor {
         val lastArg = args.lastOrNull()
         if (lastArg is Continuation<*>) {
             println("I am in arg processor, processing coroutine with context: ${lastArg.context}")
-            args[args.size - 1] = lastArg.withContext(MyContext())
+            if (lastArg.context[MyContext] == null) {
+                args[args.size - 1] = lastArg.withContext(MyContext())
+            }
         }
         args[0] = "${args[0]}-suffixe"
         args[1] = "replaced"
