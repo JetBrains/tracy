@@ -17,44 +17,19 @@ import org.example.ai.mlflow.fluent.FluentSpanAttributes
 import org.example.ai.mlflow.fluent.KotlinFlowTrace
 import org.example.ai.mlflow.fluent.processor.TracedMethodInterceptor.createSpan
 import java.lang.reflect.Method
-import java.util.concurrent.Callable
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
 
 object TracedMethodInterceptor {
     private val tracer: Tracer = GlobalOpenTelemetry.getTracer("org.example.ai.mlflow")
-    private val setCalled: MutableSet<Callable<*>> = HashSet()
 
-//    @JvmStatic
-//    @RuntimeType
-//    fun intercept(@SuperCall originalMethod: Callable<*>,
-//                  @Origin method: Method,
-//                  @AllArguments args: Array<Any?>
-//    ): Any? {
-//        val traceAnnotation = method.getAnnotation(KotlinFlowTrace::class.java)
-//        val span = createSpan(traceAnnotation, method, args)
-//        val scope: Scope = span.makeCurrent()
-//        setCalled.add(originalMethod)
-//
-//        return try {
-//            val result = originalMethod.call()
-//            span.setAttribute(
-//                FluentSpanAttributes.MLFLOW_SPAN_OUTPUTS.asAttributeKey(),
-//                traceAnnotation.attributeHandler.handler.processOutput(result)
-//            )
-//            result
-//        } catch (exception: Throwable) {
-//            span.recordException(exception)
-//            span.setStatus(StatusCode.ERROR, exception.message ?: "Unknown error")
-//            throw exception
-//        } finally {
-//            span.end()
-//            scope.close()
-//        }
-//    }
-
-    fun createSpan(traceAnnotation: KotlinFlowTrace, method: Method, args: Array<Any?>): Span {
+    fun createSpan(traceAnnotation: KotlinFlowTrace,
+                   method: Method,
+                   args: Array<Any?>,
+                   parentSpan: Span = Span.current()
+    ): Span {
         val spanName = traceAnnotation.name.ifBlank { method.name }
         val spanBuilder = tracer.spanBuilder(spanName)
 
@@ -78,7 +53,6 @@ object TracedMethodInterceptor {
             method.name
         )
 
-        val parentSpan = Span.current()
         if (parentSpan.spanContext.isValid) {
             // If parent exists, set parent
             spanBuilder.setParent(Context.current())
@@ -101,26 +75,32 @@ object TracedMethodInterceptor {
     }
 }
 
+val a = ConcurrentHashMap<Method, org.example.ai.mlflow.fluent.processor.TraceInfo>()
+
+fun deleteContinuation(method: Any?) = a.remove(method)
+
+
 fun argsProcessor(traceAnnotation: KotlinFlowTrace,
                   method: Method,
                   args: Array<Any?>)
-: Pair<Array<Any?>, org.example.ai.mlflow.fluent.processor.TraceInfo> {
+: Array<Any?> {
     if (args.lastOrNull() !is Continuation<*>) {
         val span = createSpan(traceAnnotation, method, args)
-        val traceInfo = TraceInfo(span, span.makeCurrent())
-        return args to traceInfo
+        a[method] = TraceInfo(span, span.makeCurrent())
+        return args
     }
     val continuation = args.last() as Continuation<*>
-    if (continuation.context[TraceInfoContextElement.Key] == null) {
+    print(continuation)
+//    val parentSpan = Span.fromContext(continuation.context.getOpenTelemetryContext())
+    if (!a.containsKey(method)) {
         val span = createSpan(traceAnnotation, method, args)
-        val traceInfo = TraceInfo(span, span.makeCurrent())
+        a[method] = TraceInfo(span, span.makeCurrent())
         args[args.size - 1] = continuation
-            .withContext(TraceInfoContextElement(traceInfo))
             .withContext(span.asContextElement())
-        return args to traceInfo
+        return args
     }
-
-    return args to continuation.context[TraceInfoContextElement.Key]!!.traceInfo
+    // Либо батин вписан либо мой
+    return args
 }
 
 class TraceInfoContextElement(val traceInfo: org.example.ai.mlflow.fluent.processor.TraceInfo) : AbstractCoroutineContextElement(Key) {
