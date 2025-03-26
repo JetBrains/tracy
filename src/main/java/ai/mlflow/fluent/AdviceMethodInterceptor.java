@@ -10,6 +10,9 @@ import org.example.ai.mlflow.fluent.processor.TracedMethodInterceptor;
 import org.example.ai.mlflow.fluent.processor.TraceInfo;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
+
+import static org.example.ai.mlflow.fluent.processor.TracedMethodInterceptorKt.argsProcessor;
 
 public class AdviceMethodInterceptor {
     @Advice.OnMethodEnter
@@ -20,12 +23,11 @@ public class AdviceMethodInterceptor {
         KotlinFlowTrace traceAnnotation = method.getAnnotation(KotlinFlowTrace.class);
         Span span = TracedMethodInterceptor.INSTANCE.createSpan(traceAnnotation, method, args);
         Scope scope = span.makeCurrent();
-
-//        Object[] newArgs = Arrays.copyOf(args, args.length);
-//        TestKt.getArgsProcessor().process(newArgs);
-//        args = newArgs;
+        Object[] newArgs = Arrays.copyOf(args, args.length);
+        args = argsProcessor(newArgs);
         System.out.printf("I just changed arguments of %s\n", method.getName());
-        return new TraceInfo(span, scope);
+        return null;
+//        return new TraceInfo(span, scope);
     }
 
     @JvmStatic
@@ -36,8 +38,11 @@ public class AdviceMethodInterceptor {
             @Advice.Return Object result
     ) {
         KotlinFlowTrace traceAnnotation = method.getAnnotation(KotlinFlowTrace.class);
-        traceInfo.addOutputAttribute(traceAnnotation, result);
-        traceInfo.close();
+        if (traceInfo == null) {
+            traceInfo.addOutputAttribute(traceAnnotation, result);
+            System.out.printf("I am in method exit with result %s\n", result);
+            traceInfo.close();
+        }
 //        System.out.printf("I am in method exit with result %s\n", result);
 //        long elapsedTime = System.nanoTime() - startTime;
 //        System.out.printf("Method %s executed in %s ms\n", method.getName(), TimeUnit.NANOSECONDS.toMillis(elapsedTime));

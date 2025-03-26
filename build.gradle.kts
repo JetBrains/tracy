@@ -28,6 +28,7 @@ dependencies {
     implementation("org.mlflow:mlflow-client:$mlflow_client_version")
     implementation("io.opentelemetry:opentelemetry-api:$opentelemetry_version")
     implementation("io.opentelemetry:opentelemetry-sdk:$opentelemetry_version")
+    implementation("io.opentelemetry:opentelemetry-extension-kotlin:$opentelemetry_version")
     implementation("net.bytebuddy:byte-buddy:$bytebuddy_version")
     implementation("net.bytebuddy:byte-buddy-agent:$bytebuddy_version")
     implementation("org.yaml:snakeyaml:2.3")
