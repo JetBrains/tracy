@@ -31,23 +31,14 @@ object TracedMethodInterceptor {
                   @AllArguments args: Array<Any?>
     ): Any? {
         val traceAnnotation = method.getAnnotation(KotlinFlowTrace::class.java)
-        val spanName = traceAnnotation.name.ifBlank { method.name }
-        val span = createSpan(spanName, method)
 
-        span.setAttribute(FluentSpanAttributes.MLFLOW_SPAN_SOURCE_NAME.asAttributeKey(), method.declaringClass.name)
-        span.setAttribute(FluentSpanAttributes.MLFLOW_SPAN_TYPE.asAttributeKey(), traceAnnotation.spanType)
-        span.setAttribute(FluentSpanAttributes.MLFLOW_SPAN_FUNCTION_NAME.asAttributeKey(), method.name)
-        KotlinMlflowClient.currentRunId?.let {
-            span.setAttribute(FluentSpanAttributes.MLFLOW_SOURCE_RUN.asAttributeKey(), it)
-        }
-
-        val argumentHandler = traceAnnotation.attributeHandler.handler
-
-        span.setAttribute(FluentSpanAttributes.MLFLOW_SPAN_INPUTS.asAttributeKey(), argumentHandler.processInput(method, args))
+        val span = createSpan(traceAnnotation, method, args)
         val scope: Scope = span.makeCurrent()
         return try {
             val result = originalMethod.call()
-            span.setAttribute(FluentSpanAttributes.MLFLOW_SPAN_OUTPUTS.asAttributeKey(), argumentHandler.processOutput(result))
+            span.setAttribute(
+                FluentSpanAttributes.MLFLOW_SPAN_OUTPUTS.asAttributeKey(),
+                traceAnnotation.attributeHandler.handler.processOutput(result))
             result
         } catch (exception: Throwable) {
             span.recordException(exception)
@@ -59,8 +50,29 @@ object TracedMethodInterceptor {
         }
     }
 
-    private fun createSpan(spanName: String, method: Method): Span {
+    private fun createSpan(traceAnnotation: KotlinFlowTrace, method: Method, args: Array<Any?>): Span {
+        val spanName = traceAnnotation.name.ifBlank { method.name }
         val spanBuilder = tracer.spanBuilder(spanName)
+
+        KotlinMlflowClient.currentRunId?.let {
+            spanBuilder.setAttribute(FluentSpanAttributes.MLFLOW_SOURCE_RUN.asAttributeKey(), it)
+        }
+        spanBuilder.setAttribute(
+            FluentSpanAttributes.MLFLOW_SPAN_INPUTS.asAttributeKey(),
+            traceAnnotation.attributeHandler.handler.processInput(method, args)
+        )
+        spanBuilder.setAttribute(
+            FluentSpanAttributes.MLFLOW_SPAN_SOURCE_NAME.asAttributeKey(),
+            method.declaringClass.name
+        )
+        spanBuilder.setAttribute(
+            FluentSpanAttributes.MLFLOW_SPAN_TYPE.asAttributeKey(),
+            traceAnnotation.spanType
+        )
+        spanBuilder.setAttribute(
+            FluentSpanAttributes.MLFLOW_SPAN_FUNCTION_NAME.asAttributeKey(),
+            method.name
+        )
 
         val parentSpan = Span.current()
         if (parentSpan.spanContext.isValid) {
