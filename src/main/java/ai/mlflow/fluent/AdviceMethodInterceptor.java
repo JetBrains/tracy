@@ -39,11 +39,9 @@ public class AdviceMethodInterceptor {
             @Advice.Return Object result
     ) {
         KotlinFlowTrace traceAnnotation = method.getAnnotation(KotlinFlowTrace.class);
-        if (traceInfo == null) {
-            traceInfo.addOutputAttribute(traceAnnotation, result);
-            System.out.printf("I am in method exit with result %s\n", result);
-            traceInfo.close();
-        }
+        traceInfo.addOutputAttribute(traceAnnotation, result);
+        System.out.printf("I am in method exit with result %s\n", result);
+        traceInfo.close();
 //        System.out.printf("I am in method exit with result %s\n", result);
 //        long elapsedTime = System.nanoTime() - startTime;
 //        System.out.printf("Method %s executed in %s ms\n", method.getName(), TimeUnit.NANOSECONDS.toMillis(elapsedTime));
