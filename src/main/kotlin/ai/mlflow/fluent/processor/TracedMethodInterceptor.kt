@@ -2,24 +2,19 @@ package org.example.ai.mlflow.fluent.processor
 
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.Span
-import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
 import io.opentelemetry.context.Scope
 import io.opentelemetry.extension.kotlin.asContextElement
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import net.bytebuddy.implementation.bind.annotation.AllArguments
-import net.bytebuddy.implementation.bind.annotation.Origin
-import net.bytebuddy.implementation.bind.annotation.RuntimeType
-import net.bytebuddy.implementation.bind.annotation.SuperCall
-import okhttp3.internal.http2.Settings
 import org.example.ai.mlflow.KotlinMlflowClient
 import org.example.ai.mlflow.createTrace
 import org.example.ai.mlflow.dataclasses.TraceInfo
 import org.example.ai.mlflow.dataclasses.createTracePostRequest
 import org.example.ai.mlflow.fluent.FluentSpanAttributes
 import org.example.ai.mlflow.fluent.KotlinFlowTrace
+import org.example.ai.mlflow.fluent.processor.TracedMethodInterceptor.createSpan
 import java.lang.reflect.Method
 import java.util.concurrent.Callable
 import kotlin.coroutines.AbstractCoroutineContextElement
@@ -105,18 +100,30 @@ object TracedMethodInterceptor {
     }
 }
 
-fun argsProcessor(args: Array<Any?>): Array<Any?> {
-    if (args.lastOrNull() !is Continuation<*>) return args
+fun argsProcessor(traceAnnotation: KotlinFlowTrace,
+                  method: Method,
+                  args: Array<Any?>)
+: Pair<Array<Any?>, org.example.ai.mlflow.fluent.processor.TraceInfo> {
+    if (args.lastOrNull() !is Continuation<*>) {
+        val span = createSpan(traceAnnotation, method, args)
+        val traceInfo = TraceInfo(span, span.makeCurrent())
+        return args to traceInfo
+    }
     val continuation = args.last() as Continuation<*>
-    if (continuation.context[MyContextElement.Key] == null) {
-        args[args.size - 1] = continuation.withContext(MyContextElement("HIHI"))
+    if (continuation.context[TraceInfoContextElement.Key] == null) {
+        val span = createSpan(traceAnnotation, method, args)
+        val traceInfo = TraceInfo(span, span.makeCurrent())
+        args[args.size - 1] = continuation
+            .withContext(TraceInfoContextElement(traceInfo))
+            .withContext(span.asContextElement())
+        return args to traceInfo
     }
 
-    return args
+    return args to continuation.context[TraceInfoContextElement.Key]!!.traceInfo
 }
 
-class MyContextElement(val value: String) : AbstractCoroutineContextElement(Key) {
-    companion object Key : CoroutineContext.Key<MyContextElement>
+class TraceInfoContextElement(val traceInfo: org.example.ai.mlflow.fluent.processor.TraceInfo) : AbstractCoroutineContextElement(Key) {
+    companion object Key : CoroutineContext.Key<TraceInfoContextElement>
 }
 
 fun <T> Continuation<T>.withContext(context: CoroutineContext) = object: Continuation<T> {

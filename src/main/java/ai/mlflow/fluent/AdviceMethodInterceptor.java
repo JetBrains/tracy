@@ -2,6 +2,7 @@ package ai.mlflow.fluent;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Scope;
+import kotlin.Pair;
 import kotlin.jvm.JvmStatic;
 import net.bytebuddy.asm.Advice;
 import net.bytebuddy.implementation.bytecode.assign.Assigner;
@@ -21,13 +22,13 @@ public class AdviceMethodInterceptor {
             @Advice.AllArguments(readOnly = false, typing = Assigner.Typing.DYNAMIC) Object[] args
     ) {
         KotlinFlowTrace traceAnnotation = method.getAnnotation(KotlinFlowTrace.class);
-        Span span = TracedMethodInterceptor.INSTANCE.createSpan(traceAnnotation, method, args);
-        Scope scope = span.makeCurrent();
         Object[] newArgs = Arrays.copyOf(args, args.length);
-        args = argsProcessor(newArgs);
+        Pair<Object[], TraceInfo> result = argsProcessor(traceAnnotation, method, newArgs);
+        Object[] proceedArgs = result.getFirst();
+        TraceInfo traceInfo = result.getSecond();
+        args = proceedArgs;
         System.out.printf("I just changed arguments of %s\n", method.getName());
-        return null;
-//        return new TraceInfo(span, scope);
+        return traceInfo;
     }
 
     @JvmStatic
