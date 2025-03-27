@@ -119,8 +119,8 @@ class TestFluentTracing: MlflowTracingTests() {
     }
 
     @Test
-    fun `test recurssion`() {
-        MyTestClass().testRecursion(1)
+    fun `test recursion`() {
+        MyTestClass().testRecursion(2)
 
         val tracesResponse = runBlocking {
             getTraces(listOf(KotlinMlflowClient.currentExperimentId))
@@ -130,7 +130,7 @@ class TestFluentTracing: MlflowTracingTests() {
         trace = assertNotNull(trace)
 
         assertEquals(
-            "[{\"name\":\"Child Span\",\"type\":\"UNKNOWN\",\"inputs\":\"{\\\"x\\\":\\\"gnirtSmodnaR\\\"}\"},{\"name\":\"Parent Span\",\"type\":\"UNKNOWN\",\"inputs\":\"{\\\"x\\\":\\\"RandomString\\\"}\"}]",
+            "[{\"name\":\"Child Span\",\"type\":\"UNKNOWN\",\"inputs\":\"{\\\"level\\\":0}\"},{\"name\":\"Child Span\",\"type\":\"UNKNOWN\",\"inputs\":\"{\\\"level\\\":1}\"},{\"name\":\"Child Span\",\"type\":\"UNKNOWN\",\"inputs\":\"{\\\"level\\\":2}\"}]",
             trace.tags.firstOrNull { it.key == "mlflow.traceSpans" }?.value ?: ""
         )
     }
