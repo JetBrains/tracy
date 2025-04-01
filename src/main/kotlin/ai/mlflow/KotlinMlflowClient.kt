@@ -16,7 +16,7 @@ internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL) {
         ?: Logger.getLogger(KotlinMlflowClient::class.java.name)
 
     internal const val MLFLOW_VERSION = "2.20.2"
-    internal const val MLFLOW_HOST = "0.0.0.0"
+    internal const val MLFLOW_HOST = "127.0.0.1"
     internal const val MLFLOW_PORT = 5002
     internal const val ML_FLOW_URL = "http://$MLFLOW_HOST:$MLFLOW_PORT"
     const val ML_FLOW_API = "$ML_FLOW_URL/api/2.0/mlflow"

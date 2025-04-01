@@ -1,4 +1,4 @@
-package org.example.ai.mlflow.fluent
+package ai.core.fluent
 
 class SpanType private constructor() {
     companion object {

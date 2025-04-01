@@ -1,4 +1,4 @@
-package org.example.ai.mlflow.fluent.attrubute.handlers
+package ai.core.fluent.handlers
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -6,7 +6,6 @@ import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response
 import okio.Buffer
-import org.example.ai.mlflow.fluent.processor.SpanAttributeHandler
 import java.lang.reflect.Method
 
 object OpenAiClientAttributeHandler : SpanAttributeHandler {

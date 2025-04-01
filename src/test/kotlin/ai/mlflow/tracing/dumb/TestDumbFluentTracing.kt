@@ -1,41 +1,59 @@
-package ai.mlflow.tracing
+package ai.mlflow.tracing.dumb
 
 import ai.core.fluent.KotlinFlowTrace
+import ai.mlflow.tracing.MlflowTracingTests
 import kotlinx.coroutines.runBlocking
 import org.example.ai.mlflow.KotlinMlflowClient
+import ai.core.fluent.processor.withTrace
 import org.example.ai.mlflow.getTraces
-import kotlin.test.Test
+import ai.mlflow.fluent.MlflowTracingMetadataConfigurator
+import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 
-internal class MyTestClass {
+internal class MyTestClassDumb {
     @KotlinFlowTrace(name = "Main Span", spanType = "mySpanType")
-    fun testFunction(paramName: Int): Int {
-        return paramName
+    fun testFunction(paramName: Int): Int = withTrace(
+        function = ::testFunction,
+        args = arrayOf<Any?>(paramName),
+        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
+    ) {
+        return@withTrace paramName
     }
 
     @KotlinFlowTrace(name = "Secondary Span", spanType = "func")
-    fun anotherTestFunction(x: String): String {
-        return x.reversed()
+    fun anotherTestFunction(x: String): String = withTrace(
+        function = ::anotherTestFunction,
+        args = arrayOf<Any?>(x),
+        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
+    ) {
+        return@withTrace x.reversed()
     }
 
     @KotlinFlowTrace(name = "Parent Span")
-    fun parentTestFunction(x: String): String {
-        return childTestFunction(x.reversed())
+    fun parentTestFunction(x: String): String = withTrace(
+        function = ::parentTestFunction,
+        args = arrayOf<Any?>(x),
+        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
+    ) {
+        return@withTrace childTestFunction(x.reversed())
     }
 
     @KotlinFlowTrace(name = "Child Span")
-    fun childTestFunction(x: String): String {
-        return x.reversed()
+    fun childTestFunction(x: String): String = withTrace(
+        function = ::childTestFunction,
+        args = arrayOf<Any?>(x),
+        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
+    ) {
+        return@withTrace x.reversed()
     }
 }
 
-
-class TestFluentTracing: MlflowTracingTests() {
+class TestDumbFluentTracing : MlflowTracingTests() {
     @Test
     fun `test trace creation`() {
-        MyTestClass().testFunction(1)
+        MyTestClassDumb().testFunction(1)
         val tracesResponse = runBlocking {
             getTraces(listOf(KotlinMlflowClient.currentExperimentId))
         }
@@ -48,7 +66,7 @@ class TestFluentTracing: MlflowTracingTests() {
 
     @Test
     fun `test trace tags and metadata are correct`() {
-        val testClass = MyTestClass()
+        val testClass = MyTestClassDumb()
         val arg = 3
         val result = testClass.testFunction(arg)
 
@@ -79,7 +97,7 @@ class TestFluentTracing: MlflowTracingTests() {
 
     @Test
     fun `test multiple trace creation`() {
-        val testClass = MyTestClass()
+        val testClass = MyTestClassDumb()
         testClass.testFunction(1)
         testClass.anotherTestFunction("OpenTelemetry")
 
@@ -97,7 +115,7 @@ class TestFluentTracing: MlflowTracingTests() {
 
     @Test
     fun `test parent child trace`() {
-        MyTestClass().parentTestFunction("RandomString")
+        MyTestClassDumb().parentTestFunction("RandomString")
 
         val tracesResponse = runBlocking {
             getTraces(listOf(KotlinMlflowClient.currentExperimentId))
