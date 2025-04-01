@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm") version "2.1.0"
     kotlin("plugin.serialization") version "2.1.0"
+    kotlin("kapt") version "2.1.20"
 }
 
 group = "com.jetbrains"
@@ -29,14 +30,22 @@ dependencies {
     implementation("io.opentelemetry:opentelemetry-api:$opentelemetry_version")
     implementation("io.opentelemetry:opentelemetry-sdk:$opentelemetry_version")
     implementation("io.opentelemetry:opentelemetry-extension-kotlin:$opentelemetry_version")
+    implementation("io.opentelemetry:opentelemetry-extension-annotations:1.9.1")
+    implementation("io.opentelemetry:opentelemetry-exporter-logging:1.22.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.0")
     implementation("net.bytebuddy:byte-buddy:$bytebuddy_version")
     implementation("net.bytebuddy:byte-buddy-agent:$bytebuddy_version")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    implementation("org.aspectj:aspectjrt:1.9.7")
+    implementation("org.aspectj:aspectjweaver:1.9.7")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.yaml:snakeyaml:2.3")
-
-    implementation(kotlin("test"))
+    implementation(kotlin("stdlib"))
+    compileOnly("org.jetbrains.kotlin:kotlin-compiler-embeddable:1.9.0")
     implementation("org.junit.jupiter:junit-jupiter:5.10.0")
     testImplementation("org.testcontainers:junit-jupiter:$testcontainers_version")
     testImplementation("org.testcontainers:testcontainers:$testcontainers_version")
+    testImplementation(kotlin("test"))
 }
 
 tasks.test {
@@ -46,8 +55,15 @@ kotlin {
     jvmToolchain(21)
 }
 
+//tasks.named<JavaExec>("run") {
+//    val agentPath = file("/Users/Viacheslav.Suvorov/Downloads/opentelemetry-javaagent.jar").absolutePath
+//    jvmArgs("-javaagent:$agentPath")
+//}
+
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     compilerOptions {
         freeCompilerArgs.add("-java-parameters")
     }
 }
+
+

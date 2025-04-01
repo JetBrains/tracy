@@ -16,6 +16,7 @@ import org.example.ai.mlflow.dataclasses.createTracePostRequest
 import org.example.ai.mlflow.fluent.FluentSpanAttributes
 import org.example.ai.mlflow.fluent.KotlinFlowTrace
 import org.example.ai.mlflow.fluent.processor.TracedMethodInterceptor.createSpan
+import org.example.ai.mlflow.fluent.processor.withContext
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.AbstractCoroutineContextElement
@@ -91,6 +92,13 @@ fun argsProcessor(traceAnnotation: KotlinFlowTrace,
     }
 
     val continuation = args.last() as Continuation<*>
+//    val isFirstTime = isCalledFirstTime(continuation)
+    if (args[0] == null) {
+        println("${method.name} First: ${isCalledFirstTime(continuation)}")
+    } else {
+        println("${method.name} Not first ${isCalledFirstTime(continuation)},")
+    }
+//    print(continuation is MyContinuationMarker)
     if (!a.containsKey(method)) {
         val span = createSpan(
             traceAnnotation = traceAnnotation,
@@ -99,15 +107,32 @@ fun argsProcessor(traceAnnotation: KotlinFlowTrace,
             context = continuation.context.getOpenTelemetryContext()
         )
         a[method] = TraceInfo(span, span.makeCurrent())
-        args[args.size - 1] = continuation.withContext(span.asContextElement())
+        args[args.size - 1] = continuation.withContext(span.asContextElement())//continuation.apply { context.plus(span.asContextElement()) }
     }
     return args
 }
 
-fun <T> Continuation<T>.withContext(context: CoroutineContext) = object: Continuation<T> {
-    override val context: CoroutineContext = this@withContext.context + context
-    override fun resumeWith(result: Result<T>) = this@withContext.resumeWith(result)
+fun isCalledFirstTime(continuation: Continuation<*>): Int? {
+    return try {
+        val labelField = continuation.javaClass.getDeclaredField("label")
+        labelField.isAccessible = true
+        labelField.get(continuation) as Int?
+        val label = labelField.get(continuation) as? Int
+        label
+    } catch (e: Exception) {
+        null
+    }
 }
+
+interface MyContinuationMarker
+
+fun <T> Continuation<T>.withContext(context: CoroutineContext): Continuation<T> = object: Continuation<T>, MyContinuationMarker {
+    override val context: CoroutineContext = this@withContext.context + context
+    override fun resumeWith(result: Result<T>) {
+        this@withContext.resumeWith(result)
+    }
+}
+
 
 
 data class TraceInfo(

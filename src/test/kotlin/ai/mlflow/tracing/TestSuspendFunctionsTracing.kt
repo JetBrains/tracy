@@ -5,6 +5,7 @@ import kotlinx.coroutines.runBlocking
 import org.example.ai.mlflow.KotlinMlflowClient
 import org.example.ai.mlflow.fluent.KotlinFlowTrace
 import org.example.ai.mlflow.getTraces
+import kotlin.coroutines.Continuation
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -32,7 +33,8 @@ internal class MyTestClassWithSuspend {
     @KotlinFlowTrace(name = "Child Span")
     suspend fun childTestFunction(x: String): String {
         delay(10)
-        return x.reversed()
+        val result = x.reversed()
+        return result
     }
 
     @KotlinFlowTrace(name = "Parent Span Non Suspend")
@@ -48,7 +50,7 @@ internal class MyTestClassWithSuspend {
 
     @KotlinFlowTrace(name = "Child Span")
     suspend fun testRecursion(level: Int): Int {
-        delay(10)
+        delay(100)
         if (level == 0) return 0
         return testRecursion(level - 1)
     }
@@ -154,7 +156,7 @@ class TestSuspendFunctionsTracing: MlflowTracingTests() {
 
     @Test
     fun `test recursion`() = runBlocking {
-        MyTestClassWithSuspend().testRecursion(2)
+        MyTestClassWithSuspend().testRecursion(3)
 
         val tracesResponse = runBlocking {
             getTraces(listOf(KotlinMlflowClient.currentExperimentId))

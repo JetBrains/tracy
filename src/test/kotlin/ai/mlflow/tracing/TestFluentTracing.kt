@@ -120,7 +120,7 @@ class TestFluentTracing: MlflowTracingTests() {
 
     @Test
     fun `test recursion`() {
-        MyTestClass().testRecursion(2)
+        MyTestClass().testRecursion(3)
 
         val tracesResponse = runBlocking {
             getTraces(listOf(KotlinMlflowClient.currentExperimentId))
