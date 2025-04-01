@@ -11,7 +11,7 @@ import org.example.ai.mlflow.BaseEvaluationTest
 import org.example.ai.mlflow.dataclasses.EvaluationCriteria
 import org.example.ai.mlflow.dataclasses.RunTag
 import org.example.ai.mlflow.dataclasses.TestCase
-import org.example.ai.mlflow.fluent.KotlinFlowTrace
+import ai.core.fluent.KotlinFlowTrace
 import kotlin.jvm.optionals.getOrElse
 
 

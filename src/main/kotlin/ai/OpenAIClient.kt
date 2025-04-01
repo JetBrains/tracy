@@ -1,5 +1,9 @@
 package org.example.ai
 
+import ai.core.fluent.KotlinFlowTrace
+import ai.core.fluent.SpanType
+import ai.core.fluent.handlers.OpenAiClientAttributeHandler
+import ai.core.fluent.processor.withTrace
 import com.openai.client.OpenAIClient
 import com.openai.client.OpenAIClientImpl
 import com.openai.client.okhttp.OpenAIOkHttpClient
@@ -7,14 +11,14 @@ import com.openai.core.ClientOptions
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
-import org.example.ai.mlflow.fluent.KotlinFlowTrace
-import org.example.ai.mlflow.fluent.SpanType
-import org.example.ai.mlflow.fluent.processor.SpanAttributeHandlerType
+import ai.mlflow.fluent.MlflowTracingMetadataConfigurator
 
-fun createOpenAIClient(): OpenAIClient {
+fun createOpenAIClient(dumbTraceMode: Boolean = false): OpenAIClient {
     val openAIClient = OpenAIOkHttpClient.builder()
         .fromEnv()
-        .build().apply { patchClient(this, interceptor = MLFlowOpenAILogger()) }
+        .build().apply {
+            patchClient(this, interceptor = if (dumbTraceMode) MLFlowDumbOpenAILogger() else MLFlowOpenAILogger())
+        }
 
     return openAIClient
 }
@@ -38,8 +42,20 @@ private fun patchClient(openAIClient: OpenAIClient, interceptor: Interceptor) {
 }
 
 class MLFlowOpenAILogger : Interceptor {
-    @KotlinFlowTrace(name="Completions", spanType = SpanType.CHAT_MODEL, attributeHandler = SpanAttributeHandlerType.OPEN_AI_CLIENT)
+    @KotlinFlowTrace(name="Completions", spanType = SpanType.CHAT_MODEL, attributeHandler = OpenAiClientAttributeHandler::class)
     override fun intercept(chain: Interceptor.Chain): Response {
         return chain.proceed(chain.request())
+    }
+}
+
+class MLFlowDumbOpenAILogger : Interceptor {
+    @KotlinFlowTrace(name="Completions", spanType = SpanType.CHAT_MODEL, attributeHandler = OpenAiClientAttributeHandler::class)
+    override fun intercept(chain: Interceptor.Chain): Response = withTrace(
+        function = ::intercept,
+        args = arrayOf<Any?>(chain),
+        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
+    )
+    {
+        return@withTrace chain.proceed(chain.request())
     }
 }

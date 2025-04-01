@@ -1,8 +1,8 @@
-package org.example.ai.mlflow.fluent
+package ai.mlflow.fluent
 
 import io.opentelemetry.api.common.AttributeKey
 
-enum class FluentSpanAttributes(val key: String) {
+enum class MlflowFluentSpanAttributes(val key: String) {
     MLFLOW_SPAN_INPUTS("mlflow.spanInputs"),
     MLFLOW_SPAN_OUTPUTS("mlflow.spanOutputs"),
     MLFLOW_SOURCE_RUN("mlflow.sourceRun"),

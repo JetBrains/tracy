@@ -1,24 +1,20 @@
-package org.example.ai.mlflow.fluent.processor
+package ai.core.fluent.processor
 
 import io.opentelemetry.api.GlobalOpenTelemetry
+import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.trace.SdkTracerProvider
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor
-import net.bytebuddy.agent.ByteBuddyAgent
+
 
 object TracingFlowProcessor {
-    fun setup() {
-        setupTracing()
-        setupTracingFlowAgent()
+    val tracer: Tracer by lazy {
+        GlobalOpenTelemetry.getTracer("ai.mlflow.evaluation.tracing")
     }
 
-    private fun setupTracingFlowAgent() {
-        TracingFlowDecoratorAgent.premain(null, ByteBuddyAgent.install())
-    }
-
-    private fun setupTracing() {
+    fun setupTracing(tracePublisher: TracePublisher) {
         val tracerProvider = SdkTracerProvider.builder()
-            .addSpanProcessor(SimpleSpanProcessor.create(RootSpanExporter()))
+            .addSpanProcessor(SimpleSpanProcessor.create(RootSpanExporter(tracePublisher)))
             .build()
 
         GlobalOpenTelemetry.set(
@@ -26,5 +22,9 @@ object TracingFlowProcessor {
                 .setTracerProvider(tracerProvider)
                 .build()
         )
+    }
+
+    fun teardownTracing() {
+        GlobalOpenTelemetry.resetForTest()
     }
 }

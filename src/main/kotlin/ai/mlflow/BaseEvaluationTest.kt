@@ -1,20 +1,19 @@
 package org.example.ai.mlflow
 
-import io.opentelemetry.api.GlobalOpenTelemetry
+
+import ai.core.fluent.processor.TracingFlowProcessor
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Scope
-import io.opentelemetry.extension.kotlin.asContextElement
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.example.ai.AIModel
 import org.example.ai.createAIClient
 import org.example.ai.mlflow.dataclasses.*
 import org.example.ai.mlflow.dataclasses.TestInfo
-import org.example.ai.mlflow.fluent.FluentSpanAttributes
-import org.example.ai.mlflow.fluent.processor.TracingFlowProcessor
+import ai.mlflow.fluent.MlflowFluentSpanAttributes
+import ai.mlflow.fluent.MlflowTracePublisher
 import org.example.ai.model.*
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -42,7 +41,7 @@ abstract class BaseEvaluationTest<I, O, R>(
     fun beforeAll() {
         println("🔄 Setting up before all tests")
 
-        TracingFlowProcessor.setup()
+        TracingFlowProcessor.setupTracing(MlflowTracePublisher)
 
         if (tags.isNotEmpty()) assertEquals(tags.size, numberOfRuns, "The number of tags must match the number of runs")
 
@@ -213,18 +212,13 @@ abstract class BaseEvaluationTest<I, O, R>(
     @TestFactory
     fun Runs(): Stream<DynamicContainer> = runResults.mapIndexed { runNum, runResult ->
         val testFunctions = testFunctions()
-        val tracer: Tracer = GlobalOpenTelemetry.getTracer("ai.mlflow.evaluation.tracing")
 
         DynamicContainer.dynamicContainer(
             "Run ${if (runResults.size > 1) runNum + 1 else ""}",
             testCases().mapIndexed { dataPointIndex, testCase ->
                 val (dataPointSpan, dataPointScope) =
-                    createDataPointSpan(dataPointIndex, tracer, runResult.runId, testCase)
-                val output = runBlocking {
-                    withContext(dataPointSpan.asContextElement()) {
-                        model().generate(testCase.input)
-                    }
-                }
+                    createDataPointSpan(dataPointIndex, TracingFlowProcessor.tracer, runResult.runId, testCase)
+                val output = runBlocking { model().generate(testCase.input) }
                 DynamicContainer.dynamicContainer(
                     testCase.input.toString(),
                     testFunctions.mapIndexed { index, testFunction ->
@@ -256,9 +250,9 @@ abstract class BaseEvaluationTest<I, O, R>(
                 )
 
                 val jsonTraceInfo = Json.encodeToString(TraceInfo.serializer(), createTrace(tracePostRequest))
-                it.setAttribute(FluentSpanAttributes.TRACE_CREATION_INFO.asAttributeKey(), jsonTraceInfo)
+                it.setAttribute(MlflowFluentSpanAttributes.TRACE_CREATION_INFO.asAttributeKey(), jsonTraceInfo)
                 it.setAttribute(
-                    FluentSpanAttributes.MLFLOW_SPAN_INPUTS.asAttributeKey(),
+                    MlflowFluentSpanAttributes.MLFLOW_SPAN_INPUTS.asAttributeKey(),
                     "{\"Data Point\": \"${testCase.input}\"}"
                 )
             }

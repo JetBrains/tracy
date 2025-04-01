@@ -12,7 +12,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.example.ai.mlflow.KotlinMlflowClient.USER_ID
 import org.example.ai.mlflow.dataclasses.*
-import org.example.ai.mlflow.fluent.FluentSpanAttributes
+import ai.mlflow.fluent.MlflowFluentSpanAttributes
 import org.mlflow.api.proto.Service
 import org.mlflow.tracking.MlflowClient
 import java.time.Instant
@@ -237,84 +237,17 @@ suspend fun createTrace(tracePostRequest: TracePostRequest): TraceInfo {
     return Json.decodeFromString<TraceInfoResponse>(postResponse.bodyAsText()).traceInfo
 }
 
-internal fun SpanData.getAttribute(spanAttributeKey: FluentSpanAttributes) =
+internal fun SpanData.getAttribute(spanAttributeKey: MlflowFluentSpanAttributes) =
     this.attributes[spanAttributeKey.asAttributeKey()]
 
-suspend fun updateTrace(parentSpan: SpanData, traces: List<SpanData>) {
-    val traceCreationInfoJson = parentSpan.getAttribute(FluentSpanAttributes.TRACE_CREATION_INFO)
-
-    val traceResponse: TraceInfo = traceCreationInfoJson?.let { Json.decodeFromString(TraceInfo.serializer(), it) }
-        ?: throw IllegalStateException("Missing traceCreationInfo attribute in the parent span.")
-
-    val rootInputs = parentSpan.getAttribute(FluentSpanAttributes.MLFLOW_SPAN_INPUTS)
-    val rootResult = parentSpan.getAttribute(FluentSpanAttributes.MLFLOW_SPAN_OUTPUTS)
-
-    updateTraceTags(
-        requestId = traceResponse.requestId,
-        updateTagRequest = traces.toUpdateTraceTagsRequest()
-    )
-
-    uploadTraceArtifacts(
-        traceResponse.experimentId,
-        traceResponse.requestId,
-        SpanArtifactsRequest(
-            spans = traces.toSpanArtifactsRequest(traceResponse.requestId),
-            request = rootInputs,
-            response = rootResult
-        )
-    )
-
-    patchTrace(
-        TracePatchRequest(
-            requestId = traceResponse.requestId,
-            status = "OK",
-            timestampMs = parentSpan.endEpochNanos / 1_000_000,
-            requestMetadata = listOf(
-                RequestMetadata("mlflow.trace_schema.version", "2"),
-                RequestMetadata("mlflow.traceInputs", rootInputs ?: "null"),
-                RequestMetadata("mlflow.traceOutputs", rootResult ?: "null")
-            ),
-            tags = listOf(
-                Tag(
-                    "mlflow.source.name",
-                    parentSpan.getAttribute(FluentSpanAttributes.MLFLOW_SPAN_SOURCE_NAME) ?: "null"
-                ),
-                Tag("mlflow.source.type", "LOCAL"),
-                Tag("mlflow.traceName", parentSpan.name)
-            )
-        )
-    )
-    patchTrace(TracePatchRequest(
-        requestId = traceResponse.requestId,
-        status = "OK",
-        timestampMs = parentSpan.endEpochNanos / 1_000_000,
-        requestMetadata = buildList {
-            add(RequestMetadata("mlflow.trace_schema.version", "2"))
-            rootInputs?.let { add(RequestMetadata("mlflow.traceInputs", it)) }
-            rootResult?.let { add(RequestMetadata("mlflow.traceOutputs", it)) }
-            parentSpan.getAttribute(FluentSpanAttributes.MLFLOW_SOURCE_RUN)?.let {
-                add(RequestMetadata("mlflow.sourceRun", it))
-            }
-        },
-        tags = buildList {
-            add(Tag(
-                "mlflow.source.name",
-                parentSpan.getAttribute(FluentSpanAttributes.MLFLOW_SPAN_SOURCE_NAME) ?: "null"
-            ))
-            add(Tag("mlflow.source.type", "LOCAL"))
-            add(Tag("mlflow.traceName", parentSpan.name))
-        }
-    ))
-}
-
-private suspend fun updateTraceTags(requestId: String, updateTagRequest: Tag) {
+internal suspend fun updateTraceTags(requestId: String, updateTagRequest: Tag) {
     KotlinMlflowClient.client.patch("${KotlinMlflowClient.ML_FLOW_API}/traces/$requestId/tags") {
         contentType(ContentType.Application.Json)
         setBody(updateTagRequest)
     }
 }
 
-private suspend fun uploadTraceArtifacts(
+internal suspend fun uploadTraceArtifacts(
     experimentId: String, requestId: String, spanArtifactsRequest: SpanArtifactsRequest
 ) {
     KotlinMlflowClient.client.put("${KotlinMlflowClient.ML_FLOW_ARTIFACTS_API}/artifacts/$experimentId/traces/$requestId/artifacts/traces.json") {
@@ -323,7 +256,7 @@ private suspend fun uploadTraceArtifacts(
     }
 }
 
-private suspend fun patchTrace(
+internal suspend fun patchTrace(
     tracePatchRequest: TracePatchRequest,
 ) {
     KotlinMlflowClient.client.patch("${KotlinMlflowClient.ML_FLOW_API}/traces/${tracePatchRequest.requestId}") {
