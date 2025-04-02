@@ -8,6 +8,7 @@ version = "1.0-SNAPSHOT"
 val ktor_version: String by project
 val opentelemetry_version: String by project
 val logback_version: String by project
+val bytebuddy_version: String by project
 val mlflow_client_version: String by project
 val testcontainers_version: String by project
 
@@ -28,6 +29,7 @@ dependencies {
     implementation("io.opentelemetry:opentelemetry-api:$opentelemetry_version")
     implementation("io.opentelemetry:opentelemetry-extension-kotlin:$opentelemetry_version")
     implementation("io.opentelemetry:opentelemetry-sdk:$opentelemetry_version")
+    implementation("io.opentelemetry:opentelemetry-extension-kotlin:$opentelemetry_version")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.yaml:snakeyaml:2.3")
     implementation(kotlin("test"))
@@ -40,7 +42,7 @@ tasks.test {
     useJUnitPlatform()
 }
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(17)
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
