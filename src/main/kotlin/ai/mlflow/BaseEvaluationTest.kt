@@ -4,7 +4,9 @@ import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Scope
+import io.opentelemetry.extension.kotlin.asContextElement
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.example.ai.AIModel
@@ -218,7 +220,11 @@ abstract class BaseEvaluationTest<I, O, R>(
             testCases().mapIndexed { dataPointIndex, testCase ->
                 val (dataPointSpan, dataPointScope) =
                     createDataPointSpan(dataPointIndex, tracer, runResult.runId, testCase)
-                val output = runBlocking { model().generate(testCase.input) }
+                val output = runBlocking {
+                    withContext(dataPointSpan.asContextElement()) {
+                        model().generate(testCase.input)
+                    }
+                }
                 DynamicContainer.dynamicContainer(
                     testCase.input.toString(),
                     testFunctions.mapIndexed { index, testFunction ->
