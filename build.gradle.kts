@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm") version "2.1.0"
     kotlin("plugin.serialization") version "2.1.0"
     id("com.github.johnrengelman.shadow") version "8.1.1"
+    `maven-publish`
 }
 
 group = "com.jetbrains"
@@ -14,6 +15,33 @@ val testcontainers_version: String by project
 
 repositories {
     mavenCentral()
+}
+
+tasks.register("publishToSpace") {
+    group = "publishing"
+    description = "Publishes the artifact to JetBrains Space Maven repository"
+
+    doLast {
+        publishing {
+            publications {
+                create<MavenPublication>("maven") {
+                    artifact(tasks.named("shadowJar"))
+                    groupId = "org.jetbrains"
+                    artifactId = "ai-dev-kit"
+                    version = "1.0.0"
+                }
+            }
+            repositories {
+                maven {
+                    url = uri("https://packages.jetbrains.team/maven/p/ai-development-kit/maven")
+                    credentials {
+                        username = System.getenv("SPACE_USERNAME") ?: error("Provide username with spaceUsername property or SPACE_USERNAME environment variable")
+                        password = System.getenv("SPACE_PASSWORD") ?: error("Provide password with spacePassword property or SPACE_PASSWORD environment variable")
+                    }
+                }
+            }
+        }
+    }
 }
 
 dependencies {
@@ -42,7 +70,6 @@ tasks.test {
 }
 kotlin {
     jvmToolchain(17)
-//    explicitApi()
 }
 
 tasks {
