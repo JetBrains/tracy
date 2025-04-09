@@ -23,9 +23,14 @@ object Release : BuildType({
     steps {
         gradle {
             name = "Upload to maven repo"
-            id = "Upload to maven repos"
-            tasks = "publishToSpace"
+            id = "Upload to maven repo"
+            tasks = ":publish"
             jdkHome = "%env.JDK_17_0%"
+            gradleParams = "-PpublicationRepositoryUrl=${IntelliJDependenciesPackageBot.mavenRepoUrl} " +
+                    "-PpublicationUsername=${USERNAME_PARAM.ref()} " +
+                    "-PpublicationPassword=${PASSWORD_PARAM.ref()} " +
+                    "--info"
+            enableStacktrace = true
         }
     }
 })

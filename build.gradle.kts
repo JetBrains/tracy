@@ -17,28 +17,21 @@ repositories {
     mavenCentral()
 }
 
-tasks.register("publishToSpace") {
-    group = "publishing"
-    description = "Publishes the artifact to JetBrains Space Maven repository"
-
-    doLast {
-        publishing {
-            publications {
-                create<MavenPublication>("maven") {
-                    artifact(tasks.named("shadowJar"))
-                    groupId = "org.jetbrains"
-                    artifactId = "ai-dev-kit"
-                    version = "1.0.0"
-                }
-            }
-            repositories {
-                maven {
-                    url = uri("https://packages.jetbrains.team/maven/p/ai-development-kit/maven")
-                    credentials {
-                        username = System.getenv("SPACE_USERNAME") ?: error("Provide username with spaceUsername property or SPACE_USERNAME environment variable")
-                        password = System.getenv("SPACE_PASSWORD") ?: error("Provide password with spacePassword property or SPACE_PASSWORD environment variable")
-                    }
-                }
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            artifact(tasks.named("shadowJar"))
+            groupId = "org.jetbrains"
+            artifactId = "ai-dev-kit"
+            version = "1.0.0"
+        }
+    }
+    repositories {
+        maven {
+            url = uri("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")
+            credentials {
+                username = System.getenv("SPACE_USERNAME") ?: error("Environment variable 'SPACE_USERNAME' is not set.")
+                password = System.getenv("SPACE_PASSWORD") ?: error("Environment variable 'SPACE_PASSWORD' is not set.")
             }
         }
     }
