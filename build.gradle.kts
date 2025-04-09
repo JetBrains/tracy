@@ -1,6 +1,7 @@
 plugins {
-    kotlin("jvm") version "2.1.0"
+    kotlin("multiplatform") version "2.1.0"
     kotlin("plugin.serialization") version "2.1.0"
+    `maven-publish`
 }
 
 group = "com.jetbrains"
@@ -11,35 +12,92 @@ val logback_version: String by project
 val mlflow_client_version: String by project
 val testcontainers_version: String by project
 
+val space_username: String? by project
+val space_password: String? by project
+
 repositories {
     mavenCentral()
 }
 
-dependencies {
-    implementation("ch.qos.logback:logback-classic:$logback_version")
-    implementation("com.google.inject:guice:7.0.0")
-    implementation("com.openai:openai-java:0.34.1")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("io.ktor:ktor-client-core:$ktor_version")
-    implementation("io.ktor:ktor-client-cio:$ktor_version")
-    implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
-    implementation("org.mlflow:mlflow-client:$mlflow_client_version")
-    implementation("io.opentelemetry:opentelemetry-api:$opentelemetry_version")
-    implementation("io.opentelemetry:opentelemetry-extension-kotlin:$opentelemetry_version")
-    implementation("io.opentelemetry:opentelemetry-sdk:$opentelemetry_version")
-    implementation("io.opentelemetry:opentelemetry-extension-kotlin:$opentelemetry_version")
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.yaml:snakeyaml:2.3")
-    implementation(kotlin("test"))
-    implementation("org.junit.jupiter:junit-jupiter:5.10.0")
-    testImplementation("org.testcontainers:junit-jupiter:$testcontainers_version")
-    testImplementation("org.testcontainers:testcontainers:$testcontainers_version")
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = project.group.toString()
+            artifactId = "ai-dev-kit"
+            version = project.version.toString()
+            from(components["kotlin"])
+        }
+    }
+    repositories {
+        maven {
+            url = uri("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")
+            credentials {
+                username = System.getenv("SPACE_USERNAME") ?: space_username ?: error("Environment variable 'SPACE_USERNAME' is not set.")
+                password = System.getenv("SPACE_PASSWORD") ?: space_password ?: error("Environment variable 'SPACE_PASSWORD' is not set.")
+            }
+        }
+    }
 }
 
-tasks.test {
-    useJUnitPlatform()
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
 }
+
+kotlin {
+    jvm {
+        compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        withJava()
+    }
+
+    js(IR) {
+        browser()
+    }
+
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib-common"))
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.5.1")
+                implementation("io.ktor:ktor-client-core:$ktor_version")
+            }
+        }
+
+        val jvmMain by getting {
+            dependencies {
+                implementation(kotlin("test-junit5"))
+                implementation(kotlin("reflect"))
+                implementation("ch.qos.logback:logback-classic:$logback_version")
+                implementation("com.google.inject:guice:7.0.0")
+                implementation("com.openai:openai-java:0.34.1")
+                implementation("com.squareup.okhttp3:okhttp:4.12.0")
+                implementation("io.ktor:ktor-client-core-jvm:$ktor_version")
+                implementation("io.ktor:ktor-client-cio-jvm:$ktor_version")
+                implementation("io.ktor:ktor-client-content-negotiation-jvm:$ktor_version")
+                implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:$ktor_version")
+                implementation("org.mlflow:mlflow-client:$mlflow_client_version")
+                implementation("io.opentelemetry:opentelemetry-api:$opentelemetry_version")
+                implementation("io.opentelemetry:opentelemetry-extension-kotlin:$opentelemetry_version")
+                implementation("io.opentelemetry:opentelemetry-sdk:$opentelemetry_version")
+                implementation("io.opentelemetry:opentelemetry-extension-kotlin:$opentelemetry_version")
+                implementation("org.testcontainers:junit-jupiter:$testcontainers_version")
+                implementation("org.testcontainers:testcontainers:$testcontainers_version")
+                implementation("org.yaml:snakeyaml:2.3")
+            }
+        }
+
+        val jvmTest by getting {
+            dependencies {
+                implementation(kotlin("test-junit5"))
+            }
+            tasks.withType<Test> {
+                useJUnitPlatform()
+            }
+        }
+    }
+}
+
 kotlin {
     jvmToolchain(17)
 }
@@ -47,5 +105,6 @@ kotlin {
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     compilerOptions {
         freeCompilerArgs.add("-java-parameters")
+        freeCompilerArgs.add("-Xexpect-actual-classes")
     }
 }

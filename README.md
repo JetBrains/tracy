@@ -3,7 +3,7 @@
 2. Model parameters capture
 3. Dynamic test generation
 
-# KotlinMlflowClient
+# KotlinMlflowClient (TODO session-like)
 1. In charge of providing current `experimentId` and `runId`
 
 # Tracing setup
@@ -11,3 +11,7 @@
 2. Setup `TracingFlowProcessor.setup()`
 3. Does not work yet with suspend functions!
 4. You need to provide package name for tracing (see `TracingFlowDecoratorAgent`)
+
+# Publish
+To publish, you need to provide `SPACE_USERNAME` and `SPACE_PASSWORD`
+with read and write access to the "AI Development Kit" space repository.
