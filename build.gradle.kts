@@ -1,23 +1,14 @@
 plugins {
-    kotlin("multiplatform") version "2.1.0"
-    kotlin("plugin.serialization") version "2.1.0"
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kotlin.serialization)
     `maven-publish`
 }
 
 group = "com.jetbrains"
 version = "1.0-SNAPSHOT"
-val ktor_version: String by project
-val opentelemetry_version: String by project
-val logback_version: String by project
-val mlflow_client_version: String by project
-val testcontainers_version: String by project
 
 val space_username: String? by project
 val space_password: String? by project
-
-repositories {
-    mavenCentral()
-}
 
 publishing {
     publications {
@@ -32,8 +23,8 @@ publishing {
         maven {
             url = uri("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")
             credentials {
-                username = System.getenv("SPACE_USERNAME") ?: space_username ?: error("Environment variable 'SPACE_USERNAME' is not set.")
-                password = System.getenv("SPACE_PASSWORD") ?: space_password ?: error("Environment variable 'SPACE_PASSWORD' is not set.")
+                username = "sdf" //System.getenv("SPACE_USERNAME") ?: space_username ?: error("Environment variable 'SPACE_USERNAME' is not set.")
+                password = "sdf" //System.getenv("SPACE_PASSWORD") ?: space_password ?: error("Environment variable 'SPACE_PASSWORD' is not set.")
             }
         }
     }
@@ -58,32 +49,31 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(kotlin("stdlib-common"))
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.5.1")
-                implementation("io.ktor:ktor-client-core:$ktor_version")
+                implementation(libs.kotlin)
+                implementation(libs.kotlinx.serialization.core)
+                implementation(libs.ktor.client)
             }
         }
 
         val jvmMain by getting {
             dependencies {
-                implementation(kotlin("test-junit5"))
-                implementation(kotlin("reflect"))
-                implementation("ch.qos.logback:logback-classic:$logback_version")
-                implementation("com.google.inject:guice:7.0.0")
-                implementation("com.openai:openai-java:0.34.1")
-                implementation("com.squareup.okhttp3:okhttp:4.12.0")
-                implementation("io.ktor:ktor-client-core-jvm:$ktor_version")
-                implementation("io.ktor:ktor-client-cio-jvm:$ktor_version")
-                implementation("io.ktor:ktor-client-content-negotiation-jvm:$ktor_version")
-                implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:$ktor_version")
-                implementation("org.mlflow:mlflow-client:$mlflow_client_version")
-                implementation("io.opentelemetry:opentelemetry-api:$opentelemetry_version")
-                implementation("io.opentelemetry:opentelemetry-extension-kotlin:$opentelemetry_version")
-                implementation("io.opentelemetry:opentelemetry-sdk:$opentelemetry_version")
-                implementation("io.opentelemetry:opentelemetry-extension-kotlin:$opentelemetry_version")
-                implementation("org.testcontainers:junit-jupiter:$testcontainers_version")
-                implementation("org.testcontainers:testcontainers:$testcontainers_version")
-                implementation("org.yaml:snakeyaml:2.3")
+                implementation(libs.kotlin.test)
+                implementation(libs.kotlin.reflect)
+                implementation(libs.logback)
+                implementation(libs.guice)
+                implementation(libs.openai)
+                implementation(libs.okhttp)
+                implementation(libs.ktor.client.jvm)
+                implementation(libs.ktor.client.cio)
+                implementation(libs.ktor.client.negotiation)
+                implementation(libs.ktor.serialization.json)
+                implementation(libs.mlflow)
+                implementation(libs.opentelemetry)
+                implementation(libs.opentelemetry.kotlin)
+                implementation(libs.opentelemetry.sdk)
+                implementation(libs.testcontainers)
+                implementation(libs.testcontainers.junit)
+                implementation(libs.snakeyaml)
             }
         }
 

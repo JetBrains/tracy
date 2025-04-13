@@ -9,6 +9,11 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/ai-dev-kit-core" />
+            <option value="$PROJECT_DIR$/ai-dev-kit-eval" />
+            <option value="$PROJECT_DIR$/ai-dev-kit-eval/ai-dev-kit-eval-base" />
+            <option value="$PROJECT_DIR$/ai-dev-kit-eval/ai-dev-kit-eval-mlflow" />
+            <option value="$PROJECT_DIR$/ai-dev-kit-example" />
           </set>
         </option>
       </GradleProjectSettings>
