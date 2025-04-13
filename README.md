@@ -3,6 +3,12 @@
 2. Model parameters capture
 3. Dynamic test generation
 
+# MLFLOW Setup
+
+```bash
+mlflow ui --port 5002
+```
+
 # KotlinMlflowClient (TODO session-like)
 1. In charge of providing current `experimentId` and `runId`
 
