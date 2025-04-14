@@ -25,6 +25,7 @@ kotlin {
             dependencies {
                 implementation(libs.kotlin)
                 implementation(libs.kotlinx.serialization.core)
+                implementation(libs.kotlinx.serialization.json)
                 implementation(libs.ktor.client)
             }
         }
@@ -32,7 +33,6 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(libs.kotlin.reflect)
-                implementation(libs.mlflow)
                 implementation(libs.opentelemetry)
                 implementation(libs.opentelemetry.kotlin)
                 implementation(libs.opentelemetry.sdk)
