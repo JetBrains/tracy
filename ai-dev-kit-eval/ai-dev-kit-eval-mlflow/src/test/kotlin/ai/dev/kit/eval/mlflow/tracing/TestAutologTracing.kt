@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-class TestAutologTracing: MlflowTracingTests() {
+class TestAutologTracing: MlflowTracingTests {
     @Test
     fun testOpenAIAutoTracing() {
         KotlinMlflowClient.withRun(KotlinMlflowClient.currentExperimentId).use {

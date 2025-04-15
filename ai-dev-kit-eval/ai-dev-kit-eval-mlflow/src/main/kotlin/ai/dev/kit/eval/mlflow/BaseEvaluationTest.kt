@@ -7,7 +7,6 @@ import ai.dev.kit.eval.mlflow.dataclasses.Generator
 import ai.dev.kit.eval.mlflow.dataclasses.RunResults
 import ai.dev.kit.eval.mlflow.dataclasses.RunTag
 import ai.dev.kit.eval.mlflow.dataclasses.TestCase
-import ai.dev.kit.eval.mlflow.fluent.MlflowFluentSpanAttributes
 import ai.dev.kit.eval.mlflow.fluent.MlflowTracePublisher
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
@@ -19,6 +18,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import ai.dev.kit.eval.base.AIModel
 import ai.dev.kit.eval.base.createAIClient
+import ai.dev.kit.eval.base.dataclasses.RunStatus
+import ai.dev.kit.eval.base.dataclasses.TraceInfo
 import ai.dev.kit.eval.base.model.Flavors
 import ai.dev.kit.eval.base.model.ModelData
 import ai.dev.kit.eval.base.model.ModelParameters
@@ -27,7 +28,7 @@ import ai.dev.kit.eval.base.model.Signature
 import ai.dev.kit.eval.base.model.createModelJson
 import ai.dev.kit.eval.base.model.createModelYaml
 import ai.dev.kit.eval.mlflow.dataclasses.TestInfo
-import ai.dev.kit.eval.mlflow.dataclasses.TraceInfo
+import ai.dev.kit.eval.base.fluent.FluentSpanAttributes
 import ai.dev.kit.eval.mlflow.dataclasses.createTracePostRequest
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -271,9 +272,9 @@ abstract class BaseEvaluationTest<I, O, R>(
                 )
 
                 val jsonTraceInfo = Json.encodeToString(TraceInfo.serializer(), createTrace(tracePostRequest))
-                it.setAttribute(MlflowFluentSpanAttributes.TRACE_CREATION_INFO.asAttributeKey(), jsonTraceInfo)
+                it.setAttribute(FluentSpanAttributes.TRACE_CREATION_INFO.asAttributeKey(), jsonTraceInfo)
                 it.setAttribute(
-                    MlflowFluentSpanAttributes.MLFLOW_SPAN_INPUTS.asAttributeKey(),
+                    FluentSpanAttributes.SPAN_INPUTS.asAttributeKey(),
                     "{\"Data Point\": \"${testCase.input}\"}"
                 )
             }

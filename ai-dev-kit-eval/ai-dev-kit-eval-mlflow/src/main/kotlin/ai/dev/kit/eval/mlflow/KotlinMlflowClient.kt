@@ -1,5 +1,7 @@
 package ai.dev.kit.eval.mlflow
 
+import ai.dev.kit.eval.base.KotlinLoggingClient
+import ai.dev.kit.eval.base.getUserID
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -11,7 +13,7 @@ import org.mlflow.tracking.MlflowClient
 import java.util.logging.LogManager
 import java.util.logging.Logger
 
-internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL) {
+internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL), KotlinLoggingClient {
     private val logger: Logger = LogManager.getLogManager().getLogger(Logger.GLOBAL_LOGGER_NAME)
         ?: Logger.getLogger(KotlinMlflowClient::class.java.name)
 
@@ -21,11 +23,11 @@ internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL) {
     internal const val ML_FLOW_URL = "http://$MLFLOW_HOST:$MLFLOW_PORT"
     const val ML_FLOW_API = "$ML_FLOW_URL/api/2.0/mlflow"
     const val ML_FLOW_ARTIFACTS_API = "$ML_FLOW_URL/api/2.0/mlflow-artifacts"
-    const val USER_ID = "Anton.Bragin"
+    override val USER_ID: String = getUserID()
 
     // TODO: Remove state storage here ASAP!
-    internal var currentExperimentId: String = "0"
-    internal var currentRunId: String? = null
+    override var currentExperimentId: String = "0"
+    override var currentRunId: String? = null
 
     val client = HttpClient(CIO) {
         install(ContentNegotiation) {
@@ -39,13 +41,13 @@ internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL) {
         }
     }
 
-    fun withRun(experimentId: String) = object : AutoCloseable {
+    override fun withRun(experimentId: String) = object : AutoCloseable {
         val myRunId = createRun(experimentId)?.runId
 
         override fun close() {
             // TODO GET RID OF RUN BLOCKING
             runBlocking {
-                myRunId?.let { updateRun(myRunId, RunStatus.FINISHED) }
+                myRunId?.let { updateRun(myRunId, ai.dev.kit.eval.base.dataclasses.RunStatus.FINISHED) }
             }
         }
     }

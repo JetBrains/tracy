@@ -2,7 +2,7 @@ package ai.dev.kit.eval.mlflow.dataclasses
 
 import kotlinx.serialization.Serializable
 import ai.dev.kit.eval.base.AIModel
-import ai.dev.kit.eval.mlflow.RunStatus
+import ai.dev.kit.eval.base.dataclasses.RunStatus
 import ai.dev.kit.eval.mlflow.getExperiment
 import ai.dev.kit.eval.mlflow.getExperimentByName
 import org.mlflow.tracking.MlflowClient

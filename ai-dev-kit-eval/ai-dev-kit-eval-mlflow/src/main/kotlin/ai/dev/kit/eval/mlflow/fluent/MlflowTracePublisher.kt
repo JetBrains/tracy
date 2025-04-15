@@ -1,40 +1,41 @@
 package ai.dev.kit.eval.mlflow.fluent
 
 import ai.dev.kit.core.fluent.processor.TracePublisher
-import ai.dev.kit.eval.mlflow.RequestMetadata
-import ai.dev.kit.eval.mlflow.Tag
+import ai.dev.kit.eval.base.dataclasses.RequestMetadata
+import ai.dev.kit.eval.base.dataclasses.TraceInfo
 import ai.dev.kit.eval.mlflow.dataclasses.SpanArtifactsRequest
-import ai.dev.kit.eval.mlflow.dataclasses.TraceInfo
 import ai.dev.kit.eval.mlflow.dataclasses.TracePatchRequest
 import ai.dev.kit.eval.mlflow.dataclasses.toSpanArtifactsRequest
 import ai.dev.kit.eval.mlflow.dataclasses.toUpdateTraceTagsRequest
-import ai.dev.kit.eval.mlflow.getAttribute
 import ai.dev.kit.eval.mlflow.patchTrace
 import ai.dev.kit.eval.mlflow.updateTraceTags
 import ai.dev.kit.eval.mlflow.uploadTraceArtifacts
 import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.sdk.trace.data.SpanData
 import kotlinx.serialization.json.Json
+import ai.dev.kit.eval.base.dataclasses.Tag
+import ai.dev.kit.eval.base.fluent.getAttribute
+import ai.dev.kit.eval.base.fluent.FluentSpanAttributes
 
 object MlflowTracePublisher : TracePublisher {
-    override suspend fun publishTrace(traces: List<SpanData>) {
-        val parentSpan: SpanData = traces.find { it.parentSpanId == SpanId.getInvalid() }
+    override suspend fun publishTrace(trace: List<SpanData>) {
+        val parentSpan: SpanData = trace.find { it.parentSpanId == SpanId.getInvalid() }
             ?: throw IllegalStateException("Parent span not found.")
-        val traceCreationInfoJson = parentSpan.getAttribute(MlflowFluentSpanAttributes.TRACE_CREATION_INFO)
+        val traceCreationInfoJson = parentSpan.getAttribute(FluentSpanAttributes.TRACE_CREATION_INFO)
 
         val traceResponse: TraceInfo = traceCreationInfoJson?.let { Json.decodeFromString(TraceInfo.serializer(), it) }
             ?: throw IllegalStateException("Missing traceCreationInfo attribute in the parent span.")
 
-        val rootInputs = parentSpan.getAttribute(MlflowFluentSpanAttributes.MLFLOW_SPAN_INPUTS)
-        val rootResult = parentSpan.getAttribute(MlflowFluentSpanAttributes.MLFLOW_SPAN_OUTPUTS)
+        val rootInputs = parentSpan.getAttribute(FluentSpanAttributes.SPAN_INPUTS)
+        val rootResult = parentSpan.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS)
 
         updateTraceTags(
-            requestId = traceResponse.requestId, updateTagRequest = traces.toUpdateTraceTagsRequest()
+            requestId = traceResponse.requestId, updateTagRequest = trace.toUpdateTraceTagsRequest()
         )
 
         uploadTraceArtifacts(
             traceResponse.experimentId, traceResponse.requestId, SpanArtifactsRequest(
-                spans = traces.toSpanArtifactsRequest(traceResponse.requestId),
+                spans = trace.toSpanArtifactsRequest(traceResponse.requestId),
                 request = rootInputs,
                 response = rootResult
             )
@@ -46,15 +47,17 @@ object MlflowTracePublisher : TracePublisher {
                 status = "OK",
                 timestampMs = parentSpan.endEpochNanos / 1_000_000,
                 requestMetadata = listOf(
-                    RequestMetadata("mlflow.trace_schema.version", "2"),
-                    RequestMetadata("mlflow.traceInputs", rootInputs ?: "null"),
-                    RequestMetadata("mlflow.traceOutputs", rootResult ?: "null")
+                    RequestMetadata("trace_schema.version", "2"),
+                    RequestMetadata("traceInputs", rootInputs ?: "null"),
+                    RequestMetadata("traceOutputs", rootResult ?: "null")
                 ),
                 tags = listOf(
                     Tag(
-                        "mlflow.source.name",
-                        parentSpan.getAttribute(MlflowFluentSpanAttributes.MLFLOW_SPAN_SOURCE_NAME) ?: "null"
-                    ), Tag("mlflow.source.type", "LOCAL"), Tag("mlflow.traceName", parentSpan.name)
+                        "source.name",
+                        parentSpan.getAttribute(FluentSpanAttributes.SPAN_SOURCE_NAME) ?: "null"
+                    ),
+                    Tag("source.type", "LOCAL"),
+                    Tag("traceName", parentSpan.name)
                 )
             )
         )
@@ -64,22 +67,22 @@ object MlflowTracePublisher : TracePublisher {
                 status = "OK",
                 timestampMs = parentSpan.endEpochNanos / 1_000_000,
                 requestMetadata = buildList {
-                    add(RequestMetadata("mlflow.trace_schema.version", "2"))
-                    rootInputs?.let { add(RequestMetadata("mlflow.traceInputs", it)) }
-                    rootResult?.let { add(RequestMetadata("mlflow.traceOutputs", it)) }
-                    parentSpan.getAttribute(MlflowFluentSpanAttributes.MLFLOW_SOURCE_RUN)?.let {
-                        add(RequestMetadata("mlflow.sourceRun", it))
+                    add(RequestMetadata("trace_schema.version", "2"))
+                    rootInputs?.let { add(RequestMetadata("traceInputs", it)) }
+                    rootResult?.let { add(RequestMetadata("traceOutputs", it)) }
+                    parentSpan.getAttribute(FluentSpanAttributes.SOURCE_RUN)?.let {
+                        add(RequestMetadata("sourceRun", it))
                     }
                 },
                 tags = buildList {
                     add(
                         Tag(
-                            "mlflow.source.name",
-                            parentSpan.getAttribute(MlflowFluentSpanAttributes.MLFLOW_SPAN_SOURCE_NAME) ?: "null"
+                            "source.name",
+                            parentSpan.getAttribute(FluentSpanAttributes.SPAN_SOURCE_NAME) ?: "null"
                         )
                     )
-                    add(Tag("mlflow.source.type", "LOCAL"))
-                    add(Tag("mlflow.traceName", parentSpan.name))
+                    add(Tag("source.type", "LOCAL"))
+                    add(Tag("traceName", parentSpan.name))
                 })
         )
     }

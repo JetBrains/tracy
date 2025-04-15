@@ -1,6 +1,7 @@
-package ai.dev.kit.eval.mlflow.tracing.dumb
+package ai.dev.kit.eval.base
 
-import ai.dev.kit.eval.mlflow.tracing.MlflowTracingTests
+import ai.dev.kit.core.fluent.processor.TracingMetadataConfigurator
+import ai.dev.kit.eval.base.dataclasses.TracesResponse
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import kotlinx.coroutines.runBlocking
@@ -8,21 +9,22 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import ai.dev.kit.eval.base.createOpenAIClient
-import ai.dev.kit.eval.mlflow.KotlinMlflowClient
-import ai.dev.kit.eval.mlflow.fluent.MlflowTracingMetadataConfigurator
-import ai.dev.kit.eval.mlflow.getTraces
 import org.junit.jupiter.api.Test
+import kotlin.reflect.KSuspendFunction1
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-class TestDumbAutologTracing : MlflowTracingTests() {
+open class TestDumbAutologTracingBase(
+    private val configurator: TracingMetadataConfigurator,
+    val getTraces: KSuspendFunction1<List<String>, TracesResponse>,
+    private val client: KotlinLoggingClient
+) {
     @Test
     fun testOpenAIAutoTracing() {
-        KotlinMlflowClient.withRun(KotlinMlflowClient.currentExperimentId).use {
+        client.withRun(client.currentExperimentId).use {
             val client = createOpenAIClient(
                 dumbTraceMode = true,
-                tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
+                tracingMetadataConfigurator = configurator
             )
             val params = ChatCompletionCreateParams.Companion.builder()
                 .addUserMessage("Generate polite greeting and introduce yourself")
@@ -31,12 +33,12 @@ class TestDumbAutologTracing : MlflowTracingTests() {
         }
 
         val tracesResponse = runBlocking {
-            getTraces(listOf(KotlinMlflowClient.currentExperimentId))
+            getTraces(listOf(client.currentExperimentId))
         }
 
         assertEquals(1, tracesResponse.traces.size)
         val chatTrace = tracesResponse.traces.first()
-        val traceInput = chatTrace.tags.firstOrNull { it.key == "mlflow.traceSpans" }?.value
+        val traceInput = chatTrace.tags.firstOrNull { it.key == "traceSpans" }?.value
         assertNotNull(traceInput)
         val jsonInput = (Json.parseToJsonElement(traceInput) as? JsonArray)?.firstOrNull() as? JsonObject
         assertNotNull(jsonInput)

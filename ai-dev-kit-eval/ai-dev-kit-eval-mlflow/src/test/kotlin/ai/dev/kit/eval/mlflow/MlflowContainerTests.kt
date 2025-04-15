@@ -16,7 +16,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import kotlin.collections.set
 
 @Testcontainers
-open class MlflowContainerTests {
+interface MlflowContainerTests {
     companion object {
         internal lateinit var mlflowClient: MlflowClient
 

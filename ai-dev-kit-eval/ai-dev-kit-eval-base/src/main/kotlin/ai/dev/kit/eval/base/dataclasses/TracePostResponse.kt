@@ -1,9 +1,7 @@
-package ai.dev.kit.eval.mlflow.dataclasses
+package ai.dev.kit.eval.base.dataclasses
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import ai.dev.kit.eval.mlflow.RequestMetadata
-import ai.dev.kit.eval.mlflow.Tag
 
 @Serializable
 data class TracesResponse(

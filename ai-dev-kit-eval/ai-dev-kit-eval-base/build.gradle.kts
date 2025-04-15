@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm")
     alias(libs.plugins.kotlin.serialization)
+    id("java-test-fixtures")
 }
 
 group = "com.jetbrains"
@@ -22,7 +23,12 @@ dependencies {
     implementation(libs.opentelemetry)
     implementation(libs.opentelemetry.kotlin)
     implementation(libs.opentelemetry.sdk)
-    testImplementation(kotlin("test"))
+    testFixturesImplementation(libs.junit)
+    testFixturesImplementation(kotlin("test"))
+    testFixturesImplementation(project(":ai-dev-kit-core"))
+    testFixturesImplementation(libs.kotlinx.coroutines)
+    testFixturesImplementation(libs.kotlinx.serialization.json)
+    testFixturesImplementation(libs.openai)
 }
 
 tasks.test {
@@ -30,4 +36,10 @@ tasks.test {
 }
 kotlin {
     jvmToolchain(17)
+}
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    compilerOptions {
+        freeCompilerArgs.add("-java-parameters")
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
 }

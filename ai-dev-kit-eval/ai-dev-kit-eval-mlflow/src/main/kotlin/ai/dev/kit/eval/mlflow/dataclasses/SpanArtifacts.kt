@@ -1,11 +1,12 @@
 package ai.dev.kit.eval.mlflow.dataclasses
 
-import ai.dev.kit.eval.mlflow.fluent.MlflowFluentSpanAttributes
+import ai.dev.kit.eval.base.fluent.getAttribute
+import ai.dev.kit.eval.base.fluent.FluentSpanAttributes
 import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.sdk.trace.data.SpanData
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import ai.dev.kit.eval.mlflow.getAttribute
+
 
 fun List<SpanData>.toSpanArtifactsRequest(requestId: String) = this.map { spanData ->
     Span(
@@ -20,10 +21,10 @@ fun List<SpanData>.toSpanArtifactsRequest(requestId: String) = this.map { spanDa
         statusCode = "OK",
         attributes = Attributes(
             traceRequestId = requestId,
-            spanType = spanData.getAttribute(MlflowFluentSpanAttributes.MLFLOW_SPAN_TYPE) ?: "UNKNOWN",
-            spanFunctionName = spanData.getAttribute(MlflowFluentSpanAttributes.MLFLOW_SPAN_FUNCTION_NAME),
-            spanInputs = spanData.getAttribute(MlflowFluentSpanAttributes.MLFLOW_SPAN_INPUTS),
-            spanOutputs = spanData.getAttribute(MlflowFluentSpanAttributes.MLFLOW_SPAN_OUTPUTS)
+            spanType = spanData.getAttribute(FluentSpanAttributes.SPAN_TYPE) ?: "UNKNOWN",
+            spanFunctionName = spanData.getAttribute(FluentSpanAttributes.SPAN_FUNCTION_NAME),
+            spanInputs = spanData.getAttribute(FluentSpanAttributes.SPAN_INPUTS),
+            spanOutputs = spanData.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS)
 
         ),
         events = emptyList()
@@ -57,9 +58,9 @@ data class SpanContext(
 
 @Serializable
 data class Attributes(
-    @SerialName("mlflow.traceRequestId") val traceRequestId: String,
-    @SerialName("mlflow.spanType") val spanType: String,
-    @SerialName("mlflow.spanFunctionName") val spanFunctionName: String?,
-    @SerialName("mlflow.spanInputs") val spanInputs: String?,
-    @SerialName("mlflow.spanOutputs") val spanOutputs: String?
+    @SerialName("traceRequestId") val traceRequestId: String,
+    @SerialName("spanType") val spanType: String,
+    @SerialName("spanFunctionName") val spanFunctionName: String?,
+    @SerialName("spanInputs") val spanInputs: String?,
+    @SerialName("spanOutputs") val spanOutputs: String?
 )

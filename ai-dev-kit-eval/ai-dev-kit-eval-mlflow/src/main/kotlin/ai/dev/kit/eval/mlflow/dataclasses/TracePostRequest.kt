@@ -1,10 +1,10 @@
 package ai.dev.kit.eval.mlflow.dataclasses
 
+import ai.dev.kit.eval.base.dataclasses.RequestMetadata
+import ai.dev.kit.eval.base.dataclasses.Tag
+import ai.dev.kit.eval.mlflow.getCurrentTimestamp
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import ai.dev.kit.eval.mlflow.RequestMetadata
-import ai.dev.kit.eval.mlflow.Tag
-import ai.dev.kit.eval.mlflow.getCurrentTimestamp
 import java.time.Instant
 
 internal fun createTracePostRequest(
@@ -13,19 +13,19 @@ internal fun createTracePostRequest(
     startTime: Long = Instant.now().toEpochMilli(),
     traceCreationPath: String,
     traceName: String
-)  = TracePostRequest(
-        experimentId = experimentId,
-        timestampMs = startTime,
-        requestMetadata = listOfNotNull(
-            RequestMetadata(key = "mlflow.trace_schema.version", value = "2"),
-            runId?.let { RequestMetadata(key = "mlflow.sourceRun", value = it) }
-        ),
-        tags = listOf(
-            Tag("mlflow.source.name", traceCreationPath),
-            Tag("mlflow.source.type", "LOCAL"),
-            Tag("mlflow.traceName", traceName),
-        )
+) = TracePostRequest(
+    experimentId = experimentId,
+    timestampMs = startTime,
+    requestMetadata = listOfNotNull(
+        RequestMetadata(key = "trace_schema.version", value = "2"),
+        runId?.let { RequestMetadata(key = "sourceRun", value = it) }
+    ),
+    tags = listOf(
+        Tag("source.name", traceCreationPath),
+        Tag("source.type", "LOCAL"),
+        Tag("traceName", traceName),
     )
+)
 
 @Serializable
 data class TracePostRequest(
