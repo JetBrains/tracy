@@ -58,9 +58,9 @@ data class SpanContext(
 
 @Serializable
 data class Attributes(
-    @SerialName("traceRequestId") val traceRequestId: String,
+    @SerialName("mlflow.traceRequestId") val traceRequestId: String,
     @SerialName("spanType") val spanType: String,
     @SerialName("spanFunctionName") val spanFunctionName: String?,
-    @SerialName("spanInputs") val spanInputs: String?,
-    @SerialName("spanOutputs") val spanOutputs: String?
+    @SerialName("mlflow.spanInputs") val spanInputs: String?,
+    @SerialName("mlflow.spanOutputs") val spanOutputs: String?
 )

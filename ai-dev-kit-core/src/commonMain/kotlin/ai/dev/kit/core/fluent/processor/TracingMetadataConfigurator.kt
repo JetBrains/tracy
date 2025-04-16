@@ -17,6 +17,6 @@ interface TracingMetadataConfigurator {
 
     fun addOutputAttribute(span: Span, traceAnnotation: KotlinFlowTrace, result: Any?)
 
-    fun createTraceInfo(spanBuilder: SpanBuilder, method: PlatformMethod, spanName: String)
+    fun createTraceInfo(spanBuilder: SpanBuilder, method: PlatformMethod, spanName: String): Span
 }
 

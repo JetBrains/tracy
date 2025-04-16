@@ -37,7 +37,9 @@ object MlflowTracingMetadataConfigurator : TracingMetadataConfigurator {
         addOutputAttributesToTracing(span, traceAnnotation, result)
     }
 
-    override fun createTraceInfo(spanBuilder: SpanBuilder, method: PlatformMethod, spanName: String) = runBlocking {
+    override fun createTraceInfo(
+        spanBuilder: SpanBuilder, method: PlatformMethod, spanName: String
+    ): Span = runBlocking {
         val tracePostRequest = createTracePostRequest(
             experimentId = KotlinMlflowClient.currentExperimentId,
             runId = KotlinMlflowClient.currentRunId,
@@ -46,6 +48,7 @@ object MlflowTracingMetadataConfigurator : TracingMetadataConfigurator {
         )
         val jsonTraceInfo = Json.encodeToString(TraceInfo.serializer(), createTrace(tracePostRequest))
         spanBuilder.setAttribute(FluentSpanAttributes.TRACE_CREATION_INFO.asAttributeKey(), jsonTraceInfo)
-        return@runBlocking
+
+        return@runBlocking spanBuilder.startSpan()
     }
 }

@@ -11,14 +11,105 @@ import ai.dev.kit.eval.wandb.KotlinWandbClient.currentExperimentId
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.opentelemetry.api.trace.SpanId
+import io.opentelemetry.sdk.trace.ReadableSpan
 import io.opentelemetry.sdk.trace.data.SpanData
 import kotlinx.serialization.json.*
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 
 object WandBTracePublisher : TracePublisher {
-    override suspend fun publishTrace(trace: List<SpanData>) {
+    private fun buildStartCall(
+        spanId: String,
+        traceId: String,
+        sourceName: String,
+        spanType: String,
+        spanInputs: String,
+        functionName: String,
+        displayName: String,
+        startedAtMillis: Long,
+        parentSpanId: JsonElement,
+    ): JsonObject {
         val projectId = "$USER_ID/$currentExperimentId"
+
+        val inputs = parseLenientJson(spanInputs)
+
+        val inputMessages = when (val messages = inputs?.jsonObject?.get("messages")) {
+            is JsonArray -> messages
+            else -> inputs
+        }
+
+        val temperature = inputs?.jsonObject?.get("temperature")?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
+        val model = inputs?.jsonObject?.get("model")?.jsonPrimitive?.contentOrNull
+
+        val opName = "weave:///$projectId/op/$functionName:$spanId"
+
+        val instantStart = Instant.ofEpochMilli(startedAtMillis)
+        val startedAt = DateTimeFormatter.ISO_INSTANT.format(instantStart)
+
+        val payload = buildJsonObject {
+            put("start", buildJsonObject {
+                put("project_id", projectId)
+                put("id", spanId)
+                put("trace_id", traceId)
+                put("parent_id", parentSpanId)
+                put("started_at", startedAt)
+                put("op_name", opName)
+                put("display_name", displayName)
+                put("attributes", buildJsonObject {
+                    put("spanType", spanType)
+                    put("sourceName", sourceName)
+                })
+                put("inputs", buildJsonObject {
+                    when (inputMessages) {
+                        is JsonObject -> {
+                            inputMessages.forEach { (key, value) ->
+                                put(key, value)
+                            }
+                        }
+
+                        is JsonArray -> {
+                            put("messages", inputMessages)
+                        }
+
+                        else -> {}
+                    }
+                    model?.let { put("model", JsonPrimitive(it)) }
+                    temperature?.let { put("temperature", JsonPrimitive(it)) }
+                })
+            })
+        }
+
+        return payload
+    }
+
+    private fun buildEndCall(
+        spanId: String,
+        endedAtMillis: Long,
+        outputsString: String,
+    ): JsonObject {
+        val projectId = "$USER_ID/$currentExperimentId"
+
+        val instantEnd = Instant.ofEpochMilli(endedAtMillis)
+        val endedAt = DateTimeFormatter.ISO_INSTANT.format(instantEnd)
+
+        val outputs = parseLenientJson(outputsString) ?: JsonNull
+
+        val payload = buildJsonObject {
+            put("end", buildJsonObject {
+                put("project_id", projectId)
+                put("id", spanId)
+                put("ended_at", endedAt.toString())
+                put("summary", buildJsonObject {
+                    put("status", "OK")
+                })
+                put("output", outputs)
+            })
+        }
+
+        return payload
+    }
+
+    override suspend fun publishTrace(trace: List<SpanData>) {
         val requestUrl = "$WANDB_API/upsert_batch"
 
         val parentSpan: SpanData = trace.find { it.parentSpanId == SpanId.getInvalid() }
@@ -27,18 +118,11 @@ object WandBTracePublisher : TracePublisher {
         val startedAtMillis = parentSpan.startEpochNanos / 1_000_000
         val endedAtMillis = parentSpan.endEpochNanos / 1_000_000
 
-        val instantStart = Instant.ofEpochMilli(startedAtMillis)
-        val instantEnd = Instant.ofEpochMilli(endedAtMillis)
-
-        val startedAt = DateTimeFormatter.ISO_INSTANT.format(instantStart)
-        val endedAt = DateTimeFormatter.ISO_INSTANT.format(instantEnd)
-
-
         trace.forEach { span ->
             val traceId = span.traceId
             val spanId = span.spanId
-            val spanType = span.getAttribute(FluentSpanAttributes.SPAN_TYPE)
-            val sourceName = span.getAttribute(FluentSpanAttributes.SPAN_SOURCE_NAME)
+            val spanType = span.getAttribute(FluentSpanAttributes.SPAN_TYPE) ?: "UNKNOWN"
+            val sourceName = span.getAttribute(FluentSpanAttributes.SPAN_SOURCE_NAME) ?: ""
 
             val parentSpanId = if (span.parentSpanId.toString() != SpanId.getInvalid()) {
                 JsonPrimitive(span.parentSpanId)
@@ -46,67 +130,35 @@ object WandBTracePublisher : TracePublisher {
                 JsonNull
             }
 
-            val inputs = parseLenientJson(span.getAttribute(FluentSpanAttributes.SPAN_INPUTS))
-            val outputs = parseLenientJson(span.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS))
-
-            val inputMessages: JsonArray = when (val inputMessagesElement = inputs?.jsonObject?.get("messages")) {
-                is JsonArray -> inputMessagesElement
-                else -> buildJsonArray {
-                    add(buildJsonObject {
-                        put("content", inputs.toString())
-                    })
-                }
-            }
-
-            val temperature = inputs?.jsonObject?.get("temperature")?.jsonPrimitive?.content?.toDouble()
-            val model = inputs?.jsonObject?.get("model")?.jsonPrimitive?.content
+            val inputs = span.getAttribute(FluentSpanAttributes.SPAN_INPUTS) ?: ""
 
             val functionName = span.getAttribute(FluentSpanAttributes.SPAN_FUNCTION_NAME) ?: span.name
-            val opIdHash = span.spanContext.spanId
 
-            val opName = "weave:///$projectId/op/$functionName:$opIdHash"
+            val startPayload =
+                buildStartCall(
+                    spanId,
+                    traceId,
+                    sourceName,
+                    spanType,
+                    inputs,
+                    functionName,
+                    span.name,
+                    startedAtMillis,
+                    parentSpanId
+                )
+
+            val outputs = span.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS) ?: ""
+
+            val endPayload = buildEndCall(spanId, endedAtMillis, outputs)
 
             val json = buildJsonObject {
                 put("batch", buildJsonArray {
-                    // START
                     add(buildJsonObject {
-                        put("mode", "start")
-                        put("req", buildJsonObject {
-                            put("start", buildJsonObject {
-                                put("project_id", projectId)
-                                put("id", spanId)
-                                put("trace_id", traceId)
-                                put("parent_id", parentSpanId)
-                                put("op_name", opName)
-                                put("display_name", span.name)
-                                put("started_at", startedAt.toString())
-                                put("attributes", buildJsonObject {
-                                    put("spanType", spanType)
-                                    put("sourceName", sourceName)
-                                })
-                                put("inputs", buildJsonObject {
-                                    put("messages", inputMessages)
-                                    put("model", model)
-                                    put("temperature", temperature)
-                                })
-                            })
-                        })
+                        put("req", startPayload)
                     })
 
-                    // END
                     add(buildJsonObject {
-                        put("mode", "end")
-                        put("req", buildJsonObject {
-                            put("end", buildJsonObject {
-                                put("project_id", projectId)
-                                put("id", spanId)
-                                put("ended_at", endedAt.toString())
-                                put("summary", buildJsonObject {
-                                    put("status", "OK")
-                                })
-                                put("output", outputs ?: JsonNull)
-                            })
-                        })
+                        put("req", endPayload)
                     })
                 })
             }
@@ -131,6 +183,42 @@ object WandBTracePublisher : TracePublisher {
             raw?.let { Json.parseToJsonElement(it) }
         } catch (_: Exception) {
             raw?.let { JsonPrimitive(it) }
+        }
+    }
+
+    suspend fun publishRootStartCall(
+        span: ReadableSpan
+    ) {
+        val spanId = span.spanContext.spanId
+        val traceId = span.spanContext.traceId
+
+        val sourceName = span.getAttribute(FluentSpanAttributes.SPAN_SOURCE_NAME.asAttributeKey()) ?: ""
+        val spanType = span.getAttribute(FluentSpanAttributes.SPAN_TYPE.asAttributeKey()) ?: "UNKNOWN"
+        val spanInputs = span.getAttribute(FluentSpanAttributes.SPAN_INPUTS.asAttributeKey()) ?: ""
+
+        val functionName = span.getAttribute(FluentSpanAttributes.SPAN_FUNCTION_NAME.asAttributeKey()) ?: span.name
+
+        val startedAtMillis = Instant.now().toEpochMilli()
+
+        val startPayload =
+            buildStartCall(
+                spanId,
+                traceId,
+                sourceName,
+                spanType,
+                spanInputs,
+                functionName,
+                span.name,
+                startedAtMillis,
+                JsonNull
+            )
+
+        KotlinWandbClient.client.post("https://trace.wandb.ai/call/start") {
+            contentType(ContentType.Application.Json)
+            headers {
+                append("Authorization", WANDB_USER_API_KEY)
+            }
+            setBody(startPayload)
         }
     }
 }
