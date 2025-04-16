@@ -3,7 +3,7 @@ package ai.dev.kit.providers.mlflow.tracing
 import ai.dev.kit.core.fluent.processor.TracingFlowProcessor
 import ai.dev.kit.providers.mlflow.KotlinMlflowClient
 import ai.dev.kit.providers.mlflow.MlflowContainerTests
-import ai.dev.kit.providers.mlflow.fluent.MlflowTracePublisher
+import ai.dev.kit.providers.mlflow.MlflowDiContainer
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
@@ -15,7 +15,7 @@ open class MlflowTracingTests: MlflowContainerTests() {
         @BeforeAll
         @JvmStatic
         fun setupProcessor() {
-            TracingFlowProcessor.setupTracing(MlflowTracePublisher)
+            TracingFlowProcessor.setupTracing(MlflowDiContainer.di)
         }
 
         @AfterAll

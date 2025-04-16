@@ -4,13 +4,12 @@ import ai.dev.kit.core.eval.AIModel
 import ai.dev.kit.core.eval.createOpenAIClient
 import ai.dev.kit.core.fluent.KotlinFlowTrace
 import ai.dev.kit.core.fluent.processor.withTrace
-import ai.dev.kit.eval.mlflow.dataclasses.EvaluationCriteria
-import ai.dev.kit.eval.mlflow.dataclasses.RunTag
-import ai.dev.kit.eval.mlflow.dataclasses.TestCase
+import ai.dev.kit.providers.mlflow.dataclasses.EvaluationCriteria
+import ai.dev.kit.providers.mlflow.dataclasses.RunTag
+import ai.dev.kit.providers.mlflow.dataclasses.TestCase
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
-import ai.dev.kit.eval.mlflow.BaseEvaluationTest
-import ai.dev.kit.eval.mlflow.fluent.MlflowTracingMetadataConfigurator
+import ai.dev.kit.providers.mlflow.BaseEvaluationTest
 import kotlin.jvm.optionals.getOrElse
 
 class HaikuGeneratorTest :
@@ -62,7 +61,6 @@ object Quality : EvaluationCriteria<String, Double>("quality") {
     override fun evaluate(output: String): Double = withTrace(
         function = ::evaluate,
         args = arrayOf(output),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ){
         val prompt = """
 You are an AI poetry critic. Your job is to evaluate the overall quality of a Haiku based on the following criteria:
@@ -80,7 +78,7 @@ You are an AI poetry critic. Your job is to evaluate the overall quality of a Ha
 Evaluate this Haiku:
 """ + output
 
-        val client = createOpenAIClient(dumbTraceMode = true, tracingMetadataConfigurator = MlflowTracingMetadataConfigurator)
+        val client = createOpenAIClient(dumbTraceMode = true)
 
         val params = ChatCompletionCreateParams.Companion.builder()
             .addUserMessage(prompt)
@@ -98,7 +96,6 @@ object Creativity : EvaluationCriteria<String, Double>("creativity") {
     override fun evaluate(output: String): Double = withTrace(
         function = ::evaluate,
         args = arrayOf(output),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ){
         val prompt = """
 You are an AI poetry critic highly focused on creativity in poetry. Your task is to evaluate the creativity of a Haiku based on the following guidelines:
@@ -117,7 +114,7 @@ You are an AI poetry critic highly focused on creativity in poetry. Your task is
 Evaluate the creativity of this Haiku:
 """ + output
 
-        val client = createOpenAIClient(dumbTraceMode = true, tracingMetadataConfigurator = MlflowTracingMetadataConfigurator)
+        val client = createOpenAIClient(dumbTraceMode = true)
 
         val params = ChatCompletionCreateParams.Companion.builder()
             .addUserMessage(prompt)
@@ -135,7 +132,6 @@ object Structure : EvaluationCriteria<String, Double>("structure") {
     override fun evaluate(output: String): Double = withTrace(
         function = ::evaluate,
         args = arrayOf(output),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ){
         val prompt = """
 You are a Haiku poetry expert and your task is to evaluate the structural correctness of a Haiku. Haiku should adhere to the following strict rules:
@@ -157,7 +153,7 @@ You are a Haiku poetry expert and your task is to evaluate the structural correc
 
 Evaluate the structure of this Haiku:
 """ + output
-        val client = createOpenAIClient(dumbTraceMode = true, tracingMetadataConfigurator = MlflowTracingMetadataConfigurator)
+        val client = createOpenAIClient(dumbTraceMode = true)
 
         val params = ChatCompletionCreateParams.Companion.builder()
             .addUserMessage(prompt)

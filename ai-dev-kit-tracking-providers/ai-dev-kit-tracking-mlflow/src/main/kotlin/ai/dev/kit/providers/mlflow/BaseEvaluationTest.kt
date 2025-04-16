@@ -9,7 +9,9 @@ import ai.dev.kit.core.eval.model.OpenAI
 import ai.dev.kit.core.eval.model.Signature
 import ai.dev.kit.core.eval.model.createModelJson
 import ai.dev.kit.core.eval.model.createModelYaml
+import ai.dev.kit.core.fluent.processor.TracePublisher
 import ai.dev.kit.core.fluent.processor.TracingFlowProcessor
+import ai.dev.kit.core.fluent.processor.TracingMetadataConfigurator
 import ai.dev.kit.providers.mlflow.dataclasses.EvalResultsTable
 import ai.dev.kit.providers.mlflow.dataclasses.EvaluationCriteria
 import ai.dev.kit.providers.mlflow.dataclasses.Generator
@@ -29,8 +31,12 @@ import kotlinx.serialization.json.Json
 import ai.dev.kit.providers.mlflow.dataclasses.TestInfo
 import ai.dev.kit.providers.mlflow.dataclasses.TraceInfo
 import ai.dev.kit.providers.mlflow.dataclasses.createTracePostRequest
+import ai.dev.kit.providers.mlflow.fluent.MlflowTracingMetadataConfigurator
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.kodein.di.DI
+import org.kodein.di.bind
+import org.kodein.di.singleton
 import java.io.File
 import java.util.stream.Stream
 import kotlin.collections.get
@@ -52,11 +58,12 @@ abstract class BaseEvaluationTest<I, O, R>(
     private var modelData: ModelData? = null
     private val runResults = mutableListOf<RunResults<I, O, R>>()
 
+
     @BeforeAll
     fun beforeAll() {
         println("🔄 Setting up before all tests")
 
-        TracingFlowProcessor.setupTracing(MlflowTracePublisher)
+        TracingFlowProcessor.setupTracing(MlflowDiContainer.di)
 
         if (tags.isNotEmpty()) assertEquals(tags.size, numberOfRuns, "The number of tags must match the number of runs")
 

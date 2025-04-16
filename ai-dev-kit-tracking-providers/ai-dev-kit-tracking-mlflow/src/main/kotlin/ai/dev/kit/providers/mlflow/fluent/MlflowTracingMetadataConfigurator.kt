@@ -12,7 +12,7 @@ import ai.dev.kit.providers.mlflow.createTrace
 import ai.dev.kit.providers.mlflow.dataclasses.TraceInfo
 import ai.dev.kit.providers.mlflow.dataclasses.createTracePostRequest
 
-object MlflowTracingMetadataConfigurator : TracingMetadataConfigurator {
+class MlflowTracingMetadataConfigurator : TracingMetadataConfigurator {
     override fun configureMetadata(
         spanBuilder: SpanBuilder,
         traceAnnotation: KotlinFlowTrace,

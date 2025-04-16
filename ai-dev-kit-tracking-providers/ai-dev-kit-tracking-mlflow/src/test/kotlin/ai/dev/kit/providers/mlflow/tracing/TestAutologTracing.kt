@@ -9,7 +9,6 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import ai.dev.kit.providers.mlflow.KotlinMlflowClient
-import ai.dev.kit.providers.mlflow.fluent.MlflowTracingMetadataConfigurator
 import ai.dev.kit.providers.mlflow.getTraces
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -19,7 +18,7 @@ class TestAutologTracing: MlflowTracingTests() {
     @Test
     fun testOpenAIAutoTracing() {
         KotlinMlflowClient.withRun(KotlinMlflowClient.currentExperimentId).use {
-            val client = createOpenAIClient(tracingMetadataConfigurator = MlflowTracingMetadataConfigurator)
+            val client = createOpenAIClient()
             val params = ChatCompletionCreateParams.Companion.builder()
                 .addUserMessage("Generate polite greeting and introduce yourself")
                 .model(ChatModel.Companion.GPT_4O_MINI)

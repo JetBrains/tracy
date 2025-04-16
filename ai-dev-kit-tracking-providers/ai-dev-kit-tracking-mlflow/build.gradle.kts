@@ -12,6 +12,7 @@ repositories {
 
 dependencies {
     implementation(project(":ai-dev-kit-core"))
+    implementation(libs.kodein)
     implementation(libs.junit)
     implementation(libs.testcontainers.junit)
     implementation(libs.kotlinx.serialization.core)

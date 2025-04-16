@@ -10,7 +10,6 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import ai.dev.kit.providers.mlflow.KotlinMlflowClient
-import ai.dev.kit.providers.mlflow.fluent.MlflowTracingMetadataConfigurator
 import ai.dev.kit.providers.mlflow.getTraces
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -22,7 +21,6 @@ class TestDumbAutologTracing : MlflowTracingTests() {
         KotlinMlflowClient.withRun(KotlinMlflowClient.currentExperimentId).use {
             val client = createOpenAIClient(
                 dumbTraceMode = true,
-                tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
             )
             val params = ChatCompletionCreateParams.Companion.builder()
                 .addUserMessage("Generate polite greeting and introduce yourself")

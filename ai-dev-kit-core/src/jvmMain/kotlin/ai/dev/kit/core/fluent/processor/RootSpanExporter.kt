@@ -5,9 +5,10 @@ import io.opentelemetry.sdk.common.CompletableResultCode
 import io.opentelemetry.sdk.trace.data.SpanData
 import io.opentelemetry.sdk.trace.export.SpanExporter
 import kotlinx.coroutines.runBlocking
+import org.kodein.di.instance
 import java.util.concurrent.ConcurrentHashMap
 
-class RootSpanExporter(val tracePublisher: TracePublisher) : SpanExporter {
+class RootSpanExporter : SpanExporter {
     private val spanGroups = ConcurrentHashMap<String, MutableList<SpanData>>()
 
     override fun export(spans: Collection<SpanData>): CompletableResultCode {
@@ -19,6 +20,7 @@ class RootSpanExporter(val tracePublisher: TracePublisher) : SpanExporter {
                 if (span.parentSpanId == SpanId.getInvalid()) {
                     // TODO get rid of run blocking
                     runBlocking {
+                        val tracePublisher: TracePublisher by TracingFlowProcessor.di.instance()
                         tracePublisher.publishTrace(spanList)
                     }
                     spanGroups.remove(traceId)

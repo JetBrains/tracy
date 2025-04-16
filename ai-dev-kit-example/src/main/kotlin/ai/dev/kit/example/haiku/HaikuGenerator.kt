@@ -2,8 +2,7 @@ package ai.dev.kit.example.haiku
 
 import ai.dev.kit.core.eval.AIModel
 import ai.dev.kit.core.eval.createOpenAIClient
-import ai.dev.kit.eval.mlflow.dataclasses.Generator
-import ai.dev.kit.eval.mlflow.fluent.MlflowTracingMetadataConfigurator
+import ai.dev.kit.providers.mlflow.dataclasses.Generator
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import kotlin.jvm.optionals.getOrElse
@@ -32,7 +31,7 @@ class HaikuGenerator(override val model: AIModel) : Generator<String, String> {
     Generate a haiku using the [input] provided.
      */
     override suspend fun generate(input: String): String {
-        val client = createOpenAIClient(tracingMetadataConfigurator = MlflowTracingMetadataConfigurator)
+        val client = createOpenAIClient()
 
         val params = ChatCompletionCreateParams.builder()
             .addUserMessage(prompt.format(input))

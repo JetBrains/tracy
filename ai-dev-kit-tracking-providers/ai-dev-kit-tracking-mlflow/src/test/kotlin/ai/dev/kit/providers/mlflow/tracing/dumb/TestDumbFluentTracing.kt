@@ -4,7 +4,6 @@ import kotlinx.coroutines.runBlocking
 import ai.dev.kit.core.fluent.KotlinFlowTrace
 import ai.dev.kit.core.fluent.processor.withTrace
 import ai.dev.kit.providers.mlflow.KotlinMlflowClient
-import ai.dev.kit.providers.mlflow.fluent.MlflowTracingMetadataConfigurator
 import ai.dev.kit.providers.mlflow.getTraces
 import ai.dev.kit.providers.mlflow.tracing.MlflowTracingTests
 import org.junit.jupiter.api.Test
@@ -17,7 +16,6 @@ internal class MyTestClassDumb {
     fun testFunction(paramName: Int): Int = withTrace(
         function = ::testFunction,
         args = arrayOf<Any?>(paramName),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ) {
         return@withTrace paramName
     }
@@ -26,7 +24,6 @@ internal class MyTestClassDumb {
     fun anotherTestFunction(x: String): String = withTrace(
         function = ::anotherTestFunction,
         args = arrayOf<Any?>(x),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ) {
         return@withTrace x.reversed()
     }
@@ -35,7 +32,6 @@ internal class MyTestClassDumb {
     fun parentTestFunction(x: String): String = withTrace(
         function = ::parentTestFunction,
         args = arrayOf<Any?>(x),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ) {
         return@withTrace childTestFunction(x.reversed())
     }
@@ -44,7 +40,6 @@ internal class MyTestClassDumb {
     fun childTestFunction(x: String): String = withTrace(
         function = ::childTestFunction,
         args = arrayOf<Any?>(x),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ) {
         return@withTrace x.reversed()
     }

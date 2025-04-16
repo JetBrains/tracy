@@ -23,8 +23,8 @@ publishing {
         maven {
             url = uri("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")
             credentials {
-                username = System.getenv("SPACE_USERNAME") ?: space_username ?: error("Environment variable 'SPACE_USERNAME' is not set.")
-                password = System.getenv("SPACE_PASSWORD") ?: space_password ?: error("Environment variable 'SPACE_PASSWORD' is not set.")
+                username = System.getenv("SPACE_USERNAME")
+                password = System.getenv("SPACE_PASSWORD")
             }
         }
     }

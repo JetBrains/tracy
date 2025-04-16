@@ -3,7 +3,6 @@ package ai.dev.kit.core.eval
 import ai.dev.kit.core.fluent.KotlinFlowTrace
 import ai.dev.kit.core.fluent.SpanType
 import ai.dev.kit.core.fluent.handlers.OpenAiClientAttributeHandler
-import ai.dev.kit.core.fluent.processor.TracingMetadataConfigurator
 import ai.dev.kit.core.fluent.processor.withTrace
 import com.openai.client.OpenAIClient
 import com.openai.client.OpenAIClientImpl
@@ -13,11 +12,11 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
 
-fun createOpenAIClient(tracingMetadataConfigurator: TracingMetadataConfigurator, dumbTraceMode: Boolean = false): OpenAIClient {
+fun createOpenAIClient(dumbTraceMode: Boolean = false): OpenAIClient {
     val openAIClient = OpenAIOkHttpClient.builder()
         .fromEnv()
         .build().apply {
-            patchClient(this, interceptor = if (dumbTraceMode) MLFlowDumbOpenAILogger(tracingMetadataConfigurator) else MLFlowOpenAILogger())
+            patchClient(this, interceptor = if (dumbTraceMode) MLFlowDumbOpenAILogger() else MLFlowOpenAILogger())
         }
 
     return openAIClient
@@ -48,12 +47,11 @@ class MLFlowOpenAILogger : Interceptor {
     }
 }
 
-class MLFlowDumbOpenAILogger(val tracingMetadataConfigurator: TracingMetadataConfigurator) : Interceptor {
+class MLFlowDumbOpenAILogger : Interceptor {
     @KotlinFlowTrace(name="Completions", spanType = SpanType.CHAT_MODEL, attributeHandler = OpenAiClientAttributeHandler::class)
     override fun intercept(chain: Interceptor.Chain): Response = withTrace(
         function = ::intercept,
         args = arrayOf<Any?>(chain),
-        tracingMetadataConfigurator = tracingMetadataConfigurator
     )
     {
         return@withTrace chain.proceed(chain.request())

@@ -3,7 +3,6 @@ package ai.dev.kit.providers.mlflow.tracing.dumb
 import ai.dev.kit.core.fluent.KotlinFlowTrace
 import ai.dev.kit.core.fluent.processor.withTrace
 import ai.dev.kit.core.fluent.processor.withTraceSuspended
-import ai.dev.kit.providers.mlflow.fluent.MlflowTracingMetadataConfigurator
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import ai.dev.kit.providers.mlflow.KotlinMlflowClient
@@ -19,7 +18,6 @@ internal class MyTestClassWithSuspendDumb {
     suspend fun testFunction(paramName: Int): Int = withTraceSuspended(
         function = ::testFunction,
         args = arrayOf<Any?>(paramName),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ) {
         delay(12)
         return@withTraceSuspended paramName
@@ -29,7 +27,6 @@ internal class MyTestClassWithSuspendDumb {
     suspend fun anotherTestFunction(x: String): String = withTraceSuspended(
         function = ::anotherTestFunction,
         args = arrayOf<Any?>(x),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ) {
         delay(45)
         return@withTraceSuspended x.reversed()
@@ -39,7 +36,6 @@ internal class MyTestClassWithSuspendDumb {
     suspend fun parentTestFunction(x: String): String = withTraceSuspended(
         function = ::parentTestFunction,
         args = arrayOf<Any?>(x),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ) {
         delay(50)
         return@withTraceSuspended childTestFunction(x.reversed())
@@ -49,7 +45,6 @@ internal class MyTestClassWithSuspendDumb {
     suspend fun childTestFunction(x: String): String = withTraceSuspended(
         function = ::childTestFunction,
         args = arrayOf<Any?>(x),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ) {
         delay(10)
         val result = x.reversed()
@@ -60,7 +55,6 @@ internal class MyTestClassWithSuspendDumb {
     suspend fun parentTestFunctionWithNonSuspendKid(x: String): String = withTraceSuspended(
         function = ::parentTestFunctionWithNonSuspendKid,
         args = arrayOf<Any?>(x),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ) {
         delay(50)
         return@withTraceSuspended childTestFunctionNonSuspend(x.reversed())
@@ -70,7 +64,6 @@ internal class MyTestClassWithSuspendDumb {
     fun childTestFunctionNonSuspend(x: String): String = withTrace(
         function = ::childTestFunctionNonSuspend,
         args = arrayOf<Any?>(x),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ) {
         return@withTrace x.reversed()
     }
@@ -79,7 +72,6 @@ internal class MyTestClassWithSuspendDumb {
     fun parentTestFunctionWithSuspendKid(x: String): String = withTrace(
         function = ::parentTestFunctionWithSuspendKid,
         args = arrayOf<Any?>(x),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ) {
         return@withTrace runBlocking { childTestFunctionSuspend(x.reversed()) }
     }
@@ -88,7 +80,6 @@ internal class MyTestClassWithSuspendDumb {
     suspend fun childTestFunctionSuspend(x: String): String = withTraceSuspended(
         function = ::childTestFunctionSuspend,
         args = arrayOf<Any?>(x),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ) {
         delay(10)
         return@withTraceSuspended x.reversed()
@@ -98,7 +89,6 @@ internal class MyTestClassWithSuspendDumb {
     suspend fun testRecursion(level: Int): Int = withTraceSuspended(
         function = ::testRecursion,
         args = arrayOf<Any?>(level),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ) {
         delay(100)
         if (level == 0) return@withTraceSuspended 0
@@ -111,7 +101,6 @@ internal class MyTestClassWithSuspendDumbHard {
     suspend fun parentFunction(param: String): String = withTraceSuspended(
         function = ::parentFunction,
         args = arrayOf<Any?>(param),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ) {
         delay(100)
         // Calling Children
@@ -126,7 +115,6 @@ internal class MyTestClassWithSuspendDumbHard {
     suspend fun childFunction1(param: String): String = withTraceSuspended(
         function = ::childFunction1,
         args = arrayOf<Any?>(param),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ) {
         delay(50)
         return@withTraceSuspended param.uppercase()
@@ -136,7 +124,6 @@ internal class MyTestClassWithSuspendDumbHard {
     suspend fun childFunction2(param: String): String = withTraceSuspended(
         function = ::childFunction2,
         args = arrayOf<Any?>(param),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ) {
         delay(50)
         val grandChild1Result = grandChildFunction1(param)
@@ -148,7 +135,6 @@ internal class MyTestClassWithSuspendDumbHard {
     suspend fun childFunction3(param: String): String = withTraceSuspended(
         function = ::childFunction3,
         args = arrayOf<Any?>(param),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ) {
         delay(50)
         return@withTraceSuspended param.reversed()
@@ -158,7 +144,6 @@ internal class MyTestClassWithSuspendDumbHard {
     suspend fun grandChildFunction1(param: String): String = withTraceSuspended(
         function = ::grandChildFunction1,
         args = arrayOf<Any?>(param),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ) {
         delay(30)
         return@withTraceSuspended "GrandChild1(${param.length})"
@@ -168,7 +153,6 @@ internal class MyTestClassWithSuspendDumbHard {
     suspend fun grandChildFunction2(param: String): String = withTraceSuspended(
         function = ::grandChildFunction2,
         args = arrayOf<Any?>(param),
-        tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
     ) {
         delay(30)
         return@withTraceSuspended "GrandChild2(${param.reversed()})"
@@ -180,7 +164,6 @@ internal class MyTestClassWithSuspendDumbHard {
 internal fun topLevelTestFunction(x: String): String = withTrace(
     function = ::topLevelTestFunction,
     args = arrayOf<Any?>(x),
-    tracingMetadataConfigurator = MlflowTracingMetadataConfigurator
 ) {
     return@withTrace x.reversed()
 }

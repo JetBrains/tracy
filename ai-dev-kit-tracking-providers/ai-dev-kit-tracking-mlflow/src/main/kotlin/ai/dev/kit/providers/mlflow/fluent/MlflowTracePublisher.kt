@@ -16,7 +16,7 @@ import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.sdk.trace.data.SpanData
 import kotlinx.serialization.json.Json
 
-object MlflowTracePublisher : TracePublisher {
+class MlflowTracePublisher : TracePublisher {
     override suspend fun publishTrace(traces: List<SpanData>) {
         val parentSpan: SpanData = traces.find { it.parentSpanId == SpanId.getInvalid() }
             ?: throw IllegalStateException("Parent span not found.")

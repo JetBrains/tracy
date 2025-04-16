@@ -2,6 +2,7 @@
 kotlin = "2.1.0"
 kotlinx-serialization = "1.5.1"
 kotlinx-coroutines = "1.9.0"
+kodein = "7.20.0"
 ktor = "3.0.3"
 logback = "1.5.6"
 opentelemetry = "1.31.0"
@@ -20,6 +21,8 @@ kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+
+kodein = { module = "org.kodein.di:kodein-di", version.ref = "kodein" }
 
 ktor-client = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-jvm = { module = "io.ktor:ktor-client-core-jvm", version.ref = "ktor" }

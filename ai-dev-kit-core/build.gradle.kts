@@ -38,6 +38,7 @@ kotlin {
                 implementation(libs.opentelemetry.kotlin)
                 implementation(libs.opentelemetry.sdk)
                 implementation(libs.snakeyaml)
+                implementation(libs.kodein)
 
                 // TODO GET RID OF BASE EVAL TEST DEPENDENCIES
                 implementation(libs.ktor.client.jvm)
