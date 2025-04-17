@@ -17,7 +17,7 @@ import kotlin.getValue
 import kotlin.reflect.KFunction
 import kotlin.reflect.jvm.javaMethod
 
-actual fun <T> withTrace(
+actual inline fun <T> withTrace(
     function: KFunction<*>,
     args: Array<Any?>,
     block: () -> T
@@ -43,10 +43,10 @@ actual fun <T> withTrace(
     }
 }
 
-actual suspend fun <T> withTraceSuspended(
+actual suspend inline fun <T> withTraceSuspended(
     function: KFunction<*>,
     args: Array<Any?>,
-    block: suspend () -> T
+    crossinline block: suspend () -> T
 ): T {
     val tracingMetadataConfigurator: TracingMetadataConfigurator by di.instance()
     val method = function.javaMethod ?: throw IllegalArgumentException("Function must be a Java method")
@@ -70,13 +70,13 @@ actual suspend fun <T> withTraceSuspended(
     }
 }
 
-private fun getOpenTelemetryContext(coroutineContext: CoroutineContext): Context {
+fun getOpenTelemetryContext(coroutineContext: CoroutineContext): Context {
     return coroutineContext.getOpenTelemetryContext().let {
         if (it == Context.root()) Context.current() else it
     }
 }
 
-private fun createSpan(
+fun createSpan(
     traceAnnotation: KotlinFlowTrace,
     method: Method,
     args: Array<Any?>,

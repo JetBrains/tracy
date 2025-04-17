@@ -1,3 +1,4 @@
+<<<<<<<< HEAD:ai-dev-kit-test-base/src/testFixtures/kotlin/ai/dev/kit/fluent/TestDumbSuspendFluentTracingBase.kt
 package ai.dev.kit.fluent
 
 import ai.dev.kit.core.fluent.KotlinFlowTrace
@@ -12,96 +13,86 @@ import kotlinx.serialization.json.jsonArray
 import org.junit.jupiter.api.Test
 import kotlin.reflect.KSuspendFunction1
 import kotlin.test.assertContains
+========
+package ai.dev.kit.providers.mlflow.tracing
+
+import ai.dev.kit.core.fluent.KotlinFlowTrace
+import ai.dev.kit.core.fluent.processor.withTraceSuspended
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import ai.dev.kit.providers.mlflow.KotlinMlflowClient
+import ai.dev.kit.providers.mlflow.getTraces
+import kotlin.test.Test
+>>>>>>>> bc74f14 (Support KCP plugin for tracing):ai-dev-kit-tracking-providers/ai-dev-kit-tracking-mlflow/src/test/kotlin/ai/dev/kit/providers/mlflow/tracing/TestSuspendFluentTracing.kt
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 
-internal class MyTestClassWithSuspendDumb {
+internal class MyTestClassWithSuspend {
     @KotlinFlowTrace(name = "Main Span", spanType = "mySpanType")
-    suspend fun testFunction(paramName: Int): Int = withTraceSuspended(
-        function = ::testFunction,
-        args = arrayOf<Any?>(paramName),
-    ) {
+    suspend fun testFunction(paramName: Int): Int {
         delay(12)
-        return@withTraceSuspended paramName
+        return paramName
     }
 
     @KotlinFlowTrace(name = "Secondary Span", spanType = "func")
-    suspend fun anotherTestFunction(x: String): String = withTraceSuspended(
-        function = ::anotherTestFunction,
-        args = arrayOf<Any?>(x),
-    ) {
+    suspend fun anotherTestFunction(x: String): String {
         delay(45)
-        return@withTraceSuspended x.reversed()
+        return x.reversed()
     }
 
     @KotlinFlowTrace(name = "Parent Span")
-    suspend fun parentTestFunction(x: String): String = withTraceSuspended(
-        function = ::parentTestFunction,
-        args = arrayOf<Any?>(x),
-    ) {
+    suspend fun parentTestFunction(x: String): String {
         delay(50)
-        return@withTraceSuspended childTestFunction(x.reversed())
+        return childTestFunction(x.reversed())
     }
 
     @KotlinFlowTrace(name = "Child Span")
-    suspend fun childTestFunction(x: String): String = withTraceSuspended(
-        function = ::childTestFunction,
-        args = arrayOf<Any?>(x),
-    ) {
+    suspend fun childTestFunction(x: String): String {
         delay(10)
         val result = x.reversed()
-        return@withTraceSuspended result
+        return result
     }
 
     @KotlinFlowTrace(name = "Parent Span Non Suspend")
-    suspend fun parentTestFunctionWithNonSuspendKid(x: String): String = withTraceSuspended(
-        function = ::parentTestFunctionWithNonSuspendKid,
-        args = arrayOf<Any?>(x),
-    ) {
+    suspend fun parentTestFunctionWithNonSuspendKid(x: String): String {
         delay(50)
-        return@withTraceSuspended childTestFunctionNonSuspend(x.reversed())
+        return childTestFunctionNonSuspend(x.reversed())
     }
 
     @KotlinFlowTrace(name = "Child Span Non Suspend")
-    fun childTestFunctionNonSuspend(x: String): String = withTrace(
-        function = ::childTestFunctionNonSuspend,
-        args = arrayOf<Any?>(x),
-    ) {
-        return@withTrace x.reversed()
+    fun childTestFunctionNonSuspend(x: String): String {
+        return x.reversed()
     }
 
     @KotlinFlowTrace(name = "Parent Span Non Suspend")
-    fun parentTestFunctionWithSuspendKid(x: String): String = withTrace(
-        function = ::parentTestFunctionWithSuspendKid,
-        args = arrayOf<Any?>(x),
-    ) {
-        return@withTrace runBlocking { childTestFunctionSuspend(x.reversed()) }
+    fun parentTestFunctionWithSuspendKid(x: String): String {
+        return runBlocking { childTestFunctionSuspend(x.reversed()) }
     }
 
     @KotlinFlowTrace(name = "Child Span Non Suspend")
-    suspend fun childTestFunctionSuspend(x: String): String = withTraceSuspended(
-        function = ::childTestFunctionSuspend,
-        args = arrayOf<Any?>(x),
-    ) {
+    suspend fun childTestFunctionSuspend(x: String): String {
         delay(10)
-        return@withTraceSuspended x.reversed()
+        return x.reversed()
     }
 
     @KotlinFlowTrace(name = "Child Span")
-    suspend fun testRecursion(level: Int): Int = withTraceSuspended(
-        function = ::testRecursion,
-        args = arrayOf<Any?>(level),
-    ) {
+    suspend fun testRecursion(level: Int): Int {
         delay(100)
-        if (level == 0) return@withTraceSuspended 0
-        return@withTraceSuspended testRecursion(level - 1)
+        if (level == 0) return 0
+        return testRecursion(level - 1)
     }
 }
 
+<<<<<<<< HEAD:ai-dev-kit-test-base/src/testFixtures/kotlin/ai/dev/kit/fluent/TestDumbSuspendFluentTracingBase.kt
 internal class MyTestClassWithSuspendDumbHard() {
     @KotlinFlowTrace(name = "P", spanType = "P")
     suspend fun parentFunction(p: String): String = withTraceSuspended(
+========
+internal class MyTestClassWithSuspendHard {
+    @KotlinFlowTrace(name = "Parent Span")
+    suspend fun parentFunction(param: String): String = withTraceSuspended(
+>>>>>>>> bc74f14 (Support KCP plugin for tracing):ai-dev-kit-tracking-providers/ai-dev-kit-tracking-mlflow/src/test/kotlin/ai/dev/kit/providers/mlflow/tracing/TestSuspendFluentTracing.kt
         function = ::parentFunction,
         args = arrayOf<Any?>(p),
     ) {
@@ -114,6 +105,7 @@ internal class MyTestClassWithSuspendDumbHard() {
         return@withTraceSuspended "$child1Result, $child2Result, $child3Result"
     }
 
+<<<<<<<< HEAD:ai-dev-kit-test-base/src/testFixtures/kotlin/ai/dev/kit/fluent/TestDumbSuspendFluentTracingBase.kt
     @KotlinFlowTrace(name = "C1", spanType = "C")
     suspend fun childFunction1(p: String): String = withTraceSuspended(
         function = ::childFunction1,
@@ -160,6 +152,52 @@ open class TestDumbSuspendFluentTracingBase(
     fun `test trace creation`() = runBlocking {
         MyTestClassWithSuspendDumb().testFunction(1)
         val tracesResponse = getTraces(listOf(client.currentExperimentId))
+========
+    @KotlinFlowTrace(name = "Child1 Span")
+    suspend fun childFunction1(param: String): String {
+        delay(50)
+        return param.uppercase()
+    }
+
+    @KotlinFlowTrace(name = "Child2 Span")
+    suspend fun childFunction2(param: String): String {
+        delay(50)
+        val grandChild1Result = grandChildFunction1(param)
+        val grandChild2Result = grandChildFunction2(param)
+        return "$grandChild1Result and $grandChild2Result"
+    }
+
+    @KotlinFlowTrace(name = "Child3 Span")
+    suspend fun childFunction3(param: String): String {
+        delay(50)
+        return param.reversed()
+    }
+
+    @KotlinFlowTrace(name = "GrandChild1 Span")
+    suspend fun grandChildFunction1(param: String): String {
+        delay(30)
+        return "GrandChild1(${param.length})"
+    }
+
+    @KotlinFlowTrace(name = "GrandChild2 Span")
+    suspend fun grandChildFunction2(param: String): String {
+        delay(30)
+        return "GrandChild2(${param.reversed()})"
+    }
+}
+
+
+@KotlinFlowTrace(name = "Top Level Span")
+internal fun topLevelTestFunction(x: String): String {
+    return x.reversed()
+}
+
+class TestSuspendFluentTracing: MlflowTracingTests() {
+    @Test
+    fun `test trace creation`() = runBlocking {
+        MyTestClassWithSuspend().testFunction(1)
+        val tracesResponse = getTraces(listOf(KotlinMlflowClient.currentExperimentId))
+>>>>>>>> bc74f14 (Support KCP plugin for tracing):ai-dev-kit-tracking-providers/ai-dev-kit-tracking-mlflow/src/test/kotlin/ai/dev/kit/providers/mlflow/tracing/TestSuspendFluentTracing.kt
 
         assertEquals(1, tracesResponse.traces.size)
         val trace = tracesResponse.traces.first()
@@ -168,8 +206,13 @@ open class TestDumbSuspendFluentTracingBase(
     }
 
     @Test
+<<<<<<<< HEAD:ai-dev-kit-test-base/src/testFixtures/kotlin/ai/dev/kit/fluent/TestDumbSuspendFluentTracingBase.kt
     fun `test trace tags and metadata are correct`() = runBlocking {
         val testClass = MyTestClassWithSuspendDumb()
+========
+    fun `test trace tags and metadata are correct`()  = runBlocking {
+        val testClass = MyTestClassWithSuspend()
+>>>>>>>> bc74f14 (Support KCP plugin for tracing):ai-dev-kit-tracking-providers/ai-dev-kit-tracking-mlflow/src/test/kotlin/ai/dev/kit/providers/mlflow/tracing/TestSuspendFluentTracing.kt
         val arg = 3
         val result = testClass.testFunction(arg)
 
@@ -198,7 +241,7 @@ open class TestDumbSuspendFluentTracingBase(
 
     @Test
     fun `test multiple trace creation`() = runBlocking {
-        val testClass = MyTestClassWithSuspendDumb()
+        val testClass = MyTestClassWithSuspend()
         testClass.testFunction(1)
         testClass.anotherTestFunction("OpenTelemetry")
 
@@ -214,7 +257,7 @@ open class TestDumbSuspendFluentTracingBase(
 
     @Test
     fun `test parent child trace`() = runBlocking {
-        MyTestClassWithSuspendDumb().parentTestFunction("RandomString")
+        MyTestClassWithSuspend().parentTestFunction("RandomString")
 
         val tracesResponse = getTraces(listOf(client.currentExperimentId))
 
@@ -229,7 +272,7 @@ open class TestDumbSuspendFluentTracingBase(
 
     @Test
     fun `test parent child trace with non suspend child`() = runBlocking {
-        MyTestClassWithSuspendDumb().parentTestFunctionWithNonSuspendKid("RandomString")
+        MyTestClassWithSuspend().parentTestFunctionWithNonSuspendKid("RandomString")
 
         val tracesResponse = getTraces(listOf(client.currentExperimentId))
 
@@ -244,7 +287,7 @@ open class TestDumbSuspendFluentTracingBase(
 
     @Test
     fun `test parent child trace with non suspend parent`() = runBlocking {
-        MyTestClassWithSuspendDumb().parentTestFunctionWithSuspendKid("RandomString")
+        MyTestClassWithSuspend().parentTestFunctionWithSuspendKid("RandomString")
 
         val tracesResponse = getTraces(listOf(client.currentExperimentId))
         var trace = tracesResponse.traces.firstOrNull()
@@ -258,7 +301,7 @@ open class TestDumbSuspendFluentTracingBase(
 
     @Test
     fun `test recursion`() = runBlocking {
-        MyTestClassWithSuspendDumb().testRecursion(2)
+        MyTestClassWithSuspend().testRecursion(2)
 
         val tracesResponse = getTraces(listOf(client.currentExperimentId))
         var trace = tracesResponse.traces.firstOrNull()
@@ -272,7 +315,11 @@ open class TestDumbSuspendFluentTracingBase(
 
     @Test
     fun `test parent and child trace hierarchy`() = runBlocking {
+<<<<<<<< HEAD:ai-dev-kit-test-base/src/testFixtures/kotlin/ai/dev/kit/fluent/TestDumbSuspendFluentTracingBase.kt
         val result = MyTestClassWithSuspendDumbHard().parentFunction("a")
+========
+        val result = MyTestClassWithSuspendHard().parentFunction("TestInput")
+>>>>>>>> bc74f14 (Support KCP plugin for tracing):ai-dev-kit-tracking-providers/ai-dev-kit-tracking-mlflow/src/test/kotlin/ai/dev/kit/providers/mlflow/tracing/TestSuspendFluentTracing.kt
 
         val tracesResponse = getTraces(listOf(client.currentExperimentId))
 

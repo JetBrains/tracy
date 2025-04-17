@@ -6,18 +6,18 @@ actual interface SpanData
 actual interface SpanBuilder
 actual interface Span
 
-actual fun <T> withTrace(
+actual inline fun <T> withTrace(
     function: KFunction<*>,
     args: Array<Any?>,
-    block: () -> T
+    crossinline block: () -> T
 ): T {
     throw NotImplementedError()
 }
 
-actual suspend fun <T> withTraceSuspended(
+actual suspend inline fun <T> withTraceSuspended(
     function: KFunction<*>,
     args: Array<Any?>,
-    block: suspend () -> T
+    crossinline block: suspend () -> T
 ): T {
     throw NotImplementedError()
 }
