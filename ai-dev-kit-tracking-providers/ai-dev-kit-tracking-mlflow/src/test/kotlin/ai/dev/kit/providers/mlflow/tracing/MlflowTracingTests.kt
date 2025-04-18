@@ -10,7 +10,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import kotlin.random.Random
 
-open class MlflowTracingTests: MlflowContainerTests() {
+interface MlflowTracingTests: MlflowContainerTests {
     companion object {
         @BeforeAll
         @JvmStatic

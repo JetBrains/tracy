@@ -1,9 +1,9 @@
 package ai.dev.kit.providers.mlflow.dataclasses
 
+import ai.dev.kit.core.fluent.dataclasses.RequestMetadata
+import ai.dev.kit.core.fluent.dataclasses.Tag
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import ai.dev.kit.providers.mlflow.Tag
-import ai.dev.kit.providers.mlflow.RequestMetadata
 import ai.dev.kit.providers.mlflow.getCurrentTimestamp
 
 @Serializable

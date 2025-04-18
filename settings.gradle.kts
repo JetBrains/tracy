@@ -23,6 +23,8 @@ plugins {
 rootProject.name = "ai-dev-kit"
 
 include("ai-dev-kit-core")
+include("ai-dev-kit-example")
+include("ai-dev-kit-test-base")
 include("ai-dev-kit-tracking-providers")
 include("ai-dev-kit-tracking-providers:ai-dev-kit-tracking-mlflow")
-include("ai-dev-kit-example")
+include("ai-dev-kit-tracking-providers:ai-dev-kit-tracking-wandb")

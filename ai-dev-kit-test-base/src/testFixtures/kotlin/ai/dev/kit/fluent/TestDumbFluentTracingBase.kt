@@ -1,12 +1,12 @@
-package ai.dev.kit.providers.mlflow.tracing.dumb
+package ai.dev.kit.fluent
 
-import kotlinx.coroutines.runBlocking
 import ai.dev.kit.core.fluent.KotlinFlowTrace
+import ai.dev.kit.core.fluent.KotlinLoggingClient
+import ai.dev.kit.core.fluent.dataclasses.TracesResponse
 import ai.dev.kit.core.fluent.processor.withTrace
-import ai.dev.kit.providers.mlflow.KotlinMlflowClient
-import ai.dev.kit.providers.mlflow.getTraces
-import ai.dev.kit.providers.mlflow.tracing.MlflowTracingTests
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
+import kotlin.reflect.KSuspendFunction1
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
@@ -45,18 +45,21 @@ internal class MyTestClassDumb {
     }
 }
 
-class TestDumbFluentTracing : MlflowTracingTests() {
+open class TestDumbFluentTracingBase(
+    val getTraces: KSuspendFunction1<List<String>, TracesResponse>,
+    private val client: KotlinLoggingClient
+) {
     @Test
     fun `test trace creation`() {
         MyTestClassDumb().testFunction(1)
         val tracesResponse = runBlocking {
-            getTraces(listOf(KotlinMlflowClient.currentExperimentId))
+            getTraces(listOf(client.currentExperimentId))
         }
 
         assertEquals(1, tracesResponse.traces.size)
         val trace = tracesResponse.traces.first()
         assertNotNull(trace)
-        assertEquals(KotlinMlflowClient.currentExperimentId, trace.experimentId)
+        assertEquals(client.currentExperimentId, trace.experimentId)
     }
 
     @Test
@@ -66,7 +69,7 @@ class TestDumbFluentTracing : MlflowTracingTests() {
         val result = testClass.testFunction(arg)
 
         val tracesResponse = runBlocking {
-            getTraces(listOf(KotlinMlflowClient.currentExperimentId))
+            getTraces(listOf(client.currentExperimentId))
         }
         var trace = tracesResponse.traces.firstOrNull()
         trace = assertNotNull(trace)
@@ -74,19 +77,19 @@ class TestDumbFluentTracing : MlflowTracingTests() {
         assertEquals("OK", trace.status)
         assertEquals(
             "{\"paramName\":$arg}",
-            trace.requestMetadata.firstOrNull { it.key == "mlflow.traceInputs" }?.value ?: ""
+            trace.requestMetadata.firstOrNull { it.key == "traceInputs" }?.value ?: ""
         )
         assertEquals(
             result.toString(),
-            trace.requestMetadata.firstOrNull { it.key == "mlflow.traceOutputs" }?.value ?: ""
+            trace.requestMetadata.firstOrNull { it.key == "traceOutputs" }?.value ?: ""
         )
         assertEquals(
             "Main Span",
-            trace.tags.firstOrNull { it.key == "mlflow.traceName" }?.value ?: ""
+            trace.tags.firstOrNull { it.key == "traceName" }?.value ?: ""
         )
         assertEquals(
             "[{\"name\":\"Main Span\",\"type\":\"mySpanType\",\"inputs\":\"{\\\"paramName\\\":$arg}\"}]",
-            trace.tags.firstOrNull { it.key == "mlflow.traceSpans" }?.value ?: ""
+            trace.tags.firstOrNull { it.key == "traceSpans" }?.value ?: ""
         )
     }
 
@@ -97,7 +100,7 @@ class TestDumbFluentTracing : MlflowTracingTests() {
         testClass.anotherTestFunction("OpenTelemetry")
 
         val tracesResponse = runBlocking {
-            getTraces(listOf(KotlinMlflowClient.currentExperimentId))
+            getTraces(listOf(client.currentExperimentId))
         }
 
         assertEquals(2, tracesResponse.traces.size)
@@ -113,7 +116,7 @@ class TestDumbFluentTracing : MlflowTracingTests() {
         MyTestClassDumb().parentTestFunction("RandomString")
 
         val tracesResponse = runBlocking {
-            getTraces(listOf(KotlinMlflowClient.currentExperimentId))
+            getTraces(listOf(client.currentExperimentId))
         }
 
         var trace = tracesResponse.traces.firstOrNull()
@@ -121,7 +124,7 @@ class TestDumbFluentTracing : MlflowTracingTests() {
 
         assertEquals(
             "[{\"name\":\"Child Span\",\"type\":\"UNKNOWN\",\"inputs\":\"{\\\"x\\\":\\\"gnirtSmodnaR\\\"}\"},{\"name\":\"Parent Span\",\"type\":\"UNKNOWN\",\"inputs\":\"{\\\"x\\\":\\\"RandomString\\\"}\"}]",
-            trace.tags.firstOrNull { it.key == "mlflow.traceSpans" }?.value ?: ""
+            trace.tags.firstOrNull { it.key == "traceSpans" }?.value ?: ""
         )
     }
 }
