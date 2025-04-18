@@ -90,13 +90,15 @@ private fun createSpan(
     tracingMetadataConfigurator.configureMetadata(spanBuilder, traceAnnotation, method, args)
 
     val parentSpan = Span.fromContext(context)
-    if (parentSpan.spanContext.isValid) {
+
+    val span = if (parentSpan.spanContext.isValid) {
         // If parent exists, set parent
         spanBuilder.setParent(context)
+        spanBuilder.startSpan()
     } else {
         // If root, then create a trace
         spanBuilder.setNoParent()
         tracingMetadataConfigurator.createTraceInfo(spanBuilder, method, spanName)
     }
-    return spanBuilder.startSpan()
+    return span
 }

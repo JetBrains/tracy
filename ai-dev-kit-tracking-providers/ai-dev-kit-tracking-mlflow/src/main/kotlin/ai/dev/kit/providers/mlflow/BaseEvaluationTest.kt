@@ -2,24 +2,13 @@ package ai.dev.kit.providers.mlflow
 
 import ai.dev.kit.core.eval.AIModel
 import ai.dev.kit.core.eval.createAIClient
-import ai.dev.kit.core.eval.model.Flavors
-import ai.dev.kit.core.eval.model.ModelData
-import ai.dev.kit.core.eval.model.ModelParameters
-import ai.dev.kit.core.eval.model.OpenAI
-import ai.dev.kit.core.eval.model.Signature
-import ai.dev.kit.core.eval.model.createModelJson
-import ai.dev.kit.core.eval.model.createModelYaml
-import ai.dev.kit.core.fluent.processor.TracePublisher
+import ai.dev.kit.core.eval.model.*
+import ai.dev.kit.core.fluent.FluentSpanAttributes
+import ai.dev.kit.core.fluent.dataclasses.RunStatus
+import ai.dev.kit.core.fluent.dataclasses.TraceInfo
 import ai.dev.kit.core.fluent.processor.TracingFlowProcessor
-import ai.dev.kit.core.fluent.processor.TracingMetadataConfigurator
-import ai.dev.kit.providers.mlflow.dataclasses.EvalResultsTable
-import ai.dev.kit.providers.mlflow.dataclasses.EvaluationCriteria
-import ai.dev.kit.providers.mlflow.dataclasses.Generator
-import ai.dev.kit.providers.mlflow.dataclasses.RunResults
-import ai.dev.kit.providers.mlflow.dataclasses.RunTag
-import ai.dev.kit.providers.mlflow.dataclasses.TestCase
-import ai.dev.kit.providers.mlflow.fluent.MlflowFluentSpanAttributes
-import ai.dev.kit.providers.mlflow.fluent.MlflowTracePublisher
+import ai.dev.kit.providers.mlflow.dataclasses.*
+import ai.dev.kit.providers.mlflow.dataclasses.TestInfo
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Scope
@@ -28,18 +17,10 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import ai.dev.kit.providers.mlflow.dataclasses.TestInfo
-import ai.dev.kit.providers.mlflow.dataclasses.TraceInfo
-import ai.dev.kit.providers.mlflow.dataclasses.createTracePostRequest
-import ai.dev.kit.providers.mlflow.fluent.MlflowTracingMetadataConfigurator
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.kodein.di.DI
-import org.kodein.di.bind
-import org.kodein.di.singleton
 import java.io.File
 import java.util.stream.Stream
-import kotlin.collections.get
 
 /**
  * @param I The input to the model.
@@ -262,10 +243,11 @@ abstract class BaseEvaluationTest<I, O, R>(
         )
     }.stream()
 
-    private fun createDataPointSpan(dataPointIndex: Int,
-                                     tracer: Tracer,
-                                     runId: String,
-                                     testCase: TestCase<I>
+    private fun createDataPointSpan(
+        dataPointIndex: Int,
+        tracer: Tracer,
+        runId: String,
+        testCase: TestCase<I>
     ): Pair<Span, Scope> {
         val tracedRunName = "Data Point ${dataPointIndex + 1}"
         val dataPointSpan = tracer.spanBuilder(tracedRunName).setNoParent().also {
@@ -278,9 +260,9 @@ abstract class BaseEvaluationTest<I, O, R>(
                 )
 
                 val jsonTraceInfo = Json.encodeToString(TraceInfo.serializer(), createTrace(tracePostRequest))
-                it.setAttribute(MlflowFluentSpanAttributes.TRACE_CREATION_INFO.asAttributeKey(), jsonTraceInfo)
+                it.setAttribute(FluentSpanAttributes.TRACE_CREATION_INFO.key, jsonTraceInfo)
                 it.setAttribute(
-                    MlflowFluentSpanAttributes.MLFLOW_SPAN_INPUTS.asAttributeKey(),
+                    FluentSpanAttributes.SPAN_INPUTS.key,
                     "{\"Data Point\": \"${testCase.input}\"}"
                 )
             }

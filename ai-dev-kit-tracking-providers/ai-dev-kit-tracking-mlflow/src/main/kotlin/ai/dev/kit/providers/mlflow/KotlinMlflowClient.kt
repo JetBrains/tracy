@@ -1,5 +1,8 @@
 package ai.dev.kit.providers.mlflow
 
+import ai.dev.kit.core.fluent.KotlinLoggingClient
+import ai.dev.kit.core.fluent.getUserID
+import ai.dev.kit.core.fluent.dataclasses.RunStatus
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -11,7 +14,7 @@ import org.mlflow.tracking.MlflowClient
 import java.util.logging.LogManager
 import java.util.logging.Logger
 
-internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL) {
+internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL), KotlinLoggingClient {
     private val logger: Logger = LogManager.getLogManager().getLogger(Logger.GLOBAL_LOGGER_NAME)
         ?: Logger.getLogger(KotlinMlflowClient::class.java.name)
 
@@ -19,13 +22,13 @@ internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL) {
     internal const val MLFLOW_HOST = "127.0.0.1"
     internal const val MLFLOW_PORT = 5002
     internal const val ML_FLOW_URL = "http://$MLFLOW_HOST:$MLFLOW_PORT"
-    const val ML_FLOW_API = "$ML_FLOW_URL/api/2.0/mlflow"
-    const val ML_FLOW_ARTIFACTS_API = "$ML_FLOW_URL/api/2.0/mlflow-artifacts"
-    const val USER_ID = "Anton.Bragin"
+    internal const val ML_FLOW_API = "$ML_FLOW_URL/api/2.0/mlflow"
+    internal const val ML_FLOW_ARTIFACTS_API = "$ML_FLOW_URL/api/2.0/mlflow-artifacts"
+    override val USER_ID: String = getUserID()
 
     // TODO: Remove state storage here ASAP!
-    internal var currentExperimentId: String = "0"
-    internal var currentRunId: String? = null
+    override var currentExperimentId: String = "0"
+    override var currentRunId: String? = null
 
     val client = HttpClient(CIO) {
         install(ContentNegotiation) {
@@ -39,7 +42,7 @@ internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL) {
         }
     }
 
-    fun withRun(experimentId: String) = object : AutoCloseable {
+    override fun withRun(experimentId: String) = object : AutoCloseable {
         val myRunId = createRun(experimentId)?.runId
 
         override fun close() {

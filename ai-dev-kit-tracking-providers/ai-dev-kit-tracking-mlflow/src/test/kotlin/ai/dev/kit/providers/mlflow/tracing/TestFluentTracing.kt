@@ -32,7 +32,7 @@ internal class MyTestClass {
 }
 
 
-class TestFluentTracing: MlflowTracingTests() {
+class TestFluentTracing: MlflowTracingTests {
     @Test
     fun `test trace creation`() {
         MyTestClass().testFunction(1)

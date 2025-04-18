@@ -1,20 +1,20 @@
 package ai.dev.kit.providers.mlflow.dataclasses
 
-import ai.dev.kit.providers.mlflow.fluent.MlflowFluentSpanAttributes
 import io.opentelemetry.sdk.trace.data.SpanData
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
-import ai.dev.kit.providers.mlflow.Tag
-import ai.dev.kit.providers.mlflow.getAttribute
+import ai.dev.kit.core.fluent.FluentSpanAttributes
+import ai.dev.kit.core.fluent.dataclasses.Tag
+import ai.dev.kit.core.fluent.getAttribute
 
 fun List<SpanData>.toUpdateTraceTagsRequest() =
     Tag(
-        key = "mlflow.traceSpans",
+        key = "traceSpans",
         value = Json.encodeToString(this.map { spanData ->
             UpdateTraceTagsRequest(
                 name = spanData.name,
-                type = spanData.getAttribute(MlflowFluentSpanAttributes.MLFLOW_SPAN_TYPE),
-                inputs = spanData.getAttribute(MlflowFluentSpanAttributes.MLFLOW_SPAN_INPUTS)
+                type = spanData.getAttribute(FluentSpanAttributes.SPAN_TYPE),
+                inputs = spanData.getAttribute(FluentSpanAttributes.SPAN_INPUTS)
             )
         })
     )
