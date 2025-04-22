@@ -1,13 +1,21 @@
 package ai.dev.kit.example.haiku
 
-import ai.dev.kit.core.eval.AIModel
 import ai.dev.kit.core.eval.createOpenAIClient
-import ai.dev.kit.providers.mlflow.dataclasses.Generator
+import ai.dev.kit.core.fluent.KotlinFlowTrace
+import ai.dev.kit.core.eval.AIInput
+import ai.dev.kit.core.eval.AIOutput
+import ai.dev.kit.core.eval.Generator
+import ai.dev.kit.core.eval.GeneratorMetadata
+import ai.dev.kit.core.fluent.processor.withTrace
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import kotlin.jvm.optionals.getOrElse
 
-class HaikuGenerator(override val model: AIModel) : Generator<String, String> {
+data class HaikuTopic(val topic: String) : AIInput
+data class HaikuText(val text: String) : AIOutput
+
+object HaikuGeneratorConfig : GeneratorMetadata {
+    override val modelName: String = "gpt-4o-mini"
     override val prompt = """
     You are a creative and talented poet proficient in Japanese versification.
     
@@ -24,21 +32,29 @@ class HaikuGenerator(override val model: AIModel) : Generator<String, String> {
     Adhere to all the rules listed above.
     Generate a haiku about "%s".
     """.trimIndent()
+    override val temperature: Double = 1.0
+}
 
-    override val temperature = 1.0
-
+class HaikuGenerator : Generator<HaikuTopic, HaikuText> {
     /**
     Generate a haiku using the [input] provided.
      */
-    override suspend fun generate(input: String): String {
+    @KotlinFlowTrace(name = "GenerateHaiku")
+    override suspend fun generate(input: HaikuTopic): HaikuText = withTrace(
+        function = ::generate,
+        args = arrayOf(input),
+    ) {
         val client = createOpenAIClient()
 
         val params = ChatCompletionCreateParams.builder()
-            .addUserMessage(prompt.format(input))
-            .model(ChatModel.Companion.GPT_4O_MINI)
-            .temperature(temperature)
+            .addUserMessage(HaikuGeneratorConfig.prompt.format(input.topic))
+            .model(ChatModel.GPT_4O_MINI)
+            .temperature(HaikuGeneratorConfig.temperature)
             .build()
 
-        return client.chat().completions().create(params).choices().first().message().content().getOrElse { "" }
+        val text = client.chat().completions().create(params).choices().first().message().content().getOrElse { "" }
+        return@withTrace HaikuText(text)
     }
+
+    override val metadata: GeneratorMetadata = HaikuGeneratorConfig
 }

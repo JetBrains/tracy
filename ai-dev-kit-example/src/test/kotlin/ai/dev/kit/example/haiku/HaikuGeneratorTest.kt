@@ -1,42 +1,58 @@
 package ai.dev.kit.example.haiku
 
-import ai.dev.kit.core.eval.AIModel
-import ai.dev.kit.core.eval.createOpenAIClient
+import ai.dev.kit.core.eval.*
 import ai.dev.kit.core.fluent.KotlinFlowTrace
 import ai.dev.kit.providers.mlflow.dataclasses.EvaluationCriteria
+import ai.dev.kit.providers.mlflow.BaseEvaluationTest
 import ai.dev.kit.providers.mlflow.dataclasses.RunTag
-import ai.dev.kit.providers.mlflow.dataclasses.TestCase
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
-import ai.dev.kit.providers.mlflow.BaseEvaluationTest
 import kotlin.jvm.optionals.getOrElse
 
+fun haikuTestCase(topic: String) = TestCase<HaikuTopic, NoGroundTruth>(name = topic, HaikuTopic(topic), NoGroundTruth)
+
 class HaikuGeneratorTest :
-    BaseEvaluationTest<String, String, Double>(
+    BaseEvaluationTest<HaikuTopic, NoGroundTruth, HaikuText, MultiScoreEvalResult>(
         "HaikuGeneratorTest",
-        numberOfRuns = 1,
-        tags = listOf(RunTag(color = "#FF0000")),
+        numberOfRuns = 2,
+        tags = listOf(RunTag(color = "#00FF00"), RunTag(color = "#FF0000")),
     ) {
-    override fun testCases(): List<TestCase<String>> {
-        return listOf(
-            TestCase("table"),
-            TestCase("computer"),
-            TestCase("flower"),
-            TestCase("horse")
+    override val testCases: List<TestCase<HaikuTopic, NoGroundTruth>> =
+         listOf("table", "computer", "flower", "horse").map { haikuTestCase(it) }
+
+    override val generator: Generator<HaikuTopic, HaikuText> = HaikuGenerator()
+    override val evaluator: Evaluator<NoGroundTruth, HaikuText, MultiScoreEvalResult> = HaikuEvaluator()
+}
+
+class HaikuEvaluator : Evaluator<NoGroundTruth, HaikuText, MultiScoreEvalResult> {
+    override fun evaluate(groundTruth: NoGroundTruth, output: HaikuText): MultiScoreEvalResult {
+        val scores = listOf(
+            SingleScoreEvalResult(
+                scoreName = "Quality",
+                score = evaluateQuality(output),
+                junitThreshold = 6f,
+            ),
+            SingleScoreEvalResult(
+                scoreName = "Creativity",
+                score = evaluateCreativity(output),
+                junitThreshold = 6.5f,
+            ),
+            SingleScoreEvalResult(
+                scoreName = "Structure",
+                score = evaluateStructure(output),
+                junitThreshold = 6f,
+            ),
+            SingleScoreEvalResult(
+                scoreName = "ConsistsOfThreeLines",
+                score = if (consistsOfThreeLines(output)) 1f else 0f,
+                junitThreshold = 1f,
+            )
         )
+        return MultiScoreEvalResult(scores)
     }
 
-    override fun model(): HaikuGenerator {
-        return HaikuGenerator(AIModel.GPT_4O_MINI)
-    }
-
-    override fun testFunctions(): List<EvaluationCriteria<String, Double>> {
-        return listOf(
-            Structure,
-            Quality,
-            Creativity
-        )
-    }
+    override fun aggregateResults(results: List<MultiScoreEvalResult>): List<AggregateScore>
+        = results.average().map { (scoreName, score) -> AggregateScore(scoreName, score) }
 }
 
 /**
@@ -44,21 +60,15 @@ class HaikuGeneratorTest :
  *
  * In English tradition haiku should consist of three lines.
  */
-object ConsistsOfThreeLines : EvaluationCriteria<String, Double>("consists of three lines", 1.0) {
-    @KotlinFlowTrace(name = "Three Lines")
-    override fun evaluate(output: String): Double {
-        return if (output.split("\n").size == 3) {
-            1.0
-        } else {
-            0.0
-        }
-    }
+@KotlinFlowTrace(name = "ConsistsOfThreeLines")
+fun consistsOfThreeLines(haikuText: HaikuText): Boolean {
+    haikuText.text.trim().split("\n").size == 3
 }
 
-object Quality : EvaluationCriteria<String, Double>("quality") {
-    @KotlinFlowTrace(name = "Quality")
-    override fun evaluate(output: String): Double {
-        val prompt = """
+@KotlinFlowTrace(name = "Quality")
+fun evaluateQuality(haikuText: HaikuText): Float {
+    val prompt = """
+>>>>>>> fda66a4 (Refactor HaikuGenerator and its evaluation in tests to adopt new structure)
 You are an AI poetry critic. Your job is to evaluate the overall quality of a Haiku based on the following criteria:
 1. Structure: It should follow the traditional 3-line Haiku format where the syllable structure is 5-7-5.
 2. Imagery: The Haiku should evoke strong and vivid imagery, appealing to the reader's senses.
@@ -72,25 +82,23 @@ You are an AI poetry critic. Your job is to evaluate the overall quality of a Ha
 - Do NOT provide any additional context, text, or explanation beyond the score.
 
 Evaluate this Haiku:
-""" + output
+""" + haikuText.text
 
-        val client = createOpenAIClient()
+    val client = createOpenAIClient()
 
-        val params = ChatCompletionCreateParams.Companion.builder()
-            .addUserMessage(prompt)
-            .model(ChatModel.Companion.GPT_4O_MINI)
-            .temperature(1.0)
-            .build()
+    val params = ChatCompletionCreateParams.Companion.builder()
+        .addUserMessage(prompt)
+        .model(ChatModel.Companion.GPT_4O_MINI)
+        .temperature(1.0)
+        .build()
 
-        val result = client.chat().completions().create(params).choices().first()
-        return result.message().content().getOrElse { "0" }.toDouble()
-    }
+    val result = client.chat().completions().create(params).choices().first()
+    return result.message().content().getOrElse { "0" }.toDouble()
 }
 
-object Creativity : EvaluationCriteria<String, Double>("creativity") {
-    @KotlinFlowTrace(name = "Creativity")
-    override fun evaluate(output: String): Double {
-        val prompt = """
+@KotlinFlowTrace(name = "Creativity")
+fun evaluateCreativity(haikuText: HaikuText): Float {
+    val prompt = """
 You are an AI poetry critic highly focused on creativity in poetry. Your task is to evaluate the creativity of a Haiku based on the following guidelines:
 
 1. Uniqueness: The Haiku should stand out as original and not resemble typical clichés or overused expressions.
@@ -105,25 +113,24 @@ You are an AI poetry critic highly focused on creativity in poetry. Your task is
 - Do NOT include any reasoning, analysis, or explanation—only provide the score.
 
 Evaluate the creativity of this Haiku:
-""" + output
+""" + haikuText.text
 
-        val client = createOpenAIClient()
+    val client = createOpenAIClient()
 
-        val params = ChatCompletionCreateParams.Companion.builder()
-            .addUserMessage(prompt)
-            .model(ChatModel.Companion.GPT_4O_MINI)
-            .temperature(1.0)
-            .build()
+    val params = ChatCompletionCreateParams.Companion.builder()
+        .addUserMessage(prompt)
+        .model(ChatModel.Companion.GPT_4O_MINI)
+        .temperature(1.0)
+        .build()
 
-        val result = client.chat().completions().create(params).choices().first()
-        return result.message().content().getOrElse { "0" }.toDouble()
-    }
+    val result = client.chat().completions().create(params).choices().first()
+    return result.message().content().getOrElse { "0" }.toDouble()
 }
 
-object Structure : EvaluationCriteria<String, Double>("structure") {
-    @KotlinFlowTrace(name = "Structure")
-    override fun evaluate(output: String): Double {
-        val prompt = """
+
+@KotlinFlowTrace(name = "Structure")
+fun evaluateStructure(haikuText: HaikuText): Float {
+    val prompt = """
 You are a Haiku poetry expert and your task is to evaluate the structural correctness of a Haiku. Haiku should adhere to the following strict rules:
 
 1. Line Count: The Haiku must consist of 3 lines.
@@ -142,16 +149,15 @@ You are a Haiku poetry expert and your task is to evaluate the structural correc
 - Do NOT provide additional details or commentary—simply return the numerical score.
 
 Evaluate the structure of this Haiku:
-""" + output
-        val client = createOpenAIClient()
+""" + haikuText.text
+    val client = createOpenAIClient()
 
-        val params = ChatCompletionCreateParams.Companion.builder()
-            .addUserMessage(prompt)
-            .model(ChatModel.Companion.GPT_4O_MINI)
-            .temperature(1.0)
-            .build()
+    val params = ChatCompletionCreateParams.Companion.builder()
+        .addUserMessage(prompt)
+        .model(ChatModel.Companion.GPT_4O_MINI)
+        .temperature(1.0)
+        .build()
 
-        val result = client.chat().completions().create(params).choices().first()
-        return result.message().content().getOrElse { "0" }.toDouble()
-    }
+    val result = client.chat().completions().create(params).choices().first()
+    return result.message().content().getOrElse { "0" }.toFloat()
 }

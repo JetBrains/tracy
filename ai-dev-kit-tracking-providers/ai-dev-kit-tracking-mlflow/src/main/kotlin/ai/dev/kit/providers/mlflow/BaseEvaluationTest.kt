@@ -1,14 +1,12 @@
 package ai.dev.kit.providers.mlflow
 
-import ai.dev.kit.core.eval.AIModel
-import ai.dev.kit.core.eval.createAIClient
+import ai.dev.kit.core.eval.*
 import ai.dev.kit.core.eval.model.*
 import ai.dev.kit.core.fluent.FluentSpanAttributes
 import ai.dev.kit.core.fluent.dataclasses.RunStatus
 import ai.dev.kit.core.fluent.dataclasses.TraceInfo
 import ai.dev.kit.core.fluent.processor.TracingFlowProcessor
 import ai.dev.kit.providers.mlflow.dataclasses.*
-import ai.dev.kit.providers.mlflow.dataclasses.TestInfo
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Scope
@@ -22,13 +20,13 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import java.io.File
 import java.util.stream.Stream
 
-/**
- * @param I The input to the model.
- * @param O The output produced by the model.
- * @param R The evaluation result produced based on the model output.
- */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-abstract class BaseEvaluationTest<I, O, R>(
+abstract class BaseEvaluationTest<
+        AIInputT : AIInput,
+        GroundTruthT : GroundTruth,
+        AIOutputT : AIOutput,
+        EvalResultT : EvalResult
+        >(
     private val experimentName: String = "Evaluation test",
     private val runName: String? = null,
     private val numberOfRuns: Int = 1,
@@ -37,8 +35,7 @@ abstract class BaseEvaluationTest<I, O, R>(
     private lateinit var experimentId: String
     private var baselineText: String? = null
     private var modelData: ModelData? = null
-    private val runResults = mutableListOf<RunResults<I, O, R>>()
-
+    private val runResults = mutableListOf<RunResults<AIInputT, GroundTruthT, AIOutputT, EvalResultT>>()
 
     @BeforeAll
     fun beforeAll() {
@@ -116,6 +113,8 @@ abstract class BaseEvaluationTest<I, O, R>(
     }
 
     private fun createModelData(runId: String = "<PLACEHOLDER_RUN_ID>"): ModelData {
+        val metadata = generator.metadata
+
         val modelData = ModelData(
             runId = runId,
             artifactPath = "model",
@@ -132,9 +131,9 @@ abstract class BaseEvaluationTest<I, O, R>(
                 params = null
             ),
             modelParameters = ModelParameters(
-                prompt = model().prompt,
-                model = model().model.name,
-                temperature = model().temperature
+                prompt = metadata.prompt,
+                model = metadata.modelName,
+                temperature = metadata.temperature,
             ),
             utcTimeCreated = getCurrentTimestamp().toString()
         )
@@ -158,7 +157,7 @@ abstract class BaseEvaluationTest<I, O, R>(
     fun afterAll() {
         println("📊 Logging evaluation results")
 
-        runResults.forEachIndexed { index, runResult ->
+        runResults.forEachIndexed { runIndex, runResult ->
             val (testResults, runId, runStatus) = runResult
             try {
                 runBlocking {
@@ -166,79 +165,41 @@ abstract class BaseEvaluationTest<I, O, R>(
                         setTag(
                             runId,
                             "mlflow.runColor",
-                            tags[index].color,
+                            tags[runIndex].color,
                         )
                 }
-
-                val metricsLookup = testResults.associate { (it.testName to it.input) to (it.result to it.output) }
-
-                val testNames = testResults.map { it.testName }.distinct()
-                val testCases = testResults.map { it.input }.distinct()
-
-                val tableData: List<List<String>> = testCases.map { testCase ->
-                    val output = metricsLookup[testNames.firstOrNull() to testCase]?.second
-                    listOf(testCase.toString(), output.toString()) + testNames.map { testName ->
-                        val resultInfo = metricsLookup[testName to testCase]
-                        resultInfo?.first?.toString() ?: "N/A"
-                    }
-                }
-
-                val evalResultsTable = EvalResultsTable(
-                    columns = listOf("inputs", "output") + testNames,
-                    data = tableData
-                )
-
-                val evalResultsJson = Json.encodeToString(evalResultsTable)
-
-                val loggedRun = runBlocking { getRun(runId) }
-                val artifactPath = "${loggedRun.info.experimentId}/${runId}/artifacts/eval_results_table.json"
-
-                uploadArtifact(artifactPath, evalResultsJson)
-
-                runBlocking {
-                    setTag(
-                        runId,
-                        "mlflow.loggedArtifacts",
-                        "[{\"path\": \"eval_results_table.json\", \"type\": \"table\"}]"
-                    )
-                }
-
-                logAveragePlot(runId, testResults)
+                uploadResultsTableAsArtifact(runId, testResults)
+                logAverageScore(runId, testResults.map { it.evalResult })
             } catch (e: Exception) {
-                runResults[index].finalStatus = RunStatus.FAILED
+                runResults[runIndex].finalStatus = RunStatus.FAILED
             } finally {
                 runBlocking { updateRun(runId, runStatus) }
             }
         }
     }
 
-
     @TestFactory
     fun Runs(): Stream<DynamicContainer> = runResults.mapIndexed { runNum, runResult ->
-        val testFunctions = testFunctions()
-
         DynamicContainer.dynamicContainer(
             "Run ${if (runResults.size > 1) runNum + 1 else ""}",
-            testCases().mapIndexed { dataPointIndex, testCase ->
+            testCases.mapIndexed { dataPointIndex, testCase ->
                 val (dataPointSpan, dataPointScope) =
                     createDataPointSpan(dataPointIndex, TracingFlowProcessor.tracer, runResult.runId, testCase)
                 val output = runBlocking {
                     withContext(dataPointSpan.asContextElement()) {
-                        model().generate(testCase.input)
+                        generator.generate(testCase.input)
                     }
                 }
-                DynamicContainer.dynamicContainer(
-                    testCase.input.toString(),
-                    testFunctions.mapIndexed { index, testFunction ->
-                        DynamicTest.dynamicTest(testFunction.name) {
-                            executeSingleTest(dataPointSpan, testFunction, testCase, runNum, runResult.runId, output)
-                            if (index == testFunctions.lastIndex) {
-                                dataPointSpan.end()
-                                dataPointScope.close()
-                            }
-                        }
+                val testCaseName = testCase.name
+                DynamicTest.dynamicTest(testCaseName) {
+                    dataPointSpan.makeCurrent()
+                    try {
+                        executeSingleTest(testCaseName, evaluator, testCase, runNum, runResult.runId, output)
+                    } finally {
+                        dataPointSpan.end()
+                        dataPointScope.close()
                     }
-                )
+                }
             }
         )
     }.stream()
@@ -247,7 +208,7 @@ abstract class BaseEvaluationTest<I, O, R>(
         dataPointIndex: Int,
         tracer: Tracer,
         runId: String,
-        testCase: TestCase<I>
+        testCase: TestCase<AIInputT, GroundTruthT>
     ): Pair<Span, Scope> {
         val tracedRunName = "Data Point ${dataPointIndex + 1}"
         val dataPointSpan = tracer.spanBuilder(tracedRunName).setNoParent().also {
@@ -272,42 +233,31 @@ abstract class BaseEvaluationTest<I, O, R>(
     }
 
     private fun executeSingleTest(
-        span: Span,
-        testFunction: EvaluationCriteria<O, R>,
-        testCase: TestCase<I>,
+        testCaseName: String,
+        testFunction: Evaluator<GroundTruthT, AIOutputT, EvalResultT>,
+        testCase: TestCase<AIInputT, GroundTruthT>,
         runNum: Int,
         runId: String,
-        output: O
+        output: AIOutputT
     ) {
-        var result: R? = null
-        var message = "⚠️ Run details are missing or unavailable."
-
-        try {
-            span.makeCurrent()
-
-            result = testFunction.evaluate(output)
-
-            message = if (testFunction.resultExpected != null) {
-                assertEquals(
-                    testFunction.resultExpected,
-                    result
-                )
-                "✅ Test Passed: ${testFunction.name} | Case: ${testCase.input} | Result: $result"
-            } else {
-                "🎯 Test Executed: ${testFunction.name} | Case: ${testCase.input} | Result: $result"
-            }
-
-
+        val result = try {
+            testFunction.evaluate(testCase.groundTruth, output)
         } catch (e: Throwable) {
-            message =
-                "❌ Test Failed: ${testFunction.name} | Case: ${testCase.input} | Result: $result | Reason: ${e.message}"
-            throw e
-        } finally {
+            val message = "❌ Test Failed: $testCaseName | Case: $testCase | Reason: Evaluator has thrown ${e.message}"
             logTest(message, runId)
+            fail(message)
+        }
+        runResults[runNum].testResults.add(TestResult(testCase, output, result))
 
-            if (result != null && output != null) {
-                runResults[runNum].testResults.add(TestInfo(testCase.input, output, result, testFunction.name))
-            }
+        if (result.hasJunitTestSucceeded) {
+            logTest(
+                message = "✅ Test Passed: $testCaseName | Case: $testCase | Result: $result",
+                runId = runId
+            )
+        } else {
+            val message = "❌ Test failed: $testCaseName | Case: $testCase | Result: $result"
+            logTest(message, runId)
+            fail(message)
         }
     }
 
@@ -316,29 +266,47 @@ abstract class BaseEvaluationTest<I, O, R>(
         println("🔗 View results at ${KotlinMlflowClient.ML_FLOW_URL}/#/experiments/$experimentId/runs/$runId")
     }
 
-    private fun logAveragePlot(runId: String, testResults: List<TestInfo<I, O, R>>) {
+    private fun uploadResultsTableAsArtifact(
+        runId: String,
+        testResults: List<TestResult<AIInputT, GroundTruthT, AIOutputT, EvalResultT>>
+    ) {
+        val loggedRun = runBlocking { getRun(runId) }
+        val artifactPath = "${loggedRun.info.experimentId}/${runId}/artifacts/eval_results_table.json"
+
+        val table = testResults.toTable() ?: return
+        uploadArtifact(artifactPath, table.dumpForMLFlow())
+
         runBlocking {
-            val results = testResults.map { it.result }
+            setTag(
+                runId,
+                "mlflow.loggedArtifacts",
+                "[{\"path\": \"eval_results_table.json\", \"type\": \"table\"}]"
+            )
+        }
+    }
 
-            if (results.all { it is Number }) {
-                val avgScore = results.map { (it as Number).toDouble() }.average()
-
-                testResults.forEach { test ->
-                    logMetric(KotlinMlflowClient, runId, test.testName, test.result as Double)
-                }
-
-                logMetric(KotlinMlflowClient, runId, "Overall_Average", avgScore)
-            } else {
-                println("Warning: Results are not numeric, cannot compute average.")
-            }
-
+    private fun logAverageScore(runId: String, evalResults: List<EvalResultT>) {
+        val aggregateScores = evaluator.aggregateResults(evalResults)
+        for (agg in aggregateScores) {
+            logMetric(KotlinMlflowClient, runId, agg.scoreName, agg.score)
+        }
+        if (aggregateScores.isNotEmpty()) {
             println("📈 Results logged to MLFlow for Run ID: $runId")
         }
     }
 
-    abstract fun testCases(): List<TestCase<I>>
-
-    abstract fun model(): Generator<I, O>
-
-    abstract fun testFunctions(): List<EvaluationCriteria<O, R>>
+    abstract val testCases: List<TestCase<AIInputT, GroundTruthT>>
+    abstract val generator: Generator<AIInputT, AIOutputT>
+    abstract val evaluator: Evaluator<GroundTruthT, AIOutputT, EvalResultT>
 }
+
+private data class RunResults<
+        AIInputT : AIInput,
+        GroundTruthT : GroundTruth,
+        AIOutputT : AIOutput,
+        EvalResultT : EvalResult
+        >(
+    val testResults: MutableList<TestResult<AIInputT, GroundTruthT, AIOutputT, EvalResultT>>,
+    val runId: String,
+    var finalStatus: RunStatus,
+)
