@@ -17,6 +17,11 @@
                   <project path="$PROJECT_DIR$/ai-dev-kit-plugin/ai-dev-kit-trace-plugin" />
                 </projects>
               </build>
+              <build path="$PROJECT_DIR$/buildSrc" name="buildSrc">
+                <projects>
+                  <project path="$PROJECT_DIR$/buildSrc" />
+                </projects>
+              </build>
             </builds>
           </compositeBuild>
         </compositeConfiguration>
@@ -35,6 +40,7 @@
             <option value="$PROJECT_DIR$/ai-dev-kit-tracking-providers" />
             <option value="$PROJECT_DIR$/ai-dev-kit-tracking-providers/ai-dev-kit-tracking-mlflow" />
             <option value="$PROJECT_DIR$/ai-dev-kit-tracking-providers/ai-dev-kit-tracking-wandb" />
+            <option value="$PROJECT_DIR$/buildSrc" />
           </set>
         </option>
       </GradleProjectSettings>

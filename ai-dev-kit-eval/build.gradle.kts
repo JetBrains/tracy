@@ -1,13 +1,7 @@
 plugins {
-    kotlin("jvm")
+    alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlinx.dataframe)
-}
-
-group = "com.jetbrains"
-version = "1.0-SNAPSHOT"
-
-repositories {
-    mavenCentral()
+    id("ai.dev.kit.publish")
 }
 
 dependencies {

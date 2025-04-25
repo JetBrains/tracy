@@ -1,14 +1,7 @@
 plugins {
-    kotlin("jvm")
+    alias(libs.plugins.kotlin.jvm)
     id("java-test-fixtures")
     id("ai.dev.kit.trace")
-}
-
-group = "com.jetbrains"
-version = "1.0-SNAPSHOT"
-
-repositories {
-    mavenCentral()
 }
 
 dependencies {

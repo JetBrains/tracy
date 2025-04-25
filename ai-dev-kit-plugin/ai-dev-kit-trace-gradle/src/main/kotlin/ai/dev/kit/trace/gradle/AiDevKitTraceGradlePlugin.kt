@@ -14,11 +14,10 @@ class AiDevKitTraceGradlePlugin : KotlinCompilerPluginSupportPlugin {
         return enablePlugin?.toBoolean() != false
     }
 
-
-    override fun getCompilerPluginId(): String = "ai.dev.kit.trace"
+    override fun getCompilerPluginId(): String = "ai.dev.kit.trace.plugin"
 
     override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
-        groupId = "ai.dev.kit",
+        groupId = "com.jetbrains",
         artifactId = "ai-dev-kit-trace-plugin",
         version = "1.0.1"
     )

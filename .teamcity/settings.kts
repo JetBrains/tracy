@@ -49,7 +49,7 @@ object PublishToSpace : BuildType({
         gradle {
             name = "Publish space"
             id = "Publish_space"
-            tasks = "clean publish"
+            tasks = "ai-dev-kit-trace-gradle:publish ai-dev-kit-trace-plugin:publish :publishContentModules"
         }
     }
 

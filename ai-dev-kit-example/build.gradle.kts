@@ -3,13 +3,6 @@ plugins {
     id("ai.dev.kit.trace")
 }
 
-group = "com.jetbrains"
-version = "1.0-SNAPSHOT"
-
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     implementation(project(":ai-dev-kit-core"))
     implementation(project(":ai-dev-kit-eval"))
