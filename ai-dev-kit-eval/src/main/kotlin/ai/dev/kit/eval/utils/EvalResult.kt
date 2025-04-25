@@ -1,5 +1,10 @@
 package ai.dev.kit.eval.utils
 
+import org.jetbrains.kotlinx.dataframe.DataFrame
+import org.jetbrains.kotlinx.dataframe.api.add
+import org.jetbrains.kotlinx.dataframe.api.cast
+import org.jetbrains.kotlinx.dataframe.api.dataFrameOf
+
 /**
  * The score or several scores assigned by [Evaluator] to
  * a particular [AIOutput].
@@ -13,7 +18,7 @@ open class SingleScoreEvalResult(
     val scoreName: String,
     val score: Float,
     junitThreshold: Float = 0.0f
-): EvalResult {
+) : EvalResult {
     override val hasJunitTestSucceeded: Boolean = score >= junitThreshold
 
     override fun toString(): String = "SingleScoreEvalResult[$scoreName=$score]"
@@ -28,12 +33,13 @@ class MultiScoreEvalResult(val scores: List<SingleScoreEvalResult>) : EvalResult
             .let { "MultiScoreEvalResult[$it]" }
 }
 
-fun averageSingleScoreEvalResults(results: List<SingleScoreEvalResult>): Double {
+fun averageSingleScoreEvalResults(results: List<SingleScoreEvalResult>): Double? {
     if (results.isEmpty()) return 0.0
 
     val scoreNames = results.map { it.scoreName }.distinct()
     if (scoreNames.size != 1) {
-        println("WARNING: Score names are inconsistent, the score is probably meaningless: $scoreNames")
+        println("WARNING: Score names are inconsistent, cannot comput score: $scoreNames")
+        return null
     }
     return results.map { it.score }.average()
 }
@@ -45,15 +51,18 @@ fun averageMultiScoreEvalResults(results: List<MultiScoreEvalResult>): Map<Strin
     val listOfNameToScoreMaps = results.map {
         it.scores.associate { it.scoreName to it.score }
     }
-    return allScoreNames.associateWith { name ->
-        listOfNameToScoreMaps.map { it[name] }.requireNoNulls().average()
+    val nameToAvg = mutableMapOf<String, Double>()
+    allScoreNames.forEach { name ->
+        val scores = listOfNameToScoreMaps.map { it[name] ?: return@forEach }
+        nameToAvg[name] = scores.average()
     }
+    return nameToAvg
 }
 
 fun List<EvalResult>.allSingleScore() = all { it is SingleScoreEvalResult }
 fun List<EvalResult>.allMultiScore() = all { it is MultiScoreEvalResult }
 
-fun List<EvalResult>.toTable(): Table? {
+fun List<EvalResult>.toTable(): DataFrame<Float>? {
     if (isEmpty()) return null
 
     if (allSingleScore()) {
@@ -63,10 +72,7 @@ fun List<EvalResult>.toTable(): Table? {
             println("WARNING: Score names are inconsistent, could not convert List<SingleScoreEvalResult> to table: $scoreNames")
             return null
         }
-        return Column(
-            name = scoreNames.first(),
-            data = results.map { it.score }
-        ).toTable()
+        return dataFrameOf(scoreNames.first() to results.map { it.score }).cast<Float>()
     } else if (allMultiScore()) {
         val results = map { it as MultiScoreEvalResult }
         val allScoreNames = results.flatMap { it.scores }.map { it.scoreName }.distinct()
@@ -78,8 +84,9 @@ fun List<EvalResult>.toTable(): Table? {
                 listOfNameToScoreMaps.map { it[name] ?: return null }
             }
             .mapNotNull { it.toTable() }
-            .reduceOrNull { acc, table -> acc.join(table) }
+            .reduceOrNull { acc, table -> acc.add(table) }
     }
 
     return null
 }
+

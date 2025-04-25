@@ -1,6 +1,10 @@
 package ai.dev.kit.providers.mlflow.dataclasses
 
 import ai.dev.kit.eval.utils.*
+import org.jetbrains.kotlinx.dataframe.DataFrame
+import org.jetbrains.kotlinx.dataframe.api.add
+import org.jetbrains.kotlinx.dataframe.api.dataFrameOf
+
 
 data class TestResult<
         AIInputT : AIInput,
@@ -13,27 +17,16 @@ data class TestResult<
     val evalResult: EvalResultT
 )
 
-fun List<TestResult<*, *, *, *>>.toTable(): Table? {
-    val indexColumn = Column(
-        name = "#",
-        data = (1..size).map { it.toString() }
+fun List<TestResult<*, *, *, *>>.toTable(): DataFrame<*>? {
+    val basicTable = dataFrameOf(
+        "#" to (1..size).map { it.toString() },
+        "Input" to map { it.testCase.input },
+        "Output" to map { it.output },
     )
 
-    val inputColumn = Column(
-        name = "Input",
-        data = map { it.testCase.input }
-    )
-
-    val outputColumn = Column(
-        name = "Output",
-        data = map { it.output }
-    )
-
-    val basicTable = tableOf(indexColumn, inputColumn, outputColumn)
-
-    var evalResultsTable: Table? = map { it.evalResult }.toTable()
+    var evalResultsTable: DataFrame<Float>? = map { it.evalResult }.toTable()
     if (evalResultsTable == null) {
         return basicTable
     }
-    return basicTable join evalResultsTable
+    return basicTable.add(evalResultsTable)
 }
