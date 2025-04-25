@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm")
+    alias(libs.plugins.kotlinx.dataframe)
 }
 
 group = "com.jetbrains"
@@ -12,6 +13,7 @@ repositories {
 dependencies {
     implementation(project(":ai-dev-kit-core"))
     implementation(libs.kotlin)
+    implementation(libs.kotlinx.dataframe)
 }
 
 kotlin {
