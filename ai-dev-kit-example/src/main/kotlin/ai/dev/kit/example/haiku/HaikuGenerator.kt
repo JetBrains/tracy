@@ -2,7 +2,6 @@ package ai.dev.kit.example.haiku
 
 import ai.dev.kit.core.eval.createOpenAIClient
 import ai.dev.kit.core.fluent.KotlinFlowTrace
-import ai.dev.kit.core.fluent.processor.withTrace
 import ai.dev.kit.eval.utils.AIInput
 import ai.dev.kit.eval.utils.AIOutput
 import ai.dev.kit.eval.utils.Generator
@@ -40,10 +39,7 @@ class HaikuGenerator : Generator<HaikuTopic, HaikuText> {
     Generate a haiku using the [input] provided.
      */
     @KotlinFlowTrace(name = "GenerateHaiku")
-    override suspend fun generate(input: HaikuTopic): HaikuText = withTrace(
-        function = ::generate,
-        args = arrayOf(input),
-    ) {
+    override suspend fun generate(input: HaikuTopic): HaikuText {
         val client = createOpenAIClient()
 
         val params = ChatCompletionCreateParams.builder()
@@ -53,7 +49,7 @@ class HaikuGenerator : Generator<HaikuTopic, HaikuText> {
             .build()
 
         val text = client.chat().completions().create(params).choices().first().message().content().getOrElse { "" }
-        return@withTrace HaikuText(text)
+        return HaikuText(text)
     }
 
     override val metadata: GeneratorMetadata = HaikuGeneratorConfig
