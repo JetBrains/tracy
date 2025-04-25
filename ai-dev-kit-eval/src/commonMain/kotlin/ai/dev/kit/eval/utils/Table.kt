@@ -1,4 +1,4 @@
-package ai.dev.kit.core.eval
+package ai.dev.kit.eval.utils
 
 data class Table(val columns: List<Column>) {
     init {

@@ -1,11 +1,13 @@
 package ai.dev.kit.providers.mlflow
 
-import ai.dev.kit.core.eval.*
+import ai.dev.kit.core.eval.AIModel
+import ai.dev.kit.core.eval.createAIClient
 import ai.dev.kit.core.eval.model.*
 import ai.dev.kit.core.fluent.FluentSpanAttributes
 import ai.dev.kit.core.fluent.dataclasses.RunStatus
 import ai.dev.kit.core.fluent.dataclasses.TraceInfo
 import ai.dev.kit.core.fluent.processor.TracingFlowProcessor
+import ai.dev.kit.eval.utils.*
 import ai.dev.kit.providers.mlflow.dataclasses.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
@@ -247,7 +249,13 @@ abstract class BaseEvaluationTest<
             logTest(message, runId)
             fail(message)
         }
-        runResults[runNum].testResults.add(TestResult(testCase, output, result))
+        runResults[runNum].testResults.add(
+            TestResult<AIInputT, GroundTruthT, AIOutputT, EvalResultT>(
+                testCase,
+                output,
+                result
+            )
+        )
 
         if (result.hasJunitTestSucceeded) {
             logTest(

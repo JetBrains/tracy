@@ -1,4 +1,4 @@
-package ai.dev.kit.core.eval
+package ai.dev.kit.eval.utils
 
 /**
  * The score or several scores assigned by [Evaluator] to
@@ -28,21 +28,21 @@ class MultiScoreEvalResult(val scores: List<SingleScoreEvalResult>) : EvalResult
             .let { "MultiScoreEvalResult[$it]" }
 }
 
-fun List<SingleScoreEvalResult>.average(): Double {
-    if (isEmpty()) return 0.0
+fun averageSingleScoreEvalResults(results: List<SingleScoreEvalResult>): Double {
+    if (results.isEmpty()) return 0.0
 
-    val scoreNames = map { it.scoreName }.distinct()
+    val scoreNames = results.map { it.scoreName }.distinct()
     if (scoreNames.size != 1) {
         println("WARNING: Score names are inconsistent, the score is probably meaningless: $scoreNames")
     }
-    return map { it.score }.average()
+    return results.map { it.score }.average()
 }
 
-fun List<MultiScoreEvalResult>.average(): Map<String, Double> {
-    if (isEmpty()) return emptyMap()
+fun averageMultiScoreEvalResults(results: List<MultiScoreEvalResult>): Map<String, Double> {
+    if (results.isEmpty()) return emptyMap()
 
-    val allScoreNames = flatMap { it.scores }.map { it.scoreName }.distinct()
-    val listOfNameToScoreMaps = map {
+    val allScoreNames = results.flatMap { it.scores }.map { it.scoreName }.distinct()
+    val listOfNameToScoreMaps = results.map {
         it.scores.associate { it.scoreName to it.score }
     }
     return allScoreNames.associateWith { name ->

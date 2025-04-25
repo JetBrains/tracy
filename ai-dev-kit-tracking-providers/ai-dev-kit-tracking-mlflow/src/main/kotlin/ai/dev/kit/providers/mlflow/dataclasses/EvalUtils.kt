@@ -1,6 +1,6 @@
 package ai.dev.kit.providers.mlflow.dataclasses
 
-import ai.dev.kit.core.eval.Table
+import ai.dev.kit.eval.utils.Table
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 

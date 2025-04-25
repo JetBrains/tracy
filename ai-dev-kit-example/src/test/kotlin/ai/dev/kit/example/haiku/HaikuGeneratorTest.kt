@@ -1,8 +1,8 @@
 package ai.dev.kit.example.haiku
 
-import ai.dev.kit.core.eval.*
+import ai.dev.kit.core.eval.createOpenAIClient
 import ai.dev.kit.core.fluent.KotlinFlowTrace
-import ai.dev.kit.providers.mlflow.dataclasses.EvaluationCriteria
+import ai.dev.kit.eval.utils.*
 import ai.dev.kit.providers.mlflow.BaseEvaluationTest
 import ai.dev.kit.providers.mlflow.dataclasses.RunTag
 import com.openai.models.ChatModel
@@ -51,8 +51,8 @@ class HaikuEvaluator : Evaluator<NoGroundTruth, HaikuText, MultiScoreEvalResult>
         return MultiScoreEvalResult(scores)
     }
 
-    override fun aggregateResults(results: List<MultiScoreEvalResult>): List<AggregateScore>
-        = results.average().map { (scoreName, score) -> AggregateScore(scoreName, score) }
+    override fun aggregateResults(results: List<MultiScoreEvalResult>): List<AggregateScore> =
+        averageMultiScoreEvalResults(results).map { (scoreName, score) -> AggregateScore(scoreName, score) }
 }
 
 /**
@@ -61,9 +61,8 @@ class HaikuEvaluator : Evaluator<NoGroundTruth, HaikuText, MultiScoreEvalResult>
  * In English tradition haiku should consist of three lines.
  */
 @KotlinFlowTrace(name = "ConsistsOfThreeLines")
-fun consistsOfThreeLines(haikuText: HaikuText): Boolean {
+fun consistsOfThreeLines(haikuText: HaikuText): Boolean =
     haikuText.text.trim().split("\n").size == 3
-}
 
 @KotlinFlowTrace(name = "Quality")
 fun evaluateQuality(haikuText: HaikuText): Float {
@@ -93,7 +92,7 @@ Evaluate this Haiku:
         .build()
 
     val result = client.chat().completions().create(params).choices().first()
-    return result.message().content().getOrElse { "0" }.toDouble()
+    return result.message().content().getOrElse { "0" }.toFloat()
 }
 
 @KotlinFlowTrace(name = "Creativity")
@@ -124,7 +123,7 @@ Evaluate the creativity of this Haiku:
         .build()
 
     val result = client.chat().completions().create(params).choices().first()
-    return result.message().content().getOrElse { "0" }.toDouble()
+    return result.message().content().getOrElse { "0" }.toFloat()
 }
 
 

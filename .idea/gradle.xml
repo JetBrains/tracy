@@ -26,6 +26,7 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/ai-dev-kit-core" />
+            <option value="$PROJECT_DIR$/ai-dev-kit-eval" />
             <option value="$PROJECT_DIR$/ai-dev-kit-example" />
             <option value="$PROJECT_DIR$/ai-dev-kit-plugin" />
             <option value="$PROJECT_DIR$/ai-dev-kit-plugin/ai-dev-kit-trace-gradle" />

@@ -2,11 +2,11 @@ package ai.dev.kit.example.haiku
 
 import ai.dev.kit.core.eval.createOpenAIClient
 import ai.dev.kit.core.fluent.KotlinFlowTrace
-import ai.dev.kit.core.eval.AIInput
-import ai.dev.kit.core.eval.AIOutput
-import ai.dev.kit.core.eval.Generator
-import ai.dev.kit.core.eval.GeneratorMetadata
 import ai.dev.kit.core.fluent.processor.withTrace
+import ai.dev.kit.eval.utils.AIInput
+import ai.dev.kit.eval.utils.AIOutput
+import ai.dev.kit.eval.utils.Generator
+import ai.dev.kit.eval.utils.GeneratorMetadata
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import kotlin.jvm.optionals.getOrElse

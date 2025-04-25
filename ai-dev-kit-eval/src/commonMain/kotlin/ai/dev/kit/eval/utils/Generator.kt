@@ -1,4 +1,4 @@
-package ai.dev.kit.core.eval
+package ai.dev.kit.eval.utils
 
 /**
  * An encapsulation of the AI feature under test.

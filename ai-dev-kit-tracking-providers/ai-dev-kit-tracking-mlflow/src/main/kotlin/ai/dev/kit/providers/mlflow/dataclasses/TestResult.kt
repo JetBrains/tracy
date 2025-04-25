@@ -1,6 +1,6 @@
 package ai.dev.kit.providers.mlflow.dataclasses
 
-import ai.dev.kit.core.eval.*
+import ai.dev.kit.eval.utils.*
 
 data class TestResult<
         AIInputT : AIInput,

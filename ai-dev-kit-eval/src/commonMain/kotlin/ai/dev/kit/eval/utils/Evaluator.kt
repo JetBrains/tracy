@@ -1,4 +1,4 @@
-package ai.dev.kit.core.eval
+package ai.dev.kit.eval.utils
 
 interface Evaluator<GroundTruthT: GroundTruth, AIOutputT: AIOutput, EvalResultT: EvalResult> {
     fun evaluate(groundTruth: GroundTruthT, output: AIOutputT): EvalResultT
