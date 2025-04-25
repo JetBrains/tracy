@@ -1,5 +1,11 @@
 package ai.dev.kit.eval.utils
 
+data class TestCase<AIInputT : AIInput, GroundTruthT : GroundTruth>(
+    val name: String,
+    val input: AIInputT,
+    val groundTruth: GroundTruthT
+)
+
 /**
  * The input of the AI feature under test.
  */
@@ -23,9 +29,3 @@ interface GroundTruth
  * use the [NoGroundTruth] stub.
  */
 data object NoGroundTruth : GroundTruth
-
-data class TestCase<AIInputT : AIInput, GroundTruthT : GroundTruth>(
-    val name: String,
-    val input: AIInputT,
-    val groundTruth: GroundTruthT
-)
