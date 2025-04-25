@@ -67,7 +67,6 @@ fun consistsOfThreeLines(haikuText: HaikuText): Boolean =
 @KotlinFlowTrace(name = "Quality")
 fun evaluateQuality(haikuText: HaikuText): Float {
     val prompt = """
->>>>>>> fda66a4 (Refactor HaikuGenerator and its evaluation in tests to adopt new structure)
 You are an AI poetry critic. Your job is to evaluate the overall quality of a Haiku based on the following criteria:
 1. Structure: It should follow the traditional 3-line Haiku format where the syllable structure is 5-7-5.
 2. Imagery: The Haiku should evoke strong and vivid imagery, appealing to the reader's senses.
