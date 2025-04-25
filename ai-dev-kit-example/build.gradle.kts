@@ -1,5 +1,6 @@
 plugins {
-    kotlin("jvm")
+    alias(libs.plugins.kotlin.jvm)
+    id("ai.dev.kit.trace")
 }
 
 group = "com.jetbrains"

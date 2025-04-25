@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm")
     id("java-test-fixtures")
+    id("ai.dev.kit.trace")
 }
 
 group = "com.jetbrains"

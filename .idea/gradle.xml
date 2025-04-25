@@ -4,6 +4,22 @@
   <component name="GradleSettings">
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
+        <compositeConfiguration>
+          <compositeBuild compositeDefinitionSource="SCRIPT">
+            <builds>
+              <build path="$PROJECT_DIR$/ai-dev-kit-plugin/ai-dev-kit-trace-gradle" name="ai-dev-kit-trace-gradle">
+                <projects>
+                  <project path="$PROJECT_DIR$/ai-dev-kit-plugin/ai-dev-kit-trace-gradle" />
+                </projects>
+              </build>
+              <build path="$PROJECT_DIR$/ai-dev-kit-plugin/ai-dev-kit-trace-plugin" name="ai-dev-kit-trace-plugin">
+                <projects>
+                  <project path="$PROJECT_DIR$/ai-dev-kit-plugin/ai-dev-kit-trace-plugin" />
+                </projects>
+              </build>
+            </builds>
+          </compositeBuild>
+        </compositeConfiguration>
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="gradleHome" value="" />
         <option name="modules">
@@ -11,8 +27,13 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/ai-dev-kit-core" />
             <option value="$PROJECT_DIR$/ai-dev-kit-example" />
+            <option value="$PROJECT_DIR$/ai-dev-kit-plugin" />
+            <option value="$PROJECT_DIR$/ai-dev-kit-plugin/ai-dev-kit-trace-gradle" />
+            <option value="$PROJECT_DIR$/ai-dev-kit-plugin/ai-dev-kit-trace-plugin" />
+            <option value="$PROJECT_DIR$/ai-dev-kit-test-base" />
             <option value="$PROJECT_DIR$/ai-dev-kit-tracking-providers" />
             <option value="$PROJECT_DIR$/ai-dev-kit-tracking-providers/ai-dev-kit-tracking-mlflow" />
+            <option value="$PROJECT_DIR$/ai-dev-kit-tracking-providers/ai-dev-kit-tracking-wandb" />
           </set>
         </option>
       </GradleProjectSettings>

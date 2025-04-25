@@ -3,7 +3,6 @@ package ai.dev.kit.example.haiku
 import ai.dev.kit.core.eval.AIModel
 import ai.dev.kit.core.eval.createOpenAIClient
 import ai.dev.kit.core.fluent.KotlinFlowTrace
-import ai.dev.kit.core.fluent.processor.withTrace
 import ai.dev.kit.providers.mlflow.dataclasses.EvaluationCriteria
 import ai.dev.kit.providers.mlflow.dataclasses.RunTag
 import ai.dev.kit.providers.mlflow.dataclasses.TestCase
@@ -58,10 +57,7 @@ object ConsistsOfThreeLines : EvaluationCriteria<String, Double>("consists of th
 
 object Quality : EvaluationCriteria<String, Double>("quality") {
     @KotlinFlowTrace(name = "Quality")
-    override fun evaluate(output: String): Double = withTrace(
-        function = ::evaluate,
-        args = arrayOf(output),
-    ){
+    override fun evaluate(output: String): Double {
         val prompt = """
 You are an AI poetry critic. Your job is to evaluate the overall quality of a Haiku based on the following criteria:
 1. Structure: It should follow the traditional 3-line Haiku format where the syllable structure is 5-7-5.
@@ -78,7 +74,7 @@ You are an AI poetry critic. Your job is to evaluate the overall quality of a Ha
 Evaluate this Haiku:
 """ + output
 
-        val client = createOpenAIClient(dumbTraceMode = true)
+        val client = createOpenAIClient()
 
         val params = ChatCompletionCreateParams.Companion.builder()
             .addUserMessage(prompt)
@@ -87,16 +83,13 @@ Evaluate this Haiku:
             .build()
 
         val result = client.chat().completions().create(params).choices().first()
-        return@withTrace result.message().content().getOrElse { "0" }.toDouble()
+        return result.message().content().getOrElse { "0" }.toDouble()
     }
 }
 
 object Creativity : EvaluationCriteria<String, Double>("creativity") {
     @KotlinFlowTrace(name = "Creativity")
-    override fun evaluate(output: String): Double = withTrace(
-        function = ::evaluate,
-        args = arrayOf(output),
-    ){
+    override fun evaluate(output: String): Double {
         val prompt = """
 You are an AI poetry critic highly focused on creativity in poetry. Your task is to evaluate the creativity of a Haiku based on the following guidelines:
 
@@ -114,7 +107,7 @@ You are an AI poetry critic highly focused on creativity in poetry. Your task is
 Evaluate the creativity of this Haiku:
 """ + output
 
-        val client = createOpenAIClient(dumbTraceMode = true)
+        val client = createOpenAIClient()
 
         val params = ChatCompletionCreateParams.Companion.builder()
             .addUserMessage(prompt)
@@ -123,16 +116,13 @@ Evaluate the creativity of this Haiku:
             .build()
 
         val result = client.chat().completions().create(params).choices().first()
-        return@withTrace result.message().content().getOrElse { "0" }.toDouble()
+        return result.message().content().getOrElse { "0" }.toDouble()
     }
 }
 
 object Structure : EvaluationCriteria<String, Double>("structure") {
     @KotlinFlowTrace(name = "Structure")
-    override fun evaluate(output: String): Double = withTrace(
-        function = ::evaluate,
-        args = arrayOf(output),
-    ){
+    override fun evaluate(output: String): Double {
         val prompt = """
 You are a Haiku poetry expert and your task is to evaluate the structural correctness of a Haiku. Haiku should adhere to the following strict rules:
 
@@ -153,7 +143,7 @@ You are a Haiku poetry expert and your task is to evaluate the structural correc
 
 Evaluate the structure of this Haiku:
 """ + output
-        val client = createOpenAIClient(dumbTraceMode = true)
+        val client = createOpenAIClient()
 
         val params = ChatCompletionCreateParams.Companion.builder()
             .addUserMessage(prompt)
@@ -162,6 +152,6 @@ Evaluate the structure of this Haiku:
             .build()
 
         val result = client.chat().completions().create(params).choices().first()
-        return@withTrace result.message().content().getOrElse { "0" }.toDouble()
+        return result.message().content().getOrElse { "0" }.toDouble()
     }
 }

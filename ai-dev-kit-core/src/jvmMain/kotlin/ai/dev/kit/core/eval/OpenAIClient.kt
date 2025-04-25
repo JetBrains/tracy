@@ -12,11 +12,11 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
 
-fun createOpenAIClient(dumbTraceMode: Boolean = false): OpenAIClient {
+fun createOpenAIClient(): OpenAIClient {
     val openAIClient = OpenAIOkHttpClient.builder()
         .fromEnv()
         .build().apply {
-            patchClient(this, interceptor = if (dumbTraceMode) MLFlowDumbOpenAILogger() else MLFlowOpenAILogger())
+            patchClient(this, interceptor = MLFlowOpenAILogger())
         }
 
     return openAIClient
@@ -42,18 +42,10 @@ private fun patchClient(openAIClient: OpenAIClient, interceptor: Interceptor) {
 
 class MLFlowOpenAILogger : Interceptor {
     @KotlinFlowTrace(name="Completions", spanType = SpanType.CHAT_MODEL, attributeHandler = OpenAiClientAttributeHandler::class)
-    override fun intercept(chain: Interceptor.Chain): Response {
-        return chain.proceed(chain.request())
-    }
-}
-
-class MLFlowDumbOpenAILogger : Interceptor {
-    @KotlinFlowTrace(name="Completions", spanType = SpanType.CHAT_MODEL, attributeHandler = OpenAiClientAttributeHandler::class)
     override fun intercept(chain: Interceptor.Chain): Response = withTrace(
         function = ::intercept,
         args = arrayOf<Any?>(chain),
-    )
-    {
+    ) {
         return@withTrace chain.proceed(chain.request())
     }
 }

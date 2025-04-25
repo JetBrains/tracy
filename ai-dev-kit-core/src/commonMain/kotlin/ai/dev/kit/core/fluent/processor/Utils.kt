@@ -2,14 +2,14 @@ package ai.dev.kit.core.fluent.processor
 
 import kotlin.reflect.KFunction
 
-expect fun <T> withTrace(
+expect inline fun <T> withTrace(
     function: KFunction<*>,
     args: Array<Any?>,
-    block: () -> T
+    crossinline block: () -> T
 ): T
 
-expect suspend fun <T> withTraceSuspended(
+expect suspend inline fun <T> withTraceSuspended(
     function: KFunction<*>,
     args: Array<Any?>,
-    block: suspend () -> T
+    crossinline block: suspend () -> T
 ): T
