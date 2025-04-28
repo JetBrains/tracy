@@ -25,6 +25,8 @@ dependencies {
     implementation(libs.opentelemetry)
     implementation(libs.opentelemetry.sdk)
     implementation(libs.opentelemetry.kotlin)
+    implementation(project(":ai-dev-kit-eval"))
+    implementation(libs.kotlinx.dataframe)
     testImplementation(libs.openai)
     testImplementation(libs.kotlin.test)
     testImplementation(testFixtures(project(":ai-dev-kit-test-base")))

@@ -1,66 +1,24 @@
 package ai.dev.kit.providers.mlflow.dataclasses
 
-import ai.dev.kit.core.eval.AIModel
-import ai.dev.kit.core.fluent.dataclasses.RunStatus
 import kotlinx.serialization.Serializable
-import ai.dev.kit.providers.mlflow.getExperiment
-import ai.dev.kit.providers.mlflow.getExperimentByName
-import org.mlflow.tracking.MlflowClient
-import java.nio.file.Paths
-
-
-data class TestCase<I>(
-    val input: I
-)
-
-abstract class EvaluationCriteria<O, R>(val name: String, val resultExpected: R? = null) {
-    abstract fun evaluate(output: O): R
-}
-
-interface Generator<I, O> {
-    suspend fun generate(input: I): O
-    val prompt: String
-    val temperature: Double
-    val model: AIModel
-}
+import kotlinx.serialization.json.Json
+import org.jetbrains.kotlinx.dataframe.DataFrame
+import org.jetbrains.kotlinx.dataframe.api.rows
 
 data class RunTag(
     val color: String
 )
 
+fun DataFrame<*>.dumpForMLFlow(): String = Json.encodeToString(
+    serializer = MLFlowViewableTable.serializer(),
+    value = MLFlowViewableTable(
+        columns = columnNames(),
+        data = rows().map { it.values().map { it.toString() } }
+    )
+)
+
 @Serializable
-data class EvalResultsTable(
+private data class MLFlowViewableTable(
     val columns: List<String>,
     val data: List<List<String>>
 )
-
-data class TestInfo<I, O, R>(
-    val input: I,
-    val output: O,
-    val result: R,
-    val testName: String
-)
-
-data class RunResults<I, O, R>(
-    val testResults: MutableList<TestInfo<I, O, R>>,
-    val runId: String,
-    var finalStatus: RunStatus,
-)
-
-fun getDefaultArtifactLocation(mlflowClient: MlflowClient): String {
-    val defaultLocation = "file:///tmp/mlflow/artifacts/"
-    val warningMessage = "Warning: Unable to fetch artifact location from MLFlow. Using fallback."
-
-    return try {
-        val experiment = getExperimentByName(mlflowClient, "Default")
-            ?: getExperiment(mlflowClient, mlflowClient.createExperiment("Default"))
-            ?: run {
-                println(warningMessage)
-                return defaultLocation
-            }
-        "file://${Paths.get(experiment.artifactLocation).parent}/"
-    } catch (e: Exception) {
-        println(warningMessage)
-        defaultLocation
-    }
-}

@@ -1,6 +1,6 @@
 plugins {
-    alias(libs.plugins.kotlin.jvm)
-    id("ai.dev.kit.trace")
+    kotlin("jvm")
+    alias(libs.plugins.kotlinx.dataframe)
 }
 
 group = "com.jetbrains"
@@ -12,16 +12,16 @@ repositories {
 
 dependencies {
     implementation(project(":ai-dev-kit-core"))
-    implementation(project(":ai-dev-kit-eval"))
-    implementation(project(":ai-dev-kit-tracking-providers:ai-dev-kit-tracking-mlflow"))
-    implementation(libs.openai)
-    implementation(libs.kotlinx.coroutines)
+    implementation(libs.kotlin)
+    implementation(libs.kotlinx.dataframe)
     testImplementation(libs.kotlin.test)
+    testImplementation(testFixtures(project(":ai-dev-kit-test-base")))
 }
 
 tasks.test {
     useJUnitPlatform()
 }
+
 kotlin {
     jvmToolchain(17)
 }
