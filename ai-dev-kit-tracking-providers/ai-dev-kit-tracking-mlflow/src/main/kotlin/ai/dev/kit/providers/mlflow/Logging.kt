@@ -143,11 +143,9 @@ suspend fun getExperiment(experimentId: String): Experiment {
     return experimentResponse.experiment
 }
 
-suspend fun getTraces(experimentIds: List<String>): TracesResponse {
+suspend fun getTraces(experimentId: String): TracesResponse {
     val response: HttpResponse = KotlinMlflowClient.client.get("${KotlinMlflowClient.ML_FLOW_API}/traces") {
-        experimentIds.forEach { id ->
-            parameter("experiment_ids", id)
-        }
+        parameter("experiment_ids", experimentId)
         contentType(ContentType.Application.Json)
     }
 
