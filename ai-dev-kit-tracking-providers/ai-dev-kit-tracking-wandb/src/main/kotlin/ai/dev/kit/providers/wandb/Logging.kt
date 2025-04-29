@@ -145,8 +145,7 @@ private fun extractInput(input: JsonObject?): String {
     }
 }
 
-internal suspend fun getAllTracesForProject(projectIds: List<String>): TracesResponse {
-    val projectId = projectIds.first()
+internal suspend fun getAllTracesForProject(projectId: String): TracesResponse {
     val traceIds = getTraceIds(projectId)
     val spanBranches = getAllBranches(makeHierarchy(traceIds))
 
@@ -160,21 +159,20 @@ internal suspend fun getAllTracesForProject(projectIds: List<String>): TracesRes
     return TracesResponse(traces)
 }
 
-private fun getAllBranches(map: Map<String, List<String>>): MutableList<MutableList<String>> {
-    val result = mutableListOf<MutableList<String>>()
+private fun getAllBranches(map: Map<String, List<String>>): List<List<String>> {
+    val result = mutableListOf<List<String>>()
 
-    val roots = map["null"] ?: return result
-
-    fun traverseHierarchy(parentId: String) {
-        result.last().add(parentId)
+    fun visitBranch(parentId: String, currentBranch: MutableList<String>) {
+        currentBranch += parentId
         map[parentId]?.forEach { childId ->
-            traverseHierarchy(childId)
+            visitBranch(childId, currentBranch)
         }
     }
 
-    for (root in roots) {
-        result.add(mutableListOf())
-        traverseHierarchy(root)
+    map["null"]?.forEach { root ->
+        val branch = mutableListOf<String>()
+        visitBranch(root, branch)
+        result += branch
     }
 
     return result

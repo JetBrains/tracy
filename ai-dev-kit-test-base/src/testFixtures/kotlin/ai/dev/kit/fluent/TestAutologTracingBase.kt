@@ -30,7 +30,7 @@ open class TestAutologTracingBase(
         }
 
         val tracesResponse = runBlocking {
-            getTraces(listOf(client.currentExperimentId))
+            getTraces(client.currentExperimentId)
         }
 
         assertEquals(1, tracesResponse.traces.size)

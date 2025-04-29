@@ -3,16 +3,19 @@ package ai.dev.kit.providers.mlflow
 import ai.dev.kit.core.fluent.KotlinLoggingClient
 import ai.dev.kit.core.fluent.getUserID
 import ai.dev.kit.core.fluent.dataclasses.RunStatus
+import ai.dev.kit.providers.mlflow.KotlinMlflowClient.MLFLOW_HOST
+import ai.dev.kit.providers.mlflow.KotlinMlflowClient.MLFLOW_PORT
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
-import ai.dev.kit.providers.mlflow.KotlinMlflowClient.ML_FLOW_URL
 import org.mlflow.api.proto.Service
 import org.mlflow.tracking.MlflowClient
 import java.util.logging.LogManager
 import java.util.logging.Logger
+
+internal const val ML_FLOW_URL = "http://$MLFLOW_HOST:$MLFLOW_PORT"
 
 internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL), KotlinLoggingClient {
     private val logger: Logger = LogManager.getLogManager().getLogger(Logger.GLOBAL_LOGGER_NAME)
@@ -21,7 +24,6 @@ internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL), KotlinLoggingCli
     internal const val MLFLOW_VERSION = "2.20.2"
     internal const val MLFLOW_HOST = "127.0.0.1"
     internal const val MLFLOW_PORT = 5002
-    internal const val ML_FLOW_URL = "http://$MLFLOW_HOST:$MLFLOW_PORT"
     internal const val ML_FLOW_API = "$ML_FLOW_URL/api/2.0/mlflow"
     internal const val ML_FLOW_ARTIFACTS_API = "$ML_FLOW_URL/api/2.0/mlflow-artifacts"
     override val USER_ID: String = getUserID()
