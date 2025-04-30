@@ -99,7 +99,7 @@ class LangfuseTracePublisher : TracePublisher {
         }
 
         private fun prepareInputsOutputs(inputRaw: String, outputRaw: String?): Pair<JsonElement?, JsonElement?> {
-            val inputs = parseLenientJson(inputRaw)?.jsonObject
+            val inputs = parseLenientJson(inputRaw)//?.jsonObject
 
             val output = outputRaw?.let {
                 val parsedOutput = parseLenientJson(outputRaw) ?: JsonNull

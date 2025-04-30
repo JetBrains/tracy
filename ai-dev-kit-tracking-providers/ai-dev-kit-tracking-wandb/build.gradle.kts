@@ -1,13 +1,7 @@
 plugins {
-    kotlin("jvm")
+    alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
-}
-
-group = "com.jetbrains"
-version = "1.0-SNAPSHOT"
-
-repositories {
-    mavenCentral()
+    id("ai.dev.kit.publish")
 }
 
 dependencies {
@@ -17,6 +11,25 @@ dependencies {
     implementation(libs.ktor.serialization.json)
     implementation(libs.ktor.client.negotiation)
     implementation(libs.opentelemetry.sdk)
+    testImplementation(libs.kotlin.test)
+    testImplementation(testFixtures(project(":ai-dev-kit-test-base")))
+    implementation(project(":ai-dev-kit-eval"))
+    implementation(libs.kodein)
+    implementation(libs.junit)
+    implementation(libs.testcontainers.junit)
+    implementation(libs.kotlinx.serialization.core)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.ktor.client)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.serialization.json)
+    implementation(libs.ktor.client.negotiation)
+    implementation(libs.mlflow)
+    implementation(libs.opentelemetry)
+    implementation(libs.opentelemetry.sdk)
+    implementation(libs.opentelemetry.kotlin)
+    implementation(project(":ai-dev-kit-eval"))
+    implementation(libs.kotlinx.dataframe)
+    testImplementation(libs.openai)
     testImplementation(libs.kotlin.test)
     testImplementation(testFixtures(project(":ai-dev-kit-test-base")))
 }

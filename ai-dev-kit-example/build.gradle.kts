@@ -3,17 +3,12 @@ plugins {
     id("ai.dev.kit.trace")
 }
 
-group = "com.jetbrains"
-version = "1.0-SNAPSHOT"
-
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     implementation(project(":ai-dev-kit-core"))
     implementation(project(":ai-dev-kit-eval"))
     implementation(project(":ai-dev-kit-tracking-providers:ai-dev-kit-tracking-mlflow"))
+    implementation(project(":ai-dev-kit-tracking-providers:ai-dev-kit-tracking-wandb"))
+    implementation(project(":ai-dev-kit-tracking-providers:ai-dev-kit-tracking-langfuse"))
     implementation(libs.openai)
     implementation(libs.kotlinx.coroutines)
     testImplementation(libs.kotlin.test)

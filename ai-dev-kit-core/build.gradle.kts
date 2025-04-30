@@ -1,13 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
-}
-
-group = "com.jetbrains"
-version = "1.0-SNAPSHOT"
-
-repositories {
-    mavenCentral()
+    id("ai.dev.kit.publish")
 }
 
 kotlin {
@@ -18,6 +12,12 @@ kotlin {
 
     js(IR) {
         browser()
+    }
+
+    sourceSets.all {
+        compilerOptions {
+            freeCompilerArgs.add("-Xexpect-actual-classes")
+        }
     }
 
     sourceSets {
@@ -52,12 +52,6 @@ kotlin {
                 implementation(libs.opentelemetry.sdk)
             }
         }
-    }
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    compilerOptions {
-        freeCompilerArgs.add("-Xexpect-actual-classes")
     }
 }
 
