@@ -3,22 +3,50 @@ package ai.dev.kit.example.haiku
 import ai.dev.kit.core.eval.createOpenAIClient
 import ai.dev.kit.core.fluent.KotlinFlowTrace
 import ai.dev.kit.eval.utils.*
-import ai.dev.kit.providers.mlflow.BaseEvaluationTest
-import ai.dev.kit.providers.mlflow.dataclasses.RunTag
+import ai.dev.kit.eval.utils.tracingDemo.RunTag
+import ai.dev.kit.providers.langfuse.tracingDemo.LangfuseEvaluationTest
+import ai.dev.kit.providers.mlflow.tracingDemo.MlflowEvaluationTest
+import ai.dev.kit.providers.wandb.tracingDemo.WandbEvaluationTest
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import kotlin.jvm.optionals.getOrElse
 
 fun haikuTestCase(topic: String) = TestCase<HaikuTopic, NoGroundTruth>(name = topic, HaikuTopic(topic), NoGroundTruth)
 
-class HaikuGeneratorTest :
-    BaseEvaluationTest<HaikuTopic, NoGroundTruth, HaikuText, MultiScoreEvalResult>(
+class LangfuseHaikuGeneratorTest :
+    LangfuseEvaluationTest<HaikuTopic, NoGroundTruth, HaikuText, MultiScoreEvalResult>(
         "HaikuGeneratorTest",
         numberOfRuns = 2,
         tags = listOf(RunTag(color = "#00FF00"), RunTag(color = "#FF0000")),
     ) {
     override val testCases: List<TestCase<HaikuTopic, NoGroundTruth>> =
-         listOf("table", "computer", "flower", "horse").map { haikuTestCase(it) }
+        listOf("table", "computer", "flower", "horse").map { haikuTestCase(it) }
+
+    override val generator: Generator<HaikuTopic, HaikuText> = HaikuGenerator()
+    override val evaluator: Evaluator<NoGroundTruth, HaikuText, MultiScoreEvalResult> = HaikuEvaluator()
+}
+
+class WandbHaikuGeneratorTest :
+    WandbEvaluationTest<HaikuTopic, NoGroundTruth, HaikuText, MultiScoreEvalResult>(
+        "HaikuGeneratorTest",
+        numberOfRuns = 2,
+        tags = listOf(RunTag(color = "#00FF00"), RunTag(color = "#FF0000")),
+    ) {
+    override val testCases: List<TestCase<HaikuTopic, NoGroundTruth>> =
+        listOf("table", "computer", "flower", "horse").map { haikuTestCase(it) }
+
+    override val generator: Generator<HaikuTopic, HaikuText> = HaikuGenerator()
+    override val evaluator: Evaluator<NoGroundTruth, HaikuText, MultiScoreEvalResult> = HaikuEvaluator()
+}
+
+class MlflowHaikuGeneratorTest :
+    MlflowEvaluationTest<HaikuTopic, NoGroundTruth, HaikuText, MultiScoreEvalResult>(
+        "HaikuGeneratorTest",
+        numberOfRuns = 2,
+        tags = listOf(RunTag(color = "#00FF00"), RunTag(color = "#FF0000")),
+    ) {
+    override val testCases: List<TestCase<HaikuTopic, NoGroundTruth>> =
+        listOf("table", "computer", "flower", "horse").map { haikuTestCase(it) }
 
     override val generator: Generator<HaikuTopic, HaikuText> = HaikuGenerator()
     override val evaluator: Evaluator<NoGroundTruth, HaikuText, MultiScoreEvalResult> = HaikuEvaluator()

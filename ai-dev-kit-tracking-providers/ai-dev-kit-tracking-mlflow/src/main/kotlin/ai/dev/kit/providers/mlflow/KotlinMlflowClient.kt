@@ -5,6 +5,7 @@ import ai.dev.kit.core.fluent.getUserID
 import ai.dev.kit.core.fluent.dataclasses.RunStatus
 import ai.dev.kit.providers.mlflow.KotlinMlflowClient.MLFLOW_HOST
 import ai.dev.kit.providers.mlflow.KotlinMlflowClient.MLFLOW_PORT
+import ai.dev.kit.providers.mlflow.KotlinMlflowClient.ML_FLOW_URL
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -15,11 +16,12 @@ import org.mlflow.tracking.MlflowClient
 import java.util.logging.LogManager
 import java.util.logging.Logger
 
-internal const val ML_FLOW_URL = "http://$MLFLOW_HOST:$MLFLOW_PORT"
 
 internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL), KotlinLoggingClient {
     private val logger: Logger = LogManager.getLogManager().getLogger(Logger.GLOBAL_LOGGER_NAME)
         ?: Logger.getLogger(KotlinMlflowClient::class.java.name)
+
+    internal const val ML_FLOW_URL = "http://127.0.0.1:5002"
 
     internal const val MLFLOW_VERSION = "2.20.2"
     internal const val MLFLOW_HOST = "127.0.0.1"

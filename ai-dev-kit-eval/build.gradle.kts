@@ -10,6 +10,14 @@ dependencies {
     implementation(libs.kotlinx.dataframe)
     testImplementation(libs.kotlin.test)
     testImplementation(testFixtures(project(":ai-dev-kit-test-base")))
+    implementation(libs.kodein)
+    implementation(libs.junit)
+    implementation(libs.kotlinx.coroutines)
+    implementation(libs.opentelemetry)
+    implementation(libs.opentelemetry.sdk)
+    implementation(libs.opentelemetry.kotlin)
+    implementation(libs.kotlinx.serialization.core)
+    implementation(libs.kotlinx.serialization.json)
 }
 
 tasks.test {

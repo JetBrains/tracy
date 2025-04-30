@@ -33,8 +33,10 @@ publishing {
         maven {
             url = uri("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")
             credentials {
-                username = System.getenv("SPACE_USERNAME")
-                password = System.getenv("SPACE_PASSWORD")
+                password="eyJhbGciOiJSUzUxMiJ9.eyJzdWIiOiJhWTliTTA4RFA0USIsImF1ZCI6ImNpcmNsZXQtd2ViLXVpIiwib3JnRG9tYWluIjoiamV0YnJhaW5zIiwibmFtZSI6IlZpYWNoZXNsYXYuU3V2b3JvdiIsImlzcyI6Imh0dHBzOi8vamV0YnJhaW5zLnRlYW0iLCJwZXJtX3Rva2VuIjoiT0tYME0wQWc1R0siLCJwcmluY2lwYWxfdHlwZSI6IlVTRVIiLCJpYXQiOjE3NDQxODUxNzB9.hn2TSJVwEAqEB8du_GHfR56AUCDMJz31Qlry1ZqFwJY4Un9Quh7Dplu8mTo3NMaUO9QkmF6Jqk_5iTxhtfJ7xOz6HdaVLfXIhn2_mAddawpZhMARgtcPJ0T-vqScFUM7fCIhuZUMCVSnwmUDu4E1kU2oBlf97lDRen1FoVk-KEo"
+                username="Viacheslav.Suvorov"
+//                username = System.getenv("SPACE_USERNAME")
+//                password = System.getenv("SPACE_PASSWORD")
             }
         }
     }
