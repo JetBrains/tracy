@@ -4,9 +4,6 @@ plugins {
     id("ai.dev.kit.publish")
 }
 
-group = "com.jetbrains"
-version = "1.0-SNAPSHOT"
-
 repositories {
     mavenCentral()
 }
