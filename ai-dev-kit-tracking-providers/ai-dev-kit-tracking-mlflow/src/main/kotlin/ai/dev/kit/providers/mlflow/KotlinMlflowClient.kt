@@ -24,6 +24,9 @@ internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL), KotlinLoggingCli
     internal const val ML_FLOW_URL = "http://$MLFLOW_HOST:$MLFLOW_PORT"
     internal const val ML_FLOW_API = "$ML_FLOW_URL/api/2.0/mlflow"
     internal const val ML_FLOW_ARTIFACTS_API = "$ML_FLOW_URL/api/2.0/mlflow-artifacts"
+    // Mlflow weave support uses mlflow rest api
+    // docs: https://mlflow.org/docs/latest/api_reference/rest-api.html
+
     override val USER_ID: String = getUserID()
 
     // TODO: Remove state storage here ASAP!

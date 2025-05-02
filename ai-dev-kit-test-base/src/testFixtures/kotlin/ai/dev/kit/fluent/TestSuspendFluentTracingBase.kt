@@ -109,13 +109,13 @@ internal class MyTestClassWithSuspendHard() {
 }
 
 open class TestSuspendFluentTracingBase(
-    val getTraces: KSuspendFunction1<List<String>, TracesResponse>,
+    val getTraces: KSuspendFunction1<String, TracesResponse>,
     private val client: KotlinLoggingClient
 ) {
     @Test
     fun `test trace creation`() = runBlocking {
         MyTestClassWithSuspend().testFunction(1)
-        val tracesResponse = getTraces(listOf(client.currentExperimentId))
+        val tracesResponse = getTraces(client.currentExperimentId)
 
         assertEquals(1, tracesResponse.traces.size)
         val trace = tracesResponse.traces.first()
@@ -129,7 +129,7 @@ open class TestSuspendFluentTracingBase(
         val arg = 3
         val result = testClass.testFunction(arg)
 
-        val tracesResponse = getTraces(listOf(client.currentExperimentId))
+        val tracesResponse = getTraces(client.currentExperimentId)
         var trace = tracesResponse.traces.firstOrNull()
         trace = assertNotNull(trace)
 
@@ -158,7 +158,7 @@ open class TestSuspendFluentTracingBase(
         testClass.testFunction(1)
         testClass.anotherTestFunction("OpenTelemetry")
 
-        val tracesResponse = getTraces(listOf(client.currentExperimentId))
+        val tracesResponse = getTraces(client.currentExperimentId)
 
         assertEquals(2, tracesResponse.traces.size)
 
@@ -172,7 +172,7 @@ open class TestSuspendFluentTracingBase(
     fun `test parent child trace`() = runBlocking {
         MyTestClassWithSuspend().parentTestFunction("RandomString")
 
-        val tracesResponse = getTraces(listOf(client.currentExperimentId))
+        val tracesResponse = getTraces(client.currentExperimentId)
 
         var trace = tracesResponse.traces.firstOrNull()
         trace = assertNotNull(trace)
@@ -187,7 +187,7 @@ open class TestSuspendFluentTracingBase(
     fun `test parent child trace with non suspend child`() = runBlocking {
         MyTestClassWithSuspend().parentTestFunctionWithNonSuspendKid("RandomString")
 
-        val tracesResponse = getTraces(listOf(client.currentExperimentId))
+        val tracesResponse = getTraces(client.currentExperimentId)
 
         var trace = tracesResponse.traces.firstOrNull()
         trace = assertNotNull(trace)
@@ -202,7 +202,7 @@ open class TestSuspendFluentTracingBase(
     fun `test parent child trace with non suspend parent`() = runBlocking {
         MyTestClassWithSuspend().parentTestFunctionWithSuspendKid("RandomString")
 
-        val tracesResponse = getTraces(listOf(client.currentExperimentId))
+        val tracesResponse = getTraces(client.currentExperimentId)
         var trace = tracesResponse.traces.firstOrNull()
         trace = assertNotNull(trace)
 
@@ -216,7 +216,7 @@ open class TestSuspendFluentTracingBase(
     fun `test recursion`() = runBlocking {
         MyTestClassWithSuspend().testRecursion(2)
 
-        val tracesResponse = getTraces(listOf(client.currentExperimentId))
+        val tracesResponse = getTraces(client.currentExperimentId)
         var trace = tracesResponse.traces.firstOrNull()
         trace = assertNotNull(trace)
 
@@ -230,7 +230,7 @@ open class TestSuspendFluentTracingBase(
     fun `test parent and child trace hierarchy`() = runBlocking {
         val result = MyTestClassWithSuspendHard().parentFunction("a")
 
-        val tracesResponse = getTraces(listOf(client.currentExperimentId))
+        val tracesResponse = getTraces(client.currentExperimentId)
 
         assertNotNull(tracesResponse)
         assertEquals(1, tracesResponse.traces.size)

@@ -55,14 +55,14 @@ fun List<String>.foo(): String {
 }
 
 open class TestFluentTracingBase(
-    val getTraces: KSuspendFunction1<List<String>, TracesResponse>,
+    val getTraces: KSuspendFunction1<String, TracesResponse>,
     private val client: KotlinLoggingClient
 ) {
     @Test
     fun `test trace creation`() {
         MyTestClass().testFunction(1)
         val tracesResponse = runBlocking {
-            getTraces(listOf(client.currentExperimentId))
+            getTraces(client.currentExperimentId)
         }
 
         assertEquals(1, tracesResponse.traces.size)
@@ -75,7 +75,7 @@ open class TestFluentTracingBase(
     fun `test extension function`() {
         val result = listOf("first", "second").foo()
         val tracesResponse = runBlocking {
-            getTraces(listOf(client.currentExperimentId))
+            getTraces(client.currentExperimentId)
         }
 
         assertEquals("first second", result)
@@ -90,7 +90,7 @@ open class TestFluentTracingBase(
         topLevelTestFunction("RandomString")
 
         val tracesResponse = runBlocking {
-            getTraces(listOf(client.currentExperimentId))
+            getTraces(client.currentExperimentId)
         }
 
         assertEquals(1, tracesResponse.traces.size)
@@ -104,7 +104,7 @@ open class TestFluentTracingBase(
         MyTestClass.InsideClass().insideTestFunction("RandomString")
 
         val tracesResponse = runBlocking {
-            getTraces(listOf(client.currentExperimentId))
+            getTraces(client.currentExperimentId)
         }
 
         assertEquals(1, tracesResponse.traces.size)
@@ -120,7 +120,7 @@ open class TestFluentTracingBase(
         val result = testClass.testFunction(arg)
 
         val tracesResponse = runBlocking {
-            getTraces(listOf(client.currentExperimentId))
+            getTraces(client.currentExperimentId)
         }
         var trace = tracesResponse.traces.firstOrNull()
         trace = assertNotNull(trace)
@@ -150,7 +150,7 @@ open class TestFluentTracingBase(
         val result = testClass.testFunctionWithDefaultValue()
 
         val tracesResponse = runBlocking {
-            getTraces(listOf(client.currentExperimentId))
+            getTraces(client.currentExperimentId)
         }
         var trace = tracesResponse.traces.firstOrNull()
         trace = assertNotNull(trace)
@@ -181,7 +181,7 @@ open class TestFluentTracingBase(
         testClass.anotherTestFunction("OpenTelemetry")
 
         val tracesResponse = runBlocking {
-            getTraces(listOf(client.currentExperimentId))
+            getTraces(client.currentExperimentId)
         }
 
         assertEquals(2, tracesResponse.traces.size)
@@ -197,7 +197,7 @@ open class TestFluentTracingBase(
         MyTestClass().parentTestFunction("RandomString")
 
         val tracesResponse = runBlocking {
-            getTraces(listOf(client.currentExperimentId))
+            getTraces(client.currentExperimentId)
         }
 
         var trace = tracesResponse.traces.firstOrNull()

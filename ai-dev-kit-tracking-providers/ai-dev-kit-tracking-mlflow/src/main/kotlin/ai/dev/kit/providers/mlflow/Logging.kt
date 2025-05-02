@@ -1,6 +1,10 @@
 package ai.dev.kit.providers.mlflow
 
 import ai.dev.kit.core.fluent.dataclasses.*
+import ai.dev.kit.providers.mlflow.KotlinMlflowClient.USER_ID
+import ai.dev.kit.providers.mlflow.dataclasses.SpanArtifactsRequest
+import ai.dev.kit.providers.mlflow.dataclasses.TracePatchRequest
+import ai.dev.kit.providers.mlflow.dataclasses.TracePostRequest
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -10,10 +14,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import ai.dev.kit.providers.mlflow.KotlinMlflowClient.USER_ID
-import ai.dev.kit.providers.mlflow.dataclasses.SpanArtifactsRequest
-import ai.dev.kit.providers.mlflow.dataclasses.TracePatchRequest
-import ai.dev.kit.providers.mlflow.dataclasses.TracePostRequest
 import org.mlflow.api.proto.Service
 import org.mlflow.tracking.MlflowClient
 import java.time.Instant
@@ -54,7 +54,12 @@ suspend fun createRun(name: String, experimentId: String, source: String? = getC
 }
 
 
-fun createRun(client: MlflowClient, name: String, experimentId: String, source: String? = getCallerInfo()): Service.RunInfo? {
+fun createRun(
+    client: MlflowClient,
+    name: String,
+    experimentId: String,
+    source: String? = getCallerInfo()
+): Service.RunInfo? {
     val runData = Service.CreateRun.newBuilder().apply {
         setExperimentId(experimentId)
         setUserId(USER_ID)
@@ -110,14 +115,16 @@ fun logMetric(client: MlflowClient, runId: String, key: String, value: Double) {
 }
 
 suspend fun createExperiment(name: String): String {
-    val response: HttpResponse = KotlinMlflowClient.client.post("${KotlinMlflowClient.ML_FLOW_API}/experiments/create") {
-        contentType(ContentType.Application.Json)
-        setBody(
-            mapOf(
-                "name" to name, "artifact_location" to "file:///Users/Anton.Bragin/PycharmProjects/mlflow-test/mlruns/0"
+    val response: HttpResponse =
+        KotlinMlflowClient.client.post("${KotlinMlflowClient.ML_FLOW_API}/experiments/create") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                mapOf(
+                    "name" to name,
+                    "artifact_location" to "file:///Users/Anton.Bragin/PycharmProjects/mlflow-test/mlruns/0"
+                )
             )
-        )
-    }
+        }
 
     return Json.parseToJsonElement(response.bodyAsText()).jsonObject["experiment_id"]?.jsonPrimitive?.content!!
 }
@@ -143,11 +150,9 @@ suspend fun getExperiment(experimentId: String): Experiment {
     return experimentResponse.experiment
 }
 
-suspend fun getTraces(experimentIds: List<String>): TracesResponse {
+suspend fun getTraces(experimentId: String): TracesResponse {
     val response: HttpResponse = KotlinMlflowClient.client.get("${KotlinMlflowClient.ML_FLOW_API}/traces") {
-        experimentIds.forEach { id ->
-            parameter("experiment_ids", id)
-        }
+        parameter("experiment_ids", experimentId)
         contentType(ContentType.Application.Json)
     }
 

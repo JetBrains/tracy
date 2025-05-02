@@ -15,6 +15,8 @@ internal object KotlinWandbClient : KotlinLoggingClient {
         ?: Logger.getLogger(KotlinWandbClient::class.java.name)
 
     internal const val WANDB_API = "https://trace.wandb.ai/call"
+    // W&B weave support uses weave rest api
+    // docs: https://weave-docs.wandb.ai/reference/service-api/call-start-call-start-post
 
     // TODO: Remove state storage here ASAP!
     override var currentExperimentId: String = "0"
@@ -37,10 +39,10 @@ internal object KotlinWandbClient : KotlinLoggingClient {
     internal val WANDB_USER_API_KEY: String = getWandbAPiKey()
 }
 
-fun getWandbAPiKey(): String {
+private fun getWandbAPiKey(): String {
     val wandbApiKey =
         System.getenv("WANDB_USER_API_KEY")
-            ?: throw IllegalStateException("WANDB_USER_API_KEY environment variable is not set")
+            ?: error("WANDB_USER_API_KEY environment variable is not set")
 
     return "Basic ${Base64.getEncoder().encodeToString("api:$wandbApiKey".toByteArray())}"
 }

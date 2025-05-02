@@ -7,17 +7,17 @@ import ai.dev.kit.providers.wandb.KotlinWandbClient
 import ai.dev.kit.providers.wandb.WandbTracingTests
 import ai.dev.kit.providers.wandb.getAllTracesForProject
 
-class TestDumbAutologTracingWandb : TestAutologTracingBase(
+class TestAutologTracingWandb : TestAutologTracingBase(
     ::getAllTracesForProject,
     KotlinWandbClient
 ), WandbTracingTests
 
-class TestDumbFluentTracingWandb : TestFluentTracingBase(
+class TestFluentTracingWandb : TestFluentTracingBase(
     ::getAllTracesForProject,
     KotlinWandbClient
 ), WandbTracingTests
 
-class TestDumbSuspendFluentTracingWandb : TestSuspendFluentTracingBase(
+class TestSuspendFluentTracingWandb : TestSuspendFluentTracingBase(
     ::getAllTracesForProject,
     KotlinWandbClient
 ), WandbTracingTests

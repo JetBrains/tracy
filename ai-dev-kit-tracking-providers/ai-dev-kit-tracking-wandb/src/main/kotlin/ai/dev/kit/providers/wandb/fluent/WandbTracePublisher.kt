@@ -47,7 +47,7 @@ class WandbTracePublisher : TracePublisher {
     }
 
     companion object {
-        suspend fun publishRootStartCall(
+        internal suspend fun publishRootStartCall(
             span: ReadableSpan
         ) {
             val spanId = span.spanContext.spanId
@@ -215,9 +215,7 @@ class WandbTracePublisher : TracePublisher {
 
             val jsonString = Json.encodeToString(JsonObject.serializer(), json)
 
-            val client = KotlinWandbClient.client
-
-            client.post(requestUrl) {
+            KotlinWandbClient.client.post(requestUrl) {
                 contentType(ContentType.Application.Json)
                 headers {
                     append("Content-Type", "application/json")
