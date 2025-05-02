@@ -37,8 +37,8 @@ object PublishToSpace : BuildType({
     name = "Publish to space"
 
     params {
-        param("env.SPACE_PASSWORD", "credentialsJSON:20e578d0-33ec-4600-831b-c27bc27b4be1")
-        param("env.SPACE_USERNAME", "Viacheslav.Suvorov")
+        password("env.SPACE_USERNAME", "credentialsJSON:34cf3ff5-0051-4f0e-9287-aaa408d3c44e")
+        password("env.SPACE_PASSWORD", "credentialsJSON:20e578d0-33ec-4600-831b-c27bc27b4be1")
     }
 
     vcs {
