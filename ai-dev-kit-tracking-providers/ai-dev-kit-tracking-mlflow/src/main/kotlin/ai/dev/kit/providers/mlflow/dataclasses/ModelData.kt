@@ -1,4 +1,4 @@
-package ai.dev.kit.core.eval.model
+package ai.dev.kit.providers.mlflow.dataclasses
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

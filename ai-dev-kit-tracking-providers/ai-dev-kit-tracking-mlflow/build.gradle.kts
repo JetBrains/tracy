@@ -9,6 +9,7 @@ dependencies {
     implementation(libs.kodein)
     implementation(libs.junit)
     implementation(libs.testcontainers.junit)
+    implementation(libs.snakeyaml)
     implementation(libs.kotlinx.serialization.core)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.ktor.client)
