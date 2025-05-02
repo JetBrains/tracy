@@ -16,7 +16,6 @@ subprojects {
 }
 
 tasks.register("showCreds") {
-    description = "Displays credentials for debugging purposes"
     doLast {
         val username = System.getenv("SPACE_USERNAME") ?: "Not Set"
         val password = System.getenv("SPACE_PASSWORD") ?: "Not Set"
