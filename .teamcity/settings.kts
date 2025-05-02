@@ -47,6 +47,11 @@ object PublishToSpace : BuildType({
 
     steps {
         gradle {
+            name = "Show credentials"
+            id = "Show_creds"
+            tasks = ":showCreds"
+        }
+        gradle {
             name = "Publish space"
             id = "Publish_space"
             tasks = "ai-dev-kit-trace-gradle:publish ai-dev-kit-trace-plugin:publish :publishContentModules"
