@@ -5,7 +5,6 @@ import ai.dev.kit.core.fluent.KotlinFlowTrace
 import ai.dev.kit.eval.utils.AIInput
 import ai.dev.kit.eval.utils.AIOutput
 import ai.dev.kit.eval.utils.Generator
-import ai.dev.kit.eval.utils.GeneratorMetadata
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import kotlin.jvm.optionals.getOrElse
@@ -13,9 +12,8 @@ import kotlin.jvm.optionals.getOrElse
 data class HaikuTopic(val topic: String) : AIInput
 data class HaikuText(val text: String) : AIOutput
 
-object HaikuGeneratorConfig : GeneratorMetadata {
-    override val modelName: String = "gpt-4o-mini"
-    override val prompt = """
+class HaikuGenerator : Generator<HaikuTopic, HaikuText> {
+    val prompt = """
     You are a creative and talented poet proficient in Japanese versification.
     
     You goal is to create a haiku about the given word. Haiku should follow the typical haiku structure in English adaptation.
@@ -31,10 +29,9 @@ object HaikuGeneratorConfig : GeneratorMetadata {
     Adhere to all the rules listed above.
     Generate a haiku about "%s".
     """.trimIndent()
-    override val temperature: Double = 1.0
-}
 
-class HaikuGenerator : Generator<HaikuTopic, HaikuText> {
+    val temperature: Double = 1.0
+
     /**
     Generate a haiku using the [input] provided.
      */
@@ -43,14 +40,12 @@ class HaikuGenerator : Generator<HaikuTopic, HaikuText> {
         val client = createOpenAIClient()
 
         val params = ChatCompletionCreateParams.builder()
-            .addUserMessage(HaikuGeneratorConfig.prompt.format(input.topic))
+            .addUserMessage(prompt.format(input.topic))
             .model(ChatModel.GPT_4O_MINI)
-            .temperature(HaikuGeneratorConfig.temperature)
+            .temperature(temperature)
             .build()
 
         val text = client.chat().completions().create(params).choices().first().message().content().getOrElse { "" }
         return HaikuText(text)
     }
-
-    override val metadata: GeneratorMetadata = HaikuGeneratorConfig
 }
