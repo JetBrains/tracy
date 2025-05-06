@@ -6,6 +6,7 @@ import ai.dev.kit.core.fluent.dataclasses.TraceInfo
 import ai.dev.kit.core.fluent.processor.TracingFlowProcessor
 import ai.dev.kit.eval.utils.*
 import ai.dev.kit.providers.mlflow.dataclasses.*
+import ai.dev.kit.providers.mlflow.fluent.setupMlflowTracing
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Scope
@@ -53,7 +54,7 @@ abstract class BaseEvaluationTest<
     fun beforeAll() {
         println("🔄 Setting up before all tests")
 
-        TracingFlowProcessor.setupTracing(MlflowDiContainer.di)
+        setupMlflowTracing()
 
         experimentId = getExperimentByName(KotlinMlflowClient, experimentName)?.experimentId
             ?: createExperiment(KotlinMlflowClient, experimentName)

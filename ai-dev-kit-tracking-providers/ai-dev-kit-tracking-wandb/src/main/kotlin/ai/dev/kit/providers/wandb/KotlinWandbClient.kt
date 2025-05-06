@@ -1,7 +1,7 @@
 package ai.dev.kit.providers.wandb
 
 import ai.dev.kit.core.fluent.KotlinLoggingClient
-import ai.dev.kit.core.fluent.getUserID
+import ai.dev.kit.core.fluent.getUserIDFromEnv
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -35,11 +35,16 @@ internal object KotlinWandbClient : KotlinLoggingClient {
         }
     }
 
-    override val USER_ID: String = getUserID()
-    internal val WANDB_USER_API_KEY: String = getWandbAPiKey()
+    internal fun setupCredentials(userId: String?, wandbUseApiKey: String?) {
+        USER_ID = userId ?: getUserIDFromEnv()
+        WANDB_USER_API_KEY = wandbUseApiKey ?: getWandbAPiKeyFromEnv()
+    }
+
+    internal lateinit var USER_ID: String
+    internal lateinit var WANDB_USER_API_KEY: String
 }
 
-private fun getWandbAPiKey(): String {
+private fun getWandbAPiKeyFromEnv(): String {
     val wandbApiKey =
         System.getenv("WANDB_USER_API_KEY")
             ?: error("WANDB_USER_API_KEY environment variable is not set")

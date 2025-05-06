@@ -3,6 +3,7 @@ package ai.dev.kit.providers.wandb
 import ai.dev.kit.core.fluent.processor.TracingFlowProcessor
 import ai.dev.kit.providers.wandb.KotlinWandbClient.TEST_PROJECT_NAME
 import ai.dev.kit.providers.wandb.KotlinWandbClient.currentExperimentId
+import ai.dev.kit.providers.wandb.fluent.setupWandbTracing
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
@@ -14,7 +15,7 @@ interface WandbTracingTests {
         @BeforeAll
         @JvmStatic
         fun setupProcessor() {
-            TracingFlowProcessor.setupTracing(WandbDiContainer.di)
+            setupWandbTracing()
             runBlocking { deleteAllTracesFromProject(TEST_PROJECT_NAME) }
         }
 

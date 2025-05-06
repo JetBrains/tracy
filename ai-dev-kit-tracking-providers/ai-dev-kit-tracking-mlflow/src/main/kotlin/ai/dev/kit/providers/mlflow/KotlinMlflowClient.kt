@@ -1,7 +1,7 @@
 package ai.dev.kit.providers.mlflow
 
 import ai.dev.kit.core.fluent.KotlinLoggingClient
-import ai.dev.kit.core.fluent.getUserID
+import ai.dev.kit.core.fluent.getUserIDFromEnv
 import ai.dev.kit.core.fluent.dataclasses.RunStatus
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -27,8 +27,6 @@ internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL), KotlinLoggingCli
     // Mlflow weave support uses mlflow rest api
     // docs: https://mlflow.org/docs/latest/api_reference/rest-api.html
 
-    override val USER_ID: String = getUserID()
-
     // TODO: Remove state storage here ASAP!
     override var currentExperimentId: String = "0"
     override var currentRunId: String? = null
@@ -38,6 +36,12 @@ internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL), KotlinLoggingCli
             json()
         }
     }
+
+    internal fun setupCredentials(userId: String?) {
+        USER_ID = userId ?: getUserIDFromEnv()
+    }
+
+    internal lateinit var USER_ID: String
 
     override fun createRun(experimentId: String): Service.RunInfo? {
         return super.createRun(experimentId).also {

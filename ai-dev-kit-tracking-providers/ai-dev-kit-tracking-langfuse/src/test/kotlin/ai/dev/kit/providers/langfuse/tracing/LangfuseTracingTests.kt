@@ -3,7 +3,7 @@ package ai.dev.kit.providers.langfuse.tracing
 import ai.dev.kit.core.fluent.processor.TracingFlowProcessor
 import ai.dev.kit.providers.langfuse.KotlinLangfuseClient.TEST_PROJECT_NAME
 import ai.dev.kit.providers.langfuse.KotlinLangfuseClient.currentExperimentId
-import ai.dev.kit.providers.langfuse.LangfuseDiContainer
+import ai.dev.kit.providers.langfuse.fluent.setupLangfuseTracing
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
@@ -14,8 +14,7 @@ interface LangfuseTracingTests { // TODO: Implement methods
         @BeforeAll
         @JvmStatic
         fun setupProcessor() {
-            TracingFlowProcessor.setupTracing(LangfuseDiContainer.di)
-
+            setupLangfuseTracing()
         }
 
         @AfterAll
