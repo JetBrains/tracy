@@ -1,11 +1,17 @@
+plugins {
+    `java-gradle-plugin`
+    `kotlin-dsl`
+}
+
 repositories {
     mavenCentral()
 }
 
-plugins {
-    `kotlin-dsl`
-}
-
-kotlin {
-    jvmToolchain(17)
+gradlePlugin {
+    plugins {
+        create("commonPublishing") {
+            id = "ai.dev.kit.space.publishing"
+            implementationClass = "SpacePublishingPlugin"
+        }
+    }
 }

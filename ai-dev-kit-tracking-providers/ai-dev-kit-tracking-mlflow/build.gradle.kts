@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
-    id("ai.dev.kit.publish")
+    id("ai.dev.kit.space.publishing")
 }
 
 dependencies {

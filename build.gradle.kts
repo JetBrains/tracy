@@ -29,9 +29,9 @@ tasks.register("showCreds") {
 
 tasks.register("publishContentModules") {
     group = "publishing"
-    description = "Publishes all modules that apply the ai.dev.kit.publish plugin. All important modules except plugin"
+    description = "Publishes all modules that apply the ai.dev.kit.space.publishing plugin. All important modules except plugin"
     val publishTasks = subprojects.filter { subproject ->
-        subproject.plugins.hasPlugin("ai.dev.kit.publish")
+        subproject.plugins.hasPlugin("ai.dev.kit.space.publishing")
     }.mapNotNull { subproject ->
         subproject.tasks.findByName("publish")
     }
