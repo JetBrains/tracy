@@ -4,9 +4,9 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":ai-dev-kit-core"))
     implementation(libs.kotlin)
     implementation(libs.kotlinx.dataframe)
+    implementation(project(":ai-dev-kit-core"))
     testImplementation(libs.kotlin.test)
 }
 
