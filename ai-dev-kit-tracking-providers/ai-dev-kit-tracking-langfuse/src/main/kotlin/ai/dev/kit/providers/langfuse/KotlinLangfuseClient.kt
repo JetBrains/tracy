@@ -1,7 +1,7 @@
 package ai.dev.kit.providers.langfuse
 
-import ai.dev.kit.core.fluent.KotlinLoggingClient
-import ai.dev.kit.core.fluent.getUserIDFromEnv
+import ai.dev.kit.tracing.fluent.KotlinLoggingClient
+import ai.dev.kit.tracing.fluent.getUserIDFromEnv
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*

@@ -18,7 +18,7 @@ import kotlin.collections.set
 @Testcontainers
 interface MlflowContainerTests {
     companion object {
-        internal lateinit var mlflowClient: MlflowClient
+        private lateinit var mlflowClient: MlflowClient
 
         @Container
         val mlflowContainer: GenericContainer<*> = GenericContainer("ghcr.io/mlflow/mlflow:v$MLFLOW_VERSION")

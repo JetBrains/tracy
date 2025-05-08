@@ -5,7 +5,8 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":ai-dev-kit-core"))
+    implementation(project(":ai-dev-kit-tracing"))
+    implementation(project(":ai-dev-kit-eval"))
     implementation(libs.kodein)
     implementation(libs.junit)
     implementation(libs.testcontainers.junit)

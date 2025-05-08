@@ -1,11 +1,11 @@
 package ai.dev.kit.providers.mlflow.dataclasses
 
-import ai.dev.kit.core.fluent.getAttribute
+import ai.dev.kit.tracing.fluent.getAttribute
 import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.sdk.trace.data.SpanData
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import ai.dev.kit.core.fluent.FluentSpanAttributes
+import ai.dev.kit.tracing.fluent.FluentSpanAttributes
 
 fun List<SpanData>.toSpanArtifactsRequest(requestId: String) = this.map { spanData ->
     Span(

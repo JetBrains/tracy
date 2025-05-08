@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":ai-dev-kit-core"))
+    implementation(project(":ai-dev-kit-tracing"))
     implementation(project(":ai-dev-kit-eval"))
     implementation(project(":ai-dev-kit-tracking-providers:ai-dev-kit-tracking-mlflow"))
     implementation(libs.openai)

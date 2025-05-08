@@ -7,7 +7,7 @@ plugins {
 dependencies {
     testFixturesImplementation(libs.junit)
     testFixturesImplementation(kotlin("test"))
-    testFixturesImplementation(project(":ai-dev-kit-core"))
+    testFixturesImplementation(project(":ai-dev-kit-tracing"))
     testFixturesImplementation(libs.kotlinx.coroutines)
     testFixturesImplementation(libs.kotlinx.serialization.json)
     testFixturesImplementation(libs.openai)

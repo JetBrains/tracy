@@ -1,10 +1,10 @@
 package ai.dev.kit.providers.mlflow.dataclasses
 
-import ai.dev.kit.core.fluent.dataclasses.RequestMetadata
-import ai.dev.kit.core.fluent.dataclasses.Tag
+import ai.dev.kit.eval.utils.getCurrentTimestamp
+import ai.dev.kit.tracing.fluent.dataclasses.RequestMetadata
+import ai.dev.kit.tracing.fluent.dataclasses.Tag
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import ai.dev.kit.providers.mlflow.getCurrentTimestamp
 
 @Serializable
 data class TracePatchRequest(

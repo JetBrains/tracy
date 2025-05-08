@@ -1,8 +1,8 @@
 package ai.dev.kit.providers.wandb.fluent
 
-import ai.dev.kit.core.fluent.FluentSpanAttributes
-import ai.dev.kit.core.fluent.getAttribute
-import ai.dev.kit.core.fluent.processor.TracePublisher
+import ai.dev.kit.tracing.fluent.FluentSpanAttributes
+import ai.dev.kit.tracing.fluent.getAttribute
+import ai.dev.kit.tracing.fluent.processor.TracePublisher
 import ai.dev.kit.providers.wandb.KotlinWandbClient
 import ai.dev.kit.providers.wandb.KotlinWandbClient.USER_ID
 import ai.dev.kit.providers.wandb.KotlinWandbClient.WANDB_API

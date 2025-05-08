@@ -1,11 +1,11 @@
 package ai.dev.kit.providers.mlflow.fluent
 
-import ai.dev.kit.core.fluent.FluentSpanAttributes
-import ai.dev.kit.core.fluent.dataclasses.RequestMetadata
-import ai.dev.kit.core.fluent.dataclasses.Tag
-import ai.dev.kit.core.fluent.dataclasses.TraceInfo
-import ai.dev.kit.core.fluent.getAttribute
-import ai.dev.kit.core.fluent.processor.TracePublisher
+import ai.dev.kit.tracing.fluent.FluentSpanAttributes
+import ai.dev.kit.tracing.fluent.dataclasses.RequestMetadata
+import ai.dev.kit.tracing.fluent.dataclasses.Tag
+import ai.dev.kit.tracing.fluent.dataclasses.TraceInfo
+import ai.dev.kit.tracing.fluent.getAttribute
+import ai.dev.kit.tracing.fluent.processor.TracePublisher
 import ai.dev.kit.providers.mlflow.dataclasses.SpanArtifactsRequest
 import ai.dev.kit.providers.mlflow.dataclasses.TracePatchRequest
 import ai.dev.kit.providers.mlflow.dataclasses.toSpanArtifactsRequest

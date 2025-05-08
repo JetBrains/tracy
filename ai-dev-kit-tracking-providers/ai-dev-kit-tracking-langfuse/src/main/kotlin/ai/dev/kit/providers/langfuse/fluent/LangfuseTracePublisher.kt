@@ -1,8 +1,8 @@
 package ai.dev.kit.providers.langfuse.fluent
 
-import ai.dev.kit.core.fluent.FluentSpanAttributes
-import ai.dev.kit.core.fluent.getAttribute
-import ai.dev.kit.core.fluent.processor.TracePublisher
+import ai.dev.kit.tracing.fluent.FluentSpanAttributes
+import ai.dev.kit.tracing.fluent.getAttribute
+import ai.dev.kit.tracing.fluent.processor.TracePublisher
 import ai.dev.kit.providers.langfuse.KotlinLangfuseClient
 import ai.dev.kit.providers.langfuse.langfuseRequest
 import io.ktor.http.*

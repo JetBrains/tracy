@@ -1,11 +1,11 @@
 package ai.dev.kit.providers.wandb.fluent
 
-import ai.dev.kit.core.fluent.KotlinFlowTrace
-import ai.dev.kit.core.fluent.handlers.PlatformMethod
-import ai.dev.kit.core.fluent.processor.Span
-import ai.dev.kit.core.fluent.processor.TracingMetadataConfigurator
-import ai.dev.kit.core.fluent.addOutputAttributesToTracing
-import ai.dev.kit.core.fluent.configureTracingMetadata
+import ai.dev.kit.tracing.fluent.KotlinFlowTrace
+import ai.dev.kit.tracing.fluent.handlers.PlatformMethod
+import ai.dev.kit.tracing.fluent.processor.Span
+import ai.dev.kit.tracing.fluent.processor.TracingMetadataConfigurator
+import ai.dev.kit.tracing.fluent.addOutputAttributesToTracing
+import ai.dev.kit.tracing.fluent.configureTracingMetadata
 import ai.dev.kit.providers.wandb.KotlinWandbClient
 import ai.dev.kit.providers.wandb.fluent.WandbTracePublisher.Companion.publishRootStartCall
 import io.opentelemetry.api.trace.SpanBuilder

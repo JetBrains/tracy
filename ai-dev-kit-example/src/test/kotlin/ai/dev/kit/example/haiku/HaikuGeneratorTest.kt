@@ -1,10 +1,9 @@
 package ai.dev.kit.example.haiku
 
-import ai.dev.kit.core.eval.createOpenAIClient
-import ai.dev.kit.core.fluent.KotlinFlowTrace
+import ai.dev.kit.createOpenAIClient
 import ai.dev.kit.eval.utils.*
-import ai.dev.kit.providers.mlflow.BaseEvaluationTest
-import ai.dev.kit.providers.mlflow.dataclasses.RunTag
+import ai.dev.kit.providers.mlflow.MlflowEvaluationClient
+import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import kotlin.jvm.optionals.getOrElse
@@ -16,9 +15,10 @@ class HaikuGeneratorTest :
         "HaikuGeneratorTest",
         numberOfRuns = 2,
         tags = listOf(RunTag(color = "#00FF00"), RunTag(color = "#FF0000")),
+        loggingClient = MlflowEvaluationClient
     ) {
     override val testCases: List<TestCase<HaikuTopic, NoGroundTruth>> =
-         listOf("table", "computer", "flower", "horse").map { haikuTestCase(it) }
+        listOf("table", "computer", "flower", "horse").map { haikuTestCase(it) }
 
     override val generator: Generator<HaikuTopic, HaikuText> = HaikuGenerator()
     override val evaluator: Evaluator<NoGroundTruth, HaikuText, MultiScoreEvalResult> = HaikuEvaluator()

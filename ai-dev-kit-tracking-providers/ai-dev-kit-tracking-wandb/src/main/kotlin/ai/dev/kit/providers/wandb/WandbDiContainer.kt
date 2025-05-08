@@ -1,7 +1,7 @@
 package ai.dev.kit.providers.wandb
 
-import ai.dev.kit.core.fluent.processor.TracePublisher
-import ai.dev.kit.core.fluent.processor.TracingMetadataConfigurator
+import ai.dev.kit.tracing.fluent.processor.TracePublisher
+import ai.dev.kit.tracing.fluent.processor.TracingMetadataConfigurator
 import ai.dev.kit.providers.wandb.fluent.WandbTracePublisher
 import ai.dev.kit.providers.wandb.fluent.WandbTracingMetadataConfigurator
 import org.kodein.di.DI

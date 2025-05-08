@@ -1,10 +1,11 @@
 package ai.dev.kit.providers.mlflow
 
-import ai.dev.kit.core.fluent.dataclasses.*
+import ai.dev.kit.tracing.fluent.dataclasses.*
 import ai.dev.kit.providers.mlflow.KotlinMlflowClient.USER_ID
 import ai.dev.kit.providers.mlflow.dataclasses.SpanArtifactsRequest
 import ai.dev.kit.providers.mlflow.dataclasses.TracePatchRequest
-import ai.dev.kit.providers.mlflow.dataclasses.TracePostRequest
+import ai.dev.kit.eval.utils.TracePostRequest
+import ai.dev.kit.eval.utils.getCurrentTimestamp
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -16,12 +17,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.mlflow.api.proto.Service
 import org.mlflow.tracking.MlflowClient
-import java.time.Instant
 import kotlin.jvm.optionals.getOrNull
-
-fun getCurrentTimestamp(): Long {
-    return Instant.now().toEpochMilli()
-}
 
 private fun getCallerInfo(): String? {
     val stackTrace = Throwable().stackTrace

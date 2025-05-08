@@ -1,6 +1,6 @@
 package ai.dev.kit.providers.langfuse.fluent
 
-import ai.dev.kit.core.fluent.processor.TracingFlowProcessor
+import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
 import ai.dev.kit.providers.langfuse.KotlinLangfuseClient
 import ai.dev.kit.providers.langfuse.LangfuseDiContainer
 

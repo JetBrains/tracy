@@ -1,7 +1,7 @@
 package ai.dev.kit.providers.langfuse
 
-import ai.dev.kit.core.fluent.processor.TracePublisher
-import ai.dev.kit.core.fluent.processor.TracingMetadataConfigurator
+import ai.dev.kit.tracing.fluent.processor.TracePublisher
+import ai.dev.kit.tracing.fluent.processor.TracingMetadataConfigurator
 import ai.dev.kit.providers.langfuse.fluent.LangfuseTracePublisher
 import ai.dev.kit.providers.langfuse.fluent.LangfuseTracingMetadataConfigurator
 import org.kodein.di.DI

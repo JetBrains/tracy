@@ -1,8 +1,8 @@
 package ai.dev.kit.fluent
 
-import ai.dev.kit.core.fluent.KotlinFlowTrace
-import ai.dev.kit.core.fluent.KotlinLoggingClient
-import ai.dev.kit.core.fluent.dataclasses.TracesResponse
+import ai.dev.kit.tracing.fluent.KotlinFlowTrace
+import ai.dev.kit.tracing.fluent.KotlinLoggingClient
+import ai.dev.kit.tracing.fluent.dataclasses.TracesResponse
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json

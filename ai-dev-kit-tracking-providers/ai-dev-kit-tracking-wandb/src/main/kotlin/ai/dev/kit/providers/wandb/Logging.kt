@@ -1,9 +1,9 @@
 package ai.dev.kit.providers.wandb
 
-import ai.dev.kit.core.fluent.dataclasses.RequestMetadata
-import ai.dev.kit.core.fluent.dataclasses.Tag
-import ai.dev.kit.core.fluent.dataclasses.TraceInfo
-import ai.dev.kit.core.fluent.dataclasses.TracesResponse
+import ai.dev.kit.tracing.fluent.dataclasses.RequestMetadata
+import ai.dev.kit.tracing.fluent.dataclasses.Tag
+import ai.dev.kit.tracing.fluent.dataclasses.TraceInfo
+import ai.dev.kit.tracing.fluent.dataclasses.TracesResponse
 import ai.dev.kit.providers.wandb.KotlinWandbClient.USER_ID
 import ai.dev.kit.providers.wandb.KotlinWandbClient.WANDB_USER_API_KEY
 import ai.dev.kit.providers.wandb.dataclasses.Call

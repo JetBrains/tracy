@@ -1,9 +1,9 @@
 package ai.dev.kit.providers.langfuse
 
-import ai.dev.kit.core.fluent.dataclasses.RequestMetadata
-import ai.dev.kit.core.fluent.dataclasses.Tag
-import ai.dev.kit.core.fluent.dataclasses.TraceInfo
-import ai.dev.kit.core.fluent.dataclasses.TracesResponse
+import ai.dev.kit.tracing.fluent.dataclasses.RequestMetadata
+import ai.dev.kit.tracing.fluent.dataclasses.Tag
+import ai.dev.kit.tracing.fluent.dataclasses.TraceInfo
+import ai.dev.kit.tracing.fluent.dataclasses.TracesResponse
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*

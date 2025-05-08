@@ -5,10 +5,6 @@ import kotlinx.serialization.json.Json
 import org.jetbrains.kotlinx.dataframe.DataFrame
 import org.jetbrains.kotlinx.dataframe.api.rows
 
-data class RunTag(
-    val color: String
-)
-
 fun DataFrame<*>.dumpForMLFlow(): String = Json.encodeToString(
     serializer = MLFlowViewableTable.serializer(),
     value = MLFlowViewableTable(

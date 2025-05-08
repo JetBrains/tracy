@@ -1,8 +1,8 @@
 package ai.dev.kit.fluent
 
-import ai.dev.kit.core.eval.createOpenAIClient
-import ai.dev.kit.core.fluent.KotlinLoggingClient
-import ai.dev.kit.core.fluent.dataclasses.TracesResponse
+import ai.dev.kit.createOpenAIClient
+import ai.dev.kit.tracing.fluent.KotlinLoggingClient
+import ai.dev.kit.tracing.fluent.dataclasses.TracesResponse
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import kotlinx.coroutines.runBlocking

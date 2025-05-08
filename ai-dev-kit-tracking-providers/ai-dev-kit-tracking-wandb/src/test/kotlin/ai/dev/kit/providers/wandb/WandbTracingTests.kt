@@ -1,6 +1,6 @@
 package ai.dev.kit.providers.wandb
 
-import ai.dev.kit.core.fluent.processor.TracingFlowProcessor
+import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
 import ai.dev.kit.providers.wandb.KotlinWandbClient.TEST_PROJECT_NAME
 import ai.dev.kit.providers.wandb.KotlinWandbClient.currentExperimentId
 import ai.dev.kit.providers.wandb.fluent.setupWandbTracing

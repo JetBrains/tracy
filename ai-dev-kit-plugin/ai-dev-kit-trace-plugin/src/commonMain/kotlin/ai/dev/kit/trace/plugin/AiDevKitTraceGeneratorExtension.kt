@@ -25,12 +25,12 @@ import org.jetbrains.kotlin.name.Name
 class AiDevKitTraceGeneratorExtension : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val withTraceSymbol = pluginContext.referenceFunctions(
-            CallableId(FqName("ai.dev.kit.core.fluent.processor"), Name.identifier("withTrace"))
+            CallableId(FqName("ai.dev.kit.tracing.fluent.processor"), Name.identifier("withTrace"))
         ).single()
         val withTraceSuspendedSymbol = pluginContext.referenceFunctions(
-            CallableId(FqName("ai.dev.kit.core.fluent.processor"), Name.identifier("withTraceSuspended"))
+            CallableId(FqName("ai.dev.kit.tracing.fluent.processor"), Name.identifier("withTraceSuspended"))
         ).single()
-        val traceAnnotationFqName = FqName("ai.dev.kit.core.fluent.KotlinFlowTrace")
+        val traceAnnotationFqName = FqName("ai.dev.kit.tracing.fluent.KotlinFlowTrace")
 
         moduleFragment.accept(object : IrElementVisitorVoid {
             override fun visitElement(element: IrElement) {

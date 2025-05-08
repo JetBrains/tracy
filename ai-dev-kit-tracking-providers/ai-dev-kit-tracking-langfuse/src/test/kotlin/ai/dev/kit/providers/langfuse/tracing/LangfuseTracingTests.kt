@@ -1,6 +1,6 @@
 package ai.dev.kit.providers.langfuse.tracing
 
-import ai.dev.kit.core.fluent.processor.TracingFlowProcessor
+import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
 import ai.dev.kit.providers.langfuse.KotlinLangfuseClient.TEST_PROJECT_NAME
 import ai.dev.kit.providers.langfuse.KotlinLangfuseClient.currentExperimentId
 import ai.dev.kit.providers.langfuse.fluent.setupLangfuseTracing

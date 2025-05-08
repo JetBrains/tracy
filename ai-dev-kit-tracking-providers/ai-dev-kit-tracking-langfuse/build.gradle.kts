@@ -9,12 +9,14 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":ai-dev-kit-core"))
+    implementation(project(":ai-dev-kit-tracing"))
+    implementation(project(":ai-dev-kit-eval"))
     implementation(libs.kodein)
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.serialization.json)
     implementation(libs.ktor.client.negotiation)
     implementation(libs.opentelemetry.sdk)
+    implementation(libs.kotlinx.dataframe)
     testImplementation(libs.kotlin.test)
     testImplementation(testFixtures(project(":ai-dev-kit-test-base")))
 }

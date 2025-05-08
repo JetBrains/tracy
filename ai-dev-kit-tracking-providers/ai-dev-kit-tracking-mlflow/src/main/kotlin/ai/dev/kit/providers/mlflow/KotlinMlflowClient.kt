@@ -1,8 +1,8 @@
 package ai.dev.kit.providers.mlflow
 
-import ai.dev.kit.core.fluent.KotlinLoggingClient
-import ai.dev.kit.core.fluent.getUserIDFromEnv
-import ai.dev.kit.core.fluent.dataclasses.RunStatus
+import ai.dev.kit.tracing.fluent.KotlinLoggingClient
+import ai.dev.kit.tracing.fluent.getUserIDFromEnv
+import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
