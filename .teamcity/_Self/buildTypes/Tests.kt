@@ -14,6 +14,10 @@ object Tests : BuildType( {
         root(HttpsGithubComJetBrainsAiDevKitRefsHeadsMain)
     }
 
+    params {
+        param("env.USER_ID", "TeamCityBuild")
+    }
+
     steps {
         gradle {
             name = "Test Non Local Tests"
