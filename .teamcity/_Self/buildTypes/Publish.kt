@@ -46,13 +46,6 @@ object Publish : BuildType({
 
     features {
         perfmon {}
-        commitStatusPublisher {
-            vcsRootExtId = "${HttpsGithubComJetBrainsAiDevKitRefsHeadsMain.id}"
-            publisher = github {
-                githubUrl = "https://api.github.com"
-                authType = vcsRoot()
-            }
-        }
     }
 })
 

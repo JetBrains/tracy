@@ -13,11 +13,13 @@ class TestAutologTracingMlflow : TestAutologTracingBase(
     KotlinMlflowClient
 ), MlflowTracingTests
 
+@Tag("SkipForNonLocal")
 class TestFluentTracingMlflow : TestFluentTracingBase(
     ::getTraces,
     KotlinMlflowClient
 ), MlflowTracingTests
 
+@Tag("SkipForNonLocal")
 class TestSuspendFluentTracingMlflow : TestSuspendFluentTracingBase(
     ::getTraces,
     KotlinMlflowClient
