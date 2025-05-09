@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm")
+    alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
     id("ai.dev.kit.space.publishing")
 }
@@ -9,12 +9,12 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":ai-dev-kit-core"))
     implementation(libs.kodein)
     implementation(libs.ktor.client.cio)
-    implementation(libs.ktor.serialization.json)
     implementation(libs.ktor.client.negotiation)
+    implementation(libs.ktor.serialization.json)
     implementation(libs.opentelemetry.sdk)
+    implementation(project(":ai-dev-kit-core"))
     testImplementation(libs.kotlin.test)
     testImplementation(testFixtures(project(":ai-dev-kit-test-base")))
 }
