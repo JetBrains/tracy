@@ -7,7 +7,6 @@ import jetbrains.buildServer.configs.kotlin.buildSteps.maven
 
 object Assemble : BuildType( {
     name = "Assemble"
-    paused = true
 
     vcs {
         root(HttpsGithubComJetBrainsAiDevKitRefsHeadsMain)

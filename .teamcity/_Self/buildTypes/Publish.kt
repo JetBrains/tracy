@@ -8,6 +8,7 @@ import jetbrains.buildServer.configs.kotlin.triggers.vcs
 
 object Publish : BuildType({
     name = "Publish to space"
+    paused = true
     type = Type.DEPLOYMENT
     maxRunningBuilds = 1
 
@@ -36,6 +37,17 @@ object Publish : BuildType({
     triggers {
         vcs {
             branchFilter = "+:main"
+        }
+    }
+
+
+    commitStatusPublisher {
+        vcsRootExtId = "${HttpsGithubComJetBrainsAiDevKitRefsHeadsMain.id}"
+        publisher = github {
+            githubUrl = "https://api.github.com"
+            authType = personalToken {
+                token = "credentialsJSON:c96b2f3a-a3aa-43ff-8317-5ca8578c21bb"
+            }
         }
     }
 
