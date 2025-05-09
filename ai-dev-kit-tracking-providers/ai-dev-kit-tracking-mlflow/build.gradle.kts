@@ -5,25 +5,25 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":ai-dev-kit-core"))
-    implementation(libs.kodein)
     implementation(libs.junit)
-    implementation(libs.testcontainers.junit)
-    implementation(libs.snakeyaml)
+    implementation(libs.kodein)
+    implementation(libs.kotlinx.dataframe)
     implementation(libs.kotlinx.serialization.core)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.ktor.client)
     implementation(libs.ktor.client.cio)
-    implementation(libs.ktor.serialization.json)
     implementation(libs.ktor.client.negotiation)
+    implementation(libs.ktor.serialization.json)
     implementation(libs.mlflow)
     implementation(libs.opentelemetry)
-    implementation(libs.opentelemetry.sdk)
     implementation(libs.opentelemetry.kotlin)
+    implementation(libs.opentelemetry.sdk)
+    implementation(libs.snakeyaml)
+    implementation(libs.testcontainers.junit)
+    implementation(project(":ai-dev-kit-core"))
     implementation(project(":ai-dev-kit-eval"))
-    implementation(libs.kotlinx.dataframe)
-    testImplementation(libs.openai)
     testImplementation(libs.kotlin.test)
+    testImplementation(libs.openai)
     testImplementation(testFixtures(project(":ai-dev-kit-test-base")))
 }
 

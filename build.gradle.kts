@@ -13,6 +13,15 @@ subprojects {
     repositories {
         mavenCentral()
     }
+    tasks.withType<Test> {
+        useJUnitPlatform {
+            if (System.getProperty("aiDevKitLocalTests", "true").toBoolean()) {
+                includeTags("SkipForNonLocal")
+            } else {
+                excludeTags("SkipForNonLocal")
+            }
+        }
+    }
 }
 
 tasks.register("showCreds") {
