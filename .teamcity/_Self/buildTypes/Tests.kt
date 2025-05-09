@@ -21,15 +21,22 @@ object Tests : BuildType( {
         }
     }
 
+    triggers {
+        vcs {
+            branchFilter = """
+                +:<default>
+                +:pull/*
+            """.trimIndent()
+        }
+    }
+
     features {
         perfmon {}
         commitStatusPublisher {
             vcsRootExtId = "${HttpsGithubComJetBrainsAiDevKitRefsHeadsMain.id}"
             publisher = github {
                 githubUrl = "https://api.github.com"
-                authType = personalToken {
-                    token = "credentialsJSON:c96b2f3a-a3aa-43ff-8317-5ca8578c21bb"
-                }
+                authType = vcsRoot()
             }
         }
     }
