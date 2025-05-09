@@ -27,4 +27,14 @@ object Assemble : BuildType( {
             goals = "clean teamcity-configs:generate"
         }
     }
+
+    commitStatusPublisher {
+        vcsRootExtId = "${HttpsGithubComJetBrainsAiDevKitRefsHeadsMain.id}"
+        publisher = github {
+            githubUrl = "https://api.github.com"
+            authType = personalToken {
+                token = "credentialsJSON:c96b2f3a-a3aa-43ff-8317-5ca8578c21bb"
+            }
+        }
+    }
 })
