@@ -1,11 +1,10 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
-    id("ai.dev.kit.space.publishing")
     alias(libs.plugins.kotlin.serialization)
+    id("ai.dev.kit.space.publishing")
 }
 
 dependencies {
-    implementation(project(":ai-dev-kit-tracing"))
     implementation(libs.kotlin)
     implementation(libs.kotlinx.dataframe)
     implementation(libs.kotlinx.serialization.json)
@@ -13,6 +12,8 @@ dependencies {
     implementation(libs.opentelemetry.kotlin)
     implementation(libs.kotlin.test)
     implementation(libs.junit)
+    implementation(project(":ai-dev-kit-tracing"))
+    testImplementation(libs.kotlin.test)
 }
 
 tasks.test {

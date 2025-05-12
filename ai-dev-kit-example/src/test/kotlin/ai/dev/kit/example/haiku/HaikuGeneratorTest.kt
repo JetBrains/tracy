@@ -6,10 +6,12 @@ import ai.dev.kit.providers.mlflow.MlflowEvaluationClient
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
+import org.junit.jupiter.api.Tag
 import kotlin.jvm.optionals.getOrElse
 
 fun haikuTestCase(topic: String) = TestCase<HaikuTopic, NoGroundTruth>(name = topic, HaikuTopic(topic), NoGroundTruth)
 
+@Tag("SkipForNonLocal")
 class HaikuGeneratorTest :
     BaseEvaluationTest<HaikuTopic, NoGroundTruth, HaikuText, MultiScoreEvalResult>(
         "HaikuGeneratorTest",

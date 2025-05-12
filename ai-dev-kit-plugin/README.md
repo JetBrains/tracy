@@ -18,6 +18,10 @@ When a function is annotated with `@KotlinFlowTrace`, the plugin:
 - Calls either `withTrace` or `withTraceSuspended`, depending on whether the function is suspending.
 - Ensures that trace data is collected and sent to the configured tracking backend.
 
+⚠️ You can disable the tracing plugin by setting `enableAiDevKitPlugin=false`. 
+This property should be added to `gradle.properties` to ensure that code is not traced for safety reasons (it can be enabled locally if needed).
+
+
 ### 💡 Manual Tracing (Without the Plugin)
 
 You don't need to use the compiler plugin to enable tracing — you can manually wrap your functions with the `withTrace` or `withTraceSuspended` functions from `ai-dev-kit-tracing`.

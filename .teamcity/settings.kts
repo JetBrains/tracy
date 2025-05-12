@@ -27,45 +27,4 @@ To debug in IntelliJ Idea, open the 'Maven Projects' tool window (View
 
 version = "2025.03"
 
-project {
-    description = "ADM-128054"
-
-    buildType(PublishToSpace)
-}
-
-object PublishToSpace : BuildType({
-    name = "Publish to space"
-
-    params {
-        password("env.SPACE_PASSWORD", "credentialsJSON:cac278db-1591-4ad6-9fc4-4ecef5f5e853")
-        password("env.SPACE_USERNAME", "credentialsJSON:c038a60b-6747-4938-b725-4cfb201890a5")
-    }
-
-    vcs {
-        root(DslContext.settingsRoot)
-    }
-
-    steps {
-        gradle {
-            name = "Show credentials"
-            id = "Show_creds"
-            tasks = ":showCreds"
-        }
-        gradle {
-            name = "Publish space"
-            id = "Publish_space"
-            tasks = "ai-dev-kit-trace-gradle:publish ai-dev-kit-trace-plugin:publish :publishContentModules"
-        }
-    }
-
-    triggers {
-        vcs {
-            branchFilter = "+:main"
-        }
-    }
-
-    features {
-        perfmon {
-        }
-    }
-})
+project(_Self.Project)
