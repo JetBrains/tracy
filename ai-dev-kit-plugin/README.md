@@ -7,7 +7,7 @@ The **AI Dev Kit Plugin** provides tracing capabilities for Kotlin applications.
 
 ## 🛠️ Ai Dev Kit Kotlin Compiler Plugin
 
-The `ai-dev-kit` Kotlin compiler plugin enables automatic function tracing via the `@KotlinFlowTrace` annotation. It rewrites annotated functions at compile time to inject tracing logic using the `withTrace` or `withTraceSuspended` methods from `ai-dev-kit-core`.
+The `ai-dev-kit` Kotlin compiler plugin enables automatic function tracing via the `@KotlinFlowTrace` annotation. It rewrites annotated functions at compile time to inject tracing logic using the `withTrace` or `withTraceSuspended` methods from `ai-dev-kit-tracing`.
 
 ### 🎯 What It Does
 
@@ -20,7 +20,7 @@ When a function is annotated with `@KotlinFlowTrace`, the plugin:
 
 ### 💡 Manual Tracing (Without the Plugin)
 
-You don't need to use the compiler plugin to enable tracing — you can manually wrap your functions with the `withTrace` or `withTraceSuspended` functions from `ai-dev-kit-core`.
+You don't need to use the compiler plugin to enable tracing — you can manually wrap your functions with the `withTrace` or `withTraceSuspended` functions from `ai-dev-kit-tracing`.
 
 This gives you full control and can be useful in cases where:
 - You can't (or don't want to) apply the Kotlin compiler plugin.

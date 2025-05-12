@@ -1,6 +1,6 @@
-# 🔧 AI Dev Kit Core Module
+# 🔧 AI Dev Kit Tracing Module
 
-The `ai-dev-kit-core` is the foundational module of the AI Development Kit, 
+The `ai-dev-kit-tracing` is the foundational module of the AI Development Kit, 
 providing essential functionality for tracing in Kotlin/JVM and JavaScript environments. 
 Written in Kotlin Multiplatform (KMP), it serves as the backbone for other modules in the toolkit.
 

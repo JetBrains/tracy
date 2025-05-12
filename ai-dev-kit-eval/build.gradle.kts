@@ -11,6 +11,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines)
     implementation(libs.opentelemetry.kotlin)
+    implementation(libs.kotlin.test)
     implementation(libs.junit)
 }
 
