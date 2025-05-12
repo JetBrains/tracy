@@ -47,7 +47,7 @@ ai-dev-kit-plugin = "VERSION"
 ai-dev-kit = "VERSION"
 
 [libraries]
-ai-dev-kit-core = { module = "com.jetbrains:ai-dev-kit-core", version.ref = "ai-dev-kit" }
+ai-dev-kit-tracing = { module = "com.jetbrains:ai-dev-kit-tracing", version.ref = "ai-dev-kit" }
 
 # You can choose from multiple tracing providers:
 # - Langfuse (used in the example below)
@@ -67,7 +67,7 @@ In your module's `build.gradle.kts`, add the required dependencies:
 
 ```kotlin
 dependencies {
-    implementation(libs.ai.dev.kit.core)
+    implementation(libs.ai.dev.kit.tracing)
     implementation(libs.ai.dev.kit.tracking.langfuse)
 }
 ```
@@ -95,7 +95,7 @@ If tracing is not initialized beforehand, the tracking provider will not be defi
 ## 🏗️ Project Structure
 
 #### 📦 Core Modules
-- **ai-dev-kit-core**: Core tracing functionality with OpenTelemetry tracing support. Written in Kotlin Multiplatform (KMP). For a more details, refer to the [README.md](ai-dev-kit-core/README.md)
+- **ai-dev-kit-tracing**: Core tracing functionality with OpenTelemetry tracing support. Written in Kotlin Multiplatform (KMP). For a more details, refer to the [README.md](ai-dev-kit-tracing/README.md)
 - **ai-dev-kit-eval**: Evaluation framework for AI models, supporting criteria-based testing and quality metrics.
 - **ai-dev-kit-plugin** For a more detailed how-to, refer to the [README.md](ai-dev-kit-plugin/README.md) file in that submodule:
     - **trace-plugin**: Kotlin compiler plugin for tracing. Written in Kotlin Multiplatform (KMP).
