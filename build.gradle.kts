@@ -13,19 +13,16 @@ subprojects {
     repositories {
         mavenCentral()
     }
-}
-
-tasks.register("showCreds") {
-    description = "Displays credentials for debugging purposes"
-    doLast {
-        val username = System.getenv("SPACE_USERNAME") ?: "Not Set"
-        val password = System.getenv("SPACE_PASSWORD") ?: "Not Set"
-
-        println("SPACE_USERNAME: $username")
-        println("SPACE_PASSWORD: $password")
+    tasks.withType<Test> {
+        useJUnitPlatform {
+            if (System.getProperty("aiDevKitLocalTests", "true").toBoolean()) {
+                includeTags("SkipForNonLocal")
+            } else {
+                excludeTags("SkipForNonLocal")
+            }
+        }
     }
 }
-
 
 tasks.register("publishContentModules") {
     group = "publishing"

@@ -114,11 +114,19 @@ If tracing is not initialized beforehand, the tracking provider will not be defi
 - **ai-dev-kit-test-base**: Common test utilities and base classes for testing tracing capabilities
 - **ai-dev-kit-example**: Example implementations and usage demonstrations
 
-#### 📦 How to publish `ai-dev-kit`
-To publish,
-you need
-to provide `SPACE_USERNAME` and `SPACE_PASSWORD` `.env` variables with write access to the `ai-dev-kit` [repository](https://jetbrains.team/p/ai-development-kit/packages/maven/ai-development-kit).
+### 📦 How to publish `ai-dev-kit`
+* When a pull request is created, a comment is automatically added with instructions for running the publishing build.
+* To publish locally, you need to provide `SPACE_USERNAME` and `SPACE_PASSWORD` `.env` variables with write access 
+to the `ai-dev-kit` [repository](https://jetbrains.team/p/ai-development-kit/packages/maven/ai-development-kit).
 Then run the following command
 ```bash
 ./gradlew ai-dev-kit-trace-gradle:publish ai-dev-kit-trace-plugin:publish :publishContentModules
 ```
+When a pull request is created, a comment is automatically added with instructions for running the publishing build.
+
+### 🧪 Running Tests
+The AI Development Kit uses test tags to manage which tests are executed in different environments.
+Tests or test classes tagged with `SkipForNonLocal` are designed to run only in local environments.
+When the `aiDevKitLocalTests` system property is set to `false` (the default is `true`), these tests are excluded from execution.
+This ensures that tests tagged with `SkipForNonLocal` do not run on TeamCity or other non-local environments.
+
