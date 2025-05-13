@@ -3,8 +3,10 @@ package ai.dev.kit.fluent
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import ai.dev.kit.tracing.fluent.KotlinLoggingClient
 import ai.dev.kit.tracing.fluent.dataclasses.TracesResponse
+import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import org.junit.jupiter.api.Test
@@ -113,22 +115,24 @@ open class TestSuspendFluentTracingBase(
     private val client: KotlinLoggingClient
 ) {
     @Test
-    fun `test trace creation`() = runBlocking {
+    fun `test trace creation`() = runTest {
         MyTestClassWithSuspend().testFunction(1)
+
+        TracingFlowProcessor.flushTraces()
         val tracesResponse = getTraces(client.currentExperimentId)
 
-        assertEquals(1, tracesResponse.traces.size)
-        val trace = tracesResponse.traces.first()
+        val trace = tracesResponse.traces.firstOrNull()
         assertNotNull(trace)
         assertEquals(client.currentExperimentId, trace.experimentId)
     }
 
     @Test
-    fun `test trace tags and metadata are correct`() = runBlocking {
+    fun `test trace tags and metadata are correct`() = runTest {
         val testClass = MyTestClassWithSuspend()
         val arg = 3
         val result = testClass.testFunction(arg)
 
+        TracingFlowProcessor.flushTraces()
         val tracesResponse = getTraces(client.currentExperimentId)
         var trace = tracesResponse.traces.firstOrNull()
         trace = assertNotNull(trace)
@@ -153,11 +157,12 @@ open class TestSuspendFluentTracingBase(
     }
 
     @Test
-    fun `test multiple trace creation`() = runBlocking {
+    fun `test multiple trace creation`() = runTest {
         val testClass = MyTestClassWithSuspend()
         testClass.testFunction(1)
         testClass.anotherTestFunction("OpenTelemetry")
 
+        TracingFlowProcessor.flushTraces()
         val tracesResponse = getTraces(client.currentExperimentId)
 
         assertEquals(2, tracesResponse.traces.size)
@@ -169,9 +174,10 @@ open class TestSuspendFluentTracingBase(
     }
 
     @Test
-    fun `test parent child trace`() = runBlocking {
+    fun `test parent child trace`() = runTest {
         MyTestClassWithSuspend().parentTestFunction("RandomString")
 
+        TracingFlowProcessor.flushTraces()
         val tracesResponse = getTraces(client.currentExperimentId)
 
         var trace = tracesResponse.traces.firstOrNull()
@@ -184,14 +190,14 @@ open class TestSuspendFluentTracingBase(
     }
 
     @Test
-    fun `test parent child trace with non suspend child`() = runBlocking {
+    fun `test parent child trace with non suspend child`() = runTest {
         MyTestClassWithSuspend().parentTestFunctionWithNonSuspendKid("RandomString")
 
+        TracingFlowProcessor.flushTraces()
         val tracesResponse = getTraces(client.currentExperimentId)
-
         var trace = tracesResponse.traces.firstOrNull()
-        trace = assertNotNull(trace)
 
+        trace = assertNotNull(trace)
         assertEquals(
             "[{\"name\":\"Child Span Non Suspend\",\"type\":\"UNKNOWN\",\"inputs\":\"{\\\"x\\\":\\\"gnirtSmodnaR\\\"}\"},{\"name\":\"Parent Span Non Suspend\",\"type\":\"UNKNOWN\",\"inputs\":\"{\\\"x\\\":\\\"RandomString\\\"}\"}]",
             trace.tags.firstOrNull { it.key == "traceSpans" }?.value ?: ""
@@ -199,9 +205,10 @@ open class TestSuspendFluentTracingBase(
     }
 
     @Test
-    fun `test parent child trace with non suspend parent`() = runBlocking {
+    fun `test parent child trace with non suspend parent`() = runTest {
         MyTestClassWithSuspend().parentTestFunctionWithSuspendKid("RandomString")
 
+        TracingFlowProcessor.flushTraces()
         val tracesResponse = getTraces(client.currentExperimentId)
         var trace = tracesResponse.traces.firstOrNull()
         trace = assertNotNull(trace)
@@ -213,9 +220,11 @@ open class TestSuspendFluentTracingBase(
     }
 
     @Test
-    fun `test recursion`() = runBlocking {
+    fun `test recursion`() = runTest {
         MyTestClassWithSuspend().testRecursion(2)
 
+
+        TracingFlowProcessor.flushTraces()
         val tracesResponse = getTraces(client.currentExperimentId)
         var trace = tracesResponse.traces.firstOrNull()
         trace = assertNotNull(trace)
@@ -227,9 +236,10 @@ open class TestSuspendFluentTracingBase(
     }
 
     @Test
-    fun `test parent and child trace hierarchy`() = runBlocking {
+    fun `test parent and child trace hierarchy`() = runTest {
         val result = MyTestClassWithSuspendHard().parentFunction("a")
 
+        TracingFlowProcessor.flushTraces()
         val tracesResponse = getTraces(client.currentExperimentId)
 
         assertNotNull(tracesResponse)

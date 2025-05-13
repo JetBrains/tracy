@@ -16,7 +16,7 @@ object OpenAiClientAttributeHandler : SpanAttributeHandler {
     }
 
     override fun processOutput(result: Any?): String {
-        result as? Response ?: return result.toString()
+        if (result !is Response) return result.toString()
         return Json.decodeFromString<JsonObject>(result.peekBody(Long.MAX_VALUE).string()).toString()
     }
 

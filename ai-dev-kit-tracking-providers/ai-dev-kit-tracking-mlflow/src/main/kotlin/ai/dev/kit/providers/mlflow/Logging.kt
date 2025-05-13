@@ -9,7 +9,6 @@ import ai.dev.kit.eval.utils.getCurrentTimestamp
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -97,12 +96,10 @@ suspend fun logModel(runId: String, modelJson: String, mlFlowUrl: String = Kotli
     }
 }
 
-fun uploadArtifact(path: String, content: String) {
-    runBlocking {
-        KotlinMlflowClient.client.put("${KotlinMlflowClient.ML_FLOW_ARTIFACTS_API}/artifacts/$path") {
-            contentType(ContentType.Application.Json)
-            setBody(content)
-        }
+suspend fun uploadArtifact(path: String, content: String) {
+    KotlinMlflowClient.client.put("${KotlinMlflowClient.ML_FLOW_ARTIFACTS_API}/artifacts/$path") {
+        contentType(ContentType.Application.Json)
+        setBody(content)
     }
 }
 

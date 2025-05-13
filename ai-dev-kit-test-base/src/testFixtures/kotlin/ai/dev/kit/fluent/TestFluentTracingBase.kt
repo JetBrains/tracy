@@ -3,8 +3,9 @@ package ai.dev.kit.fluent
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import ai.dev.kit.tracing.fluent.KotlinLoggingClient
 import ai.dev.kit.tracing.fluent.dataclasses.TracesResponse
-import kotlinx.coroutines.runBlocking
+import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
 import org.junit.jupiter.api.Test
+import kotlinx.coroutines.test.runTest
 import kotlin.reflect.KSuspendFunction1
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -59,11 +60,11 @@ open class TestFluentTracingBase(
     private val client: KotlinLoggingClient
 ) {
     @Test
-    fun `test trace creation`() {
+    fun `test trace creation`() = runTest {
         MyTestClass().testFunction(1)
-        val tracesResponse = runBlocking {
-            getTraces(client.currentExperimentId)
-        }
+
+        TracingFlowProcessor.flushTraces()
+        val tracesResponse = getTraces(client.currentExperimentId)
 
         assertEquals(1, tracesResponse.traces.size)
         val trace = tracesResponse.traces.first()
@@ -72,11 +73,11 @@ open class TestFluentTracingBase(
     }
 
     @Test
-    fun `test extension function`() {
+    fun `test extension function`() = runTest {
         val result = listOf("first", "second").foo()
-        val tracesResponse = runBlocking {
-            getTraces(client.currentExperimentId)
-        }
+
+        TracingFlowProcessor.flushTraces()
+        val tracesResponse = getTraces(client.currentExperimentId)
 
         assertEquals("first second", result)
         assertEquals(1, tracesResponse.traces.size)
@@ -86,12 +87,11 @@ open class TestFluentTracingBase(
     }
 
     @Test
-    fun `test top level function`() = runBlocking {
+    fun `test top level function`() = runTest {
         topLevelTestFunction("RandomString")
 
-        val tracesResponse = runBlocking {
-            getTraces(client.currentExperimentId)
-        }
+        TracingFlowProcessor.flushTraces()
+        val tracesResponse = getTraces(client.currentExperimentId)
 
         assertEquals(1, tracesResponse.traces.size)
         val trace = tracesResponse.traces.first()
@@ -100,12 +100,11 @@ open class TestFluentTracingBase(
     }
 
     @Test
-    fun `test inside class function`() = runBlocking {
+    fun `test inside class function`() = runTest {
         MyTestClass.InsideClass().insideTestFunction("RandomString")
 
-        val tracesResponse = runBlocking {
-            getTraces(client.currentExperimentId)
-        }
+        TracingFlowProcessor.flushTraces()
+        val tracesResponse = getTraces(client.currentExperimentId)
 
         assertEquals(1, tracesResponse.traces.size)
         val trace = tracesResponse.traces.first()
@@ -114,14 +113,13 @@ open class TestFluentTracingBase(
     }
 
     @Test
-    fun `test trace tags and metadata are correct`() {
+    fun `test trace tags and metadata are correct`() = runTest {
         val testClass = MyTestClass()
         val arg = 3
         val result = testClass.testFunction(arg)
 
-        val tracesResponse = runBlocking {
-            getTraces(client.currentExperimentId)
-        }
+        TracingFlowProcessor.flushTraces()
+        val tracesResponse = getTraces(client.currentExperimentId)
         var trace = tracesResponse.traces.firstOrNull()
         trace = assertNotNull(trace)
 
@@ -145,13 +143,12 @@ open class TestFluentTracingBase(
     }
 
     @Test
-    fun `test trace params default values are correct`() {
+    fun `test trace params default values are correct`() = runTest {
         val testClass = MyTestClass()
         val result = testClass.testFunctionWithDefaultValue()
 
-        val tracesResponse = runBlocking {
-            getTraces(client.currentExperimentId)
-        }
+        TracingFlowProcessor.flushTraces()
+        val tracesResponse = getTraces(client.currentExperimentId)
         var trace = tracesResponse.traces.firstOrNull()
         trace = assertNotNull(trace)
 
@@ -175,14 +172,13 @@ open class TestFluentTracingBase(
     }
 
     @Test
-    fun `test multiple trace creation`() {
+    fun `test multiple trace creation`() = runTest {
         val testClass = MyTestClass()
         testClass.testFunction(1)
         testClass.anotherTestFunction("OpenTelemetry")
 
-        val tracesResponse = runBlocking {
-            getTraces(client.currentExperimentId)
-        }
+        TracingFlowProcessor.flushTraces()
+        val tracesResponse = getTraces(client.currentExperimentId)
 
         assertEquals(2, tracesResponse.traces.size)
 
@@ -193,12 +189,11 @@ open class TestFluentTracingBase(
     }
 
     @Test
-    fun `test parent child trace`() {
+    fun `test parent child trace`() = runTest {
         MyTestClass().parentTestFunction("RandomString")
 
-        val tracesResponse = runBlocking {
-            getTraces(client.currentExperimentId)
-        }
+        TracingFlowProcessor.flushTraces()
+        val tracesResponse = getTraces(client.currentExperimentId)
 
         var trace = tracesResponse.traces.firstOrNull()
         trace = assertNotNull(trace)

@@ -44,29 +44,30 @@ abstract class BaseEvaluationTest<
     init {
         require(tags.isEmpty() || tags.size == numberOfRuns) { "The number of tags must match the number of runs" }
     }
+
     private val logger = KotlinLogging.logger {}
     private lateinit var experimentId: String
     private val runResults = mutableListOf<RunResults<AIInputT, GroundTruthT, AIOutputT, EvalResultT>>()
 
     @BeforeAll
-    fun beforeAll() {
-        logger.info{"🔄 Setting up before all tests"}
+    fun beforeAll() = runBlocking {
+        logger.info { "🔄 Setting up before all tests" }
 
         experimentId = loggingClient.getOrCreateExperiment(experimentName)
             ?: error("Experiment $experimentName not found and could not be crated")
         (1..numberOfRuns).map { runNum ->
             val runId = loggingClient.createRun(
-                experimentId,
-                runNamePrefix + if (numberOfRuns > 1) "/subrun-$runNum" else ""
+                experimentId, runNamePrefix + if (numberOfRuns > 1) "/subrun-$runNum" else ""
             )
             runResults.add(RunResults(mutableListOf(), runId, RunStatus.FINISHED))
         }
+        return@runBlocking
     }
 
     @AfterAll
-    fun afterAll() {
-        logger.info{"📊 Logging evaluation results"}
-
+    fun afterAll() = runBlocking {
+        logger.info { "📊 Logging evaluation results" }
+        TracingFlowProcessor.flushTraces()
         runResults.forEachIndexed { runIndex, runResult ->
             val (testResults, runId, runStatus) = runResult
             try {
@@ -84,10 +85,15 @@ abstract class BaseEvaluationTest<
     @TestFactory
     fun Runs(): Stream<DynamicContainer> = runResults.mapIndexed { runNum, runResult ->
         DynamicContainer.dynamicContainer(
-            "Run ${if (runResults.size > 1) runNum + 1 else ""}",
-            testCases.mapIndexed { dataPointIndex, testCase ->
-                val (dataPointSpan, dataPointScope) =
-                    createDataPointSpan(dataPointIndex, TracingFlowProcessor.tracer, runResult.runId, testCase)
+            "Run ${if (runResults.size > 1) runNum + 1 else ""}", testCases.mapIndexed { dataPointIndex, testCase ->
+                val (dataPointSpan, dataPointScope) = runBlocking {
+                    createDataPointSpan(
+                        dataPointIndex,
+                        TracingFlowProcessor.tracer,
+                        runResult.runId,
+                        testCase
+                    )
+                }
                 val output = runBlocking {
                     withContext(dataPointSpan.asContextElement()) {
                         generator.generate(testCase.input)
@@ -104,23 +110,18 @@ abstract class BaseEvaluationTest<
                         dataPointScope.close()
                     }
                 }
-            }
-        )
+            })
     }.stream()
 
-    private fun createDataPointSpan(
-        dataPointIndex: Int,
-        tracer: Tracer,
-        runId: String,
-        testCase: TestCase<AIInputT, GroundTruthT>
+    private suspend fun createDataPointSpan(
+        dataPointIndex: Int, tracer: Tracer, runId: String, testCase: TestCase<AIInputT, GroundTruthT>
     ): Pair<Span, io.opentelemetry.context.Scope> {
         val tracedRunName = testCase.name.ifBlank { "Data Point ${dataPointIndex + 1}" }
         val dataPointSpan = tracer.spanBuilder(tracedRunName).setNoParent().let {
             it.setAttribute(FluentSpanAttributes.SOURCE_RUN.key, runId)
 
             it.setAttribute(
-                FluentSpanAttributes.SPAN_INPUTS.key,
-                testCase.input.toString()
+                FluentSpanAttributes.SPAN_INPUTS.key, testCase.input.toString()
             )
             loggingClient.uploadTraceStart(experimentId, runId, it, tracedRunName)
         }
@@ -155,8 +156,7 @@ abstract class BaseEvaluationTest<
 
         if (result.hasJunitTestSucceeded) {
             logTest(
-                message = "✅ Test Passed: $testCaseName | Case: $testCase | Result: $result",
-                runId = runId
+                message = "✅ Test Passed: $testCaseName | Case: $testCase | Result: $result", runId = runId
             )
         } else {
             val message = "❌ Test failed: $testCaseName | Case: $testCase | Result: $result"
@@ -167,21 +167,19 @@ abstract class BaseEvaluationTest<
 
     private fun logTest(message: String, runId: String) {
         val resultsLink = loggingClient.getResultsLink(experimentId, runId)
-        logger.info{message}
-        logger.info{"🔗 View results at $resultsLink"}
+        logger.info { message }
+        logger.info { "🔗 View results at $resultsLink" }
     }
 
-    private fun logAverageScore(runId: String, evalResults: List<EvalResultT>) {
+    private suspend fun logAverageScore(runId: String, evalResults: List<EvalResultT>) {
         val aggregateScores = evaluator.aggregateResults(evalResults)
         for (agg in aggregateScores) {
             loggingClient.logMetric(
-                runId,
-                agg.scoreName,
-                agg.score
+                runId, agg.scoreName, agg.score
             )
         }
         if (aggregateScores.isNotEmpty()) {
-            logger.info{"📈 Results logged to ${loggingClient.clientName} for Run ID: $runId"}
+            logger.info { "📈 Results logged to ${loggingClient.clientName} for Run ID: $runId" }
         }
     }
 

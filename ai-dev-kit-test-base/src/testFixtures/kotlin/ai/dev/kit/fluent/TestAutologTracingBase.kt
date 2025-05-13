@@ -3,9 +3,10 @@ package ai.dev.kit.fluent
 import ai.dev.kit.createOpenAIClient
 import ai.dev.kit.tracing.fluent.KotlinLoggingClient
 import ai.dev.kit.tracing.fluent.dataclasses.TracesResponse
+import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -20,7 +21,7 @@ open class TestAutologTracingBase(
     private val client: KotlinLoggingClient
 ) {
     @Test
-    fun testOpenAIAutoTracing() {
+    fun testOpenAIAutoTracing() = runTest {
         client.withRun(client.currentExperimentId).use {
             val client = createOpenAIClient()
             val params = ChatCompletionCreateParams.Companion.builder()
@@ -29,9 +30,8 @@ open class TestAutologTracingBase(
             client.chat().completions().create(params)
         }
 
-        val tracesResponse = runBlocking {
-            getTraces(client.currentExperimentId)
-        }
+        TracingFlowProcessor.flushTraces()
+        val tracesResponse = getTraces(client.currentExperimentId)
 
         assertEquals(1, tracesResponse.traces.size)
         val chatTrace = tracesResponse.traces.first()

@@ -7,8 +7,9 @@ import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
-import kotlinx.coroutines.runBlocking
 import ai.dev.kit.providers.mlflow.KotlinMlflowClient.ML_FLOW_URL
+import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
+import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.mlflow.api.proto.Service
 import org.mlflow.tracking.MlflowClient
@@ -51,8 +52,7 @@ internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL), KotlinLoggingCli
         val myRunId = createRun(experimentId)?.runId
 
         override fun close() {
-            // TODO GET RID OF RUN BLOCKING
-            runBlocking {
+            TracingFlowProcessor.scope.launch {
                 myRunId?.let { updateRun(myRunId, RunStatus.FINISHED) }
             }
         }

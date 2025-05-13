@@ -9,7 +9,6 @@ import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
 import ai.dev.kit.tracing.fluent.processor.Span
 import io.opentelemetry.api.trace.SpanBuilder
 import io.opentelemetry.sdk.trace.ReadableSpan
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.net.URLEncoder
@@ -22,8 +21,8 @@ object LangfuseEvaluationClient : EvaluationClient {
         setupLangfuseTracing()
     }
 
-    override fun getOrCreateExperiment(experimentName: String): String? {
-        val resp = runBlocking { getLangfuseProject() }
+    override suspend fun getOrCreateExperiment(experimentName: String): String? {
+        val resp = getLangfuseProject()
         // use createLangfuseProject() after TODO is completed
         return resp.firstOrNull()?.jsonObject?.get("id")?.jsonPrimitive?.content
     }
@@ -43,7 +42,7 @@ object LangfuseEvaluationClient : EvaluationClient {
         }"
     }
 
-    override fun logMetric(runId: String, name: String, score: Double, traceId: String?) = runBlocking {
+    override suspend fun logMetric(runId: String, name: String, score: Double, traceId: String?) {
         logScoreToLangfuse(
             traceId = traceId,
             sessionId = if (traceId == null) runId else null,
@@ -56,7 +55,7 @@ object LangfuseEvaluationClient : EvaluationClient {
         )
     }
 
-    override fun uploadResults(runId: String, testResults: List<TestResult<*, *, *, *>>) {
+    override suspend fun uploadResults(runId: String, testResults: List<TestResult<*, *, *, *>>) {
         testResults.forEach { result ->
             when (val evalResult = result.evalResult) {
                 is MultiScoreEvalResult -> {
@@ -78,27 +77,26 @@ object LangfuseEvaluationClient : EvaluationClient {
         }
     }
 
-    override fun applyTag(runId: String, tag: RunTag) {
+    override suspend fun applyTag(runId: String, tag: RunTag) {
         // No tags in current Langfuse support
     }
 
-    override fun changeRunStatus(runId: String, runStatus: RunStatus) {
+    override suspend fun changeRunStatus(runId: String, runStatus: RunStatus) {
         // No Run status in Langfuse
     }
 
-    override fun uploadTraceStart(
+    override suspend fun uploadTraceStart(
         experimentId: String,
         runId: String,
         spanBuilder: SpanBuilder,
         tracedRunName: String
-    ): Span =
-        runBlocking {
+    ): Span {
             val span = spanBuilder.startSpan()
             publishRootStartCall(
                 span as ReadableSpan,
                 runId
             )
-            return@runBlocking span
+            return span
         }
 
     enum class LangfuseMetricDataType(val type: String) {

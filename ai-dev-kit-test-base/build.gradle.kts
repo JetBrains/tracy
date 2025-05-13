@@ -8,6 +8,7 @@ dependencies {
     testFixturesImplementation(kotlin("test"))
     testFixturesImplementation(libs.junit)
     testFixturesImplementation(libs.kotlinx.coroutines)
+    testFixturesImplementation(libs.kotlinx.coroutines.test)
     testFixturesImplementation(libs.kotlinx.serialization.json)
     testFixturesImplementation(libs.openai)
     testFixturesImplementation(project(":ai-dev-kit-tracing"))

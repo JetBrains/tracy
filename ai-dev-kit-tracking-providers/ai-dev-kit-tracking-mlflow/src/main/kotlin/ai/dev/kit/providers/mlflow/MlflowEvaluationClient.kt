@@ -11,7 +11,6 @@ import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
 import ai.dev.kit.tracing.fluent.dataclasses.TraceInfo
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.SpanBuilder
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
 object MlflowEvaluationClient : EvaluationClient {
@@ -21,7 +20,7 @@ object MlflowEvaluationClient : EvaluationClient {
         setupMlflowTracing()
     }
 
-    override fun getOrCreateExperiment(experimentName: String): String {
+    override suspend fun getOrCreateExperiment(experimentName: String): String {
         val experimentId = getExperimentByName(
             KotlinMlflowClient,
             experimentName
@@ -50,7 +49,7 @@ object MlflowEvaluationClient : EvaluationClient {
     override fun getResultsLink(experimentId: String, runId: String) =
         "$ML_FLOW_URL/#/experiments/$experimentId/runs/$runId"
 
-    override fun logMetric(runId: String, name: String, score: Double, traceId: String?) {
+    override suspend fun logMetric(runId: String, name: String, score: Double, traceId: String?) {
         logMlflowMetric(
             KotlinMlflowClient,
             runId,
@@ -59,42 +58,38 @@ object MlflowEvaluationClient : EvaluationClient {
         )
     }
 
-    override fun uploadResults(runId: String, testResults: List<TestResult<*, *, *, *>>) {
+    override suspend fun uploadResults(runId: String, testResults: List<TestResult<*, *, *, *>>) {
         val table = testResults.toTable()
 
-        val loggedRun = runBlocking { getRun(runId) }
+        val loggedRun = getRun(runId)
         val artifactPath = "${loggedRun.info.experimentId}/${runId}/artifacts/eval_results_table.json"
         uploadArtifact(artifactPath, table.dumpForMLFlow())
 
-        runBlocking {
-            setTag(
-                runId,
-                "mlflow.loggedArtifacts",
-                "[{\"path\": \"eval_results_table.json\", \"type\": \"table\"}]"
-            )
-        }
+        setTag(
+            runId,
+            "mlflow.loggedArtifacts",
+            "[{\"path\": \"eval_results_table.json\", \"type\": \"table\"}]"
+        )
     }
 
-    override fun applyTag(runId: String, tag: RunTag) {
-        runBlocking {
-            setTag(
-                runId,
-                "mlflow.runColor",
-                tag.color,
-            )
-        }
+    override suspend fun applyTag(runId: String, tag: RunTag) {
+        setTag(
+            runId,
+            "mlflow.runColor",
+            tag.color,
+        )
     }
 
-    override fun changeRunStatus(runId: String, runStatus: RunStatus) {
-        runBlocking { updateRun(runId, runStatus) }
+    override suspend fun changeRunStatus(runId: String, runStatus: RunStatus) {
+        updateRun(runId, runStatus)
     }
 
-    override fun uploadTraceStart(
+    override suspend fun uploadTraceStart(
         experimentId: String,
         runId: String,
         spanBuilder: SpanBuilder,
         tracedRunName: String
-    ): Span = runBlocking {
+    ): Span {
         val tracePostRequest = createTracePostRequest(
             experimentId = experimentId,
             runId = runId,
@@ -104,6 +99,6 @@ object MlflowEvaluationClient : EvaluationClient {
         val jsonTraceInfo = Json.encodeToString(TraceInfo.serializer(), createTrace(tracePostRequest))
         spanBuilder.setAttribute(FluentSpanAttributes.TRACE_CREATION_INFO.key, jsonTraceInfo)
 
-        return@runBlocking spanBuilder.startSpan()
+        return spanBuilder.startSpan()
     }
 }

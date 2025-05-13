@@ -86,9 +86,13 @@ plugins {
   (e.g., Weights & Biases, MLflow) by making the corresponding changes in your setup:
 ```kotlin
 setupLangfuseTracing()
+// Your code with tracing
+TracingFlowProcessor.flushTraces()
 ```
-⚠️ Important: You must set up tracing before calling any annotated methods.
-If tracing is not initialized beforehand, the tracking provider will not be defined and traces will not be recorded.
+⚠️ Important:
+1. You **must** set up tracing by calling `setupLangfuseTracing()` before using any annotated methods. If tracing is not initialized, the tracking provider will not be defined, and traces will not be recorded.
+2. Ensure that you call `TracingFlowProcessor.flushTraces()` after all tracing operations to flush any pending traces. Without this, traces may not be exported if the application terminates too quickly.
+
 
 * Annotate traced function with `@KotlinFlowTrace`
 

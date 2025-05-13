@@ -49,6 +49,6 @@ class MlflowTracingMetadataConfigurator : TracingMetadataConfigurator {
         val jsonTraceInfo = Json.encodeToString(TraceInfo.serializer(), createTrace(tracePostRequest))
         spanBuilder.setAttribute(FluentSpanAttributes.TRACE_CREATION_INFO.key, jsonTraceInfo)
 
-        return@runBlocking spanBuilder.startSpan()
+        spanBuilder.startSpan()
     }
 }
