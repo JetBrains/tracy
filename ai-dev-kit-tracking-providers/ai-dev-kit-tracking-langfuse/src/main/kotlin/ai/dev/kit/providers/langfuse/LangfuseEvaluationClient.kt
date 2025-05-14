@@ -1,12 +1,19 @@
 package ai.dev.kit.providers.langfuse
 
-import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
-import ai.dev.kit.tracing.fluent.dataclasses.TraceInfo
-import ai.dev.kit.eval.utils.EvaluationClient
-import ai.dev.kit.eval.utils.RunTag
-import ai.dev.kit.eval.utils.TracePostRequest
+import ai.dev.kit.eval.utils.*
+import ai.dev.kit.providers.langfuse.KotlinLangfuseClient.LANGFUSE_BASE_URL
+import ai.dev.kit.providers.langfuse.KotlinLangfuseClient.currentRunId
+import ai.dev.kit.providers.langfuse.fluent.LangfuseTracePublisher.Companion.publishRootStartCall
 import ai.dev.kit.providers.langfuse.fluent.setupLangfuseTracing
-import org.jetbrains.kotlinx.dataframe.DataFrame
+import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
+import ai.dev.kit.tracing.fluent.processor.Span
+import io.opentelemetry.api.trace.SpanBuilder
+import io.opentelemetry.sdk.trace.ReadableSpan
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 object LangfuseEvaluationClient : EvaluationClient {
     override val clientName: String = "Langfuse"
@@ -15,35 +22,88 @@ object LangfuseEvaluationClient : EvaluationClient {
         setupLangfuseTracing()
     }
 
-    override fun getOrCreateExperiment(experimentName: String): String {
-        TODO("Not yet implemented")
+    override fun getOrCreateExperiment(experimentName: String): String? {
+        val resp = runBlocking { getLangfuseProject() }
+        // use createLangfuseProject() after TODO is completed
+        return resp.firstOrNull()?.jsonObject?.get("id")?.jsonPrimitive?.content
     }
 
+    // session in Langfuse
     override fun createRun(experimentId: String, runName: String): String {
-        TODO("Not yet implemented")
+        currentRunId = runName
+        return runName
     }
 
     override fun getResultsLink(experimentId: String, runId: String): String {
-        TODO("Not yet implemented")
+        return "$LANGFUSE_BASE_URL/project/$experimentId/sessions/${
+            URLEncoder.encode(
+                runId,
+                StandardCharsets.UTF_8.toString()
+            )
+        }"
     }
 
-    override fun logMetric(runId: String, name: String, score: Double) {
-        TODO("Not yet implemented")
+    override fun logMetric(runId: String, name: String, score: Double, traceId: String?) = runBlocking {
+        logScoreToLangfuse(
+            traceId = traceId,
+            sessionId = if (traceId == null) runId else null,
+            observationId = null,
+            name = name,
+            value = score,
+            comment = null,
+            configId = null,
+            dataType = LangfuseMetricDataType.NUMERIC
+        )
     }
 
-    override fun uploadResultsTable(runId: String, table: DataFrame<*>) {
-        TODO("Not yet implemented")
+    override fun uploadResults(runId: String, testResults: List<TestResult<*, *, *, *>>) {
+        testResults.forEach { result ->
+            when (val evalResult = result.evalResult) {
+                is MultiScoreEvalResult -> {
+                    evalResult.scores.forEach { score ->
+                        logMetric(runId, score.scoreName, score.score.toDouble(), result.traceId)
+                    }
+                }
+
+                is SingleScoreEvalResult -> {
+                    logMetric(runId, evalResult.scoreName, evalResult.score.toDouble(), result.traceId)
+                }
+
+                else -> {
+                    // Now supports only SingleScoreEvalResult and MultiScoreEvalResult similarly to ToTable()
+                    // TODO: decide how to make it better
+                    throw IllegalArgumentException("Unsupported EvalResult type: ${evalResult::class.simpleName}. For now use SingleScoreEvalResult or MultiScoreEvalResult")
+                }
+            }
+        }
     }
 
     override fun applyTag(runId: String, tag: RunTag) {
-        TODO("Not yet implemented")
+        // No tags in current Langfuse support
     }
 
     override fun changeRunStatus(runId: String, runStatus: RunStatus) {
-        TODO("Not yet implemented")
+        // No Run status in Langfuse
     }
 
-    override fun uploadTraceStart(tracePostRequest: TracePostRequest): TraceInfo {
-        TODO("Not yet implemented")
+    override fun uploadTraceStart(
+        experimentId: String,
+        runId: String,
+        spanBuilder: SpanBuilder,
+        tracedRunName: String
+    ): Span =
+        runBlocking {
+            val span = spanBuilder.startSpan()
+            publishRootStartCall(
+                span as ReadableSpan,
+                runId
+            )
+            return@runBlocking span
+        }
+
+    enum class LangfuseMetricDataType(val type: String) {
+        NUMERIC("NUMERIC"),
+        BOOLEAN("BOOLEAN"),
+        CATEGORICAL("CATEGORICAL");
     }
 }

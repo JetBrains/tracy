@@ -6,13 +6,8 @@ import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
-import java.util.logging.LogManager
-import java.util.logging.Logger
 
 internal object KotlinLangfuseClient : KotlinLoggingClient {
-    private val logger: Logger = LogManager.getLogManager().getLogger(Logger.GLOBAL_LOGGER_NAME)
-        ?: Logger.getLogger(KotlinLangfuseClient::class.java.name)
-
     internal const val LANGFUSE_BASE_URL = "https://langfuse.labs.jb.gg/"
     // Langfuse support uses Langfuse rest api
     // docs: https://api.reference.langfuse.com/

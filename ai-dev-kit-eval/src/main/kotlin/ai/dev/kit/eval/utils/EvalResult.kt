@@ -1,9 +1,12 @@
 package ai.dev.kit.eval.utils
 
+import mu.KotlinLogging
 import org.jetbrains.kotlinx.dataframe.DataFrame
 import org.jetbrains.kotlinx.dataframe.api.add
 import org.jetbrains.kotlinx.dataframe.api.cast
 import org.jetbrains.kotlinx.dataframe.api.dataFrameOf
+
+private val logger = KotlinLogging.logger {}
 
 /**
  * The score or several scores assigned by [Evaluator] to
@@ -38,7 +41,7 @@ fun averageSingleScoreEvalResults(results: List<SingleScoreEvalResult>): Double?
 
     val scoreNames = results.map { it.scoreName }.distinct()
     if (scoreNames.size != 1) {
-        println("WARNING: Score names are inconsistent, cannot comput score: $scoreNames")
+        logger.warn{"Score names are inconsistent, cannot compute score: $scoreNames"}
         return null
     }
     return results.map { it.score }.average()
@@ -69,7 +72,7 @@ fun List<EvalResult>.toTable(): DataFrame<Float>? {
         val results = map { it as SingleScoreEvalResult }
         val scoreNames = results.map { it.scoreName }.distinct()
         if (scoreNames.size != 1) {
-            println("WARNING: Score names are inconsistent, could not convert List<SingleScoreEvalResult> to table: $scoreNames")
+            logger.warn{"Score names are inconsistent, could not convert List<SingleScoreEvalResult> to table: $scoreNames"}
             return null
         }
         return dataFrameOf(scoreNames.first() to results.map { it.score }).cast<Float>()

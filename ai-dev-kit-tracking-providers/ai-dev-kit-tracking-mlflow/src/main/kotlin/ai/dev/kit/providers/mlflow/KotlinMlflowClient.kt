@@ -9,14 +9,12 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
 import ai.dev.kit.providers.mlflow.KotlinMlflowClient.ML_FLOW_URL
+import mu.KotlinLogging
 import org.mlflow.api.proto.Service
 import org.mlflow.tracking.MlflowClient
-import java.util.logging.LogManager
-import java.util.logging.Logger
 
 internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL), KotlinLoggingClient {
-    private val logger: Logger = LogManager.getLogManager().getLogger(Logger.GLOBAL_LOGGER_NAME)
-        ?: Logger.getLogger(KotlinMlflowClient::class.java.name)
+    private val logger = KotlinLogging.logger {}
 
     internal const val MLFLOW_VERSION = "2.20.2"
     internal const val MLFLOW_HOST = "127.0.0.1"
@@ -24,7 +22,7 @@ internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL), KotlinLoggingCli
     internal const val ML_FLOW_URL = "http://$MLFLOW_HOST:$MLFLOW_PORT"
     internal const val ML_FLOW_API = "$ML_FLOW_URL/api/2.0/mlflow"
     internal const val ML_FLOW_ARTIFACTS_API = "$ML_FLOW_URL/api/2.0/mlflow-artifacts"
-    // Mlflow weave support uses mlflow rest api
+    // Mlflow support uses mlflow rest api
     // docs: https://mlflow.org/docs/latest/api_reference/rest-api.html
 
     // TODO: Remove state storage here ASAP!
@@ -66,11 +64,11 @@ internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL), KotlinLoggingCli
             currentExperimentId = if (currentExperiment.isPresent) {
                 currentExperiment.get().experimentId
             } else {
-                logger.info("Experiment with name $experimentName not found, creating a new one")
+                logger.info{"Experiment with name $experimentName not found, creating a new one"}
                 this.createExperiment(experimentName)
             }
         } catch (e: Exception) {
-            logger.warning("Unexpected error occurred when setting experiment by name: ${e.message}")
+            logger.warn{"Unexpected error occurred when setting experiment by name: ${e.message}"}
         }
     }
 }

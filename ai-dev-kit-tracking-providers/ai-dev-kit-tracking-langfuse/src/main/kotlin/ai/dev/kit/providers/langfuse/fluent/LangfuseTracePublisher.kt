@@ -1,10 +1,10 @@
 package ai.dev.kit.providers.langfuse.fluent
 
+import ai.dev.kit.providers.langfuse.KotlinLangfuseClient
+import ai.dev.kit.providers.langfuse.langfuseRequest
 import ai.dev.kit.tracing.fluent.FluentSpanAttributes
 import ai.dev.kit.tracing.fluent.getAttribute
 import ai.dev.kit.tracing.fluent.processor.TracePublisher
-import ai.dev.kit.providers.langfuse.KotlinLangfuseClient
-import ai.dev.kit.providers.langfuse.langfuseRequest
 import io.ktor.http.*
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.SpanId
@@ -22,6 +22,7 @@ class LangfuseTracePublisher : TracePublisher {
 
         val startEpochNanos = rootSpan.startEpochNanos / 1_000_000
         val traceId = rootSpan.traceId
+        val runId = rootSpan.getAttribute(FluentSpanAttributes.SOURCE_RUN)
         val name = rootSpan.getAttribute(FluentSpanAttributes.SPAN_FUNCTION_NAME) ?: rootSpan.name
         val inputRaw = rootSpan.getAttribute(FluentSpanAttributes.SPAN_INPUTS) ?: ""
         val outputRaw = rootSpan.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS) ?: ""
@@ -32,6 +33,7 @@ class LangfuseTracePublisher : TracePublisher {
         val traceCreateCall = buildTraceCreateCall(
             startEpochNanos,
             traceId,
+            runId,
             name,
             sourceName,
             functionName,
@@ -67,6 +69,7 @@ class LangfuseTracePublisher : TracePublisher {
         val outputRaw = span.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS) ?: ""
         val functionName = span.getAttribute(FluentSpanAttributes.SPAN_FUNCTION_NAME)
 
+        val runId = span.getAttribute(FluentSpanAttributes.SOURCE_RUN)
         val (inputMessages, output) = prepareInputsOutputs(inputRaw, outputRaw)
 
         return buildJsonObject {
@@ -79,6 +82,7 @@ class LangfuseTracePublisher : TracePublisher {
                 put("traceId", span.traceId)
                 put("startTime", startTime.toString())
                 put("endTime", endTime.toString())
+                runId?.let{put("sessionId", runId)}
                 parentId?.let { put("parentObservationId", it) }
                 inputMessages?.let { put("input", it) }
                 put("metadata", buildJsonObject {
@@ -137,6 +141,7 @@ class LangfuseTracePublisher : TracePublisher {
         private fun buildTraceCreateCall(
             startedAtMillis: Long,
             traceId: String,
+            runId: String?,
             name: String,
             sourceName: String?,
             functionName: String?,
@@ -161,6 +166,7 @@ class LangfuseTracePublisher : TracePublisher {
                     put("name", name)
                     put("environment", "production")
                     put("userId", userId)
+                    runId?.let { put("sessionId", it) }
                     inputMessages?.let { put("input", it) }
                     outputs?.let { put("output", it) }
                     // traces from ai-dev-kit allways have tag "kotlin"
@@ -175,7 +181,7 @@ class LangfuseTracePublisher : TracePublisher {
             }
         }
 
-        internal suspend fun publishRootStartCall(span: ReadableSpan) {
+        internal suspend fun publishRootStartCall(span: ReadableSpan, runId: String? = null) {
             val traceId = span.spanContext.traceId
             val spanName = span.name
             val spanInputs = span.getAttribute(AttributeKey.stringKey(FluentSpanAttributes.SPAN_INPUTS.key)) ?: ""
@@ -190,6 +196,7 @@ class LangfuseTracePublisher : TracePublisher {
             val traceCreateCall = buildTraceCreateCall(
                 startedAtMillis,
                 traceId,
+                runId,
                 name,
                 sourceName,
                 functionName,
