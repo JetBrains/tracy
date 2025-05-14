@@ -24,6 +24,8 @@ dependencies {
     implementation(project(":ai-dev-kit-eval"))
     testImplementation(libs.kotlin.test)
     testImplementation(libs.openai)
+    implementation(libs.kotlin.logging)
+    runtimeOnly(libs.logback.classic)
     testImplementation(testFixtures(project(":ai-dev-kit-test-base")))
 }
 

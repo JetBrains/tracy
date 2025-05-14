@@ -2,21 +2,20 @@ package ai.dev.kit.eval.utils
 
 import ai.dev.kit.tracing.fluent.FluentSpanAttributes
 import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
-import ai.dev.kit.tracing.fluent.dataclasses.TraceInfo
 import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.extension.kotlin.asContextElement
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
+import mu.KotlinLogging
 import org.junit.jupiter.api.*
 import java.util.stream.Stream
 
 /**
  * A base abstract class for conducting evaluation tests on AI functionality.
  * The class manages multiple test runs within an experiment and provides mechanisms for evaluating
- * AI outputs against ground-truth data while logging the results into MLflow.
+ * AI outputs against ground-truth data while logging the results into [EvaluationClient].
  *
  * @param AIInputT The type of input provided to the AI system under test.
  * @param GroundTruthT The type of ground-truth data used for evaluation.
@@ -36,27 +35,25 @@ abstract class BaseEvaluationTest<
         AIOutputT : AIOutput,
         EvalResultT : EvalResult
         >(
-    private val experimentName: String = "Evaluation test",
-    private val runNamePrefix: String = createRandomRunNameAdjectiveNounNumber(),
-    private val numberOfRuns: Int = 1,
-    private val tags: List<RunTag> = listOf(),
-    private val loggingClient: EvaluationClient
+    private val experimentName: String,
+    private val runNamePrefix: String,
+    private val numberOfRuns: Int,
+    private val tags: List<RunTag>,
+    private val loggingClient: EvaluationClient,
 ) {
     init {
         require(tags.isEmpty() || tags.size == numberOfRuns) { "The number of tags must match the number of runs" }
     }
-
+    private val logger = KotlinLogging.logger {}
     private lateinit var experimentId: String
     private val runResults = mutableListOf<RunResults<AIInputT, GroundTruthT, AIOutputT, EvalResultT>>()
 
     @BeforeAll
     fun beforeAll() {
-        println("🔄 Setting up before all tests")
-
-        loggingClient.setupTracing()
+        logger.info{"🔄 Setting up before all tests"}
 
         experimentId = loggingClient.getOrCreateExperiment(experimentName)
-
+            ?: error("Experiment $experimentName not found and could not be crated")
         (1..numberOfRuns).map { runNum ->
             val runId = loggingClient.createRun(
                 experimentId,
@@ -68,13 +65,13 @@ abstract class BaseEvaluationTest<
 
     @AfterAll
     fun afterAll() {
-        println("📊 Logging evaluation results")
+        logger.info{"📊 Logging evaluation results"}
 
         runResults.forEachIndexed { runIndex, runResult ->
             val (testResults, runId, runStatus) = runResult
             try {
                 if (runIndex < tags.size) loggingClient.applyTag(runId, tags[runIndex])
-                uploadResultsTableAsArtifact(runId, testResults)
+                loggingClient.uploadResults(runId, testResults)
                 logAverageScore(runId, testResults.map { it.evalResult })
             } catch (_: Exception) {
                 runResults[runIndex].finalStatus = RunStatus.FAILED
@@ -97,10 +94,11 @@ abstract class BaseEvaluationTest<
                     }
                 }
                 val testCaseName = testCase.name
+                val traceId = dataPointSpan.spanContext.traceId
                 DynamicTest.dynamicTest(testCaseName) {
                     dataPointSpan.makeCurrent()
                     try {
-                        executeSingleTest(testCaseName, testCase, runNum, runResult.runId, output)
+                        executeSingleTest(testCaseName, testCase, runNum, runResult.runId, output, traceId)
                     } finally {
                         dataPointSpan.end()
                         dataPointScope.close()
@@ -117,26 +115,16 @@ abstract class BaseEvaluationTest<
         testCase: TestCase<AIInputT, GroundTruthT>
     ): Pair<Span, io.opentelemetry.context.Scope> {
         val tracedRunName = "Data Point ${dataPointIndex + 1}"
-        val dataPointSpan = tracer.spanBuilder(tracedRunName).setNoParent().also {
-            runBlocking {
-                val tracePostRequest = createTracePostRequest(
-                    experimentId = experimentId,
-                    runId = runId,
-                    traceCreationPath = "No path for root test",
-                    traceName = tracedRunName
-                )
+        val dataPointSpan = tracer.spanBuilder(tracedRunName).setNoParent().let {
+            it.setAttribute(FluentSpanAttributes.SOURCE_RUN.key, runId)
 
-                val jsonTraceInfo = Json.encodeToString(
-                    TraceInfo.serializer(),
-                    loggingClient.uploadTraceStart(tracePostRequest)
-                )
-                it.setAttribute(FluentSpanAttributes.TRACE_CREATION_INFO.key, jsonTraceInfo)
-                it.setAttribute(
-                    FluentSpanAttributes.SPAN_INPUTS.key,
-                    "{\"Data Point\": \"${testCase.input}\"}"
-                )
-            }
-        }.startSpan()
+            it.setAttribute(
+                FluentSpanAttributes.SPAN_INPUTS.key,
+                testCase.input.toString()
+            )
+            loggingClient.uploadTraceStart(experimentId, runId, it, tracedRunName)
+        }
+
         val dataPointScope = dataPointSpan.makeCurrent()
         return dataPointSpan to dataPointScope
     }
@@ -146,7 +134,8 @@ abstract class BaseEvaluationTest<
         testCase: TestCase<AIInputT, GroundTruthT>,
         runNum: Int,
         runId: String,
-        output: AIOutputT
+        output: AIOutputT,
+        traceId: String
     ) {
         val result = try {
             evaluator.evaluate(testCase.groundTruth, output)
@@ -159,7 +148,8 @@ abstract class BaseEvaluationTest<
             TestResult<AIInputT, GroundTruthT, AIOutputT, EvalResultT>(
                 testCase,
                 output,
-                result
+                result,
+                traceId
             )
         )
 
@@ -177,16 +167,8 @@ abstract class BaseEvaluationTest<
 
     private fun logTest(message: String, runId: String) {
         val resultsLink = loggingClient.getResultsLink(experimentId, runId)
-        println(message)
-        println("🔗 View results at $resultsLink")
-    }
-
-    private fun uploadResultsTableAsArtifact(
-        runId: String,
-        testResults: List<TestResult<AIInputT, GroundTruthT, AIOutputT, EvalResultT>>
-    ) {
-        val table = testResults.toTable() ?: return
-        loggingClient.uploadResultsTable(runId, table)
+        logger.info{message}
+        logger.info{"🔗 View results at $resultsLink"}
     }
 
     private fun logAverageScore(runId: String, evalResults: List<EvalResultT>) {
@@ -199,7 +181,7 @@ abstract class BaseEvaluationTest<
             )
         }
         if (aggregateScores.isNotEmpty()) {
-            println("📈 Results logged to ${loggingClient.clientName} for Run ID: $runId")
+            logger.info{"📈 Results logged to ${loggingClient.clientName} for Run ID: $runId"}
         }
     }
 

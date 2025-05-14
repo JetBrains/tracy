@@ -2,7 +2,7 @@ package ai.dev.kit.example.haiku
 
 import ai.dev.kit.createOpenAIClient
 import ai.dev.kit.eval.utils.*
-import ai.dev.kit.providers.mlflow.MlflowEvaluationClient
+import ai.dev.kit.providers.langfuse.LangfuseEvaluationTest
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
@@ -13,11 +13,8 @@ fun haikuTestCase(topic: String) = TestCase<HaikuTopic, NoGroundTruth>(name = to
 
 @Tag("SkipForNonLocal")
 class HaikuGeneratorTest :
-    BaseEvaluationTest<HaikuTopic, NoGroundTruth, HaikuText, MultiScoreEvalResult>(
-        "HaikuGeneratorTest",
-        numberOfRuns = 2,
-        tags = listOf(RunTag(color = "#00FF00"), RunTag(color = "#FF0000")),
-        loggingClient = MlflowEvaluationClient
+    LangfuseEvaluationTest<HaikuTopic, NoGroundTruth, HaikuText, MultiScoreEvalResult>(
+        numberOfRuns = 2
     ) {
     override val testCases: List<TestCase<HaikuTopic, NoGroundTruth>> =
         listOf("table", "computer", "flower", "horse").map { haikuTestCase(it) }

@@ -13,17 +13,18 @@ data class TestResult<
         >(
     val testCase: TestCase<AIInputT, GroundTruthT>,
     val output: AIOutputT,
-    val evalResult: EvalResultT
+    val evalResult: EvalResultT,
+    val traceId: String? = null,
 )
 
-fun List<TestResult<*, *, *, *>>.toTable(): DataFrame<*>? {
+fun List<TestResult<*, *, *, *>>.toTable(): DataFrame<*> {
     val basicTable = dataFrameOf(
         "#" to (1..size).map { it.toString() },
         "Input" to map { it.testCase.input },
         "Output" to map { it.output },
     )
 
-    var evalResultsTable: DataFrame<Float>? = map { it.evalResult }.toTable()
+    val evalResultsTable: DataFrame<Float>? = map { it.evalResult }.toTable()
     if (evalResultsTable == null) {
         return basicTable
     }

@@ -106,7 +106,7 @@ fun uploadArtifact(path: String, content: String) {
     }
 }
 
-fun logMetric(client: MlflowClient, runId: String, key: String, value: Double) {
+fun logMlflowMetric(client: MlflowClient, runId: String, key: String, value: Double) {
     client.logMetric(runId, key, value)
 }
 
@@ -267,6 +267,4 @@ suspend fun getModel(runId: String) {
         contentType(ContentType.Application.Json)
         setBody(mapOf("run_id" to runId))
     }
-
-    println(response.bodyAsText())
 }

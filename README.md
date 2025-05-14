@@ -108,7 +108,7 @@ If tracing is not initialized beforehand, the tracking provider will not be defi
 |---------------------------------------------------------|-----------------|--------------------|----------------------------------------------------------------------------------------|
 | **[Mlflow](https://mlflow.org/docs/latest/index.html)** | ✅               | ✅                  | [MLflow docs](https://mlflow.org/docs/latest/)                                         |
 | **[Weights & Biases](https://docs.wandb.ai/)**          | ✅               | ❌                  | [Weights & Biases docs](https://docs.wandb.ai/)                                        |
-| **[Langfuse](https://github.com/langfuse/langfuse)**    | ✅               | ❌                  | [Setup Langfuse](ai-dev-kit-tracking-providers/ai-dev-kit-tracking-langfuse/README.md) |
+| **[Langfuse](https://github.com/langfuse/langfuse)**    | ✅               | ✅                  | [Setup Langfuse](ai-dev-kit-tracking-providers/ai-dev-kit-tracking-langfuse/README.md) |
 
 #### 🛠️ Development Tools
 - **ai-dev-kit-test-base**: Common test utilities and base classes for testing tracing capabilities

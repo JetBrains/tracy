@@ -12,6 +12,8 @@ openai = "0.34.1"
 opentelemetry = "1.31.0"
 snakeyaml = "2.3"
 testcontainers = "1.19.3"
+logging = "3.0.5"
+logback = "1.5.13"
 
 [libraries]
 junit = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
@@ -35,7 +37,8 @@ opentelemetry-kotlin = { module = "io.opentelemetry:opentelemetry-extension-kotl
 opentelemetry-sdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "opentelemetry" }
 snakeyaml = { module = "org.yaml:snakeyaml", version.ref = "snakeyaml" }
 testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
-
+kotlin-logging = {    module = "io.github.microutils:kotlin-logging", version.ref = "logging"}
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback"}
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }

@@ -1,17 +1,18 @@
 package ai.dev.kit.providers.mlflow
 
-import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
-import ai.dev.kit.tracing.fluent.dataclasses.TraceInfo
-import ai.dev.kit.eval.utils.EvaluationClient
-import ai.dev.kit.eval.utils.RunTag
-import ai.dev.kit.eval.utils.TracePostRequest
+import ai.dev.kit.eval.utils.*
 import ai.dev.kit.providers.mlflow.KotlinMlflowClient.ML_FLOW_URL
 import ai.dev.kit.providers.mlflow.KotlinMlflowClient.currentExperimentId
 import ai.dev.kit.providers.mlflow.KotlinMlflowClient.currentRunId
 import ai.dev.kit.providers.mlflow.dataclasses.dumpForMLFlow
 import ai.dev.kit.providers.mlflow.fluent.setupMlflowTracing
+import ai.dev.kit.tracing.fluent.FluentSpanAttributes
+import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
+import ai.dev.kit.tracing.fluent.dataclasses.TraceInfo
+import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.SpanBuilder
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.kotlinx.dataframe.DataFrame
+import kotlinx.serialization.json.Json
 
 object MlflowEvaluationClient : EvaluationClient {
     override val clientName: String = "Mlflow"
@@ -49,8 +50,8 @@ object MlflowEvaluationClient : EvaluationClient {
     override fun getResultsLink(experimentId: String, runId: String) =
         "$ML_FLOW_URL/#/experiments/$experimentId/runs/$runId"
 
-    override fun logMetric(runId: String, name: String, score: Double) {
-        logMetric(
+    override fun logMetric(runId: String, name: String, score: Double, traceId: String?) {
+        logMlflowMetric(
             KotlinMlflowClient,
             runId,
             name,
@@ -58,7 +59,9 @@ object MlflowEvaluationClient : EvaluationClient {
         )
     }
 
-    override fun uploadResultsTable(runId: String, table: DataFrame<*>) {
+    override fun uploadResults(runId: String, testResults: List<TestResult<*, *, *, *>>) {
+        val table = testResults.toTable()
+
         val loggedRun = runBlocking { getRun(runId) }
         val artifactPath = "${loggedRun.info.experimentId}/${runId}/artifacts/eval_results_table.json"
         uploadArtifact(artifactPath, table.dumpForMLFlow())
@@ -86,7 +89,21 @@ object MlflowEvaluationClient : EvaluationClient {
         runBlocking { updateRun(runId, runStatus) }
     }
 
-    override fun uploadTraceStart(tracePostRequest: TracePostRequest): TraceInfo = runBlocking {
-        createTrace(tracePostRequest)
+    override fun uploadTraceStart(
+        experimentId: String,
+        runId: String,
+        spanBuilder: SpanBuilder,
+        tracedRunName: String
+    ): Span = runBlocking {
+        val tracePostRequest = createTracePostRequest(
+            experimentId = experimentId,
+            runId = runId,
+            traceCreationPath = "No path for root test",
+            traceName = tracedRunName
+        )
+        val jsonTraceInfo = Json.encodeToString(TraceInfo.serializer(), createTrace(tracePostRequest))
+        spanBuilder.setAttribute(FluentSpanAttributes.TRACE_CREATION_INFO.key, jsonTraceInfo)
+
+        return@runBlocking spanBuilder.startSpan()
     }
 }
