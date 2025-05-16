@@ -114,7 +114,7 @@ abstract class BaseEvaluationTest<
         runId: String,
         testCase: TestCase<AIInputT, GroundTruthT>
     ): Pair<Span, io.opentelemetry.context.Scope> {
-        val tracedRunName = "Data Point ${dataPointIndex + 1}"
+        val tracedRunName = testCase.name.ifBlank { "Data Point ${dataPointIndex + 1}" }
         val dataPointSpan = tracer.spanBuilder(tracedRunName).setNoParent().let {
             it.setAttribute(FluentSpanAttributes.SOURCE_RUN.key, runId)
 
