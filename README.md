@@ -27,7 +27,7 @@ especially within the Kotlin and IntelliJ ecosystem.
 * 📊 Evaluation framework with test cases and evaluation criteria.
 * 🤖 Internal `OpenAI` compatible gateway with `LiteLLM` support. For a more detailed description, refer to the [article](https://youtrack.jetbrains.com/articles/JBAI-A-659/LiteLLM-Internal-LLM-Gateway-for-Research-and-Experimentation)
 
-## 📚 How to use?
+## 📚 How to use Tracing?
 
 You can find the latest versions of `ai-dev-kit` [here](https://jetbrains.team/p/ai-development-kit/packages/maven/ai-development-kit).
 
@@ -91,6 +91,42 @@ setupLangfuseTracing()
 If tracing is not initialized beforehand, the tracking provider will not be defined and traces will not be recorded.
 
 * Annotate traced function with `@KotlinFlowTrace`
+
+## 📚 How to use Evaluation?
+
+Evaluation includes and relies on tracing.
+In addition to adding the tracing dependency as explained above, add the evaluation dependency:
+
+```toml
+[libraries]
+ai-dev-kit-eval = { module = "com.jetbrains:ai-dev-kit-eval", version.ref = "ai-dev-kit" }
+```
+
+```kotlin
+dependencies {
+  implementation(libs.ai.dev.kit.eval)
+}
+```
+
+In code, you will need to define some unified classes for the AI feature you're evaluating:
+
+1. `class InputOfYourFeature : AIInput`, `class OutputOfYourFeature : AIOutput`
+2. `class YourGT : GroundTruth` to add all the information necessary to score the output. If no information is needed,
+   you can use the `NoGroundTruth` stub.
+3. `class YourGenerator : Generator<InputOfYourFeature, OutputOfYourFeature>` that encapsulates your feature.
+4. `class YourEvaluator : Evaluator<OutputOfYourFeature, YourGT, MultiScoreEvalResult>` that assess the output
+5. `class YourEval : LangfuseEvaluationTest<InputOfYourFeature, YourGT, OutputOfYourFeature, MultiScoreEvalResult>`
+   that uses `YourGenerator` internally to execute your AI feature and `YourEvaluator` to score the output.
+   The eval dataset is passed by overriding the `testCases` field.
+
+Once you have that, you can run `YourEval` as a usual JUnit test and view the results on Langfuse.
+
+For more details, refer to the two examples:
+
+1. `HaikuGeneratorTest`: simple eval for LLM-written haikus that use LLM-as-a-Judge as a
+   metric, [code in this repo](https://github.com/JetBrains/ai-dev-kit/blob/main/ai-dev-kit-example/src/test/kotlin/ai/dev/kit/example/haiku/HaikuGeneratorTest.kt)
+2. `FindMiniAgentTest`: a simple eval for the file search
+   agent [in the code engine repo](https://github.com/JetBrains/code-engine/pull/578/files#diff-701529c49dd319c5a627afaf6eb23ea130b44cfd6dce43d2051999a961afa6f6)
 
 ## 🏗️ Project Structure
 
