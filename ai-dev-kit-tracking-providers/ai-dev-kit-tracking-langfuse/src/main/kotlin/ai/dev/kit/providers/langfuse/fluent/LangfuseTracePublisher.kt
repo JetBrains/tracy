@@ -53,7 +53,7 @@ class LangfuseTracePublisher : TracePublisher {
         }
         langfuseRequest(
             method = HttpMethod.Post,
-            url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}api/public/ingestion",
+            url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}/api/public/ingestion",
             body = payload
         )
     }
@@ -210,7 +210,7 @@ class LangfuseTracePublisher : TracePublisher {
             }
             langfuseRequest(
                 method = HttpMethod.Post,
-                url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}api/public/ingestion",
+                url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}/api/public/ingestion",
                 body = payload
             )
         }

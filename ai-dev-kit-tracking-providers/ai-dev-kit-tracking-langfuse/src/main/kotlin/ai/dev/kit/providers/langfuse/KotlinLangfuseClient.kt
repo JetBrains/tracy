@@ -8,7 +8,7 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
 
 internal object KotlinLangfuseClient : KotlinLoggingClient {
-    internal const val LANGFUSE_BASE_URL = "https://langfuse.labs.jb.gg/"
+    internal const val LANGFUSE_BASE_URL = "https://langfuse.labs.jb.gg"
     // Langfuse support uses Langfuse rest api
     // docs: https://api.reference.langfuse.com/
 

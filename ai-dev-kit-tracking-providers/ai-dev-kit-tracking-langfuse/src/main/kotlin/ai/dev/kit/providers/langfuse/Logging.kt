@@ -38,7 +38,7 @@ internal suspend fun langfuseRequest(
 private suspend fun getTraceIds(projectId: String): List<String> { // TODO: decide how to understand how to take only needed traces
     val json = langfuseRequest(
         method = HttpMethod.Get,
-        url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}api/public/traces?limit=1"
+        url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}/api/public/traces?limit=1"
     )
 
     return json["data"]?.jsonArray?.mapNotNull { it.jsonObject["id"]?.jsonPrimitive?.contentOrNull }
@@ -58,7 +58,7 @@ private suspend fun getSpansForTrace(traceId: String): List<JsonObject> {
         runCatching {
             langfuseRequest(
                 method = HttpMethod.Get,
-                url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}api/public/observations/$obsId"
+                url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}/api/public/observations/$obsId"
             )
         }.getOrNull()
     }
@@ -184,7 +184,7 @@ private suspend fun createLangfuseProject(
 
     val response = langfuseRequest(
         method = HttpMethod.Post,
-        url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}api/public/projects",
+        url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}/api/public/projects",
         body = payload
     )
 
@@ -194,7 +194,7 @@ private suspend fun createLangfuseProject(
 private suspend fun deleteLangfuseTrace(traceId: String): JsonObject {
     val response = langfuseRequest(
         method = HttpMethod.Delete,
-        url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}api/public/traces/$traceId"
+        url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}/api/public/traces/$traceId"
     )
 
     return response
@@ -203,7 +203,7 @@ private suspend fun deleteLangfuseTrace(traceId: String): JsonObject {
 suspend fun getLangfuseProject(): JsonArray {
     val response = langfuseRequest(
         method = HttpMethod.Get,
-        url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}api/public/projects"
+        url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}/api/public/projects"
     )
 
     return response["data"]?.jsonArray
@@ -235,7 +235,7 @@ suspend fun logScoreToLangfuse(
 
     langfuseRequest(
         method = HttpMethod.Post,
-        url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}api/public/scores",
+        url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}/api/public/scores",
         body = payload
     )
 }
