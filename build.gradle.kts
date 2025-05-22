@@ -15,9 +15,8 @@ subprojects {
     }
     tasks.withType<Test> {
         useJUnitPlatform {
-            if (System.getProperty("aiDevKitLocalTests", "true").toBoolean()) {
-                includeTags("SkipForNonLocal")
-            } else {
+            val areTestsRunLocally = System.getProperty("aiDevKitLocalTests", "true").toBoolean()
+            if (!areTestsRunLocally) {
                 excludeTags("SkipForNonLocal")
             }
         }
