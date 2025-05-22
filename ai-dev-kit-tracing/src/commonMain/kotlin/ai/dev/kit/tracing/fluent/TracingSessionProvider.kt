@@ -2,7 +2,7 @@ package ai.dev.kit.tracing.fluent
 
 import kotlinx.coroutines.CoroutineScope
 
-expect object CurrentExperimentAndRunIdProvider {
+expect object TracingSessionProvider {
     val currentExperimentId: String
     val currentRunId: String
 }

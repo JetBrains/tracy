@@ -10,14 +10,17 @@ import kotlinx.coroutines.withContext
 private val RUN_ID_CONTEXT_KEY: ContextKey<String> = ContextKey.named("experimentId")
 private val EXPERIMENT_ID_CONTEXT_KEY: ContextKey<String> = ContextKey.named("runId")
 
-actual object CurrentExperimentAndRunIdProvider {
+actual object TracingSessionProvider {
+    const val UNSET_EXPERIMENT_ID_TEXT = "Unset Experiment Id! Please set it with `withExperimentId` function."
+    const val UNSET_RUN_ID_TEXT = "Unset Run Id! Please set it with `withRunId` function."
+
     actual val currentExperimentId: String
         get() = Context.current().get(EXPERIMENT_ID_CONTEXT_KEY)
-            ?: "Unset Experiment Id! Please set it with `withExperimentId` function."
+            ?: UNSET_EXPERIMENT_ID_TEXT
 
     actual val currentRunId: String
         get() = Context.current().get(RUN_ID_CONTEXT_KEY)
-            ?: "Unset Run Id! Please set it with `withRunId` function."
+            ?: UNSET_RUN_ID_TEXT
 }
 
 actual suspend fun <T> withExperimentId(id: String, block: suspend CoroutineScope.() -> T): T =
