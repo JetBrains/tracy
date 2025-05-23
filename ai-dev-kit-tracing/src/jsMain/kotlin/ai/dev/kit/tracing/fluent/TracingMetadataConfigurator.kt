@@ -8,8 +8,7 @@ actual fun configureTracingMetadata(
     spanBuilder: SpanBuilder,
     traceAnnotation: KotlinFlowTrace,
     method: PlatformMethod,
-    args: Array<Any?>,
-    client: KotlinLoggingClient
+    args: Array<Any?>
 ){
     TODO("Not yet implemented")
 }

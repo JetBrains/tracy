@@ -1,6 +1,9 @@
 package ai.dev.kit.tracing.fluent.processor
 
+import ai.dev.kit.tracing.fluent.FluentSpanAttributes
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
+import ai.dev.kit.tracing.fluent.TracingSessionProvider
+import ai.dev.kit.tracing.fluent.configureTracingMetadata
 import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor.di
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
@@ -13,7 +16,6 @@ import org.kodein.di.instance
 import java.lang.reflect.Method
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
-import kotlin.getValue
 import kotlin.reflect.KFunction
 import kotlin.reflect.jvm.javaMethod
 
@@ -87,7 +89,8 @@ fun createSpan(
     val spanName = traceAnnotation.name.ifBlank { method.name }
     val spanBuilder = tracer.spanBuilder(spanName)
 
-    tracingMetadataConfigurator.configureMetadata(spanBuilder, traceAnnotation, method, args)
+    spanBuilder.setAttribute(FluentSpanAttributes.SOURCE_RUN.key, TracingSessionProvider.currentRunId)
+    configureTracingMetadata(spanBuilder, traceAnnotation, method, args)
 
     val parentSpan = Span.fromContext(context)
 

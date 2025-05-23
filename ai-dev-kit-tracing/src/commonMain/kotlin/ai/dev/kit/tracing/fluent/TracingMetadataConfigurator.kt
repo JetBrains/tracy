@@ -9,8 +9,7 @@ expect fun configureTracingMetadata(
     spanBuilder: SpanBuilder,
     traceAnnotation: KotlinFlowTrace,
     method: PlatformMethod,
-    args: Array<Any?>,
-    client: KotlinLoggingClient
+    args: Array<Any?>
 )
 
 // applicable to both mlflow and wandb logging clients
