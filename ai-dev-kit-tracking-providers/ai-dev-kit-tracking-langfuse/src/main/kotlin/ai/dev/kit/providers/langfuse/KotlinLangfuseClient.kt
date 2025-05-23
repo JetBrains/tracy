@@ -14,7 +14,7 @@ internal object KotlinLangfuseClient : KotlinLoggingClient {
 
     // TODO: Remove state storage here ASAP!
     override var currentExperimentId: String = "0"
-    override var currentRunId: String? = null
+    var currentRunId: String? = null
 
     const val TEST_PROJECT_NAME = "ai-dev-kit-tracing-tests"
 

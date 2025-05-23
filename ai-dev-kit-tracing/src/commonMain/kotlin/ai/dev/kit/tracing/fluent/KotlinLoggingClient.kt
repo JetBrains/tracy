@@ -4,7 +4,6 @@ package ai.dev.kit.tracing.fluent
 // TODO: delete when possible
 interface KotlinLoggingClient {
     var currentExperimentId: String
-    var currentRunId: String?
     fun withRun(experimentId: String): AutoCloseable
 }
 

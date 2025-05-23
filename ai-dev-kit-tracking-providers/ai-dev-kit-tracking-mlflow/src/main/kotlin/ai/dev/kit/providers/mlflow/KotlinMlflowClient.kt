@@ -1,14 +1,14 @@
 package ai.dev.kit.providers.mlflow
 
+import ai.dev.kit.providers.mlflow.KotlinMlflowClient.ML_FLOW_URL
 import ai.dev.kit.tracing.fluent.KotlinLoggingClient
-import ai.dev.kit.tracing.fluent.getUserIDFromEnv
 import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
+import ai.dev.kit.tracing.fluent.getUserIDFromEnv
+import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
-import ai.dev.kit.providers.mlflow.KotlinMlflowClient.ML_FLOW_URL
-import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.mlflow.api.proto.Service
@@ -28,7 +28,7 @@ internal object KotlinMlflowClient : MlflowClient(ML_FLOW_URL), KotlinLoggingCli
 
     // TODO: Remove state storage here ASAP!
     override var currentExperimentId: String = "0"
-    override var currentRunId: String? = null
+    var currentRunId: String? = null
 
     val client = HttpClient(CIO) {
         install(ContentNegotiation) {
