@@ -1,13 +1,13 @@
 package ai.dev.kit.providers.wandb.fluent
 
-import ai.dev.kit.tracing.fluent.FluentSpanAttributes
-import ai.dev.kit.tracing.fluent.getAttribute
-import ai.dev.kit.tracing.fluent.processor.TracePublisher
 import ai.dev.kit.providers.wandb.KotlinWandbClient
 import ai.dev.kit.providers.wandb.KotlinWandbClient.USER_ID
 import ai.dev.kit.providers.wandb.KotlinWandbClient.WANDB_API
 import ai.dev.kit.providers.wandb.KotlinWandbClient.WANDB_USER_API_KEY
-import ai.dev.kit.providers.wandb.KotlinWandbClient.currentExperimentId
+import ai.dev.kit.tracing.fluent.FluentSpanAttributes
+import ai.dev.kit.tracing.fluent.TracingSessionProvider
+import ai.dev.kit.tracing.fluent.getAttribute
+import ai.dev.kit.tracing.fluent.processor.TracePublisher
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.opentelemetry.api.common.AttributeKey
@@ -20,6 +20,7 @@ import java.time.format.DateTimeFormatter
 
 class WandbTracePublisher : TracePublisher {
     private fun buildEndCall(
+        currentExperimentId: String,
         spanId: String,
         endedAtMillis: Long,
         outputsString: String,
@@ -66,6 +67,7 @@ class WandbTracePublisher : TracePublisher {
 
             val startPayload =
                 buildStartCall(
+                    TracingSessionProvider.currentExperimentId,
                     spanId,
                     traceId,
                     sourceName,
@@ -95,6 +97,7 @@ class WandbTracePublisher : TracePublisher {
         }
 
         private fun buildStartCall(
+            currentExperimentId: String,
             spanId: String,
             traceId: String,
             sourceName: String,
@@ -186,6 +189,7 @@ class WandbTracePublisher : TracePublisher {
 
             val startPayload =
                 buildStartCall(
+                    TracingSessionProvider.currentExperimentId,
                     spanId,
                     traceId,
                     sourceName,
@@ -199,7 +203,7 @@ class WandbTracePublisher : TracePublisher {
 
             val outputs = span.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS) ?: ""
 
-            val endPayload = buildEndCall(spanId, endedAtMillis, outputs)
+            val endPayload = buildEndCall(TracingSessionProvider.currentExperimentId, spanId, endedAtMillis, outputs)
 
             val json = buildJsonObject {
                 put("batch", buildJsonArray {

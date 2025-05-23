@@ -1,11 +1,10 @@
 package ai.dev.kit.providers.mlflow.tracing
 
-import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
 import ai.dev.kit.providers.mlflow.KotlinMlflowClient
 import ai.dev.kit.providers.mlflow.MlflowContainerTests
 import ai.dev.kit.providers.mlflow.fluent.setupMlflowTracing
+import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import kotlin.random.Random
@@ -27,12 +26,8 @@ interface MlflowTracingTests: MlflowContainerTests {
 
     @BeforeEach
     fun setup() {
-        KotlinMlflowClient.setExperimentByName(generateRandomString())
-    }
-
-    @AfterEach
-    fun cleaning() {
-        KotlinMlflowClient.deleteExperiment(KotlinMlflowClient.currentExperimentId)
+        KotlinMlflowClient.createIfDoesntExistReturnExperimentId(generateRandomString())
+            ?: error("Failed to create experiment")
     }
 
     private fun generateRandomString(length: Int = 10): String {

@@ -1,14 +1,13 @@
 package ai.dev.kit.providers.wandb
 
-import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
-import ai.dev.kit.providers.wandb.KotlinWandbClient.TEST_PROJECT_NAME
-import ai.dev.kit.providers.wandb.KotlinWandbClient.currentExperimentId
 import ai.dev.kit.providers.wandb.fluent.setupWandbTracing
+import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
+
+private const val TEST_PROJECT_NAME = "ai-dev-kit-tracing-tests"
 
 interface WandbTracingTests {
     companion object {
@@ -24,11 +23,6 @@ interface WandbTracingTests {
         fun removeTracing() {
             TracingFlowProcessor.teardownTracing()
         }
-    }
-
-    @BeforeEach
-    fun setup() {
-        currentExperimentId = TEST_PROJECT_NAME
     }
 
     @AfterEach

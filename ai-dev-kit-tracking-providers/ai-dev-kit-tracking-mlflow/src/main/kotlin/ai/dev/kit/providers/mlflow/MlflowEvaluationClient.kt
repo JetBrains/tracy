@@ -2,8 +2,6 @@ package ai.dev.kit.providers.mlflow
 
 import ai.dev.kit.eval.utils.*
 import ai.dev.kit.providers.mlflow.KotlinMlflowClient.ML_FLOW_URL
-import ai.dev.kit.providers.mlflow.KotlinMlflowClient.currentExperimentId
-import ai.dev.kit.providers.mlflow.KotlinMlflowClient.currentRunId
 import ai.dev.kit.providers.mlflow.dataclasses.dumpForMLFlow
 import ai.dev.kit.providers.mlflow.fluent.setupMlflowTracing
 import ai.dev.kit.tracing.fluent.FluentSpanAttributes
@@ -30,7 +28,6 @@ object MlflowEvaluationClient : EvaluationClient {
                 experimentName
             )
             ?: throw IllegalStateException("Failed to create or retrieve experiment '$experimentName' at $ML_FLOW_URL")
-        currentExperimentId = experimentId
 
         return experimentId
     }
@@ -41,8 +38,6 @@ object MlflowEvaluationClient : EvaluationClient {
             runName,
             experimentId
         )?.runId.toString()
-
-        currentRunId = runId
         return runId
     }
 

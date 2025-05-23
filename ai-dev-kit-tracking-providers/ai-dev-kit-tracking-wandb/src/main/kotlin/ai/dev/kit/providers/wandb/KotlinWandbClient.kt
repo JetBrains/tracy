@@ -13,11 +13,6 @@ internal object KotlinWandbClient : KotlinLoggingClient {
     // W&B weave support uses weave rest api
     // docs: https://weave-docs.wandb.ai/reference/service-api/call-start-call-start-post
 
-    // TODO: Remove state storage here ASAP!
-    override var currentExperimentId: String = "0"
-
-    const val TEST_PROJECT_NAME = "ai-dev-kit-tracing-tests"
-
     val client = HttpClient(CIO) {
         install(ContentNegotiation) {
             json()
