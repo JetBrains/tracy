@@ -8,7 +8,7 @@ import ai.dev.kit.providers.langfuse.LangfuseDiContainer
  * Sets up tracing with logging to Langfuse.
  *
  * @param userId any string.
- *               The user identifier for WandB.
+ *               The user identifier for Langfuse.
  *               If not provided, the user ID will be derived from the environment variables or default settings.
  * @param langfuseSecretKey your user secret API key.
  *               Take it or create a new one here https://langfuse.labs.jb.gg/project/{your_project_id}/settings/api-keys
