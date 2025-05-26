@@ -7,10 +7,10 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 
-private const val TEST_PROJECT_NAME = "ai-dev-kit-tracing-tests"
-
 interface WandbTracingTests {
     companion object {
+        const val TEST_PROJECT_NAME = "ai-dev-kit-tracing-tests"
+
         @BeforeAll
         @JvmStatic
         fun setupProcessor() {
@@ -22,10 +22,6 @@ interface WandbTracingTests {
         @JvmStatic
         fun removeTracing() {
             TracingFlowProcessor.teardownTracing()
-        }
-
-        fun getExperimentId(): String {
-            TODO("How do I get experiment ID for W&B?")
         }
     }
 

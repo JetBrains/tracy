@@ -10,17 +10,17 @@ import org.junit.jupiter.api.Tag
 @Tag("SkipForNonLocal")
 class TestAutologTracingWandb : TestAutologTracingBase(
     ::getAllTracesForProject,
-    { WandbTracingTests.getExperimentId() }
+    { WandbTracingTests.TEST_PROJECT_NAME }
 ), WandbTracingTests
 
 @Tag("SkipForNonLocal")
 class TestFluentTracingWandb : TestFluentTracingBase(
     ::getAllTracesForProject,
-    { WandbTracingTests.getExperimentId() }
+    { WandbTracingTests.TEST_PROJECT_NAME }
 ), WandbTracingTests
 
 @Tag("SkipForNonLocal")
 class TestSuspendFluentTracingWandb : TestSuspendFluentTracingBase(
     ::getAllTracesForProject,
-    { WandbTracingTests.getExperimentId() }
+    { WandbTracingTests.TEST_PROJECT_NAME }
 ), WandbTracingTests
