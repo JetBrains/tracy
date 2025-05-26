@@ -48,7 +48,7 @@ private suspend fun getTraceIds(projectId: String): List<String> { // TODO: deci
 private suspend fun getSpansForTrace(traceId: String): List<JsonObject> {
     val trace = langfuseRequest(
         method = HttpMethod.Get,
-        url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}api/public/traces/$traceId"
+        url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}/api/public/traces/$traceId"
     )
 
     val spanIds = trace["observations"]?.jsonArray?.mapNotNull { it.jsonObject["id"]?.jsonPrimitive?.contentOrNull }
