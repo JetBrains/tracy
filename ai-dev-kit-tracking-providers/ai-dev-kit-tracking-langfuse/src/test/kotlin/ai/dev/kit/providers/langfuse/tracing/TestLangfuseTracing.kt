@@ -3,11 +3,14 @@ package ai.dev.kit.providers.langfuse.tracing
 import ai.dev.kit.fluent.TestAutologTracingBase
 import ai.dev.kit.fluent.TestFluentTracingBase
 import ai.dev.kit.fluent.TestSuspendFluentTracingBase
+import ai.dev.kit.providers.langfuse.LangfuseEvaluationClient
 import ai.dev.kit.providers.langfuse.getAllTracesForProject
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Tag
 
-//const val TEST_PROJECT_NAME = "ai-dev-kit-tracing-tests"
-const val TEST_PROJECT_NAME = "test_project_1"
+private const val TEST_PROJECT_NAME = "test_project_1"
+private fun getExperimentId() = runBlocking { LangfuseEvaluationClient.getOrCreateExperiment(TEST_PROJECT_NAME) }
+
 
 
 @Tag("SkipForNonLocal")
