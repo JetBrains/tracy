@@ -25,8 +25,8 @@ class MlflowTracingMetadataConfigurator : TracingMetadataConfigurator {
         spanBuilder: SpanBuilder, method: PlatformMethod, spanName: String
     ): Span = runBlocking {
         val tracePostRequest = createTracePostRequest(
-            experimentId = TracingSessionProvider.currentExperimentId,
-            runId = TracingSessionProvider.currentRunId,
+            experimentId = TracingSessionProvider.currentProjectId,
+            runId = TracingSessionProvider.currentSessionId,
             traceCreationPath = method.declaringClass.name,
             traceName = spanName
         )

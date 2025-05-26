@@ -3,7 +3,7 @@ package ai.dev.kit.fluent
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import ai.dev.kit.tracing.fluent.dataclasses.TracesResponse
 import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
-import ai.dev.kit.tracing.fluent.withExperimentId
+import ai.dev.kit.tracing.fluent.withProjectId
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import kotlin.reflect.KSuspendFunction1
@@ -62,7 +62,7 @@ open class TestFluentTracingBase(
     @Test
     fun `test trace creation`() = runTest {
         val experimentId = getExperimentId()
-        withExperimentId(experimentId) {
+        withProjectId(experimentId) {
             MyTestClass().testFunction(1)
         }
 
@@ -78,7 +78,7 @@ open class TestFluentTracingBase(
     @Test
     fun `test extension function`() = runTest {
         val experimentId = getExperimentId()
-        val result = withExperimentId(experimentId) {
+        val result = withProjectId(experimentId) {
             listOf("first", "second").foo()
         }
 
@@ -95,7 +95,7 @@ open class TestFluentTracingBase(
     @Test
     fun `test top level function`() = runTest {
         val experimentId = getExperimentId()
-        withExperimentId(experimentId) {
+        withProjectId(experimentId) {
             topLevelTestFunction("RandomString")
         }
 
@@ -111,7 +111,7 @@ open class TestFluentTracingBase(
     @Test
     fun `test inside class function`() = runTest {
         val experimentId = getExperimentId()
-        withExperimentId(experimentId) {
+        withProjectId(experimentId) {
             MyTestClass.InsideClass().insideTestFunction("RandomString")
         }
 
@@ -128,7 +128,7 @@ open class TestFluentTracingBase(
     fun `test trace tags and metadata are correct`() = runTest {
         val experimentId = getExperimentId()
         val arg = 3
-        val result = withExperimentId(experimentId) {
+        val result = withProjectId(experimentId) {
             MyTestClass().testFunction(arg)
         }
 
@@ -159,7 +159,7 @@ open class TestFluentTracingBase(
     @Test
     fun `test trace params default values are correct`() = runTest {
         val experimentId = getExperimentId()
-        val result = withExperimentId(experimentId) {
+        val result = withProjectId(experimentId) {
             MyTestClass().testFunctionWithDefaultValue()
         }
 
@@ -190,7 +190,7 @@ open class TestFluentTracingBase(
     @Test
     fun `test multiple trace creation`() = runTest {
         val experimentId = getExperimentId()
-        withExperimentId(experimentId) {
+        withProjectId(experimentId) {
             val testClass = MyTestClass()
             testClass.testFunction(1)
             testClass.anotherTestFunction("OpenTelemetry")
@@ -209,7 +209,7 @@ open class TestFluentTracingBase(
     @Test
     fun `test parent child trace`() = runTest {
         val experimentId = getExperimentId()
-        withExperimentId(experimentId) {
+        withProjectId(experimentId) {
             MyTestClass().parentTestFunction("RandomString")
         }
 

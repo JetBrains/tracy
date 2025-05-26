@@ -3,7 +3,7 @@ package ai.dev.kit.fluent
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import ai.dev.kit.tracing.fluent.dataclasses.TracesResponse
 import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
-import ai.dev.kit.tracing.fluent.withExperimentId
+import ai.dev.kit.tracing.fluent.withProjectId
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -117,7 +117,7 @@ open class TestSuspendFluentTracingBase(
     @Test
     fun `test trace creation`() = runTest {
         val experimentId = getExperimentId()
-        withExperimentId(experimentId) {
+        withProjectId(experimentId) {
             MyTestClassWithSuspend().testFunction(1)
         }
 
@@ -133,7 +133,7 @@ open class TestSuspendFluentTracingBase(
     fun `test trace tags and metadata are correct`() = runTest {
         val experimentId = getExperimentId()
         val arg = 3
-        val result = withExperimentId(experimentId) {
+        val result = withProjectId(experimentId) {
             val testClass = MyTestClassWithSuspend()
             testClass.testFunction(arg)
         }
@@ -165,7 +165,7 @@ open class TestSuspendFluentTracingBase(
     @Test
     fun `test multiple trace creation`() = runTest {
         val experimentId = getExperimentId()
-        withExperimentId(experimentId) {
+        withProjectId(experimentId) {
             val testClass = MyTestClassWithSuspend()
             testClass.testFunction(1)
             testClass.anotherTestFunction("OpenTelemetry")
@@ -185,7 +185,7 @@ open class TestSuspendFluentTracingBase(
     @Test
     fun `test parent child trace`() = runTest {
         val experimentId = getExperimentId()
-        withExperimentId(experimentId) {
+        withProjectId(experimentId) {
             MyTestClassWithSuspend().parentTestFunction("RandomString")
         }
 
@@ -204,7 +204,7 @@ open class TestSuspendFluentTracingBase(
     @Test
     fun `test parent child trace with non suspend child`() = runTest {
         val experimentId = getExperimentId()
-        withExperimentId(experimentId) {
+        withProjectId(experimentId) {
             MyTestClassWithSuspend().parentTestFunctionWithNonSuspendKid("RandomString")
         }
 
@@ -222,7 +222,7 @@ open class TestSuspendFluentTracingBase(
     @Test
     fun `test parent child trace with non suspend parent`() = runTest {
         val experimentId = getExperimentId()
-        withExperimentId(experimentId) {
+        withProjectId(experimentId) {
             MyTestClassWithSuspend().parentTestFunctionWithSuspendKid("RandomString")
         }
 
@@ -240,7 +240,7 @@ open class TestSuspendFluentTracingBase(
     @Test
     fun `test recursion`() = runTest {
         val experimentId = getExperimentId()
-        withExperimentId(experimentId) {
+        withProjectId(experimentId) {
             MyTestClassWithSuspend().testRecursion(2)
         }
 
@@ -258,7 +258,7 @@ open class TestSuspendFluentTracingBase(
     @Test
     fun `test parent and child trace hierarchy`() = runTest {
         val experimentId = getExperimentId()
-        val result = withExperimentId(experimentId) {
+        val result = withProjectId(experimentId) {
             MyTestClassWithSuspendHard().parentFunction("a")
         }
 

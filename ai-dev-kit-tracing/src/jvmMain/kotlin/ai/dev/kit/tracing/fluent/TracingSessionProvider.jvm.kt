@@ -14,23 +14,23 @@ actual object TracingSessionProvider {
     const val UNSET_EXPERIMENT_ID_TEXT = "Unset Experiment Id! Please set it with `withExperimentId` function."
     const val UNSET_RUN_ID_TEXT = "Unset Run Id! Please set it with `withRunId` function."
 
-    actual val currentExperimentId: String
+    actual val currentProjectId: String
         get() = Context.current().get(EXPERIMENT_ID_CONTEXT_KEY)
             ?: UNSET_EXPERIMENT_ID_TEXT
 
-    actual val currentRunId: String
+    actual val currentSessionId: String
         get() = Context.current().get(RUN_ID_CONTEXT_KEY)
             ?: UNSET_RUN_ID_TEXT
 }
 
-actual suspend fun <T> withExperimentId(id: String, block: suspend CoroutineScope.() -> T): T =
+actual suspend fun <T> withProjectId(id: String, block: suspend CoroutineScope.() -> T): T =
     withContext(Context.current().with(EXPERIMENT_ID_CONTEXT_KEY, id).asContextElement(), block)
 
-actual fun <T> withExperimentIdBlocking(id: String, block: suspend CoroutineScope.() -> T): T =
+actual fun <T> withProjectIdBlocking(id: String, block: suspend CoroutineScope.() -> T): T =
     runBlocking(Context.current().with(EXPERIMENT_ID_CONTEXT_KEY, id).asContextElement(), block)
 
-actual suspend fun <T> withRunId(id: String, block: suspend CoroutineScope.() -> T): T =
+actual suspend fun <T> withSessionId(id: String, block: suspend CoroutineScope.() -> T): T =
     withContext(Context.current().with(RUN_ID_CONTEXT_KEY, id).asContextElement(), block)
 
-actual fun <T> withRunIdBlocking(id: String, block: suspend CoroutineScope.() -> T): T =
+actual fun <T> withSessionIdBlocking(id: String, block: suspend CoroutineScope.() -> T): T =
     runBlocking(Context.current().with(RUN_ID_CONTEXT_KEY, id).asContextElement(), block)

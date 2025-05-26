@@ -67,7 +67,7 @@ class WandbTracePublisher : TracePublisher {
 
             val startPayload =
                 buildStartCall(
-                    TracingSessionProvider.currentExperimentId,
+                    TracingSessionProvider.currentProjectId,
                     spanId,
                     traceId,
                     sourceName,
@@ -189,7 +189,7 @@ class WandbTracePublisher : TracePublisher {
 
             val startPayload =
                 buildStartCall(
-                    TracingSessionProvider.currentExperimentId,
+                    TracingSessionProvider.currentProjectId,
                     spanId,
                     traceId,
                     sourceName,
@@ -203,7 +203,7 @@ class WandbTracePublisher : TracePublisher {
 
             val outputs = span.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS) ?: ""
 
-            val endPayload = buildEndCall(TracingSessionProvider.currentExperimentId, spanId, endedAtMillis, outputs)
+            val endPayload = buildEndCall(TracingSessionProvider.currentProjectId, spanId, endedAtMillis, outputs)
 
             val json = buildJsonObject {
                 put("batch", buildJsonArray {

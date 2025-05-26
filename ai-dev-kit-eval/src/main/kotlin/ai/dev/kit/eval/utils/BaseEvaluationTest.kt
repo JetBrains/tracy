@@ -3,7 +3,7 @@ package ai.dev.kit.eval.utils
 import ai.dev.kit.tracing.fluent.FluentSpanAttributes
 import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
 import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
-import ai.dev.kit.tracing.fluent.withRunIdBlocking
+import ai.dev.kit.tracing.fluent.withSessionIdBlocking
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.extension.kotlin.asContextElement
@@ -86,7 +86,7 @@ abstract class BaseEvaluationTest<
     fun Runs(): Stream<DynamicContainer> = runResults.mapIndexed { runNum, runResult ->
         DynamicContainer.dynamicContainer(
             "Run ${if (runResults.size > 1) runNum + 1 else ""}",
-            withRunIdBlocking(runResult.runId) {
+            withSessionIdBlocking(runResult.runId) {
                 testCases.mapIndexed { dataPointIndex, testCase ->
                     val (dataPointSpan, dataPointScope) = runBlocking {
                         createDataPointSpan(

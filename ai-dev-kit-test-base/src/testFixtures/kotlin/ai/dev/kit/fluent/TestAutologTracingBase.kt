@@ -3,7 +3,7 @@ package ai.dev.kit.fluent
 import ai.dev.kit.createOpenAIClient
 import ai.dev.kit.tracing.fluent.dataclasses.TracesResponse
 import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
-import ai.dev.kit.tracing.fluent.withExperimentId
+import ai.dev.kit.tracing.fluent.withProjectId
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import kotlinx.coroutines.test.runTest
@@ -23,7 +23,7 @@ open class TestAutologTracingBase(
     @Test
     fun testOpenAIAutoTracing() = runTest {
         val experimentId = getExperimentId()
-        withExperimentId(experimentId) {
+        withProjectId(experimentId) {
             val client = createOpenAIClient()
             val params = ChatCompletionCreateParams.Companion.builder()
                 .addUserMessage("Generate polite greeting and introduce yourself")
