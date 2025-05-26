@@ -1,17 +1,15 @@
 package ai.dev.kit.tracing.fluent.processor
 
 import io.opentelemetry.api.trace.SpanId
+import io.opentelemetry.context.Context
+import io.opentelemetry.extension.kotlin.asContextElement
 import io.opentelemetry.sdk.common.CompletableResultCode
 import io.opentelemetry.sdk.trace.data.SpanData
 import io.opentelemetry.sdk.trace.export.SpanExporter
-import java.util.concurrent.ConcurrentHashMap
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.job
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import org.kodein.di.instance
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
 class RootSpanExporter(val scope: CoroutineScope) : SpanExporter {
@@ -31,7 +29,9 @@ class RootSpanExporter(val scope: CoroutineScope) : SpanExporter {
             if (span.isRootSpan) {
                 val spansToPublish = spanList.toList()
                 spanGroups.remove(traceId)
-                scope.launch {
+
+                // Passing the current context allows propagating project ID and run ID, see TracingSessionProvider
+                scope.launch(Context.current().asContextElement()) {
                     try {
                         val tracePublisher: TracePublisher by TracingFlowProcessor.di.instance()
                         logger.debug("Publishing trace with traceId=$traceId, spans=${spansToPublish.size}")
