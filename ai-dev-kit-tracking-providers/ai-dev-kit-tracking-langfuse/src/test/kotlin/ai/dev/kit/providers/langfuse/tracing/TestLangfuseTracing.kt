@@ -9,24 +9,27 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Tag
 
 private const val TEST_PROJECT_NAME = "test_project_1"
-private fun getExperimentId() = runBlocking { LangfuseEvaluationClient.getOrCreateExperiment(TEST_PROJECT_NAME) }
 
+private fun getExperimentId() = runBlocking {
+    return@runBlocking LangfuseEvaluationClient.getOrCreateExperiment(TEST_PROJECT_NAME)
+        ?: error("Failed to get experiment id")
+}
 
 
 @Tag("SkipForNonLocal")
 class TestAutologTracingLangfuse : TestAutologTracingBase(
     getTraces = ::getAllTracesForProject,
-    getExperimentId = { TEST_PROJECT_NAME }
+    getExperimentId = ::getExperimentId
 ), LangfuseTracingTests
 
 @Tag("SkipForNonLocal")
 class TestFluentTracingLangfuse : TestFluentTracingBase(
     getTraces = ::getAllTracesForProject,
-    getExperimentId = { TEST_PROJECT_NAME }
+    getExperimentId = ::getExperimentId
 ), LangfuseTracingTests
 
 @Tag("SkipForNonLocal")
 class TestSuspendFluentTracingLangfuse : TestSuspendFluentTracingBase(
     getTraces = ::getAllTracesForProject,
-    getExperimentId = { TEST_PROJECT_NAME }
+    getExperimentId = ::getExperimentId
 ), LangfuseTracingTests
