@@ -1,6 +1,5 @@
 package ai.dev.kit.providers.wandb
 
-import ai.dev.kit.tracing.fluent.KotlinLoggingClient
 import ai.dev.kit.tracing.fluent.getUserIDFromEnv
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -8,7 +7,7 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
 import java.util.*
 
-internal object KotlinWandbClient : KotlinLoggingClient {
+internal object KotlinWandbClient {
     internal const val WANDB_API = "https://trace.wandb.ai/call"
     // W&B weave support uses weave rest api
     // docs: https://weave-docs.wandb.ai/reference/service-api/call-start-call-start-post
@@ -16,11 +15,6 @@ internal object KotlinWandbClient : KotlinLoggingClient {
     val client = HttpClient(CIO) {
         install(ContentNegotiation) {
             json()
-        }
-    }
-
-    override fun withRun(experimentId: String) = object : AutoCloseable {
-        override fun close() {
         }
     }
 
