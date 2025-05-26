@@ -7,25 +7,25 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 
-private val RUN_ID_CONTEXT_KEY: ContextKey<String> = ContextKey.named("experimentId")
-private val EXPERIMENT_ID_CONTEXT_KEY: ContextKey<String> = ContextKey.named("runId")
+private val SESSION_ID_CONTEXT_KEY: ContextKey<String> = ContextKey.named("projectId")
+private val PROJECT_ID_CONTEXT_KEY: ContextKey<String> = ContextKey.named("sessionId")
 
 actual object TracingSessionProvider {
     actual val currentProjectId: String?
-        get() = Context.current().get(EXPERIMENT_ID_CONTEXT_KEY)
+        get() = Context.current().get(PROJECT_ID_CONTEXT_KEY)
 
     actual val currentSessionId: String?
-        get() = Context.current().get(RUN_ID_CONTEXT_KEY)
+        get() = Context.current().get(SESSION_ID_CONTEXT_KEY)
 }
 
 actual suspend fun <T> withProjectId(id: String, block: suspend CoroutineScope.() -> T): T =
-    withContext(Context.current().with(EXPERIMENT_ID_CONTEXT_KEY, id).asContextElement(), block)
+    withContext(Context.current().with(PROJECT_ID_CONTEXT_KEY, id).asContextElement(), block)
 
 actual fun <T> withProjectIdBlocking(id: String, block: suspend CoroutineScope.() -> T): T =
-    runBlocking(Context.current().with(EXPERIMENT_ID_CONTEXT_KEY, id).asContextElement(), block)
+    runBlocking(Context.current().with(PROJECT_ID_CONTEXT_KEY, id).asContextElement(), block)
 
 actual suspend fun <T> withSessionId(id: String, block: suspend CoroutineScope.() -> T): T =
-    withContext(Context.current().with(RUN_ID_CONTEXT_KEY, id).asContextElement(), block)
+    withContext(Context.current().with(SESSION_ID_CONTEXT_KEY, id).asContextElement(), block)
 
 actual fun <T> withSessionIdBlocking(id: String, block: suspend CoroutineScope.() -> T): T =
-    runBlocking(Context.current().with(RUN_ID_CONTEXT_KEY, id).asContextElement(), block)
+    runBlocking(Context.current().with(SESSION_ID_CONTEXT_KEY, id).asContextElement(), block)
