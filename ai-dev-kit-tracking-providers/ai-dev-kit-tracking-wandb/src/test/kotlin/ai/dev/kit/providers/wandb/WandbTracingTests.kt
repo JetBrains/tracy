@@ -23,6 +23,10 @@ interface WandbTracingTests {
         fun removeTracing() {
             TracingFlowProcessor.teardownTracing()
         }
+
+        fun getExperimentId(): String {
+            TODO("How do I get experiment ID for W&B?")
+        }
     }
 
     @AfterEach
