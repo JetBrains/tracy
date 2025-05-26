@@ -1,9 +1,9 @@
 package ai.dev.kit.fluent
 
 import ai.dev.kit.createOpenAIClient
-import ai.dev.kit.tracing.fluent.KotlinLoggingClient
 import ai.dev.kit.tracing.fluent.dataclasses.TracesResponse
 import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
+import ai.dev.kit.tracing.fluent.withExperimentId
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import kotlinx.coroutines.test.runTest
@@ -18,11 +18,12 @@ import kotlin.test.assertNotNull
 
 open class TestAutologTracingBase(
     val getTraces: KSuspendFunction1<String, TracesResponse>,
-    private val client: KotlinLoggingClient
+    val getExperimentId: () -> String,
 ) {
     @Test
     fun testOpenAIAutoTracing() = runTest {
-        client.withRun(client.currentExperimentId).use {
+        val experimentId = getExperimentId()
+        withExperimentId(experimentId) {
             val client = createOpenAIClient()
             val params = ChatCompletionCreateParams.Companion.builder()
                 .addUserMessage("Generate polite greeting and introduce yourself")
@@ -31,7 +32,7 @@ open class TestAutologTracingBase(
         }
 
         TracingFlowProcessor.flushTraces()
-        val tracesResponse = getTraces(client.currentExperimentId)
+        val tracesResponse = getTraces(experimentId)
 
         assertEquals(1, tracesResponse.traces.size)
         val chatTrace = tracesResponse.traces.first()

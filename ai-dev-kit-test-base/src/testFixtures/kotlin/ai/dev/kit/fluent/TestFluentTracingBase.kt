@@ -1,11 +1,11 @@
 package ai.dev.kit.fluent
 
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
-import ai.dev.kit.tracing.fluent.KotlinLoggingClient
 import ai.dev.kit.tracing.fluent.dataclasses.TracesResponse
 import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
-import org.junit.jupiter.api.Test
+import ai.dev.kit.tracing.fluent.withExperimentId
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Test
 import kotlin.reflect.KSuspendFunction1
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -57,69 +57,83 @@ fun List<String>.foo(): String {
 
 open class TestFluentTracingBase(
     val getTraces: KSuspendFunction1<String, TracesResponse>,
-    private val client: KotlinLoggingClient
+    private val getExperimentId: () -> String,
 ) {
     @Test
     fun `test trace creation`() = runTest {
-        MyTestClass().testFunction(1)
+        val experimentId = getExperimentId()
+        withExperimentId(experimentId) {
+            MyTestClass().testFunction(1)
+        }
 
         TracingFlowProcessor.flushTraces()
-        val tracesResponse = getTraces(client.currentExperimentId)
+        val tracesResponse = getTraces(experimentId)
 
         assertEquals(1, tracesResponse.traces.size)
         val trace = tracesResponse.traces.first()
         assertNotNull(trace)
-        assertEquals(client.currentExperimentId, trace.experimentId)
+        assertEquals(experimentId, trace.experimentId)
     }
 
     @Test
     fun `test extension function`() = runTest {
-        val result = listOf("first", "second").foo()
+        val experimentId = getExperimentId()
+        val result = withExperimentId(experimentId) {
+            listOf("first", "second").foo()
+        }
 
         TracingFlowProcessor.flushTraces()
-        val tracesResponse = getTraces(client.currentExperimentId)
+        val tracesResponse = getTraces(experimentId)
 
         assertEquals("first second", result)
         assertEquals(1, tracesResponse.traces.size)
         val trace = tracesResponse.traces.first()
         assertNotNull(trace)
-        assertEquals(client.currentExperimentId, trace.experimentId)
+        assertEquals(experimentId, trace.experimentId)
     }
 
     @Test
     fun `test top level function`() = runTest {
-        topLevelTestFunction("RandomString")
+        val experimentId = getExperimentId()
+        withExperimentId(experimentId) {
+            topLevelTestFunction("RandomString")
+        }
 
         TracingFlowProcessor.flushTraces()
-        val tracesResponse = getTraces(client.currentExperimentId)
+        val tracesResponse = getTraces(experimentId)
 
         assertEquals(1, tracesResponse.traces.size)
         val trace = tracesResponse.traces.first()
         assertNotNull(trace)
-        assertEquals(client.currentExperimentId, trace.experimentId)
+        assertEquals(experimentId, trace.experimentId)
     }
 
     @Test
     fun `test inside class function`() = runTest {
-        MyTestClass.InsideClass().insideTestFunction("RandomString")
+        val experimentId = getExperimentId()
+        withExperimentId(experimentId) {
+            MyTestClass.InsideClass().insideTestFunction("RandomString")
+        }
 
         TracingFlowProcessor.flushTraces()
-        val tracesResponse = getTraces(client.currentExperimentId)
+        val tracesResponse = getTraces(experimentId)
 
         assertEquals(1, tracesResponse.traces.size)
         val trace = tracesResponse.traces.first()
         assertNotNull(trace)
-        assertEquals(client.currentExperimentId, trace.experimentId)
+        assertEquals(experimentId, trace.experimentId)
     }
 
     @Test
     fun `test trace tags and metadata are correct`() = runTest {
-        val testClass = MyTestClass()
+        val experimentId = getExperimentId()
         val arg = 3
-        val result = testClass.testFunction(arg)
+        val result = withExperimentId(experimentId) {
+            MyTestClass().testFunction(arg)
+        }
 
         TracingFlowProcessor.flushTraces()
-        val tracesResponse = getTraces(client.currentExperimentId)
+        val tracesResponse = getTraces(experimentId)
         var trace = tracesResponse.traces.firstOrNull()
         trace = assertNotNull(trace)
 
@@ -144,11 +158,13 @@ open class TestFluentTracingBase(
 
     @Test
     fun `test trace params default values are correct`() = runTest {
-        val testClass = MyTestClass()
-        val result = testClass.testFunctionWithDefaultValue()
+        val experimentId = getExperimentId()
+        val result = withExperimentId(experimentId) {
+            MyTestClass().testFunctionWithDefaultValue()
+        }
 
         TracingFlowProcessor.flushTraces()
-        val tracesResponse = getTraces(client.currentExperimentId)
+        val tracesResponse = getTraces(experimentId)
         var trace = tracesResponse.traces.firstOrNull()
         trace = assertNotNull(trace)
 
@@ -173,12 +189,14 @@ open class TestFluentTracingBase(
 
     @Test
     fun `test multiple trace creation`() = runTest {
-        val testClass = MyTestClass()
-        testClass.testFunction(1)
-        testClass.anotherTestFunction("OpenTelemetry")
-
+        val experimentId = getExperimentId()
+        withExperimentId(experimentId) {
+            val testClass = MyTestClass()
+            testClass.testFunction(1)
+            testClass.anotherTestFunction("OpenTelemetry")
+        }
         TracingFlowProcessor.flushTraces()
-        val tracesResponse = getTraces(client.currentExperimentId)
+        val tracesResponse = getTraces(experimentId)
 
         assertEquals(2, tracesResponse.traces.size)
 
@@ -190,10 +208,13 @@ open class TestFluentTracingBase(
 
     @Test
     fun `test parent child trace`() = runTest {
-        MyTestClass().parentTestFunction("RandomString")
+        val experimentId = getExperimentId()
+        withExperimentId(experimentId) {
+            MyTestClass().parentTestFunction("RandomString")
+        }
 
         TracingFlowProcessor.flushTraces()
-        val tracesResponse = getTraces(client.currentExperimentId)
+        val tracesResponse = getTraces(experimentId)
 
         var trace = tracesResponse.traces.firstOrNull()
         trace = assertNotNull(trace)

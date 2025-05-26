@@ -2,7 +2,6 @@ package ai.dev.kit.providers.langfuse
 
 import ai.dev.kit.eval.utils.*
 import ai.dev.kit.providers.langfuse.KotlinLangfuseClient.LANGFUSE_BASE_URL
-import ai.dev.kit.providers.langfuse.KotlinLangfuseClient.currentRunId
 import ai.dev.kit.providers.langfuse.fluent.LangfuseTracePublisher.Companion.publishRootStartCall
 import ai.dev.kit.providers.langfuse.fluent.setupLangfuseTracing
 import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
@@ -28,10 +27,7 @@ object LangfuseEvaluationClient : EvaluationClient {
     }
 
     // session in Langfuse
-    override fun createRun(experimentId: String, runName: String): String {
-        currentRunId = runName
-        return runName
-    }
+    override fun createRun(experimentId: String, runName: String): String = runName
 
     override fun getResultsLink(experimentId: String, runId: String): String {
         return "$LANGFUSE_BASE_URL/project/$experimentId/sessions/${

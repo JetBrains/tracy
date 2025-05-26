@@ -1,31 +1,19 @@
 package ai.dev.kit.providers.langfuse
 
-import ai.dev.kit.tracing.fluent.KotlinLoggingClient
 import ai.dev.kit.tracing.fluent.getUserIDFromEnv
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
 
-internal object KotlinLangfuseClient : KotlinLoggingClient {
+internal object KotlinLangfuseClient {
     internal const val LANGFUSE_BASE_URL = "https://langfuse.labs.jb.gg"
     // Langfuse support uses Langfuse rest api
     // docs: https://api.reference.langfuse.com/
 
-    // TODO: Remove state storage here ASAP!
-    override var currentExperimentId: String = "0"
-    var currentRunId: String? = null
-
-    const val TEST_PROJECT_NAME = "ai-dev-kit-tracing-tests"
-
     val client = HttpClient(CIO) {
         install(ContentNegotiation) {
             json()
-        }
-    }
-
-    override fun withRun(experimentId: String) = object : AutoCloseable {
-        override fun close() {
         }
     }
 
