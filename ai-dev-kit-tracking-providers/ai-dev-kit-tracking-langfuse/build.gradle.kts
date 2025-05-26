@@ -15,6 +15,7 @@ dependencies {
     implementation(libs.ktor.client.negotiation)
     implementation(libs.ktor.serialization.json)
     implementation(libs.opentelemetry.sdk)
+    implementation(libs.opentelemetry.kotlin)
     implementation(project(":ai-dev-kit-eval"))
     implementation(project(":ai-dev-kit-tracing"))
     testImplementation(libs.kotlin.test)
