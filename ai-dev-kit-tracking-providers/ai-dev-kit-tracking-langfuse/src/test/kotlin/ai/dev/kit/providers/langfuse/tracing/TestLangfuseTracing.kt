@@ -15,7 +15,6 @@ private fun getExperimentId() = runBlocking {
         ?: error("Failed to get experiment id")
 }
 
-
 @Tag("SkipForNonLocal")
 class TestAutologTracingLangfuse : TestAutologTracingBase(
     getTraces = ::getAllTracesForProject,
