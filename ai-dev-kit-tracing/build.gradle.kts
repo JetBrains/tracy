@@ -53,10 +53,6 @@ kotlin {
     }
 }
 
-tasks.withType<Test> {
-    useJUnitPlatform()
-}
-
 kotlin {
     jvmToolchain(17)
 }
