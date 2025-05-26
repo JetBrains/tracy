@@ -6,35 +6,36 @@ import org.junit.jupiter.api.Test
 import kotlin.concurrent.thread
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNull
 
-class TracingSessionProviderTest_ExperimentId {
+class TracingSessionProviderTest_ProjectId {
     @Test
-    fun `currentExperimentId returns default value when not set`() {
-        assertEquals(TracingSessionProvider.UNSET_EXPERIMENT_ID_TEXT, TracingSessionProvider.currentProjectId)
+    fun `currentProjectId returns default value when not set`() {
+        assertNull(TracingSessionProvider.currentProjectId)
     }
 
     @Test
-    fun `currentExperimentId is correctly set and retrieved using withExperimentId`() = runTest {
-        val expectedId = "test-experiment-id"
+    fun `currentProjectId is correctly set and retrieved using withProjectId`() = runTest {
+        val expectedId = "test-project-id"
         withProjectId(expectedId) {
             assertEquals(expectedId, TracingSessionProvider.currentProjectId)
         }
-        assertEquals(TracingSessionProvider.UNSET_EXPERIMENT_ID_TEXT, TracingSessionProvider.currentProjectId)
+        assertNull(TracingSessionProvider.currentProjectId)
     }
 
     @Test
-    fun `currentExperimentId is correctly set and retrieved using withExperimentIdBlocking`() {
-        val expectedId = "test-experiment-id-blocking"
+    fun `currentProjectId is correctly set and retrieved using withProjectIdBlocking`() {
+        val expectedId = "test-project-id-blocking"
         withProjectIdBlocking(expectedId) {
             assertEquals(expectedId, TracingSessionProvider.currentProjectId)
         }
-        assertEquals(TracingSessionProvider.UNSET_EXPERIMENT_ID_TEXT, TracingSessionProvider.currentProjectId)
+        assertNull(TracingSessionProvider.currentProjectId)
     }
 
     @Test
-    fun `currentExperimentId is correctly set and retrieved in nested withExperimentId calls`() = runTest {
-        val outerId = "outer-experiment-id"
-        val innerId = "inner-experiment-id"
+    fun `currentProjectId is correctly set and retrieved in nested withProjectId calls`() = runTest {
+        val outerId = "outer-project-id"
+        val innerId = "inner-project-id"
 
         withProjectId(outerId) {
             assertEquals(outerId, TracingSessionProvider.currentProjectId)
@@ -46,13 +47,13 @@ class TracingSessionProviderTest_ExperimentId {
             assertEquals(outerId, TracingSessionProvider.currentProjectId)
         }
 
-        assertEquals(TracingSessionProvider.UNSET_EXPERIMENT_ID_TEXT, TracingSessionProvider.currentProjectId)
+        assertNull(TracingSessionProvider.currentProjectId)
     }
 
     @Test
-    fun `currentExperimentId is correctly set and retrieved with multiple coroutines`() = runTest {
-        val expectedId1 = "experiment-id-1"
-        val expectedId2 = "experiment-id-2"
+    fun `currentProjectId is correctly set and retrieved with multiple coroutines`() = runTest {
+        val expectedId1 = "project-id-1"
+        val expectedId2 = "project-id-2"
 
         val job1 = launch(Dispatchers.Default) {
             withProjectId(expectedId1) {
@@ -71,11 +72,11 @@ class TracingSessionProviderTest_ExperimentId {
         job1.join()
         job2.join()
 
-        assertEquals(TracingSessionProvider.UNSET_EXPERIMENT_ID_TEXT, TracingSessionProvider.currentProjectId)
+        assertNull(TracingSessionProvider.currentProjectId)
     }
 
     @Test
-    fun `experiment ID is reset after exception in withExperimentId`() = runTest {
+    fun `project ID is reset after exception in withProjectId`() = runTest {
         try {
             withProjectId("test-id") {
                 throw RuntimeException("Simulated error")
@@ -83,19 +84,19 @@ class TracingSessionProviderTest_ExperimentId {
         } catch (e: RuntimeException) {
             // Expected
         }
-        assertEquals(TracingSessionProvider.UNSET_EXPERIMENT_ID_TEXT, TracingSessionProvider.currentProjectId)
+        assertNull(TracingSessionProvider.currentProjectId)
     }
 
     @Test
-    fun `currentExperimentId is propagated even if you hijack the context`() = runTest {
-        val experimentId = "run"
-        withProjectId(experimentId) {
+    fun `currentProjectId is propagated even if you hijack the context`() = runTest {
+        val projectId = "run"
+        withProjectId(projectId) {
             val mainThread = Thread.currentThread().name
             withContext(Dispatchers.IO) {
                 val distinctThread = Thread.currentThread().name
                 assertNotEquals(mainThread, distinctThread)
 
-                assertEquals(experimentId, TracingSessionProvider.currentProjectId)
+                assertEquals(projectId, TracingSessionProvider.currentProjectId)
             }
         }
     }
@@ -104,7 +105,7 @@ class TracingSessionProviderTest_ExperimentId {
 class TracingSessionProviderTest_RunId {
     @Test
     fun `currentRunId returns default value when not set`() {
-        assertEquals(TracingSessionProvider.UNSET_RUN_ID_TEXT, TracingSessionProvider.currentSessionId)
+        assertNull(TracingSessionProvider.currentSessionId)
     }
 
     @Test
@@ -113,7 +114,7 @@ class TracingSessionProviderTest_RunId {
         withSessionId(expectedId) {
             assertEquals(expectedId, TracingSessionProvider.currentSessionId)
         }
-        assertEquals(TracingSessionProvider.UNSET_RUN_ID_TEXT, TracingSessionProvider.currentSessionId)
+        assertNull(TracingSessionProvider.currentSessionId)
     }
 
     @Test
@@ -122,7 +123,7 @@ class TracingSessionProviderTest_RunId {
         withSessionIdBlocking(expectedId) {
             assertEquals(expectedId, TracingSessionProvider.currentSessionId)
         }
-        assertEquals(TracingSessionProvider.UNSET_RUN_ID_TEXT, TracingSessionProvider.currentSessionId)
+        assertNull(TracingSessionProvider.currentSessionId)
     }
 
     @Test
@@ -140,7 +141,7 @@ class TracingSessionProviderTest_RunId {
             assertEquals(outerId, TracingSessionProvider.currentSessionId)
         }
 
-        assertEquals(TracingSessionProvider.UNSET_RUN_ID_TEXT, TracingSessionProvider.currentSessionId)
+        assertNull(TracingSessionProvider.currentSessionId)
     }
 
     @Test
@@ -165,7 +166,7 @@ class TracingSessionProviderTest_RunId {
         job1.join()
         job2.join()
 
-        assertEquals(TracingSessionProvider.UNSET_RUN_ID_TEXT, TracingSessionProvider.currentSessionId)
+        assertNull(TracingSessionProvider.currentSessionId)
     }
 
     @Test
@@ -177,7 +178,7 @@ class TracingSessionProviderTest_RunId {
         } catch (_: RuntimeException) {
             // Expected
         }
-        assertEquals(TracingSessionProvider.UNSET_RUN_ID_TEXT, TracingSessionProvider.currentSessionId)
+        assertNull(TracingSessionProvider.currentSessionId)
     }
 
     @Test
@@ -201,20 +202,17 @@ class TracingSessionProviderTest_UnsupportedScenarios {
         withSessionId("This won't work! :(") {
             thread {
                 // Run ID is not set
-                assertEquals(TracingSessionProvider.UNSET_RUN_ID_TEXT, TracingSessionProvider.currentSessionId)
+                assertNull(TracingSessionProvider.currentSessionId)
             }.join()
         }
     }
 
     @Test
-    fun `currentExperimentId is not propagated if you runBlocking within`() = runTest {
+    fun `currentProjectId is not propagated if you runBlocking within`() = runTest {
         withSessionId("This won't work! :(") {
             runBlocking {
-                // Experiment ID is not set here
-                assertEquals(
-                    TracingSessionProvider.UNSET_EXPERIMENT_ID_TEXT,
-                    TracingSessionProvider.currentProjectId
-                )
+                // Project ID is not set here
+                assertNull(TracingSessionProvider.currentProjectId)
             }
         }
     }

@@ -18,7 +18,7 @@ expect object TracingSessionProvider {
      *  `https://wandb.ai/nikolai-gruzinov-test/haha`
      * where haha is the project name
      */
-    val currentProjectId: String
+    val currentProjectId: String?
 
     /**
      * In Langfuse, Session is a label that can be used to group related traces.
@@ -31,7 +31,7 @@ expect object TracingSessionProvider {
      *
      * In W&B Weave, there is no such thing as a Session.
      */
-    val currentSessionId: String
+    val currentSessionId: String?
 }
 
 /**

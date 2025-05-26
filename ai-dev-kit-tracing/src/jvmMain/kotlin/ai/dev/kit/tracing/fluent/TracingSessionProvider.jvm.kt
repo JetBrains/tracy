@@ -11,16 +11,11 @@ private val RUN_ID_CONTEXT_KEY: ContextKey<String> = ContextKey.named("experimen
 private val EXPERIMENT_ID_CONTEXT_KEY: ContextKey<String> = ContextKey.named("runId")
 
 actual object TracingSessionProvider {
-    const val UNSET_EXPERIMENT_ID_TEXT = "Unset Experiment Id! Please set it with `withExperimentId` function."
-    const val UNSET_RUN_ID_TEXT = "Unset Run Id! Please set it with `withRunId` function."
-
-    actual val currentProjectId: String
+    actual val currentProjectId: String?
         get() = Context.current().get(EXPERIMENT_ID_CONTEXT_KEY)
-            ?: UNSET_EXPERIMENT_ID_TEXT
 
-    actual val currentSessionId: String
+    actual val currentSessionId: String?
         get() = Context.current().get(RUN_ID_CONTEXT_KEY)
-            ?: UNSET_RUN_ID_TEXT
 }
 
 actual suspend fun <T> withProjectId(id: String, block: suspend CoroutineScope.() -> T): T =
