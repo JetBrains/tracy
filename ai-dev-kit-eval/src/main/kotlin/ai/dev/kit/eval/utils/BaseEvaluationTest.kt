@@ -3,11 +3,11 @@ package ai.dev.kit.eval.utils
 import ai.dev.kit.tracing.fluent.FluentSpanAttributes
 import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
 import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
+import ai.dev.kit.tracing.fluent.withRunIdBlocking
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.extension.kotlin.asContextElement
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import mu.KotlinLogging
 import org.junit.jupiter.api.*
 import java.util.stream.Stream
@@ -54,7 +54,7 @@ abstract class BaseEvaluationTest<
         logger.info { "🔄 Setting up before all tests" }
 
         experimentId = loggingClient.getOrCreateExperiment(experimentName)
-            ?: error("Experiment $experimentName not found and could not be crated")
+            ?: error("Experiment $experimentName not found and could not be created")
         (1..numberOfRuns).map { runNum ->
             val runId = loggingClient.createRun(
                 experimentId, runNamePrefix + if (numberOfRuns > 1) "/subrun-$runNum" else ""
@@ -85,32 +85,34 @@ abstract class BaseEvaluationTest<
     @TestFactory
     fun Runs(): Stream<DynamicContainer> = runResults.mapIndexed { runNum, runResult ->
         DynamicContainer.dynamicContainer(
-            "Run ${if (runResults.size > 1) runNum + 1 else ""}", testCases.mapIndexed { dataPointIndex, testCase ->
-                val (dataPointSpan, dataPointScope) = runBlocking {
-                    createDataPointSpan(
-                        dataPointIndex,
-                        TracingFlowProcessor.tracer,
-                        runResult.runId,
-                        testCase
-                    )
-                }
-                val output = runBlocking {
-                    withContext(dataPointSpan.asContextElement()) {
-                        generator.generate(testCase.input)
+            "Run ${if (runResults.size > 1) runNum + 1 else ""}",
+            withRunIdBlocking(runResult.runId) {
+                testCases.mapIndexed { dataPointIndex, testCase ->
+                    val (dataPointSpan, dataPointScope) = runBlocking {
+                        createDataPointSpan(
+                            dataPointIndex,
+                            TracingFlowProcessor.tracer,
+                            runResult.runId,
+                            testCase
+                        )
+                    }
+                    val testCaseName = testCase.name
+                    val traceId = dataPointSpan.spanContext.traceId
+                    DynamicTest.dynamicTest(testCaseName) {
+                        dataPointSpan.makeCurrent()
+                        try {
+                            val output = runBlocking(dataPointSpan.asContextElement()) {
+                                generator.generate(testCase.input)
+                            }
+                            executeSingleTest(testCaseName, testCase, runNum, runResult.runId, output, traceId)
+                        } finally {
+                            dataPointSpan.end()
+                            dataPointScope.close()
+                        }
                     }
                 }
-                val testCaseName = testCase.name
-                val traceId = dataPointSpan.spanContext.traceId
-                DynamicTest.dynamicTest(testCaseName) {
-                    dataPointSpan.makeCurrent()
-                    try {
-                        executeSingleTest(testCaseName, testCase, runNum, runResult.runId, output, traceId)
-                    } finally {
-                        dataPointSpan.end()
-                        dataPointScope.close()
-                    }
-                }
-            })
+            }
+        )
     }.stream()
 
     private suspend fun createDataPointSpan(
@@ -118,8 +120,6 @@ abstract class BaseEvaluationTest<
     ): Pair<Span, io.opentelemetry.context.Scope> {
         val tracedRunName = testCase.name.ifBlank { "Data Point ${dataPointIndex + 1}" }
         val dataPointSpan = tracer.spanBuilder(tracedRunName).setNoParent().let {
-            it.setAttribute(FluentSpanAttributes.SOURCE_RUN.key, runId)
-
             it.setAttribute(
                 FluentSpanAttributes.SPAN_INPUTS.key, testCase.input.toString()
             )
