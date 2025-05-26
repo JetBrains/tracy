@@ -173,7 +173,6 @@ class WandbTracePublisher : TracePublisher {
         }
     }
 
-
     override suspend fun publishTrace(trace: List<SpanData>) {
         val requestUrl = "$WANDB_API/upsert_batch"
 
