@@ -15,17 +15,19 @@ import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.sdk.trace.ReadableSpan
 import io.opentelemetry.sdk.trace.data.SpanData
 import kotlinx.serialization.json.*
+import mu.KotlinLogging
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 
+private val logger = KotlinLogging.logger {}
+
 class WandbTracePublisher : TracePublisher {
     private fun buildEndCall(
-        currentExperimentId: String,
         spanId: String,
         endedAtMillis: Long,
         outputsString: String,
     ): JsonObject {
-        val projectId = "$USER_ID/$currentExperimentId"
+        val projectId = "$USER_ID/${currentProjectNameOrDefault()}"
 
         val instantEnd = Instant.ofEpochMilli(endedAtMillis)
         val endedAt = DateTimeFormatter.ISO_INSTANT.format(instantEnd)
@@ -67,7 +69,6 @@ class WandbTracePublisher : TracePublisher {
 
             val startPayload =
                 buildStartCall(
-                    TracingSessionProvider.currentProjectId,
                     spanId,
                     traceId,
                     sourceName,
@@ -97,7 +98,6 @@ class WandbTracePublisher : TracePublisher {
         }
 
         private fun buildStartCall(
-            currentExperimentId: String,
             spanId: String,
             traceId: String,
             sourceName: String,
@@ -108,7 +108,7 @@ class WandbTracePublisher : TracePublisher {
             startedAtMillis: Long,
             parentSpanId: JsonElement,
         ): JsonObject {
-            val projectId = "$USER_ID/$currentExperimentId"
+            val projectId = "$USER_ID/${currentProjectNameOrDefault()}"
 
             val inputs = parseLenientJson(spanInputs)
 
@@ -160,7 +160,19 @@ class WandbTracePublisher : TracePublisher {
 
             return payload
         }
+
+        /**
+         * If [currentProjectId] is not set, log to some random project.
+         */
+        private fun currentProjectNameOrDefault() = TracingSessionProvider.currentProjectId ?: {
+            val defaultProjectName = "project-with-no-set-name"
+            logger.info {
+                "Publishing trace to W&B to the default project: $defaultProjectName. " +
+                        "To specify another project, use `withProjectId`"
+            }
+        }
     }
+
 
     override suspend fun publishTrace(trace: List<SpanData>) {
         val requestUrl = "$WANDB_API/upsert_batch"
@@ -189,7 +201,6 @@ class WandbTracePublisher : TracePublisher {
 
             val startPayload =
                 buildStartCall(
-                    TracingSessionProvider.currentProjectId,
                     spanId,
                     traceId,
                     sourceName,
@@ -203,7 +214,7 @@ class WandbTracePublisher : TracePublisher {
 
             val outputs = span.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS) ?: ""
 
-            val endPayload = buildEndCall(TracingSessionProvider.currentProjectId, spanId, endedAtMillis, outputs)
+            val endPayload = buildEndCall(spanId, endedAtMillis, outputs)
 
             val json = buildJsonObject {
                 put("batch", buildJsonArray {

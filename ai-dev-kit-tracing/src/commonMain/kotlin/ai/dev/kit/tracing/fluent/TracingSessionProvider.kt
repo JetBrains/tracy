@@ -21,8 +21,8 @@ expect object TracingSessionProvider {
     val currentProjectId: String?
 
     /**
-     * In Langfuse, Session is a label that can be used to group related traces.
-     *   https://langfuse.com/docs/tracing-features/sessions
+     * In Langfuse, [Session](https://langfuse.com/docs/tracing-features/sessions)
+     * is a label that can be used to group related traces.
      * Session ID is the same as the human-readable session name. It is created automatically
      * when the first trace labeled with it is uploaded.
      *

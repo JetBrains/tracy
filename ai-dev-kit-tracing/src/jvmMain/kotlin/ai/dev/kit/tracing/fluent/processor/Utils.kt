@@ -89,7 +89,9 @@ fun createSpan(
     val spanName = traceAnnotation.name.ifBlank { method.name }
     val spanBuilder = tracer.spanBuilder(spanName)
 
-    spanBuilder.setAttribute(FluentSpanAttributes.SOURCE_RUN.key, TracingSessionProvider.currentSessionId)
+    TracingSessionProvider.currentSessionId?.let {
+        spanBuilder.setAttribute(FluentSpanAttributes.SOURCE_RUN.key, it)
+    }
     configureTracingMetadata(spanBuilder, traceAnnotation, method, args)
 
     val parentSpan = Span.fromContext(context)

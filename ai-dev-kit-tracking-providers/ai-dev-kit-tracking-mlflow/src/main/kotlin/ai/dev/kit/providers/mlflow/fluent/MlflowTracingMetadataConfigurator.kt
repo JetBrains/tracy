@@ -24,8 +24,11 @@ class MlflowTracingMetadataConfigurator : TracingMetadataConfigurator {
     override fun createTraceInfo(
         spanBuilder: SpanBuilder, method: PlatformMethod, spanName: String
     ): Span = runBlocking {
+        val experimentId = TracingSessionProvider.currentProjectId
+            ?: error("For MLFlow, you must obtain an experimentId and set it using `withExperimentId(experimentId) {...}`")
+
         val tracePostRequest = createTracePostRequest(
-            experimentId = TracingSessionProvider.currentProjectId,
+            experimentId = experimentId,
             runId = TracingSessionProvider.currentSessionId,
             traceCreationPath = method.declaringClass.name,
             traceName = spanName

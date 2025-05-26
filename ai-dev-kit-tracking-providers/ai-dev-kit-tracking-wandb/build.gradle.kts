@@ -14,6 +14,10 @@ dependencies {
     implementation(project(":ai-dev-kit-tracing"))
     testImplementation(libs.kotlin.test)
     testImplementation(testFixtures(project(":ai-dev-kit-test-base")))
+
+    // Logging frontend + backend
+    implementation(libs.kotlin.logging)
+    runtimeOnly(libs.logback.classic)
 }
 
 tasks.test {
