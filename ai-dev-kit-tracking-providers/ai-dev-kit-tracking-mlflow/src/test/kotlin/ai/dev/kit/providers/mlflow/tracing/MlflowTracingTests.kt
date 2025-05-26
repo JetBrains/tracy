@@ -1,10 +1,8 @@
 package ai.dev.kit.providers.mlflow.tracing
 
 import ai.dev.kit.providers.mlflow.KotlinMlflowClient
-import ai.dev.kit.providers.mlflow.MlflowEvaluationClient
 import ai.dev.kit.providers.mlflow.fluent.setupMlflowTracing
 import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
-import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 
@@ -31,10 +29,10 @@ interface MlflowTracingTests {
         }
 
         private val experimentIds = mutableSetOf<String>()
-        fun getExperimentId(): String = runBlocking {
-            val id = MlflowEvaluationClient.getOrCreateExperiment(experimentName = generateRandomString())
+        fun getExperimentId(): String {
+            val id = KotlinMlflowClient.createExperiment(generateRandomString())
             experimentIds.add(id)
-            return@runBlocking id
+            return id
         }
     }
 }
