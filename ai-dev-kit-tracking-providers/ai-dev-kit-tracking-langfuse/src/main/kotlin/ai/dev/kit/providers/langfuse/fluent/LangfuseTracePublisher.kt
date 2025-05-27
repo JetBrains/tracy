@@ -3,6 +3,7 @@ package ai.dev.kit.providers.langfuse.fluent
 import ai.dev.kit.providers.langfuse.KotlinLangfuseClient
 import ai.dev.kit.providers.langfuse.langfuseRequest
 import ai.dev.kit.tracing.fluent.FluentSpanAttributes
+import ai.dev.kit.tracing.fluent.SpanType
 import ai.dev.kit.tracing.fluent.getAttribute
 import ai.dev.kit.tracing.fluent.processor.TracePublisher
 import io.ktor.http.*
@@ -72,17 +73,26 @@ class LangfuseTracePublisher : TracePublisher {
         val runId = span.getAttribute(FluentSpanAttributes.SOURCE_RUN)
         val (inputMessages, output) = prepareInputsOutputs(inputRaw, outputRaw)
 
+        val isLLMType = spanType.equals(SpanType.LLM, ignoreCase = true)
+        val hasModelKey = inputMessages is JsonObject && inputMessages.jsonObject.keys.contains("model")
+
+        val type = if (isLLMType || hasModelKey) {
+            "generation-create"
+        } else {
+            "span-create"
+        }
+
         return buildJsonObject {
             put("id", UUID.randomUUID().toString())
             put("timestamp", startTime.toString())
-            put("type", JsonPrimitive("span-create"))
+            put("type", JsonPrimitive(type))
             put("body", buildJsonObject {
                 put("id", span.spanId)
                 put("name", span.name)
                 put("traceId", span.traceId)
                 put("startTime", startTime.toString())
                 put("endTime", endTime.toString())
-                runId?.let{put("sessionId", runId)}
+                runId?.let { put("sessionId", runId) }
                 parentId?.let { put("parentObservationId", it) }
                 inputMessages?.let { put("input", it) }
                 put("metadata", buildJsonObject {
