@@ -7,10 +7,14 @@ import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import org.junit.jupiter.api.Tag
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import kotlin.jvm.optionals.getOrElse
 
 fun haikuTestCase(topic: String) = TestCase<HaikuTopic, NoGroundTruth>(name = topic, HaikuTopic(topic), NoGroundTruth)
 
+// Add this for concurrent test execution
+// @Execution(ExecutionMode.CONCURRENT)
 @Tag("SkipForNonLocal")
 class HaikuGeneratorTest :
     LangfuseEvaluationTest<HaikuTopic, NoGroundTruth, HaikuText, MultiScoreEvalResult>(

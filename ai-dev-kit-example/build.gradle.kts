@@ -15,6 +15,10 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // enable parallel execution
+    systemProperty("junit.jupiter.execution.parallel.enabled", "true")
+    // same thread by default
+    systemProperty("junit.jupiter.execution.parallel.mode.default", "same_thread")
 }
 kotlin {
     jvmToolchain(17)

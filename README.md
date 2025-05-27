@@ -96,6 +96,10 @@ TracingFlowProcessor.flushTraces()
 
 * Annotate traced function with `@KotlinFlowTrace`
 
+For more details,
+refer to [Tracing Setup Example](https://jetbrains.team/p/ai-development-kit/repositories/tracing-setup-example).
+The example of setting up tracing for a simple kotlin project.
+
 #### 5. Specify the Project (Experiment) and Session (Run) to upload the traces to
 
 To group several traces into [sessions on Langfuse](https://langfuse.com/docs/tracing-features/sessions), wrap your code
@@ -165,6 +169,10 @@ In code, you will need to define some unified classes for the AI feature you're 
 5. `class YourEval : LangfuseEvaluationTest<InputOfYourFeature, YourGT, OutputOfYourFeature, MultiScoreEvalResult>`
    that uses `YourGenerator` internally to execute your AI feature and `YourEvaluator` to score the output.
    The eval dataset is passed by overriding the `testCases` field.
+   
+   Add the annotation `@Execution(ExecutionMode.CONCURRENT)` to the class for concurrent test execution.
+
+   ⚠️ Important: Test output may appear mixed or in the wrong test view due to parallel execution.
 
 Once you have that, you can run `YourEval` as a usual JUnit test and view the results on Langfuse.
 
