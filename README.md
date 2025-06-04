@@ -96,6 +96,49 @@ TracingFlowProcessor.flushTraces()
 
 * Annotate traced function with `@KotlinFlowTrace`
 
+#### 5. Specify the Project (Experiment) and Session (Run) to upload the traces to
+
+To group several traces into [sessions on Langfuse](https://langfuse.com/docs/tracing-features/sessions), wrap your code
+with `withSessionId` (or its non-suspend version, `withSessionIdBlocking`):
+
+```kotlin
+withSessionId("my-session-name") {
+    // your traced code
+}
+```
+
+If a session with this name doesn't exist yet, it'll be created automatically.
+The Langfuse project is determined by your API keys.
+
+With W&B Weave, there is no such thing as sessions or runs, but you can group your traces together into a project by
+wrapping your code in `withProjectId` (or its non-suspend version, `withProjectIdBlocking`).
+
+```kotlin
+withProjectId("my-project-name") {
+    // your traced code
+}
+```
+
+If a project with this name does not exist yet, it will be created automatically.
+
+If you're using MLFlow, along with Session ID (called Run ID in the MLFlow terminology), you have to specify the Project
+ID (called Experiment ID).
+You will need to obtain both the Run ID and Experiment ID from the MLFlow server and pass them as arguments:
+
+```kotlin
+val experimentId = TODO("Implement a nice handle for requesting an experiment ID from the server")
+val runId = TODO("Implement a nice handle for getting a run ID from the server")
+withProjectIdBlocking(experimentId) {
+    withSessionIdBlocking(runId) {
+        // your traced code
+    }
+}
+```
+
+⚠️ Beware that explicitly spawning a new `thread { ... }` or `runBlocking { ... }` will break the automagical
+propagation of session and project
+IDs ([JBAI-14126](https://youtrack.jetbrains.com/issue/JBAI-14126/Tracing-does-not-work-out-of-the-box-with-multi-threaded-code))
+
 ## 📚 How to use Evaluation?
 
 Evaluation includes and relies on tracing.
