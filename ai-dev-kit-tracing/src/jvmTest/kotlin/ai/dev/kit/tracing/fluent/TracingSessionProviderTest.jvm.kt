@@ -81,7 +81,7 @@ class TracingSessionProviderTest_ProjectId {
             withProjectId("test-id") {
                 throw RuntimeException("Simulated error")
             }
-        } catch (e: RuntimeException) {
+        } catch (_: RuntimeException) {
             // Expected
         }
         assertNull(TracingSessionProvider.currentProjectId)
@@ -104,6 +104,8 @@ class TracingSessionProviderTest_ProjectId {
     @Test
     fun `currentProjectId is correctly set and retrieved from a suspend function`() = runTest {
         val expectedId = "test-project-id-blocking"
+
+        @Suppress("RedundantSuspendModifier")
         suspend fun mySuspendFunction() {
             assertEquals(expectedId, TracingSessionProvider.currentProjectId)
         }
@@ -211,6 +213,8 @@ class TracingSessionProviderTest_SessionId {
     @Test
     fun `currentSessionId is correctly set and retrieved from a suspend function`() = runTest {
         val expectedId = "test-run-id-suspend"
+
+        @Suppress("RedundantSuspendModifier")
         suspend fun mySuspendFunction() {
             assertEquals(expectedId, TracingSessionProvider.currentProjectId)
         }
