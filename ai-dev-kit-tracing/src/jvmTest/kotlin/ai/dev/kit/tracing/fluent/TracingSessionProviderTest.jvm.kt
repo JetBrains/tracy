@@ -100,17 +100,30 @@ class TracingSessionProviderTest_ProjectId {
             }
         }
     }
+
+    @Test
+    fun `currentProjectId is correctly set and retrieved from a suspend function`() = runTest {
+        val expectedId = "test-project-id-blocking"
+        suspend fun mySuspendFunction() {
+            assertEquals(expectedId, TracingSessionProvider.currentProjectId)
+        }
+
+        withProjectId(expectedId) {
+            mySuspendFunction()
+        }
+        assertNull(TracingSessionProvider.currentProjectId)
+    }
 }
 
-class TracingSessionProviderTest_RunId {
+class TracingSessionProviderTest_SessionId {
     @Test
-    fun `currentRunId returns default value when not set`() {
+    fun `currentSessionId returns default value when not set`() {
         assertNull(TracingSessionProvider.currentSessionId)
     }
 
     @Test
-    fun `currentRunId is correctly set and retrieved using withRunId`() = runTest {
-        val expectedId = "test-run-id"
+    fun `currentSessionId is correctly set and retrieved using withSessionId`() = runTest {
+        val expectedId = "test-session-id"
         withSessionId(expectedId) {
             assertEquals(expectedId, TracingSessionProvider.currentSessionId)
         }
@@ -118,7 +131,7 @@ class TracingSessionProviderTest_RunId {
     }
 
     @Test
-    fun `currentRunId is correctly set and retrieved using withRunIdBlocking`() {
+    fun `currentSessionId is correctly set and retrieved using withSessionIdBlocking`() {
         val expectedId = "test-run-id-blocking"
         withSessionIdBlocking(expectedId) {
             assertEquals(expectedId, TracingSessionProvider.currentSessionId)
@@ -127,7 +140,7 @@ class TracingSessionProviderTest_RunId {
     }
 
     @Test
-    fun `currentRunId is correctly set and retrieved in nested withRunId calls`() = runTest {
+    fun `currentSessionId is correctly set and retrieved in nested withSessionId calls`() = runTest {
         val outerId = "outer-run-id"
         val innerId = "inner-run-id"
 
@@ -145,7 +158,7 @@ class TracingSessionProviderTest_RunId {
     }
 
     @Test
-    fun `currentRunId is correctly set and retrieved with multiple coroutines`() = runTest {
+    fun `currentSessionId is correctly set and retrieved with multiple coroutines`() = runTest {
         val expectedId1 = "run-id-1"
         val expectedId2 = "run-id-2"
 
@@ -170,7 +183,7 @@ class TracingSessionProviderTest_RunId {
     }
 
     @Test
-    fun `run ID is reset after exception in withRunId`() = runTest {
+    fun `run ID is reset after exception in withSessionId`() = runTest {
         try {
             withSessionId("test-id") {
                 throw RuntimeException("Simulated error")
@@ -182,7 +195,7 @@ class TracingSessionProviderTest_RunId {
     }
 
     @Test
-    fun `currentRunId is propagated even if you hijack the context`() = runTest {
+    fun `currentSessionId is propagated even if you hijack the context`() = runTest {
         val runId = "run"
         withSessionId(runId) {
             val mainThread = Thread.currentThread().name
@@ -194,14 +207,27 @@ class TracingSessionProviderTest_RunId {
             }
         }
     }
+
+    @Test
+    fun `currentSessionId is correctly set and retrieved from a suspend function`() = runTest {
+        val expectedId = "test-run-id-suspend"
+        suspend fun mySuspendFunction() {
+            assertEquals(expectedId, TracingSessionProvider.currentProjectId)
+        }
+
+        withProjectId(expectedId) {
+            mySuspendFunction()
+        }
+        assertNull(TracingSessionProvider.currentProjectId)
+    }
 }
 
 class TracingSessionProviderTest_UnsupportedScenarios {
     @Test
-    fun `currentRunId is not propagated if you fork a thread explicitly`() = runTest {
+    fun `currentSessionId is not propagated if you fork a thread explicitly`() = runTest {
         withSessionId("This won't work! :(") {
             thread {
-                // Run ID is not set
+                // Session ID is not set
                 assertNull(TracingSessionProvider.currentSessionId)
             }.join()
         }
