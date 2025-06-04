@@ -6,7 +6,10 @@ import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 
-interface MlflowTracingTests {
+interface MlflowTracingTests
+// See JBAI-14569, this doesn't work. To run these tests, spin up the MLFlow server manually.
+// : MlflowContainerTests
+{
     companion object {
         @BeforeAll
         @JvmStatic
