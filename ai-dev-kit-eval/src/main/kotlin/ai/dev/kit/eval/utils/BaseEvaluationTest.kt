@@ -8,9 +8,9 @@ import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.extension.kotlin.asContextElement
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import mu.KotlinLogging
 import org.junit.jupiter.api.*
-import java.util.stream.Stream
 
 /**
  * A base abstract class for conducting evaluation tests on AI functionality.
@@ -83,28 +83,27 @@ abstract class BaseEvaluationTest<
     }
 
     @TestFactory
-    fun Runs(): Stream<DynamicContainer> = runResults.mapIndexed { runNum, runResult ->
+    fun Runs() = runResults.mapIndexed { runNum, runResult ->
         DynamicContainer.dynamicContainer(
             "Run ${if (runResults.size > 1) runNum + 1 else ""}",
-            withSessionIdBlocking(runResult.runId) {
-                testCases.mapIndexed { dataPointIndex, testCase ->
-                    val (dataPointSpan, dataPointScope) = runBlocking {
-                        createDataPointSpan(
+            testCases.mapIndexed { dataPointIndex, testCase ->
+                DynamicTest.dynamicTest(testCase.name) {
+                    withSessionIdBlocking(runResult.runId) {
+                        val (dataPointSpan, dataPointScope) = createDataPointSpan(
                             dataPointIndex,
                             TracingFlowProcessor.tracer,
                             runResult.runId,
                             testCase
                         )
-                    }
-                    val testCaseName = testCase.name
-                    val traceId = dataPointSpan.spanContext.traceId
-                    DynamicTest.dynamicTest(testCaseName) {
+
+                        val traceId = dataPointSpan.spanContext.traceId
                         dataPointSpan.makeCurrent()
+
                         try {
-                            val output = runBlocking(dataPointSpan.asContextElement()) {
+                            val output = withContext(dataPointSpan.asContextElement()) {
                                 generator.generate(testCase.input)
                             }
-                            executeSingleTest(testCaseName, testCase, runNum, runResult.runId, output, traceId)
+                            executeSingleTest(testCase.name, testCase, runNum, runResult.runId, output, traceId)
                         } finally {
                             dataPointSpan.end()
                             dataPointScope.close()
@@ -113,7 +112,7 @@ abstract class BaseEvaluationTest<
                 }
             }
         )
-    }.stream()
+    }
 
     private suspend fun createDataPointSpan(
         dataPointIndex: Int, tracer: Tracer, runId: String, testCase: TestCase<AIInputT, GroundTruthT>
