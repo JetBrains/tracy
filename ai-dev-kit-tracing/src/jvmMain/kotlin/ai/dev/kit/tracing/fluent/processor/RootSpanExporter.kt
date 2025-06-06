@@ -37,7 +37,7 @@ class RootSpanExporter(val scope: CoroutineScope) : SpanExporter {
                     try {
                         val tracePublisher: TracePublisher by TracingFlowProcessor.di.instance()
                         logger.debug("Publishing trace with traceId=$traceId, spans=${spansToPublish.size}")
-                        tracePublisher.publishTrace(spansToPublish)
+                        tracePublisher.publishTrace(spansToPublish, TracingFlowProcessor.tags)
                         exportResult.succeed()
                     } catch (e: Exception) {
                         logger.error("Failed to publish trace for traceId=$traceId with ${spansToPublish.size} spans", e)

@@ -17,7 +17,7 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 
 class LangfuseTracePublisher : TracePublisher {
-    override suspend fun publishTrace(trace: List<SpanData>) {
+    override suspend fun publishTrace(trace: List<SpanData>, tags: List<String>?) {
         val rootSpan: SpanData = trace.find { it.parentSpanId == SpanId.getInvalid() }
             ?: throw IllegalStateException("Parent span not found.")
 
@@ -29,7 +29,6 @@ class LangfuseTracePublisher : TracePublisher {
         val outputRaw = rootSpan.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS) ?: ""
         val sourceName = rootSpan.getAttribute(FluentSpanAttributes.SPAN_SOURCE_NAME)
         val functionName = rootSpan.getAttribute(FluentSpanAttributes.SPAN_FUNCTION_NAME)
-        val tags = emptyList<String>()
 
         val traceCreateCall = buildTraceCreateCall(
             startEpochNanos,
@@ -59,7 +58,7 @@ class LangfuseTracePublisher : TracePublisher {
         )
     }
 
-    private fun buildSpanCreateCall(span: SpanData): JsonObject {
+    private fun buildSpanCreateCall(span: SpanData, tags: List<String>? = null): JsonObject {
         val startTime = Instant.ofEpochMilli(span.startEpochNanos / 1_000_000)
         val endTime = Instant.ofEpochMilli(span.endEpochNanos / 1_000_000)
         val parentId =
@@ -78,8 +77,10 @@ class LangfuseTracePublisher : TracePublisher {
 
         val type = if (isLLMType || hasModelKey) {
             "generation-create"
-        } else {
+        } else if (tags?.isEmpty() == true) {
             "span-create"
+        } else {
+            "span-update"
         }
 
         return buildJsonObject {
@@ -99,6 +100,7 @@ class LangfuseTracePublisher : TracePublisher {
                     put("spanType", spanType)
                     functionName?.let { put("functionName", it) }
                 })
+                tags?.let { put("tags", JsonArray(tags.map { JsonPrimitive(it) })) }
                 output?.let { put("output", it) }
             })
         }
@@ -156,7 +158,7 @@ class LangfuseTracePublisher : TracePublisher {
             sourceName: String?,
             functionName: String?,
             inputRaw: String,
-            tags: List<String>,
+            tags: List<String>?,
             outputRaw: String? = null,
             type: String = "trace-create"
         ): JsonObject {
@@ -182,7 +184,11 @@ class LangfuseTracePublisher : TracePublisher {
                     // traces from ai-dev-kit allways have tag "kotlin"
                     put(
                         "tags",
-                        JsonArray(tags.map { JsonPrimitive(it) } + listOf(JsonPrimitive("kotlin"))))
+                        JsonArray(
+                            (tags?.map { JsonPrimitive(it) } ?: emptyList()) + JsonPrimitive("kotlin")
+                        )
+                    )
+
                     put("metadata", buildJsonObject {
                         sourceName?.let { put("sourceName", it) }
                         functionName?.let { put("functionName", it) }
