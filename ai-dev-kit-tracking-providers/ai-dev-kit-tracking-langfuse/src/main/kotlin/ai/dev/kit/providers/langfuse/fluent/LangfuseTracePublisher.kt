@@ -54,7 +54,7 @@ class LangfuseTracePublisher : TracePublisher {
         }
         langfuseRequest(
             method = HttpMethod.Post,
-            url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}/api/public/ingestion",
+            url = "${KotlinLangfuseClient.config.baseUrl}/api/public/ingestion",
             body = payload
         )
     }
@@ -162,7 +162,7 @@ class LangfuseTracePublisher : TracePublisher {
         ): JsonObject {
             val instantStart = Instant.ofEpochMilli(startedAtMillis)
             val startedAt = DateTimeFormatter.ISO_INSTANT.format(instantStart)
-            val userId = KotlinLangfuseClient.USER_ID
+            val userId = KotlinLangfuseClient.config.userId
 
             val (inputMessages, outputs) = prepareInputsOutputs(inputRaw, outputRaw)
 
@@ -220,7 +220,7 @@ class LangfuseTracePublisher : TracePublisher {
             }
             langfuseRequest(
                 method = HttpMethod.Post,
-                url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}/api/public/ingestion",
+                url = "${KotlinLangfuseClient.config.baseUrl}/api/public/ingestion",
                 body = payload
             )
         }

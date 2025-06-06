@@ -72,7 +72,7 @@ fun List<EvalResult>.toTable(): DataFrame<Float>? {
         val results = map { it as SingleScoreEvalResult }
         val scoreNames = results.map { it.scoreName }.distinct()
         if (scoreNames.size != 1) {
-            logger.warn{"Score names are inconsistent, could not convert List<SingleScoreEvalResult> to table: $scoreNames"}
+            logger.warn { "Score names are inconsistent, could not convert List<SingleScoreEvalResult> to table: $scoreNames" }
             return null
         }
         return dataFrameOf(scoreNames.first() to results.map { it.score }).cast<Float>()
