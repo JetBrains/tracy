@@ -1,9 +1,6 @@
 package ai.dev.kit.providers.wandb.fluent
 
 import ai.dev.kit.providers.wandb.KotlinWandbClient
-import ai.dev.kit.providers.wandb.KotlinWandbClient.USER_ID
-import ai.dev.kit.providers.wandb.KotlinWandbClient.WANDB_API
-import ai.dev.kit.providers.wandb.KotlinWandbClient.WANDB_USER_API_KEY
 import ai.dev.kit.tracing.fluent.FluentSpanAttributes
 import ai.dev.kit.tracing.fluent.TracingSessionProvider
 import ai.dev.kit.tracing.fluent.getAttribute
@@ -27,7 +24,7 @@ class WandbTracePublisher : TracePublisher {
         endedAtMillis: Long,
         outputsString: String,
     ): JsonObject {
-        val projectId = "$USER_ID/${currentProjectNameOrDefault()}"
+        val projectId = "${KotlinWandbClient.config.userId}/${currentProjectNameOrDefault()}"
 
         val instantEnd = Instant.ofEpochMilli(endedAtMillis)
         val endedAt = DateTimeFormatter.ISO_INSTANT.format(instantEnd)
@@ -80,10 +77,10 @@ class WandbTracePublisher : TracePublisher {
                     JsonNull
                 )
 
-            KotlinWandbClient.client.post("$WANDB_API/start") {
+            KotlinWandbClient.client.post("${KotlinWandbClient.config.baseUrl}/start") {
                 contentType(ContentType.Application.Json)
                 headers {
-                    append("Authorization", WANDB_USER_API_KEY)
+                    append("Authorization", KotlinWandbClient.config.apiKey)
                 }
                 setBody(startPayload)
             }
@@ -108,7 +105,7 @@ class WandbTracePublisher : TracePublisher {
             startedAtMillis: Long,
             parentSpanId: JsonElement,
         ): JsonObject {
-            val projectId = "$USER_ID/${currentProjectNameOrDefault()}"
+            val projectId = "${KotlinWandbClient.config.userId}/${currentProjectNameOrDefault()}"
 
             val inputs = parseLenientJson(spanInputs)
 
@@ -161,9 +158,6 @@ class WandbTracePublisher : TracePublisher {
             return payload
         }
 
-        /**
-         * If [currentProjectId] is not set, log to some random project.
-         */
         private fun currentProjectNameOrDefault() = TracingSessionProvider.currentProjectId ?: {
             val defaultProjectName = "project-with-no-set-name"
             logger.info {
@@ -174,7 +168,7 @@ class WandbTracePublisher : TracePublisher {
     }
 
     override suspend fun publishTrace(trace: List<SpanData>) {
-        val requestUrl = "$WANDB_API/upsert_batch"
+        val requestUrl = "${KotlinWandbClient.config.baseUrl}/upsert_batch"
 
         val parentSpan: SpanData = trace.find { it.parentSpanId == SpanId.getInvalid() }
             ?: throw IllegalStateException("Parent span not found.")
@@ -233,7 +227,7 @@ class WandbTracePublisher : TracePublisher {
                 contentType(ContentType.Application.Json)
                 headers {
                     append("Content-Type", "application/json")
-                    append("Authorization", WANDB_USER_API_KEY)
+                    append("Authorization", KotlinWandbClient.config.apiKey)
                 }
                 setBody(jsonString)
             }

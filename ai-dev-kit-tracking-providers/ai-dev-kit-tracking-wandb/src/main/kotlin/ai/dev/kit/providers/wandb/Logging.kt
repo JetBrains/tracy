@@ -4,8 +4,6 @@ import ai.dev.kit.tracing.fluent.dataclasses.RequestMetadata
 import ai.dev.kit.tracing.fluent.dataclasses.Tag
 import ai.dev.kit.tracing.fluent.dataclasses.TraceInfo
 import ai.dev.kit.tracing.fluent.dataclasses.TracesResponse
-import ai.dev.kit.providers.wandb.KotlinWandbClient.USER_ID
-import ai.dev.kit.providers.wandb.KotlinWandbClient.WANDB_USER_API_KEY
 import ai.dev.kit.providers.wandb.dataclasses.Call
 import ai.dev.kit.providers.wandb.dataclasses.DeleteCallsRequest
 import io.ktor.client.request.*
@@ -22,7 +20,7 @@ val json = Json {
 private suspend fun postJson(url: String, payload: JsonObject): JsonObject {
     val response: HttpResponse = KotlinWandbClient.client.post(url) {
         contentType(ContentType.Application.Json)
-        headers { append(HttpHeaders.Authorization, WANDB_USER_API_KEY) }
+        headers { append(HttpHeaders.Authorization, KotlinWandbClient.config.apiKey) }
         setBody(payload)
     }
 
@@ -36,7 +34,7 @@ private fun makeHierarchy(list: JsonArray): Map<String, List<String>> =
 
 private suspend fun getTraceIds(projectId: String): JsonArray {
     val payload = buildJsonObject {
-        put("project_id", "$USER_ID/$projectId")
+        put("project_id", "${KotlinWandbClient.config.userId}/$projectId")
         putJsonArray("columns") {
             add("trace_id")
             add("parent_id")
@@ -151,7 +149,7 @@ internal suspend fun getAllTracesForProject(projectId: String): TracesResponse {
 
     val traces = spanBranches.mapNotNull { spanIds ->
         val spans = spanIds.map {
-            getTraceDetails("$USER_ID/$projectId", it)
+            getTraceDetails("${KotlinWandbClient.config.userId}/$projectId", it)
         }
         runCatching { buildTraceInfo(spans) }.getOrNull()
     }
@@ -183,13 +181,13 @@ internal suspend fun deleteAllTracesFromProject(projectId: String): JsonObject {
     val callIds = projectTraces.mapNotNull { it.jsonObject["id"]?.jsonPrimitive?.content }.distinct()
 
     val payload = DeleteCallsRequest(
-        projectId = "$USER_ID/$projectId",
+        projectId = "${KotlinWandbClient.config.userId}/$projectId",
         callIds = callIds
     )
 
     val response: HttpResponse = KotlinWandbClient.client.post("https://trace.wandb.ai/calls/delete") {
         contentType(ContentType.Application.Json)
-        headers { append(HttpHeaders.Authorization, WANDB_USER_API_KEY) }
+        headers { append(HttpHeaders.Authorization, KotlinWandbClient.config.apiKey) }
         setBody(json.encodeToJsonElement(payload))
     }
 
