@@ -9,7 +9,8 @@ enum class FluentSpanAttributes(val key: String) {
     SPAN_FUNCTION_NAME("spanFunctionName"),
     SPAN_SOURCE_NAME("source.name"),
     SPAN_TYPE("spanType"),
-    TRACE_CREATION_INFO("traceCreationInfo");
+    TRACE_CREATION_INFO("traceCreationInfo"),
+    TRACE_TAGS("tags");
 }
 
 expect fun SpanData.getAttribute(spanAttributeKey: FluentSpanAttributes): String?

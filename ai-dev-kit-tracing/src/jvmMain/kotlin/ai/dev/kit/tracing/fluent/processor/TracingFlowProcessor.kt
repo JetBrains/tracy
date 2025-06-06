@@ -1,5 +1,6 @@
 package ai.dev.kit.tracing.fluent.processor
 
+import ai.dev.kit.tracing.fluent.FluentSpanAttributes
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.sdk.OpenTelemetrySdk
@@ -14,7 +15,6 @@ object TracingFlowProcessor {
     // Coroutine scope dedicated to managing and sending traces to the provider asynchronously
     val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     lateinit var di: DI
-    lateinit var tags: List<String>
     val tracer: Tracer by lazy {
         GlobalOpenTelemetry.getTracer("ai.mlflow.evaluation.tracing")
     }
@@ -42,5 +42,7 @@ object TracingFlowProcessor {
     fun flushTraces() { spanExporter.flush() }
     fun shutdownTraces() { spanExporter.shutdown() }
 
-    fun addTagsToCurrentTrace(tags: List<String>) { this.tags = tags }
+    fun addTagsToCurrentTrace(tags: List<String>) {
+        Span.fromContext(getOpenTelemetryContext(scope.coroutineContext)).setAttribute(FluentSpanAttributes.TRACE_TAGS.key, tags.toString())
+    }
 }
