@@ -95,6 +95,16 @@ TracingFlowProcessor.flushTraces()
 
 
 * Annotate traced function with `@KotlinFlowTrace`
+* Use `TracingFlowProcessor.addTagsToCurrentTrace` with a list of string tags as a parameter inside the annotated function to add tags to the current trace.     
+```kotlin
+    @KotlinFlowTrace
+    fun f(/*parameters*/): /*return value*/{
+        // function logic
+        val tags = listOf<String>("tag1", "tag2", "tag3")
+        TracingFlowProcessor.addTagsToCurrentTrace(tags)
+        // function logic
+    }
+```
 
 #### 5. Specify the Project (Experiment) and Session (Run) to upload the traces to
 

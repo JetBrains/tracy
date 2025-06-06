@@ -14,6 +14,7 @@ object TracingFlowProcessor {
     // Coroutine scope dedicated to managing and sending traces to the provider asynchronously
     val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     lateinit var di: DI
+    lateinit var tags: List<String>
     val tracer: Tracer by lazy {
         GlobalOpenTelemetry.getTracer("ai.mlflow.evaluation.tracing")
     }
@@ -40,4 +41,6 @@ object TracingFlowProcessor {
 
     fun flushTraces() { spanExporter.flush() }
     fun shutdownTraces() { spanExporter.shutdown() }
+
+    fun addTagsToCurrentTrace(tags: List<String>) { this.tags = tags }
 }
