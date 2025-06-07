@@ -20,7 +20,9 @@ internal object KotlinWandbClient {
 
     internal fun setupCredentials(userId: String?, wandbUseApiKey: String?) {
         USER_ID = userId ?: getUserIDFromEnv()
-        WANDB_USER_API_KEY = wandbUseApiKey ?: getWandbAPiKeyFromEnv()
+
+        val rawWandbApiKey = wandbUseApiKey ?: getWandbAPiKeyFromEnv()
+        WANDB_USER_API_KEY = "Basic ${Base64.getEncoder().encodeToString("api:$rawWandbApiKey".toByteArray())}"
     }
 
     internal lateinit var USER_ID: String
@@ -28,9 +30,6 @@ internal object KotlinWandbClient {
 }
 
 private fun getWandbAPiKeyFromEnv(): String {
-    val wandbApiKey =
-        System.getenv("WANDB_USER_API_KEY")
-            ?: error("WANDB_USER_API_KEY environment variable is not set")
-
-    return "Basic ${Base64.getEncoder().encodeToString("api:$wandbApiKey".toByteArray())}"
+    return System.getenv("WANDB_USER_API_KEY")
+        ?: error("WANDB_USER_API_KEY environment variable is not set")
 }
