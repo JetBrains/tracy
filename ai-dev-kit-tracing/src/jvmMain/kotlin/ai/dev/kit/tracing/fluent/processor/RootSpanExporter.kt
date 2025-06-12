@@ -14,6 +14,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 
 class RootSpanExporter(val scope: CoroutineScope) : SpanExporter {
     private val logger = LoggerFactory.getLogger(RootSpanExporter::class.java)
+    // Span Group map key is a traceId
     private val spanGroups = ConcurrentHashMap<String, MutableList<SpanData>>()
 
     val SpanData.isRootSpan: Boolean
@@ -31,6 +32,7 @@ class RootSpanExporter(val scope: CoroutineScope) : SpanExporter {
                 spanGroups.remove(traceId)
 
                 // Passing the current context allows propagating project ID and run ID, see TracingSessionProvider
+                // TODO: INVESTIGATE CONTEXT PROPAGATION
                 scope.launch(Context.current().asContextElement()) {
                     try {
                         val tracePublisher: TracePublisher by TracingFlowProcessor.di.instance()

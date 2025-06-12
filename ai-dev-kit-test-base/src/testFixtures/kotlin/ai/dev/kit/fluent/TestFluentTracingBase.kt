@@ -45,6 +45,19 @@ internal class MyTestClass {
     }
 }
 
+internal class MyGenericTestClass<T> {
+    @KotlinFlowTrace
+    fun returnGenericParam(paramName: T): T {
+        return paramName
+    }
+
+    @KotlinFlowTrace
+    fun <V> returnTypeVWithTypeTParam(x: V, y: T): V {
+        return x
+    }
+}
+
+
 @KotlinFlowTrace(name = "Top Level Span")
 internal fun topLevelTestFunction(x: String): String {
     return x.reversed()
@@ -53,6 +66,11 @@ internal fun topLevelTestFunction(x: String): String {
 @KotlinFlowTrace()
 fun List<String>.foo(): String {
     return this.joinToString(" ")
+}
+
+@KotlinFlowTrace
+fun <T> topLevelReturnGenericParam(paramName: T): T {
+    return paramName
 }
 
 open class TestFluentTracingBase(
@@ -154,6 +172,54 @@ open class TestFluentTracingBase(
             "[{\"name\":\"Main Span\",\"type\":\"mySpanType\",\"inputs\":\"{\\\"paramName\\\":$arg}\"}]",
             trace.tags.firstOrNull { it.key == "traceSpans" }?.value ?: ""
         )
+    }
+
+    @Test
+    fun `should trace return generic param in generic class`() = runTest {
+        val experimentId = getExperimentId()
+        withProjectId(experimentId) {
+            MyGenericTestClass<Int>().returnGenericParam(1)
+        }
+
+        TracingFlowProcessor.flushTraces()
+        val tracesResponse = getTraces(experimentId)
+
+        assertEquals(1, tracesResponse.traces.size)
+        val trace = tracesResponse.traces.first()
+        assertNotNull(trace)
+        assertEquals(experimentId, trace.experimentId)
+    }
+
+    @Test
+    fun `should trace return type V with type T param in generic class`() = runTest {
+        val experimentId = getExperimentId()
+        withProjectId(experimentId) {
+            MyGenericTestClass<Int>().returnTypeVWithTypeTParam("HI", 1)
+        }
+
+        TracingFlowProcessor.flushTraces()
+        val tracesResponse = getTraces(experimentId)
+
+        assertEquals(1, tracesResponse.traces.size)
+        val trace = tracesResponse.traces.first()
+        assertNotNull(trace)
+        assertEquals(experimentId, trace.experimentId)
+    }
+
+    @Test
+    fun `should trace top level return generic param function`() = runTest {
+        val experimentId = getExperimentId()
+        withProjectId(experimentId) {
+            topLevelReturnGenericParam(3)
+        }
+
+        TracingFlowProcessor.flushTraces()
+        val tracesResponse = getTraces(experimentId)
+
+        assertEquals(1, tracesResponse.traces.size)
+        val trace = tracesResponse.traces.first()
+        assertNotNull(trace)
+        assertEquals(experimentId, trace.experimentId)
     }
 
     @Test
