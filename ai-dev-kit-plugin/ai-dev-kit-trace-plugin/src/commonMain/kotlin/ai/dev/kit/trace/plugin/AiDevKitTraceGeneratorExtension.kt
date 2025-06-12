@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
+import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
 import org.jetbrains.kotlin.name.CallableId
@@ -64,6 +65,9 @@ class AiDevKitTraceGeneratorExtension : IrGenerationExtension {
             type = functionRefType,
             symbol = function.symbol
         ).apply {
+            function.typeParameters.forEachIndexed {  index, typeParameter ->
+                putTypeArgument(index, typeParameter.symbol.defaultType)
+            }
             function.dispatchReceiverParameter?.let {
                 dispatchReceiver = builder.irGet(it)
             }
