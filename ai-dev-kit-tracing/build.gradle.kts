@@ -33,7 +33,6 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(libs.kotlin.reflect)
-                implementation(libs.kodein)
 
                 // TODO GET RID OF BASE EVAL TEST DEPENDENCIES
                 implementation(libs.openai)

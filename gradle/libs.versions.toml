@@ -1,6 +1,5 @@
 [versions]
 junit = "5.10.0"
-kodein = "7.20.0"
 kotlin = "2.1.0"
 kotlinx-coroutines = "1.9.0"
 kotlinx-dataframe = "0.15.0"
@@ -18,7 +17,6 @@ logback = "1.5.13"
 
 [libraries]
 junit = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
-kodein = { module = "org.kodein.di:kodein-di", version.ref = "kodein" }
 kotlin = { module = "org.jetbrains.kotlin:kotlin-stdlib-common" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit5" }

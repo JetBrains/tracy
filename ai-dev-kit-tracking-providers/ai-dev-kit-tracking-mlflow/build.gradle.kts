@@ -6,7 +6,6 @@ plugins {
 
 dependencies {
     implementation(libs.junit)
-    implementation(libs.kodein)
     implementation(libs.kotlinx.dataframe)
     implementation(libs.kotlinx.serialization.core)
     implementation(libs.kotlinx.serialization.json)

@@ -5,7 +5,6 @@ plugins {
 }
 
 dependencies {
-    implementation(libs.kodein)
     implementation(libs.kotlinx.dataframe)
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.client.negotiation)

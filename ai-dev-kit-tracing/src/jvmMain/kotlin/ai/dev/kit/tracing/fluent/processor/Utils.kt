@@ -4,7 +4,6 @@ import ai.dev.kit.tracing.fluent.FluentSpanAttributes
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import ai.dev.kit.tracing.fluent.TracingSessionProvider
 import ai.dev.kit.tracing.fluent.configureTracingMetadata
-import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor.di
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
@@ -12,7 +11,6 @@ import io.opentelemetry.context.Context
 import io.opentelemetry.extension.kotlin.asContextElement
 import io.opentelemetry.extension.kotlin.getOpenTelemetryContext
 import kotlinx.coroutines.withContext
-import org.kodein.di.instance
 import java.lang.reflect.Method
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
@@ -24,7 +22,7 @@ actual inline fun <T> withTrace(
     args: Array<Any?>,
     block: () -> T
 ): T {
-    val tracingMetadataConfigurator: TracingMetadataConfigurator by di.instance()
+    val tracingMetadataConfigurator = TracingFlowProcessor.tracingMetadataConfigurator
     val method = function.javaMethod ?: throw IllegalArgumentException("Function must be a Java method")
     val traceAnnotation = method.getAnnotation(KotlinFlowTrace::class.java)
         ?: throw IllegalArgumentException("Function must be annotated with @KotlinFlowTrace annotation")
@@ -50,7 +48,7 @@ actual suspend inline fun <T> withTraceSuspended(
     args: Array<Any?>,
     crossinline block: suspend () -> T
 ): T {
-    val tracingMetadataConfigurator: TracingMetadataConfigurator by di.instance()
+    val tracingMetadataConfigurator = TracingFlowProcessor.tracingMetadataConfigurator
     val method = function.javaMethod ?: throw IllegalArgumentException("Function must be a Java method")
     val traceAnnotation = method.getAnnotation(KotlinFlowTrace::class.java)
     val span = createSpan(
