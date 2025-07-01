@@ -2,7 +2,6 @@ package ai.dev.kit.providers.wandb.fluent
 
 import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
 import ai.dev.kit.providers.wandb.KotlinWandbClient
-import ai.dev.kit.providers.wandb.WandbDiContainer
 
 /**
  * Sets up tracing with logging to WandB (Weights & Biases).
@@ -16,5 +15,5 @@ import ai.dev.kit.providers.wandb.WandbDiContainer
  */
 fun setupWandbTracing(userId: String? = null, wandbUserApiKey: String? = null) {
     KotlinWandbClient.setupCredentials(userId, wandbUserApiKey)
-    TracingFlowProcessor.setupTracing(WandbDiContainer.di)
+    TracingFlowProcessor.setupTracing(WandbTracingMetadataConfigurator(), WandbTracePublisher())
 }

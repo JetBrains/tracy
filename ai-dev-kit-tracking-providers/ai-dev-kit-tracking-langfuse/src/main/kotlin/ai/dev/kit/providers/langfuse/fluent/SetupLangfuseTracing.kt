@@ -2,7 +2,6 @@ package ai.dev.kit.providers.langfuse.fluent
 
 import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
 import ai.dev.kit.providers.langfuse.KotlinLangfuseClient
-import ai.dev.kit.providers.langfuse.LangfuseDiContainer
 
 /**
  * Sets up tracing with logging to Langfuse.
@@ -19,5 +18,5 @@ import ai.dev.kit.providers.langfuse.LangfuseDiContainer
  */
 fun setupLangfuseTracing(userId: String? = null, langfuseSecretKey: String? = null, langfusePublicKey: String? = null) {
     KotlinLangfuseClient.setupCredentials(userId, langfuseSecretKey, langfusePublicKey)
-    TracingFlowProcessor.setupTracing(LangfuseDiContainer.di)
+    TracingFlowProcessor.setupTracing(LangfuseTracingMetadataConfigurator(), LangfuseTracePublisher())
 }

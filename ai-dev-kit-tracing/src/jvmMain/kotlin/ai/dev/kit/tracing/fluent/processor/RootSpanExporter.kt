@@ -7,7 +7,6 @@ import io.opentelemetry.sdk.common.CompletableResultCode
 import io.opentelemetry.sdk.trace.data.SpanData
 import io.opentelemetry.sdk.trace.export.SpanExporter
 import kotlinx.coroutines.*
-import org.kodein.di.instance
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
@@ -35,7 +34,7 @@ class RootSpanExporter(val scope: CoroutineScope) : SpanExporter {
                 // TODO: INVESTIGATE CONTEXT PROPAGATION
                 scope.launch(Context.current().asContextElement()) {
                     try {
-                        val tracePublisher: TracePublisher by TracingFlowProcessor.di.instance()
+                        val tracePublisher = TracingFlowProcessor.tracePublisher
                         logger.debug("Publishing trace with traceId=$traceId, spans=${spansToPublish.size}")
                         tracePublisher.publishTrace(spansToPublish)
                         exportResult.succeed()
