@@ -21,9 +21,9 @@ object Tests : BuildType( {
 
     steps {
         gradle {
-            name = "Test Non Local Tests"
+            name = "Test All Non Local Tests"
             id = "Tests"
-            tasks = "test -DaiDevKitLocalTests=false"
+            tasks = "allTests -DaiDevKitLocalTests=false"
         }
     }
 

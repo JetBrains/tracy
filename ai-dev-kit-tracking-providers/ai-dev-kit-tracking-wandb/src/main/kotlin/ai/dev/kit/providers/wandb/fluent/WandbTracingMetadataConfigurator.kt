@@ -13,13 +13,7 @@ import io.opentelemetry.extension.kotlin.asContextElement
 import io.opentelemetry.sdk.trace.ReadableSpan
 import kotlinx.coroutines.launch
 
-class WandbTracingMetadataConfigurator : TracingMetadataConfigurator {
-    override fun addOutputAttribute(
-        span: Span, traceAnnotation: KotlinFlowTrace, result: Any?
-    ) {
-        addOutputAttributesToTracing(span, traceAnnotation, result)
-    }
-
+class WandbTracingMetadataConfigurator : TracingMetadataConfigurator() {
     override fun createTraceInfo(
         spanBuilder: SpanBuilder,
         method: PlatformMethod,

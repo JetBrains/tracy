@@ -18,7 +18,6 @@ dependencies {
     implementation(project(":ai-dev-kit-eval"))
     implementation(project(":ai-dev-kit-tracing"))
     testImplementation(libs.kotlin.test)
-    testImplementation(testFixtures(project(":ai-dev-kit-test-base")))
 }
 
 tasks.test {

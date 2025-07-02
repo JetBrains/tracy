@@ -16,7 +16,9 @@ import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
+import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
+import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
@@ -27,10 +29,10 @@ class AiDevKitTraceGeneratorExtension : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val withTraceSymbol = pluginContext.referenceFunctions(
             CallableId(FqName("ai.dev.kit.tracing.fluent.processor"), Name.identifier("withTrace"))
-        ).single()
+        ).findMultiplatformSymbol()
         val withTraceSuspendedSymbol = pluginContext.referenceFunctions(
             CallableId(FqName("ai.dev.kit.tracing.fluent.processor"), Name.identifier("withTraceSuspended"))
-        ).single()
+        ).findMultiplatformSymbol()
         val traceAnnotationFqName = FqName("ai.dev.kit.tracing.fluent.KotlinFlowTrace")
 
         moduleFragment.accept(object : IrElementVisitorVoid {
@@ -47,6 +49,12 @@ class AiDevKitTraceGeneratorExtension : IrGenerationExtension {
         }, null)
     }
 
+    @OptIn(UnsafeDuringIrConstructionAPI::class)
+    fun  Collection<IrSimpleFunctionSymbol>.findMultiplatformSymbol(): IrSimpleFunctionSymbol {
+        return this.singleOrNull { !it.owner.isExpect }   // prefer actual in platform modules
+            ?: this.singleOrNull { it.owner.isExpect }  // fallback to expect in commonMain
+            ?: error("`Expect/actual declaration for `withTrace` not found. Found: $this")
+    }
 
     private fun processFunction(
         function: IrFunction,

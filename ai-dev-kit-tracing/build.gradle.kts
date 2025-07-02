@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
+    id("ai.dev.kit.trace")
     id("ai.dev.kit.space.publishing")
 }
 
@@ -54,6 +55,12 @@ kotlin {
                 implementation(libs.opentelemetry.sdk.testing)
             }
         }
+    }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    compilerOptions {
+        freeCompilerArgs.add("-java-parameters")
     }
 }
 
