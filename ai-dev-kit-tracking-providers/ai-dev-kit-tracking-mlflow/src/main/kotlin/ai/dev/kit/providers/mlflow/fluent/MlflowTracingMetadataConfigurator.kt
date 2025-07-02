@@ -14,13 +14,7 @@ import io.opentelemetry.api.trace.SpanBuilder
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
-class MlflowTracingMetadataConfigurator : TracingMetadataConfigurator {
-    override fun addOutputAttribute(
-        span: Span, traceAnnotation: KotlinFlowTrace, result: Any?
-    ) {
-        addOutputAttributesToTracing(span, traceAnnotation, result)
-    }
-
+class MlflowTracingMetadataConfigurator : TracingMetadataConfigurator() {
     override fun createTraceInfo(
         spanBuilder: SpanBuilder, method: PlatformMethod, spanName: String
     ): Span = runBlocking {

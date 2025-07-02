@@ -32,6 +32,7 @@ actual inline fun <T> withTrace(
         val result = block()
         return result.also {
             tracingMetadataConfigurator.addOutputAttribute(span, traceAnnotation, it)
+            span.setStatus(StatusCode.OK)
         }
     } catch (exception: Throwable) {
         span.recordException(exception)
@@ -60,6 +61,7 @@ actual suspend inline fun <T> withTraceSuspended(
         }
         return result.also {
             tracingMetadataConfigurator.addOutputAttribute(span, traceAnnotation, it)
+            span.setStatus(StatusCode.OK)
         }
     } catch (exception: Throwable) {
         span.recordException(exception)

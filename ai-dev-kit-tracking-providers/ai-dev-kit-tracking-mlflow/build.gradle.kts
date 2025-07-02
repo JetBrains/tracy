@@ -25,7 +25,6 @@ dependencies {
     testImplementation(libs.openai)
     implementation(libs.kotlin.logging)
     runtimeOnly(libs.logback.classic)
-    testImplementation(testFixtures(project(":ai-dev-kit-test-base")))
 }
 
 tasks.test {

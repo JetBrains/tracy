@@ -13,21 +13,13 @@ import io.opentelemetry.extension.kotlin.asContextElement
 import io.opentelemetry.sdk.trace.ReadableSpan
 import kotlinx.coroutines.launch
 
-class LangfuseTracingMetadataConfigurator : TracingMetadataConfigurator {
-    override fun addOutputAttribute(
-        span: Span, traceAnnotation: KotlinFlowTrace, result: Any?
-    ) {
-        addOutputAttributesToTracing(span, traceAnnotation, result)
-    }
-
+class LangfuseTracingMetadataConfigurator : TracingMetadataConfigurator() {
     override fun createTraceInfo(spanBuilder: SpanBuilder, method: PlatformMethod, spanName: String): Span {
         val span = spanBuilder.startSpan()
 
         // Passing the current context allows propagating project ID and run ID, see TracingSessionProvider
         TracingFlowProcessor.scope.launch(Context.current().asContextElement()) {
-            publishRootStartCall(
-                span as ReadableSpan
-            )
+            publishRootStartCall(span as ReadableSpan)
         }
         return span
     }

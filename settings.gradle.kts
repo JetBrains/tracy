@@ -3,7 +3,6 @@ rootProject.name = "ai-dev-kit"
 include("ai-dev-kit-eval")
 include("ai-dev-kit-example")
 include("ai-dev-kit-plugin")
-include("ai-dev-kit-test-base")
 include("ai-dev-kit-tracing")
 include("ai-dev-kit-tracking-providers")
 include("ai-dev-kit-tracking-providers:ai-dev-kit-tracking-langfuse")
