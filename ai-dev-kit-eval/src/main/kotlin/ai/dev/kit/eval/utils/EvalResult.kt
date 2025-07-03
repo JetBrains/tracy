@@ -27,7 +27,7 @@ open class SingleScoreEvalResult(
     override fun toString(): String = "SingleScoreEvalResult[$scoreName=$score]"
 }
 
-class MultiScoreEvalResult(val scores: List<SingleScoreEvalResult>) : EvalResult {
+open class MultiScoreEvalResult(val scores: List<SingleScoreEvalResult>) : EvalResult {
     override val hasJunitTestSucceeded: Boolean = scores.all { it.hasJunitTestSucceeded }
 
     override fun toString(): String =
