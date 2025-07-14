@@ -38,6 +38,7 @@ kotlin {
                 // TODO GET RID OF BASE EVAL TEST DEPENDENCIES
                 implementation(libs.openai)
                 implementation(libs.gemini)
+                implementation(libs.anthropic)
                 implementation(libs.okhttp)
 
                 implementation(libs.opentelemetry)
