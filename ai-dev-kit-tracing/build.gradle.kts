@@ -5,6 +5,11 @@ plugins {
     id("ai.dev.kit.space.publishing")
 }
 
+repositories {
+    mavenCentral()
+    maven("https://packages.jetbrains.team/maven/p/grazi/grazie-platform-public/")
+}
+
 kotlin {
     jvm {
         compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
@@ -53,6 +58,12 @@ kotlin {
                 implementation(libs.kotlin.test)
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.opentelemetry.sdk.testing)
+                implementation("ai.grazie.api:api-gateway-client-jvm:0.8.2")
+                implementation("ai.grazie.client:client-ktor-jvm:0.8.2")
+                implementation("ai.grazie.api:api-gateway-client-jvm:0.8.9")
+                implementation("ai.jetbrains.code.prompt:code-prompt-executor-grazie-koog:1.0.0-beta.91")
+                implementation("ai.jetbrains.code.prompt:prompt-llm:0.1.0-alpha.5+0.4.49")
+                implementation("ai.jetbrains.code.prompt:code-prompt-llm:1.0.0-beta.91")
             }
         }
     }

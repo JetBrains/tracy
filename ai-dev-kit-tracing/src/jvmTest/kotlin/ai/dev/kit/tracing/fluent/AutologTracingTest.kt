@@ -1,6 +1,10 @@
 package ai.dev.kit.tracing.fluent
 
+import ai.dev.kit.example.createGrazieExecutor
 import ai.dev.kit.instrument
+import ai.jetbrains.code.prompt.llm.JetBrainsAIModels
+import ai.koog.prompt.dsl.prompt
+import ai.koog.prompt.message.Message
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.ChatModel
@@ -17,8 +21,34 @@ import kotlin.test.assertTrue
 
 const val LITELLM_URL = "https://litellm.labs.jb.gg"
 
+@KotlinFlowTrace
+suspend fun grazieCall(): List<Message.Response> {
+    return createGrazieExecutor().execute(
+        prompt("base-prompt") {
+            system("You are a helpful assistant.")
+            user("Hi!")
+        },
+        model = JetBrainsAIModels.Anthropic_Sonnet_3_7,
+        tools = emptyList()
+    )
+}
+
 @Tag("SkipForNonLocal")
 class AutologTracingTest() : BaseTracingTest() {
+    @Test
+    fun `Grazie Executor test`() = runTest {
+        val experimentId = createExperimentId()
+        withProjectId(experimentId) {
+            grazieCall()
+        }
+
+        val traces = getTraces(experimentId)
+
+        assertEquals(2, traces.size)
+        val trace = traces.firstOrNull()
+        assertNotNull(trace)
+    }
+
     @Test
     fun `test OpenAI auto tracing`() = runTest {
         val experimentId = createExperimentId()
