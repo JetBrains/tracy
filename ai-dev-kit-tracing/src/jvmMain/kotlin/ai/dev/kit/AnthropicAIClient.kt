@@ -117,13 +117,14 @@ private class OpenTelemetryAnthropicLogger : Interceptor {
         body["model"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
 
         // collecting response messages
+        println("ANTHROPIC RESPONSE CONTENT: ${body["content"]}")
         body["content"]?.let {
             for ((index, message) in it.jsonArray.withIndex()) {
                 span.setAttribute(
-                    "gen_ai.completion.$index.role",
-                    message.jsonObject["role"]?.jsonPrimitive?.content
+                    "gen_ai.completion.$index.type",
+                    message.jsonObject["type"]?.jsonPrimitive?.content
                 )
-                span.setAttribute("gen_ai.completion.$index.content", message.jsonObject["content"]?.toString())
+                span.setAttribute("gen_ai.completion.$index.text", message.jsonObject["text"]?.toString())
 
                 // TODO: add tool and function calling
                 /*
