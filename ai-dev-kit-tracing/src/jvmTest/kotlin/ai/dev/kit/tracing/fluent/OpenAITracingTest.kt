@@ -6,6 +6,7 @@ import ai.dev.kit.tracing.LITELLM_URL
 import ai.dev.kit.tracing.autologging.createLiteLLMClient
 import com.anthropic.client.AnthropicClient
 import com.anthropic.client.okhttp.AnthropicOkHttpClient
+import com.anthropic.models.messages.MessageCreateParams
 import com.anthropic.models.messages.Model
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
@@ -54,12 +55,27 @@ class OpenAITracingTest() : BaseOpenTelemetryTracingTest() {
     fun `test Anthropic auto tracing`() = runTest {
         val client = createAnthropicClient()
 
+        val params = MessageCreateParams.builder()
+            .maxTokens(1000L)
+            .temperature(0.8)
+            .addUserMessage("Generate polite greeting and introduce yourself")
+            .addAssistantMessage("Hi! I'm Claude")
+            .addUserMessage("What is your name?")
+            .model(Model.CLAUDE_3_7_SONNET_LATEST)
+            .build()
+
+        val message = client.messages().create(params)
+        client.completions()
+        println("MESSAGE: $message")
+
+        /*
         val params = com.anthropic.models.completions.CompletionCreateParams.builder()
             .prompt("Generate polite greeting and introduce yourself")
-            .model(Model.CLAUDE_3_5_HAIKU_20241022).temperature(1.1)
-            .maxTokensToSample(8000L)
+            .model(Model.CLAUDE_3_5_SONNET_20240620).temperature(1.1)
+            .maxTokensToSample(1000L)
             .build()
         client.completions().create(params)
+        */
 
         val traces = analyzeSpans()
         println("TRACES: $traces")
