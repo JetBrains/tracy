@@ -69,8 +69,8 @@ private class OpenTelemetryAnthropicLogger : Interceptor {
             }
 
             println("ANTHROPIC REQUEST BODY: $body")
-            // body?.let { getRequestBodyAttributes(span, it) }
-            span.setAttribute("gen_ai.openai.api_base", "${url.scheme}://${url.host}")
+            body?.let { getRequestBodyAttributes(span, it) }
+            span.setAttribute("gen_ai.anthropic.api_base", "${url.scheme}://${url.host}")
 
             // TODO: get from parameters
             span.setAttribute(GEN_AI_SYSTEM, GenAiSystemIncubatingValues.ANTHROPIC)
@@ -82,10 +82,9 @@ private class OpenTelemetryAnthropicLogger : Interceptor {
             if (contentType == "application/json".toMediaType()) {
                 // We need to peek the body so the stream is not consumed
                 println("ANTHROPIC RESPONSE BODY: ${response.peekBody(Long.MAX_VALUE).string()}")
-                /*getResultBodyAttributes(
-                    span,
-                    Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
-                )*/
+
+                val decodedResponse = Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
+                getResultBodyAttributes(span, decodedResponse)
             } else {
                 contentType?.let { span.setAttribute("gen_ai.completion.content.type", it.toString()) }
             }
@@ -113,46 +112,40 @@ private class OpenTelemetryAnthropicLogger : Interceptor {
 
     private fun getResultBodyAttributes(span: Span, body: JsonObject) {
         body["id"]?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
-        body["object"]?.let { span.setAttribute("llm.request.type", it.jsonPrimitive.content) }
+        body["type"]?.let { span.setAttribute("llm.request.type", it.jsonPrimitive.content) }
+        body["role"]?.let { span.setAttribute("llm.request.role", it.jsonPrimitive.content) }
         body["model"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
 
-        body["choices"]?.let {
-            for ((index, choice) in it.jsonArray.withIndex()) {
-                val index = choice.jsonObject["index"]?.jsonPrimitive?.int ?: index
+        // collecting response messages
+        body["content"]?.let {
+            for ((index, message) in it.jsonArray.withIndex()) {
+                span.setAttribute(
+                    "gen_ai.completion.$index.role",
+                    message.jsonObject["role"]?.jsonPrimitive?.content
+                )
+                span.setAttribute("gen_ai.completion.$index.content", message.jsonObject["content"]?.toString())
 
-                choice.jsonObject["message"]?.jsonObject?.let { message ->
-                    span.setAttribute(
-                        "gen_ai.completion.$index.role",
-                        message.jsonObject["role"]?.jsonPrimitive?.content
-                    )
-                    span.setAttribute("gen_ai.completion.$index.content", message.jsonObject["content"]?.toString())
-                    // TODO: add tool and function calling
-                    /*
-                    span.setAttribute("gen_ai.completion.$index.tool_calls", message.jsonObject["tool_calls"]?.jsonPrimitive?.content)
-                    span.setAttribute("gen_ai.completion.$index.function_call", message.jsonObject["function_call"]?.jsonPrimitive?.content)
-                    span.setAttribute("gen_ai.completion.$index.annotations", message.jsonObject["annotations"].toString())
-                     */
-                }
+                // TODO: add tool and function calling
+                /*
+                span.setAttribute("gen_ai.completion.$index.tool_calls", message.jsonObject["tool_calls"]?.jsonPrimitive?.content)
+                span.setAttribute("gen_ai.completion.$index.function_call", message.jsonObject["function_call"]?.jsonPrimitive?.content)
+                span.setAttribute("gen_ai.completion.$index.annotations", message.jsonObject["annotations"].toString())
+                 */
 
                 span.setAttribute(
                     "gen_ai.completion.$index.finish_reason",
-                    choice.jsonObject["finish_reason"]?.jsonPrimitive?.content
+                    message.jsonObject["stop_reason"]?.jsonPrimitive?.content
                 )
             }
         }
 
+        // collecting usage stats (e.g., input/output tokens)
         body["usage"]?.let { usage ->
-            usage.jsonObject["prompt_tokens"]?.jsonPrimitive?.int?.let {
-                span.setAttribute(
-                    GEN_AI_USAGE_INPUT_TOKENS,
-                    it
-                )
+            usage.jsonObject["input_tokens"]?.jsonPrimitive?.int?.let {
+                span.setAttribute(GEN_AI_USAGE_INPUT_TOKENS, it)
             }
-            usage.jsonObject["completion_tokens"]?.jsonPrimitive?.int?.let {
-                span.setAttribute(
-                    GEN_AI_USAGE_OUTPUT_TOKENS,
-                    it
-                )
+            usage.jsonObject["output_tokens"]?.jsonPrimitive?.int?.let {
+                span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
             }
             // TODO: add other usage attributes
         }
