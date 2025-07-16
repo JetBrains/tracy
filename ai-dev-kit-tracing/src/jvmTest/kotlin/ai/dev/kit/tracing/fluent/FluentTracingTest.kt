@@ -1,7 +1,11 @@
 package ai.dev.kit.tracing.fluent
 
+import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.dev.kit.tracing.addTagsToCurrentTrace
 import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.sdk.internal.ExceptionAttributeResolver
+import io.opentelemetry.sdk.trace.data.ExceptionEventData
 import io.opentelemetry.sdk.trace.data.SpanData
 import io.opentelemetry.sdk.trace.data.StatusData
 import kotlinx.coroutines.test.runTest
@@ -15,6 +19,12 @@ import kotlin.test.assertTrue
 internal class MyTestClass {
     @KotlinFlowTrace(name = "Main Span", spanType = "mySpanType")
     fun testFunction(paramName: Int): Int {
+        return paramName
+    }
+
+    @KotlinFlowTrace(name = "Main Span", spanType = "mySpanType")
+    fun testFunctionWithTag(paramName: Int): Int {
+        addTagsToCurrentTrace(listOf("Tag1", "Tag2"))
         return paramName
     }
 
@@ -79,15 +89,11 @@ fun <T> topLevelReturnGenericParam(paramName: T): T {
     return paramName
 }
 
-class FluentTracingTest() : BaseTracingTest() {
+class FluentTracingTest() : BaseOpenTelemetryTracingTest() {
     @Test
     fun `test trace creation`() = runTest {
-        val experimentId = createExperimentId()
-        withProjectId(experimentId) {
-            MyTestClass().testFunction(1)
-        }
-
-        val traces = getTraces(experimentId)
+        MyTestClass().testFunction(1)
+        val traces = analyzeSpans()
 
         assertEquals(1, traces.size)
         val trace = traces.firstOrNull()
@@ -96,13 +102,9 @@ class FluentTracingTest() : BaseTracingTest() {
 
     @Test
     fun `test extension function`() = runTest {
-        val experimentId = createExperimentId()
-        val result = withProjectId(experimentId) {
-            listOf("first", "second").foo()
-        }
+        val result = listOf("first", "second").foo()
 
-        val traces = getTraces(experimentId)
-
+        val traces = analyzeSpans()
         assertEquals("first second", result)
         assertEquals(1, traces.size)
         val trace = traces.firstOrNull()
@@ -111,13 +113,9 @@ class FluentTracingTest() : BaseTracingTest() {
 
     @Test
     fun `test top level function`() = runTest {
-        val experimentId = createExperimentId()
-        withProjectId(experimentId) {
-            topLevelTestFunction("RandomString")
-        }
+        topLevelTestFunction("RandomString")
 
-        val traces = getTraces(experimentId)
-
+        val traces = analyzeSpans()
         assertEquals(1, traces.size)
         val trace = traces.firstOrNull()
         assertNotNull(trace)
@@ -125,13 +123,9 @@ class FluentTracingTest() : BaseTracingTest() {
 
     @Test
     fun `test inside class function`() = runTest {
-        val experimentId = createExperimentId()
-        withProjectId(experimentId) {
-            MyTestClass.InsideClass().insideTestFunction("RandomString")
-        }
+        MyTestClass.InsideClass().insideTestFunction("RandomString")
 
-        val traces = getTraces(experimentId)
-
+        val traces = analyzeSpans()
         assertEquals(1, traces.size)
         val trace = traces.firstOrNull()
         assertNotNull(trace)
@@ -140,13 +134,9 @@ class FluentTracingTest() : BaseTracingTest() {
 
     @Test
     fun `should trace return generic param in generic class`() = runTest {
-        val experimentId = createExperimentId()
-        withProjectId(experimentId) {
-            MyGenericTestClass<Int>().returnGenericParam(1)
-        }
+        MyGenericTestClass<Int>().returnGenericParam(1)
 
-        val traces = getTraces(experimentId)
-
+        val traces = analyzeSpans()
         assertEquals(1, traces.size)
         val trace = traces.firstOrNull()
         assertNotNull(trace)
@@ -154,13 +144,9 @@ class FluentTracingTest() : BaseTracingTest() {
 
     @Test
     fun `should trace return type V with type T param in generic class`() = runTest {
-        val experimentId = createExperimentId()
-        withProjectId(experimentId) {
-            MyGenericTestClass<Int>().returnTypeVWithTypeTParam("HI", 1)
-        }
+        MyGenericTestClass<Int>().returnTypeVWithTypeTParam("HI", 1)
 
-        val traces = getTraces(experimentId)
-
+        val traces = analyzeSpans()
         assertEquals(1, traces.size)
         val trace = traces.firstOrNull()
         assertNotNull(trace)
@@ -168,13 +154,9 @@ class FluentTracingTest() : BaseTracingTest() {
 
     @Test
     fun `should trace top level return generic param function`() = runTest {
-        val experimentId = createExperimentId()
-        withProjectId(experimentId) {
-            topLevelReturnGenericParam(3)
-        }
+        topLevelReturnGenericParam(3)
 
-        val traces = getTraces(experimentId)
-
+        val traces = analyzeSpans()
         assertEquals(1, traces.size)
         val trace = traces.firstOrNull()
         assertNotNull(trace)
@@ -182,13 +164,10 @@ class FluentTracingTest() : BaseTracingTest() {
 
     @Test
     fun `test trace tags and metadata are correct`() = runTest {
-        val experimentId = createExperimentId()
         val arg = 3
-        val result = withProjectId(experimentId) {
-            MyTestClass().testFunction(arg)
-        }
+        val result = MyTestClass().testFunction(arg)
 
-        val traces = getTraces(experimentId)
+        val traces = analyzeSpans()
 
         assertEquals(1, traces.size)
         val trace = traces.firstOrNull() as? SpanData
@@ -219,13 +198,9 @@ class FluentTracingTest() : BaseTracingTest() {
 
     @Test
     fun `test trace params default values are correct`() = runTest {
-        val experimentId = createExperimentId()
-        val result = withProjectId(experimentId) {
-            MyTestClass().testFunctionWithDefaultValue()
-        }
+        val result = MyTestClass().testFunctionWithDefaultValue()
 
-        val traces = getTraces(experimentId)
-
+        val traces = analyzeSpans()
         assertEquals(1, traces.size)
         val trace = traces.firstOrNull() as? SpanData
         assertNotNull(trace)
@@ -254,14 +229,11 @@ class FluentTracingTest() : BaseTracingTest() {
 
     @Test
     fun `test multiple trace creation`() = runTest {
-        val experimentId = createExperimentId()
-        withProjectId(experimentId) {
-            val testClass = MyTestClass()
-            testClass.testFunction(1)
-            testClass.anotherTestFunction("OpenTelemetry")
-        }
+        val testClass = MyTestClass()
+        testClass.testFunction(1)
+        testClass.anotherTestFunction("OpenTelemetry")
 
-        val traces = getTraces(experimentId)
+        val traces = analyzeSpans()
 
         assertEquals(2, traces.size)
         assertNotEquals(
@@ -272,14 +244,26 @@ class FluentTracingTest() : BaseTracingTest() {
     }
 
     @Test
+    fun `test tag for current trace`() = runTest {
+        val testClass = MyTestClass()
+        testClass.testFunctionWithTag(1)
+
+        val traces = analyzeSpans()
+
+        assertEquals(1, traces.size)
+        val trace = traces.firstOrNull()
+        assertNotNull(trace)
+        assertEquals(
+            traces.first().getAttribute(FluentSpanAttributes.TRACE_TAGS),
+            "[Tag1, Tag2]"
+        )
+    }
+
+    @Test
     fun `test parent child trace`() = runTest {
-        val experimentId = createExperimentId()
-        withProjectId(experimentId) {
-            MyTestClass().parentTestFunction("RandomString")
-        }
+        MyTestClass().parentTestFunction("RandomString")
 
-        val traces = getTraces(experimentId)
-
+        val traces = analyzeSpans()
         assertEquals(2, traces.size)
         val parentTrace = traces.find { it.parentSpanId == SpanId.getInvalid() }
         val childTrace = traces.find { it.parentSpanId != SpanId.getInvalid() }
@@ -298,19 +282,19 @@ class FluentTracingTest() : BaseTracingTest() {
 
     @Test
     fun `test status is error, when function throws`() = runTest {
-        val experimentId = createExperimentId()
-        withProjectId(experimentId) {
-            assertThrows<RuntimeException> {
-                MyTestClass().testFunctionThrows(3)
-            }
+        assertThrows<RuntimeException> {
+            MyTestClass().testFunctionThrows(3)
         }
 
-        val traces = getTraces(experimentId)
-
+        val traces = analyzeSpans()
         assertEquals(1, traces.size)
         val trace = traces.firstOrNull() as? SpanData
         assertNotNull(trace)
 
+        val exceptionEvent = trace.events.single { it is ExceptionEventData }
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
+        assertNotNull(exceptionEvent.attributes[ExceptionAttributeResolver.EXCEPTION_MESSAGE])
+        assertNotNull(exceptionEvent.attributes[ExceptionAttributeResolver.EXCEPTION_STACKTRACE])
+        assertNotNull(exceptionEvent.attributes[ExceptionAttributeResolver.EXCEPTION_TYPE])
     }
 }

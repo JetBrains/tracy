@@ -9,14 +9,11 @@ import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
 import ai.dev.kit.tracing.fluent.dataclasses.TraceInfo
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.SpanBuilder
+import io.opentelemetry.sdk.trace.SdkTracerProvider
 import kotlinx.serialization.json.Json
 
-object MlflowEvaluationClient : EvaluationClient {
+class MlflowEvaluationClient() : EvaluationClient {
     override val clientName: String = "Mlflow"
-
-    override fun setupTracing() {
-        setupMlflowTracing()
-    }
 
     override suspend fun getOrCreateExperiment(experimentName: String): String {
         val experimentId = getExperimentByName(

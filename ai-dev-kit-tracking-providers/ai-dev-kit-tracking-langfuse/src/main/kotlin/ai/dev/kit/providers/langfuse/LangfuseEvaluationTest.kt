@@ -1,7 +1,7 @@
 package ai.dev.kit.providers.langfuse
 
 import ai.dev.kit.eval.utils.*
-import ai.dev.kit.providers.langfuse.fluent.setupLangfuseTracing
+import ai.dev.kit.tracing.LangfuseConfig
 
 /**
  * A base abstract class for conducting evaluation tests on AI functionality.
@@ -14,23 +14,15 @@ import ai.dev.kit.providers.langfuse.fluent.setupLangfuseTracing
  * @param EvalResultT The type of evaluation result representing scores or metrics assigned for a test.
  * @param runNamePrefix A prefix used for naming the runs within the experiment.
  * @param numberOfRuns The number of test runs to execute during the evaluation process.
- * @param userId any string.
- *               The user identifier for WandB.
- *               If not provided, the user ID will be derived from the environment variables or default settings.
- * @param langfuseSecretKey your user secret API key.
- *               Take it or create a new one here https://langfuse.labs.jb.gg/project/{your_project_id}/settings/api-keys
- *               If not provided, the user ID will be derived from the environment variables or default settings.
- * @param langfusePublicKey your user public API key.
- *               Take it or create a new one here https://langfuse.labs.jb.gg/project/{your_project_id}/settings/api-keys
- *               If not provided, the user ID will be derived from the environment variables or default settings.
+ * @param langfuseConfig Configuration object for Langfuse tracing.
+ *               Includes connection details such as API keys, base URL, and export settings.
+ *               See [LangfuseConfig] for more.
  */
 abstract class LangfuseEvaluationTest<AIInputT : AIInput, GroundTruthT : GroundTruth, AIOutputT : AIOutput, EvalResultT : EvalResult>(
 //    experimentName: String = "Evaluation test",
     runNamePrefix: String = createRandomRunNameAdjectiveNounNumber(),
     numberOfRuns: Int = 1,
-    userId: String? = null,
-    langfuseSecretKey: String? = null,
-    langfusePublicKey: String? = null
+    langfuseConfig: LangfuseConfig = LangfuseConfig(),
 ) :
     BaseEvaluationTest<AIInputT, GroundTruthT, AIOutputT, EvalResultT>(
         // create experiment with a given name functionality is not available yet
@@ -39,9 +31,5 @@ abstract class LangfuseEvaluationTest<AIInputT : AIInput, GroundTruthT : GroundT
         numberOfRuns,
         // tags are not supported yet
         listOf(),
-        LangfuseEvaluationClient,
-    ){
-        init{
-            setupLangfuseTracing(userId, langfuseSecretKey, langfusePublicKey)
-        }
-    }
+        LangfuseEvaluationClient(langfuseConfig),
+    )

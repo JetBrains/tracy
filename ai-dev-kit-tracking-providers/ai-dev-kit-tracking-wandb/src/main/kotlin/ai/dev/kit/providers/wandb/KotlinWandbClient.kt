@@ -1,6 +1,6 @@
 package ai.dev.kit.providers.wandb
 
-import ai.dev.kit.tracing.fluent.getUserIDFromEnv
+import ai.dev.kit.eval.utils.getUserIDFromEnv
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*

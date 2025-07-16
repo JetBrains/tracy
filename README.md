@@ -85,23 +85,25 @@ plugins {
   but you can replace it with other supported platforms
   (e.g., Weights & Biases, MLflow) by making the corresponding changes in your setup:
 ```kotlin
-setupLangfuseTracing()
+// You can pass keys explicitly to config or leave them null to load from environment variables.
+val langfuseConfig = LangfuseConfig()
+TracingManager.setup(langfuseConfig)
 // Your code with tracing
-TracingFlowProcessor.flushTraces()
+TracingManager.flushTraces()
 ```
 ⚠️ Important:
-1. You **must** set up tracing by calling `setupLangfuseTracing()` before using any annotated methods. If tracing is not initialized, the tracking provider will not be defined, and traces will not be recorded.
-2. Ensure that you call `TracingFlowProcessor.flushTraces()` after all tracing operations to flush any pending traces. Without this, traces may not be exported if the application terminates too quickly.
+1. You **must** set up tracing by calling `TracingManager.setup` before using any annotated methods. If tracing is not initialized, the tracking provider will not be defined, and traces will not be recorded.
+2. Ensure that you call `TracingManager.flushTraces()` after all tracing operations to flush any pending traces. Without this, traces may not be exported if the application terminates too quickly.
 
 
 * Annotate traced function with `@KotlinFlowTrace`
-* Use `TracingFlowProcessor.addTagsToCurrentTrace` with a list of string tags as a parameter inside the annotated function to add tags to the current trace.     
+* Use `addTagsToCurrentTrace` with a list of string tags as a parameter inside the annotated function to add tags to the current trace.     
 ```kotlin
     @KotlinFlowTrace
     fun f(/*parameters*/): /*return value*/{
         // function logic
         val tags = listOf<String>("tag1", "tag2", "tag3")
-        TracingFlowProcessor.addTagsToCurrentTrace(tags)
+        addTagsToCurrentTrace(tags)
         // function logic
     }
 ```

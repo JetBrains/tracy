@@ -1,12 +1,14 @@
 package ai.dev.kit.tracing.fluent.processor
 
+import ai.dev.kit.tracing.AI_DEVELOPMENT_KIT_TRACER
 import ai.dev.kit.tracing.fluent.FluentSpanAttributes
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import ai.dev.kit.tracing.fluent.TracingSessionProvider
+import ai.dev.kit.tracing.fluent.addOutputAttributesToTracing
 import ai.dev.kit.tracing.fluent.configureTracingMetadata
+import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
-import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
 import io.opentelemetry.extension.kotlin.asContextElement
 import io.opentelemetry.extension.kotlin.getOpenTelemetryContext
@@ -22,21 +24,19 @@ actual inline fun <T> withTrace(
     args: Array<Any?>,
     block: () -> T
 ): T {
-    val tracingMetadataConfigurator = TracingFlowProcessor.tracingMetadataConfigurator
     val method = function.javaMethod ?: throw IllegalArgumentException("Function must be a Java method")
     val traceAnnotation = method.getAnnotation(KotlinFlowTrace::class.java)
         ?: throw IllegalArgumentException("Function must be annotated with @KotlinFlowTrace annotation")
-    val span = createSpan(traceAnnotation, method, args, tracingMetadataConfigurator)
+    val span = createSpan(traceAnnotation, method, args)
     val scope = span.makeCurrent()
     try {
         val result = block()
         return result.also {
-            tracingMetadataConfigurator.addOutputAttribute(span, traceAnnotation, it)
+            addOutputAttributesToTracing(span, traceAnnotation, it)
             span.setStatus(StatusCode.OK)
         }
     } catch (exception: Throwable) {
-        span.recordException(exception)
-        span.setStatus(StatusCode.ERROR, exception.message ?: "Unknown error")
+        span.addExceptionAttributes(exception)
         throw exception
     } finally {
         span.end()
@@ -49,23 +49,21 @@ actual suspend inline fun <T> withTraceSuspended(
     args: Array<Any?>,
     crossinline block: suspend () -> T
 ): T {
-    val tracingMetadataConfigurator = TracingFlowProcessor.tracingMetadataConfigurator
     val method = function.javaMethod ?: throw IllegalArgumentException("Function must be a Java method")
     val traceAnnotation = method.getAnnotation(KotlinFlowTrace::class.java)
     val span = createSpan(
-        traceAnnotation, method, args, tracingMetadataConfigurator, getOpenTelemetryContext(coroutineContext)
+        traceAnnotation, method, args, getOpenTelemetryContext(coroutineContext)
     )
     try {
         val result = withContext(span.asContextElement()) {
             block()
         }
         return result.also {
-            tracingMetadataConfigurator.addOutputAttribute(span, traceAnnotation, it)
+            addOutputAttributesToTracing(span, traceAnnotation, it)
             span.setStatus(StatusCode.OK)
         }
     } catch (exception: Throwable) {
-        span.recordException(exception)
-        span.setStatus(StatusCode.ERROR, exception.message ?: "Unknown error")
+        span.addExceptionAttributes(exception)
         throw exception
     } finally {
         span.end()
@@ -78,14 +76,18 @@ fun getOpenTelemetryContext(coroutineContext: CoroutineContext): Context {
     }
 }
 
+fun Span.addExceptionAttributes(exception : Throwable) {
+    this.recordException(exception)
+    this.setStatus(StatusCode.ERROR, exception.message ?: "Unknown error")
+}
+
 fun createSpan(
     traceAnnotation: KotlinFlowTrace,
     method: Method,
     args: Array<Any?>,
-    tracingMetadataConfigurator: TracingMetadataConfigurator,
     context: Context = Context.current(),
-    tracer: Tracer = TracingFlowProcessor.tracer
 ): Span {
+    val tracer = GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER)
     val spanName = traceAnnotation.name.ifBlank { method.name }
     val spanBuilder = tracer.spanBuilder(spanName)
 
@@ -101,9 +103,8 @@ fun createSpan(
         spanBuilder.setParent(context)
         spanBuilder.startSpan()
     } else {
-        // If root, then create a trace
-        spanBuilder.setNoParent()
-        tracingMetadataConfigurator.createTraceInfo(spanBuilder, method, spanName)
+        // If root, set no parent
+        spanBuilder.setNoParent().startSpan()
     }
     return span
 }

@@ -1,6 +1,9 @@
 package ai.dev.kit.exporters
 
+import ai.dev.kit.tracing.WeaveConfig
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter
+import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder
+import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
 import java.util.Base64
 import java.util.concurrent.TimeUnit
 
@@ -22,7 +25,7 @@ fun createWeaveExporter(
     weaveProjectName: String? = null,
     weaveApiKey: String? = null,
     timeout: Long = 10,
-): OtlpHttpSpanExporter? {
+): OtlpHttpSpanExporter {
     val url = weaveOtelBaseUrl ?: System.getenv()["WEAVE_URL"] ?: "https://trace.wandb.ai"
     val entity = weaveEntity ?: System.getenv()["WEAVE_ENTITY"] ?: throw IllegalArgumentException("WEAVE_ENTITY is not set")
     val projectName = weaveProjectName ?: System.getenv()["WEAVE_PROJECT_NAME"] ?: "koog-tracing"
@@ -36,4 +39,22 @@ fun createWeaveExporter(
         .addHeader("project_id", "$entity/$projectName")
         .addHeader("Authorization", "Basic $auth")
         .build()
+}
+
+fun SdkTracerProviderBuilder.addWeaveSpanProcessor(
+    weaveTracingConfig: WeaveConfig,
+): SdkTracerProviderBuilder {
+    val otlpGrpcSpanExporter = createWeaveExporter(
+        weaveOtelBaseUrl = weaveTracingConfig.weaveOtelBaseUrl,
+        weaveEntity = weaveTracingConfig.weaveEntity,
+        weaveProjectName = weaveTracingConfig.weaveProjectName,
+        weaveApiKey = weaveTracingConfig.weaveApiKey,
+        timeout = weaveTracingConfig.exporterTimeout
+    )
+    addSpanProcessor(
+        BatchSpanProcessor.builder(otlpGrpcSpanExporter)
+            .setScheduleDelay(3, TimeUnit.SECONDS)
+            .build()
+    )
+    return this
 }

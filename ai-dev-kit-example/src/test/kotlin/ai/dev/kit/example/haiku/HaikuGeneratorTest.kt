@@ -2,19 +2,22 @@ package ai.dev.kit.example.haiku
 
 import ai.dev.kit.createOpenAIClient
 import ai.dev.kit.eval.utils.*
+import ai.dev.kit.instrument
 import ai.dev.kit.providers.langfuse.LangfuseEvaluationTest
+import ai.dev.kit.tracing.LangfuseConfig
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import org.junit.jupiter.api.Tag
 import kotlin.jvm.optionals.getOrElse
 
-fun haikuTestCase(topic: String) = TestCase<HaikuTopic, NoGroundTruth>(name = topic, HaikuTopic(topic), NoGroundTruth)
+fun haikuTestCase(topic: String) = TestCase(name = topic, HaikuTopic(topic), NoGroundTruth)
 
 @Tag("SkipForNonLocal")
 class HaikuGeneratorTest :
     LangfuseEvaluationTest<HaikuTopic, NoGroundTruth, HaikuText, MultiScoreEvalResult>(
-        numberOfRuns = 2
+        numberOfRuns = 1,
+        langfuseConfig = LangfuseConfig(langfuseUrl = "https://langfuse.labs.jb.gg/"),
     ) {
     override val testCases: List<TestCase<HaikuTopic, NoGroundTruth>> =
         listOf("table", "computer", "flower", "horse").map { haikuTestCase(it) }
@@ -81,7 +84,9 @@ You are an AI poetry critic. Your job is to evaluate the overall quality of a Ha
 Evaluate this Haiku:
 """ + haikuText.text
 
-    val client = createOpenAIClient()
+    val client = instrument(
+        createLiteLLMClient()
+    )
 
     val params = ChatCompletionCreateParams.Companion.builder()
         .addUserMessage(prompt)
@@ -112,7 +117,9 @@ You are an AI poetry critic highly focused on creativity in poetry. Your task is
 Evaluate the creativity of this Haiku:
 """ + haikuText.text
 
-    val client = createOpenAIClient()
+    val client = instrument(
+        createLiteLLMClient()
+    )
 
     val params = ChatCompletionCreateParams.Companion.builder()
         .addUserMessage(prompt)
@@ -147,7 +154,9 @@ You are a Haiku poetry expert and your task is to evaluate the structural correc
 
 Evaluate the structure of this Haiku:
 """ + haikuText.text
-    val client = createOpenAIClient()
+    val client = instrument(
+        createLiteLLMClient()
+    )
 
     val params = ChatCompletionCreateParams.Companion.builder()
         .addUserMessage(prompt)

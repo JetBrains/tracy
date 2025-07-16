@@ -109,7 +109,7 @@ private fun callChat(
     return client.chat().completions().create(params)
 }
 
-private fun createLiteLLMClient(): OpenAIClient {
+fun createLiteLLMClient(): OpenAIClient {
     return OpenAIOkHttpClient.builder()
         .baseUrl("https://litellm.labs.jb.gg")
         .apiKey(System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set"))

@@ -45,6 +45,7 @@ abstract class BaseOpenTelemetryTracingTest {
             forceFlush().join(1, TimeUnit.SECONDS)
             shutdown().join(1, TimeUnit.SECONDS)
         }
+        GlobalOpenTelemetry.resetForTest()
     }
 
     fun analyzeSpans(): List<SpanData> {

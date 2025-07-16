@@ -1,7 +1,7 @@
 package ai.dev.kit.providers.mlflow
 
 import ai.dev.kit.providers.mlflow.KotlinMlflowClient.ML_FLOW_URL
-import ai.dev.kit.tracing.fluent.getUserIDFromEnv
+import ai.dev.kit.eval.utils.getUserIDFromEnv
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
