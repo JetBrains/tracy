@@ -32,7 +32,7 @@ abstract class MlflowEvaluationTest<AIInputT : AIInput, GroundTruthT : GroundTru
         runNamePrefix,
         numberOfRuns,
         tags,
-        MlflowEvaluationClient,
+        MlflowEvaluationClient(),
     ){
     init{
         setupMlflowTracing(userId)

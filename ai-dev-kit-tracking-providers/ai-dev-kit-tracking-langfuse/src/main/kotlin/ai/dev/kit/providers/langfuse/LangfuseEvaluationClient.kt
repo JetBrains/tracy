@@ -2,8 +2,9 @@ package ai.dev.kit.providers.langfuse
 
 import ai.dev.kit.eval.utils.*
 import ai.dev.kit.providers.langfuse.KotlinLangfuseClient.LANGFUSE_BASE_URL
-import ai.dev.kit.providers.langfuse.fluent.LangfuseTracePublisher.Companion.publishRootStartCall
-import ai.dev.kit.providers.langfuse.fluent.setupLangfuseTracing
+import ai.dev.kit.providers.langfuse.fluent.publishRootStartCall
+import ai.dev.kit.tracing.LangfuseConfig
+import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
 import ai.dev.kit.tracing.fluent.processor.Span
 import io.opentelemetry.api.trace.SpanBuilder
@@ -13,11 +14,14 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
-object LangfuseEvaluationClient : EvaluationClient {
+class LangfuseEvaluationClient(
+    langfuseConfig: LangfuseConfig
+) : EvaluationClient {
     override val clientName: String = "Langfuse"
 
-    override fun setupTracing() {
-        setupLangfuseTracing()
+    init {
+        KotlinLangfuseClient.setupCredentials(langfuseConfig.userId, langfuseConfig.langfusePublicKey, langfuseConfig.langfuseSecretKey)
+        TracingManager.setup(langfuseConfig)
     }
 
     override suspend fun getOrCreateExperiment(experimentName: String): String? {
@@ -95,9 +99,11 @@ object LangfuseEvaluationClient : EvaluationClient {
             return span
         }
 
-    enum class LangfuseMetricDataType(val type: String) {
-        NUMERIC("NUMERIC"),
-        BOOLEAN("BOOLEAN"),
-        CATEGORICAL("CATEGORICAL");
+    companion object {
+        enum class LangfuseMetricDataType(val type: String) {
+            NUMERIC("NUMERIC"),
+            BOOLEAN("BOOLEAN"),
+            CATEGORICAL("CATEGORICAL");
+        }
     }
 }

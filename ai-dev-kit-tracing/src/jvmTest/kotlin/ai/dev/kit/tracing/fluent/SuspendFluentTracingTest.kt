@@ -1,8 +1,11 @@
 package ai.dev.kit.tracing.fluent
 
-import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
+import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.dev.kit.tracing.addTagsToCurrentTrace
 import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.sdk.internal.ExceptionAttributeResolver
+import io.opentelemetry.sdk.trace.data.ExceptionEventData
 import io.opentelemetry.sdk.trace.data.SpanData
 import io.opentelemetry.sdk.trace.data.StatusData
 import kotlinx.coroutines.delay
@@ -10,6 +13,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import kotlin.coroutines.coroutineContext
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
@@ -19,6 +23,13 @@ internal class MyTestClassWithSuspend {
     @KotlinFlowTrace(name = "Main Span", spanType = "mySpanType")
     suspend fun testFunction(paramName: Int): Int {
         delay(12)
+        return paramName
+    }
+
+    @KotlinFlowTrace(name = "Main Span", spanType = "mySpanType")
+    suspend fun testFunctionWithTag(paramName: Int): Int {
+        delay(12)
+        addTagsToCurrentTrace(listOf("Tag1", "Tag2"), coroutineContext)
         return paramName
     }
 
@@ -116,36 +127,42 @@ internal class MyTestClassWithSuspendHard() {
     }
 }
 
-class SuspendFluentTracingTest() : BaseTracingTest() {
+class SuspendFluentTracingTest() : BaseOpenTelemetryTracingTest() {
     @Test
     fun `test trace creation`() = runTest {
-        val experimentId = createExperimentId()
-        withProjectId(experimentId) {
-            MyTestClassWithSuspend().testFunction(1)
-        }
+        MyTestClassWithSuspend().testFunction(1)
 
-        TracingFlowProcessor.flushTraces()
-        val traces = getTraces(experimentId)
-
+        val traces = analyzeSpans()
         assertEquals(1, traces.size)
         val trace = traces.firstOrNull()
         assertNotNull(trace)
     }
 
     @Test
-    fun `test trace tags and metadata are correct`() = runTest {
-        val experimentId = createExperimentId()
-        val arg = 3
-        val result = withProjectId(experimentId) {
-            val testClass = MyTestClassWithSuspend()
-            testClass.testFunction(arg)
-        }
+    fun `test tag for current trace`() = runTest {
+        MyTestClassWithSuspend().testFunctionWithTag(1)
 
-        val traces = getTraces(experimentId)
+        val traces = analyzeSpans()
+
+        assertEquals(1, traces.size)
+        val trace = traces.firstOrNull()
+        assertNotNull(trace)
+        assertEquals(
+            traces.first().getAttribute(FluentSpanAttributes.TRACE_TAGS),
+            "[Tag1, Tag2]"
+        )
+    }
+
+    @Test
+    fun `test trace tags and metadata are correct`() = runTest {
+        val testClass = MyTestClassWithSuspend()
+        val arg = 3
+        val result = testClass.testFunction(arg)
+
+        val traces = analyzeSpans()
 
         assertEquals(1, traces.size)
         val trace = assertNotNull(traces.firstOrNull())
-
         assertEquals(StatusData.ok(), trace.status)
         assertEquals(
             "testFunction",
@@ -170,14 +187,11 @@ class SuspendFluentTracingTest() : BaseTracingTest() {
 
     @Test
     fun `test multiple trace creation`() = runTest {
-        val experimentId = createExperimentId()
-        withProjectId(experimentId) {
-            val testClass = MyTestClassWithSuspend()
-            testClass.testFunction(1)
-            testClass.anotherTestFunction("OpenTelemetry")
-        }
+        val testClass = MyTestClassWithSuspend()
+        testClass.testFunction(1)
+        testClass.anotherTestFunction("OpenTelemetry")
 
-        val traces = getTraces(experimentId)
+        val traces = analyzeSpans()
 
         assertEquals(2, traces.size)
         assertNotEquals(
@@ -189,13 +203,9 @@ class SuspendFluentTracingTest() : BaseTracingTest() {
 
     @Test
     fun `test parent child trace`() = runTest {
-        val experimentId = createExperimentId()
-        withProjectId(experimentId) {
-            MyTestClassWithSuspend().parentTestFunction("RandomString")
-        }
+        MyTestClassWithSuspend().parentTestFunction("RandomString")
 
-        val traces = getTraces(experimentId)
-
+        val traces = analyzeSpans()
         assertEquals(2, traces.size)
         val parentTrace = traces.find { it.parentSpanId == SpanId.getInvalid() }
         val childTrace = traces.find { it.parentSpanId != SpanId.getInvalid() }
@@ -214,12 +224,9 @@ class SuspendFluentTracingTest() : BaseTracingTest() {
 
     @Test
     fun `test parent child trace with non suspend child`() = runTest {
-        val experimentId = createExperimentId()
-        withProjectId(experimentId) {
-            MyTestClassWithSuspend().parentTestFunctionWithNonSuspendKid("RandomString")
-        }
+        MyTestClassWithSuspend().parentTestFunctionWithNonSuspendKid("RandomString")
 
-        val traces = getTraces(experimentId)
+        val traces = analyzeSpans()
 
         assertEquals(2, traces.size)
         val parentTrace = traces.find { it.parentSpanId == SpanId.getInvalid() }
@@ -239,12 +246,9 @@ class SuspendFluentTracingTest() : BaseTracingTest() {
 
     @Test
     fun `test parent child trace with non suspend parent`() = runTest {
-        val experimentId = createExperimentId()
-        withProjectId(experimentId) {
-            MyTestClassWithSuspend().parentTestFunctionWithSuspendKid("RandomString")
-        }
+        MyTestClassWithSuspend().parentTestFunctionWithSuspendKid("RandomString")
 
-        val traces = getTraces(experimentId)
+        val traces = analyzeSpans()
 
         assertEquals(2, traces.size)
         val parentTrace = traces.find { it.parentSpanId == SpanId.getInvalid() }
@@ -264,12 +268,9 @@ class SuspendFluentTracingTest() : BaseTracingTest() {
 
     @Test
     fun `test recursion`() = runTest {
-        val experimentId = createExperimentId()
-        withProjectId(experimentId) {
-            MyTestClassWithSuspend().testRecursion(2)
-        }
+        MyTestClassWithSuspend().testRecursion(2)
 
-        val traces = getTraces(experimentId)
+        val traces = analyzeSpans()
 
         assertEquals(2, traces.size)
         val parentTrace = traces.find { it.parentSpanId == SpanId.getInvalid() }
@@ -297,12 +298,9 @@ class SuspendFluentTracingTest() : BaseTracingTest() {
 
     @Test
     fun `test parent and child trace hierarchy`() = runTest {
-        val experimentId = createExperimentId()
-        val result = withProjectId(experimentId) {
-            MyTestClassWithSuspendHard().parentFunction("a")
-        }
+        val result = MyTestClassWithSuspendHard().parentFunction("a")
 
-        val traces = getTraces(experimentId)
+        val traces = analyzeSpans()
 
         assertEquals("A, G(1), a", result)
 
@@ -335,19 +333,20 @@ class SuspendFluentTracingTest() : BaseTracingTest() {
 
     @Test
     fun `test status is error, when function throws`() = runTest {
-        val experimentId = createExperimentId()
-        withProjectId(experimentId) {
-            assertThrows<RuntimeException> {
-                MyTestClassWithSuspend().testFunctionThrows(3)
-            }
+        assertThrows<RuntimeException> {
+            MyTestClassWithSuspend().testFunctionThrows(3)
         }
 
-        val traces = getTraces(experimentId)
+        val traces = analyzeSpans()
 
         assertEquals(1, traces.size)
         val trace = traces.firstOrNull() as? SpanData
         assertNotNull(trace)
 
+        val exceptionEvent = trace.events.single { it is ExceptionEventData }
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
+        assertNotNull(exceptionEvent.attributes[ExceptionAttributeResolver.EXCEPTION_MESSAGE])
+        assertNotNull(exceptionEvent.attributes[ExceptionAttributeResolver.EXCEPTION_STACKTRACE])
+        assertNotNull(exceptionEvent.attributes[ExceptionAttributeResolver.EXCEPTION_TYPE])
     }
 }

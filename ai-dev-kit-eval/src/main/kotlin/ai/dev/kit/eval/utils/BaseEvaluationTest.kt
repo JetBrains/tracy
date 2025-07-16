@@ -1,9 +1,11 @@
 package ai.dev.kit.eval.utils
 
+import ai.dev.kit.tracing.AI_DEVELOPMENT_KIT_TRACER
+import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.fluent.FluentSpanAttributes
 import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
-import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
 import ai.dev.kit.tracing.fluent.withSessionIdBlocking
+import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.extension.kotlin.asContextElement
@@ -67,7 +69,8 @@ abstract class BaseEvaluationTest<
     @AfterAll
     fun afterAll() = runBlocking {
         logger.info { "📊 Logging evaluation results" }
-        TracingFlowProcessor.flushTraces()
+        TracingManager.flushTraces()
+        TracingManager.shutdownTracing()
         runResults.forEachIndexed { runIndex, runResult ->
             val (testResults, runId, runStatus) = runResult
             try {
@@ -91,7 +94,7 @@ abstract class BaseEvaluationTest<
                     withSessionIdBlocking(runResult.runId) {
                         val (dataPointSpan, dataPointScope) = createDataPointSpan(
                             dataPointIndex,
-                            TracingFlowProcessor.tracer,
+                            GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER),
                             runResult.runId,
                             testCase
                         )

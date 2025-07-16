@@ -1,6 +1,9 @@
 package ai.dev.kit.exporters
 
+import ai.dev.kit.tracing.LangfuseConfig
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter
+import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder
+import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
 import java.util.Base64
 import java.util.concurrent.TimeUnit
 
@@ -21,12 +24,12 @@ fun createLangfuseExporter(
     langfusePublicKey: String? = null,
     langfuseSecretKey: String? = null,
     timeout: Long = 10,
-): OtlpHttpSpanExporter? {
+): OtlpHttpSpanExporter {
     val url = langfuseUrl ?: System.getenv()["LANGFUSE_URL"] ?: "https://cloud.langfuse.com"
     val publicKey = langfusePublicKey ?: System.getenv()["LANGFUSE_PUBLIC_KEY"]
-    ?: throw IllegalArgumentException("LANGFUSE_PUBLIC_KEY is not set")
+    ?: throw IllegalArgumentException("LANGFUSE_PUBLIC_KEY must be provided either via argument or env var")
     val secretKey = langfuseSecretKey ?: System.getenv()["LANGFUSE_SECRET_KEY"]
-    ?: throw IllegalArgumentException("LANGFUSE_SECRET_KEY is not set")
+    ?: throw IllegalArgumentException("LANGFUSE_SECRET_KEY must be provided either via argument or env var")
 
     val credentials = "$publicKey:$secretKey"
     val auth = Base64.getEncoder().encodeToString(credentials.toByteArray(Charsets.UTF_8))
@@ -36,4 +39,21 @@ fun createLangfuseExporter(
         .setEndpoint("$url/api/public/otel/v1/traces")
         .addHeader("Authorization", "Basic $auth")
         .build()
+}
+
+fun SdkTracerProviderBuilder.addLangfuseSpanProcessor(
+    langfuseConfig: LangfuseConfig,
+): SdkTracerProviderBuilder {
+    val otlpGrpcSpanExporter = createLangfuseExporter(
+        langfuseUrl = langfuseConfig.langfuseUrl,
+        langfusePublicKey = langfuseConfig.langfusePublicKey,
+        langfuseSecretKey = langfuseConfig.langfuseSecretKey,
+        timeout = langfuseConfig.exporterTimeout
+    )
+    addSpanProcessor(
+        BatchSpanProcessor.builder(otlpGrpcSpanExporter)
+            .setScheduleDelay(3, TimeUnit.SECONDS)
+            .build()
+    )
+    return this
 }

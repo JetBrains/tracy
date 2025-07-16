@@ -218,7 +218,7 @@ suspend fun logScoreToLangfuse(
     value: Double,
     comment: String? = null,
     configId: String? = null,
-    dataType: LangfuseEvaluationClient.LangfuseMetricDataType
+    dataType: LangfuseEvaluationClient.Companion.LangfuseMetricDataType
 ) {
     require((traceId == null) xor (sessionId == null)) { "Exactly one of `sessionId` and `traceId` must be not null" }
 

@@ -5,8 +5,12 @@ import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import ai.dev.kit.eval.utils.AIInput
 import ai.dev.kit.eval.utils.AIOutput
 import ai.dev.kit.eval.utils.Generator
+import ai.dev.kit.instrument
+import com.openai.client.OpenAIClient
+import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
+import java.time.Duration
 import kotlin.jvm.optionals.getOrElse
 
 data class HaikuTopic(val topic: String) : AIInput
@@ -37,7 +41,7 @@ class HaikuGenerator : Generator<HaikuTopic, HaikuText> {
      */
     @KotlinFlowTrace(name = "GenerateHaiku")
     override suspend fun generate(input: HaikuTopic): HaikuText {
-        val client = createOpenAIClient()
+        val client = instrument(createLiteLLMClient())
 
         val params = ChatCompletionCreateParams.builder()
             .addUserMessage(prompt.format(input.topic))
@@ -48,4 +52,12 @@ class HaikuGenerator : Generator<HaikuTopic, HaikuText> {
         val text = client.chat().completions().create(params).choices().first().message().content().getOrElse { "" }
         return HaikuText(text)
     }
+}
+
+fun createLiteLLMClient(): OpenAIClient {
+    return OpenAIOkHttpClient.builder()
+        .baseUrl("https://litellm.labs.jb.gg")
+        .apiKey(System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set"))
+        .timeout(Duration.ofSeconds(60))
+        .build()
 }

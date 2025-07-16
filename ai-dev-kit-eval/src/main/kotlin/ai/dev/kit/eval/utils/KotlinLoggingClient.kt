@@ -1,5 +1,5 @@
-package ai.dev.kit.tracing.fluent
+package ai.dev.kit.eval.utils
 
-actual fun getUserIDFromEnv(): String =
+fun getUserIDFromEnv(): String =
     System.getenv("USER_ID")
         ?: throw IllegalStateException("USER_ID environment variable is not set")

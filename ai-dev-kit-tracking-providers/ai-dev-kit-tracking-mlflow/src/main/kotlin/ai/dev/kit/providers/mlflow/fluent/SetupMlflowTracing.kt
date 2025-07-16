@@ -1,6 +1,5 @@
 package ai.dev.kit.providers.mlflow.fluent
 
-import ai.dev.kit.tracing.fluent.processor.TracingFlowProcessor
 import ai.dev.kit.providers.mlflow.KotlinMlflowClient
 
 /**
@@ -12,5 +11,4 @@ import ai.dev.kit.providers.mlflow.KotlinMlflowClient
  */
 fun setupMlflowTracing(userId: String? = null) {
     KotlinMlflowClient.setupCredentials(userId)
-    TracingFlowProcessor.setupTracing(MlflowTracingMetadataConfigurator(), MlflowTracePublisher())
 }

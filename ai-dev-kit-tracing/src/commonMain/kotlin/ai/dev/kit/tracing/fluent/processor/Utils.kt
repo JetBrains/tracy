@@ -2,6 +2,10 @@ package ai.dev.kit.tracing.fluent.processor
 
 import kotlin.reflect.KFunction
 
+expect interface SpanData
+expect interface SpanBuilder
+expect interface Span
+
 expect inline fun <T> withTrace(
     function: KFunction<*>,
     args: Array<Any?>,

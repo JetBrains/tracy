@@ -1,6 +1,6 @@
 package ai.dev.kit.providers.langfuse
 
-import ai.dev.kit.tracing.fluent.getUserIDFromEnv
+import ai.dev.kit.eval.utils.getUserIDFromEnv
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -17,10 +17,10 @@ internal object KotlinLangfuseClient {
         }
     }
 
-    internal fun setupCredentials(userId: String?, langfuseSecretKey: String?, langfusePublicKey: String?) {
+    internal fun setupCredentials(userId: String?, langfusePublicKey: String?, langfuseSecretKey: String?) {
         USER_ID = userId ?: getUserIDFromEnv()
-        LANGFUSE_SECRET_KEY = langfuseSecretKey ?: getLangfuseApiSecretKeyFromEnv()
         LANGFUSE_PUBLIC_KEY = langfusePublicKey ?: getLangfuseApiPublicKeyFromEnv()
+        LANGFUSE_SECRET_KEY = langfuseSecretKey ?: getLangfuseApiSecretKeyFromEnv()
     }
 
     internal lateinit var USER_ID: String
