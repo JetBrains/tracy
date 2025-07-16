@@ -25,11 +25,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Response
 import com.google.genai.Client as GeminiClient
 
-// TODO: tasks:
-//      1. Parse the response from liteLLM
-//      2. building tracing from the parsed response/request
-//      3. write a test case on the tracing result
-//      4. Update PR with a description (I'll need to merge anthropic, openai, gemini to some expend since there is a lot of copy-pastes)
 
 fun instrument(client: GeminiClient): GeminiClient {
     return patchClient(client, interceptor = OpenTelemetryGeminiLogger())
