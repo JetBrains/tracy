@@ -3,6 +3,7 @@ package ai.dev.kit
 import ai.dev.kit.tracing.AI_DEVELOPMENT_KIT_TRACER
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TEMPERATURE
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_ID
@@ -12,6 +13,7 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAG
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.int
@@ -121,11 +123,17 @@ class OpenTelemetryGeminiLogger : Interceptor {
             }
         }
 
+        val (model, operation) = url.pathSegments.lastOrNull()?.split(":")
+            ?.let { it.firstOrNull() to it.lastOrNull() } ?: (null to null)
+
+        model?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, model) }
+        operation?.let { span.setAttribute(GEN_AI_OPERATION_NAME, operation) }
+
+        println("MODEL: $model")
+        println("OPERATION: $operation")
+
         body["generationConfig"]?.let {
             it.jsonObject["temperature"]?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.jsonPrimitive.content.toDouble()) }
-
-            val model = url.pathSegments.lastOrNull()?.let { it.split(":").firstOrNull() ?: it }
-            body["model"]?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, model) }
             // TODO: other fields
         }
     }
@@ -175,7 +183,29 @@ class OpenTelemetryGeminiLogger : Interceptor {
             usage.jsonObject["candidatesTokenCount"]?.jsonPrimitive?.int?.let {
                 span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
             }
-            // TODO: add other usage attributes
+            usage.jsonObject["totalTokenCount"]?.jsonPrimitive?.int?.let {
+                span.setAttribute("gen_ai.usage.total_tokens", it.toLong())
+            }
+            // prompt tokens details
+            extractUsageTokenDetails(span, usage, attribute = "promptTokensDetails")
+            // candidate tokens details
+            extractUsageTokenDetails(span, usage, attribute = "candidatesTokensDetails")
+        }
+    }
+
+    private fun extractUsageTokenDetails(span: Span, usage: JsonElement, attribute: String) {
+        // turn the attribute into snake-cased format
+        val snakeCasedAttribute = attribute.replace(Regex("([a-z])([A-Z])"), "$1_$2").lowercase()
+
+        usage.jsonObject[attribute]?.let {
+            for ((index, detail) in it.jsonArray.withIndex()) {
+                detail.jsonObject["modality"]?.let {
+                    span.setAttribute("gen_ai.usage.$snakeCasedAttribute.$index.modality", it.jsonPrimitive.content)
+                }
+                detail.jsonObject["tokenCount"]?.jsonPrimitive?.int?.let {
+                    span.setAttribute("gen_ai.usage.$snakeCasedAttribute.$index.token_count", it.toLong())
+                }
+            }
         }
     }
 }
