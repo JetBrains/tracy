@@ -70,7 +70,6 @@ private class OpenTelemetryAnthropicLogger : Interceptor {
                 Json.parseToJsonElement(buffer.readUtf8()).jsonObject
             }
 
-            println("ANTHROPIC REQUEST BODY: $body")
             body?.let { getRequestBodyAttributes(span, it) }
             span.setAttribute("gen_ai.anthropic.api_base", "${url.scheme}://${url.host}")
 
@@ -83,8 +82,6 @@ private class OpenTelemetryAnthropicLogger : Interceptor {
 
             if (contentType == "application/json".toMediaType()) {
                 // We need to peek the body so the stream is not consumed
-                println("ANTHROPIC RESPONSE BODY: ${response.peekBody(Long.MAX_VALUE).string()}")
-
                 val decodedResponse = Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
                 getResultBodyAttributes(span, decodedResponse)
             } else {
@@ -119,7 +116,6 @@ private class OpenTelemetryAnthropicLogger : Interceptor {
         body["model"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
 
         // collecting response messages
-        println("ANTHROPIC RESPONSE CONTENT: ${body["content"]}")
         body["content"]?.let {
             for ((index, message) in it.jsonArray.withIndex()) {
                 span.setAttribute(
