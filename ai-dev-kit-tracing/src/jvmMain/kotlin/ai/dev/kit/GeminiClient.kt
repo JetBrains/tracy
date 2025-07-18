@@ -3,6 +3,7 @@ package ai.dev.kit
 import ai.dev.kit.tracing.AI_DEVELOPMENT_KIT_TRACER
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TEMPERATURE
@@ -85,8 +86,11 @@ class OpenTelemetryGeminiLogger : Interceptor {
                 contentType?.let { span.setAttribute("gen_ai.completion.content.type", it.toString()) }
             }
 
+            span.setStatus(StatusCode.OK)
             return response
         } catch (e: Exception) {
+            span.setStatus(StatusCode.ERROR)
+            span.recordException(e)
             throw e
         } finally {
             scope.close()
