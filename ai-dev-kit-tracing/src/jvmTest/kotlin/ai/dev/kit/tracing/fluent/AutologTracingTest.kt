@@ -77,7 +77,6 @@ class AutologTracingTest() : BaseOpenTelemetryTracingTest() {
         assertEquals(1, traces.size)
         val trace = traces.firstOrNull()
         assertNotNull(trace)
-        println("TRACE:\n$trace")
 
         assertEquals(
             LITELLM_URL,

@@ -65,9 +65,7 @@ class OpenTelemetryGeminiLogger : Interceptor {
                 Json.parseToJsonElement(buffer.readUtf8()).jsonObject
             }
 
-            println("GEMINI REQUEST BODY: $body")
             body?.let { getRequestBodyAttributes(span, url, it) }
-            println("GEMINI URL: ${url} (pathSegments: ${url.pathSegments})")
             span.setAttribute("gen_ai.gemini.api_base", "${url.scheme}://${url.host}")
 
             // TODO: get from parameters
@@ -76,15 +74,11 @@ class OpenTelemetryGeminiLogger : Interceptor {
             val response = chain.proceed(chain.request())
 
             val contentType = response.body?.contentType()
-            println("GEMINI CONTENT TYPE: $contentType (isJson=${contentType == "application/json".toMediaType()}), ${"application/json".toMediaType()}")
-
             val requiredMediaType = "application/json".toMediaType()
 
             if (contentType?.type == requiredMediaType.type &&
                 contentType.subtype == requiredMediaType.subtype) {
                 // We need to peek the body so the stream is not consumed
-                println("GEMINI RESPONSE BODY: ${response.peekBody(Long.MAX_VALUE).string()}")
-
                 val decodedResponse = Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
                 getResultBodyAttributes(span, decodedResponse)
             } else {
@@ -128,9 +122,6 @@ class OpenTelemetryGeminiLogger : Interceptor {
 
         model?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, model) }
         operation?.let { span.setAttribute(GEN_AI_OPERATION_NAME, operation) }
-
-        println("MODEL: $model")
-        println("OPERATION: $operation")
 
         body["generationConfig"]?.let {
             it.jsonObject["temperature"]?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.jsonPrimitive.content.toDouble()) }
