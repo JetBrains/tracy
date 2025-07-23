@@ -53,7 +53,7 @@ class OpenAITracingTest() : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test Anthropic auto tracing`() = runTest {
-        val client = createAnthropicClient()
+        val client = instrument(createAnthropicClient())
 
         val params = MessageCreateParams.builder()
             .maxTokens(1000L)
