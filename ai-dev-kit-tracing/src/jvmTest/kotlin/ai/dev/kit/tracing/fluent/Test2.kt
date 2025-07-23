@@ -1,9 +1,8 @@
 package ai.dev.kit.tracing.fluent
 
+import ai.dev.kit.exporters.createLangfuseExporter
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.setupLangfuseTracing
-import com.langfuse.client.LangfuseClient
-import com.langfuse.client.core.LangfuseClientApiException
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.ChatModel
@@ -25,11 +24,12 @@ import java.util.concurrent.TimeUnit
 
 class Test2 {
     private val langfuseUrl = "https://langfuse.labs.jb.gg"
-    private val privateKey = "sk-lf-..."
-    private val publicKey = "pk-lf-"
+    private val privateKey = "sk-lf-82c2a683-268f-4278-9f94-5e3dcc5a75bb"
+    private val publicKey = "pk-lf-44c183d1-1914-46a1-bd4a-8377c2f437cc"
 
     @Test
     fun test3() {
+        /*
         val credentials = "$publicKey:$privateKey"
         val encodedAuth = Base64.getEncoder().encodeToString(credentials.toByteArray())
         println("LANGFUSE_AUTH: $encodedAuth")
@@ -40,6 +40,10 @@ class Test2 {
             .addHeader("Authorization", "Basic $encodedAuth")
             // Remove the Content-Type header - let the exporter set it automatically
             .build()
+        */
+
+        val spanExporter = createLangfuseExporter()
+            ?: error("Failed to create OpenTelemetry exporter for Langfuse")
 
         println("CREATING CUSTOM spanExporter: $spanExporter")
 
@@ -66,7 +70,7 @@ class Test2 {
 
         // Step 4: Create and manage the span exactly like Python's "with" statement
         val tracer = telemetry.getTracer("ai.devkit.test")
-        val span = tracer.spanBuilder("123 GenAI Attributes 12345!!!sdsdfsdfsdfsdf").startSpan()
+        val span = tracer.spanBuilder("222 GenAI Attributes 12345!!!sdsdfsdfsdfsdf").startSpan()
 
         // The Python "with" statement makes the span current automatically
         span.makeCurrent().use { scope ->
@@ -102,22 +106,6 @@ class Test2 {
             println("Flush completed successfully: ${success.isSuccess}")
         } catch (e: Exception) {
             println("Error during flush: ${e.message}")
-        }
-    }
-
-    @Test
-    fun test2() {
-        val client = LangfuseClient.builder()
-            .url("https://langfuse.labs.jb.gg/")
-            .credentials(publicKey, privateKey)
-            .build()
-
-        try {
-            val traces = client.trace().list()
-            println("traces: $traces")
-        } catch (error: LangfuseClientApiException) {
-            println(error.body())
-            println(error.statusCode())
         }
     }
 
