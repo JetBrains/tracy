@@ -2,8 +2,15 @@ package ai.dev.kit
 
 import ai.dev.kit.tracing.AI_DEVELOPMENT_KIT_TRACER
 import io.opentelemetry.api.GlobalOpenTelemetry
+import io.opentelemetry.api.OpenTelemetry
+import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter
+import io.opentelemetry.sdk.OpenTelemetrySdk
+import io.opentelemetry.sdk.resources.Resource
+import io.opentelemetry.sdk.trace.SdkTracerProvider
+import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TEMPERATURE
@@ -48,11 +55,42 @@ private fun patchClient(client: GeminiClient, interceptor: Interceptor): GeminiC
     return client
 }
 
+
+private fun initializeOpenTelemetry(): OpenTelemetry {
+    val resource = Resource.getDefault().merge(
+        Resource.create(
+//            Attributes.of(
+//                AttributeKey.stringKey("service.namespace"), "your-namespace",
+//                ResourceAttributes.SERVICE_NAME, "your-ai-service",
+//                ResourceAttributes.SERVICE_VERSION, "1.0.0"
+//            )
+            Attributes.builder().build()
+        )
+    )
+
+    val spanExporter = OtlpHttpSpanExporter.builder()
+        .setEndpoint("https://langfuse.labs.jb.gg/")
+        // TODO: remove key!
+        .addHeader("Authorization", "Bearer sk-lf-...")
+        .build()
+
+    val tracerProvider = SdkTracerProvider.builder()
+        .addSpanProcessor(BatchSpanProcessor.builder(spanExporter).build())
+        .setResource(resource)
+        .build()
+
+    return OpenTelemetrySdk.builder()
+        .setTracerProvider(tracerProvider)
+        .build()
+}
+
 private const val SPAN_NAME = "Gemini-generation"
 
 class OpenTelemetryGeminiLogger : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val tracer = GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER)
+        val openTelemetry = initializeOpenTelemetry()
+        // val tracer = GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER)
+        val tracer = openTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER)
 
         val span = tracer.spanBuilder(SPAN_NAME).startSpan()
         val scope = span.makeCurrent()
@@ -113,11 +151,20 @@ class OpenTelemetryGeminiLogger : Interceptor {
 
                 // prompt parts
                 // parts: [ { text: str } ]
-                val parts = message.jsonObject["parts"]?.jsonArray ?: emptyList()
-                for ((partIndex, part) in parts.withIndex()) {
-                    val text = part.jsonObject["text"]?.jsonPrimitive?.content ?: continue
-                    span.setAttribute("gen_ai.prompt.$index.parts.$partIndex.text", text)
+                val content = buildString {
+                    val parts = message.jsonObject["parts"]?.jsonArray ?: emptyList()
+                    for ((partIndex, part) in parts.withIndex()) {
+                        val text = part.jsonObject["text"]?.jsonPrimitive?.content ?: continue
+//                        span.setAttribute("gen_ai.prompt.$index.parts.$partIndex.text", text)
+                        append(text)
+                    }
                 }
+                println("BUILT CONTENT: '$content'")
+                // TODO: span.setAttribute("gen_ai.prompt.$index.content", content)
+                val attrs = io.opentelemetry.api.common.Attributes.builder()
+                    .put("gen_ai.system", GenAiSystemIncubatingValues.GEMINI)
+                    .build()
+                span.addEvent("gen_ai.user.message", attrs)
             }
         }
 
