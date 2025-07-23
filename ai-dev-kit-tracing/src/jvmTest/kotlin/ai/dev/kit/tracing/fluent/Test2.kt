@@ -2,7 +2,6 @@ package ai.dev.kit.tracing.fluent
 
 import ai.dev.kit.exporters.createLangfuseExporter
 import ai.dev.kit.instrument
-import ai.dev.kit.tracing.setupLangfuseTracing
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.ChatModel
@@ -107,49 +106,6 @@ class Test2 {
         } catch (e: Exception) {
             println("Error during flush: ${e.message}")
         }
-    }
-
-    @Test
-    fun test() {
-        val traceProvider = setupLangfuseTracing(
-            langfuseUrl,
-            publicKey,
-            privateKey,
-            traceToConsole = true
-        )
-
-//        val openTelemetry = OpenTelemetrySdk.builder()
-//            .setTracerProvider(traceProvider)
-//            .build()
-
-        val tracer = traceProvider.tracerBuilder("ai.devkit.test").build()// .getTracer("ai.devkit.test")
-
-        // Create a span with the same attributes as your Python code
-        tracer.spanBuilder("GenAI Attributes 12345")
-            .startSpan()
-            .makeCurrent()
-            .use { scope ->  // Use 'use' to ensure span is closed properly
-                // Set the same attributes as your Python example
-                Span.current().setAttribute("gen_ai.prompt.0.role", "system")
-                Span.current().setAttribute("gen_ai.prompt.0.content", "You are a coding assistant that helps write Python code.")
-                Span.current().setAttribute("gen_ai.prompt.1.role", "user")
-                Span.current().setAttribute("gen_ai.prompt.1.content", "Write a function that calculates the factorial of a number.")
-
-                Span.current().setAttribute("gen_ai.completion.0.role", "assistant")
-                Span.current().setAttribute("gen_ai.completion.0.content", """def factorial(n):
-    if n == 0:
-        return 1
-    return n * factorial(n-1)""")
-
-                Span.current().setAttribute("gen_ai.request.model", "gpt-4")
-                Span.current().setAttribute("gen_ai.request.temperature", 0.7)
-                Span.current().setAttribute("gen_ai.usage.prompt_tokens", 25)
-                Span.current().setAttribute("gen_ai.usage.completion_tokens", 45)
-
-                println("Span created and will be exported immediately")
-            }
-
-        traceProvider.forceFlush()
     }
 
     @Test
