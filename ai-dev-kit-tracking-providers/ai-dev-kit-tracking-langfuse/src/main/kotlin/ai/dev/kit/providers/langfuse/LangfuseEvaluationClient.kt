@@ -2,13 +2,9 @@ package ai.dev.kit.providers.langfuse
 
 import ai.dev.kit.eval.utils.*
 import ai.dev.kit.providers.langfuse.KotlinLangfuseClient.LANGFUSE_BASE_URL
-import ai.dev.kit.providers.langfuse.fluent.publishRootStartCall
 import ai.dev.kit.tracing.LangfuseConfig
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
-import ai.dev.kit.tracing.fluent.processor.Span
-import io.opentelemetry.api.trace.SpanBuilder
-import io.opentelemetry.sdk.trace.ReadableSpan
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.net.URLEncoder
@@ -84,20 +80,6 @@ class LangfuseEvaluationClient(
     override suspend fun changeRunStatus(runId: String, runStatus: RunStatus) {
         // No Run status in Langfuse
     }
-
-    override suspend fun uploadTraceStart(
-        experimentId: String,
-        runId: String,
-        spanBuilder: SpanBuilder,
-        tracedRunName: String
-    ): Span {
-            val span = spanBuilder.startSpan()
-            publishRootStartCall(
-                span as ReadableSpan,
-                runId
-            )
-            return span
-        }
 
     companion object {
         enum class LangfuseMetricDataType(val type: String) {

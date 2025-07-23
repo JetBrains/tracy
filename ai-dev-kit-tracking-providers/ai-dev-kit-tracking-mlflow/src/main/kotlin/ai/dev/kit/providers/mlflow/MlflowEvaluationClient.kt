@@ -3,13 +3,11 @@ package ai.dev.kit.providers.mlflow
 import ai.dev.kit.eval.utils.*
 import ai.dev.kit.providers.mlflow.KotlinMlflowClient.ML_FLOW_URL
 import ai.dev.kit.providers.mlflow.dataclasses.dumpForMLFlow
-import ai.dev.kit.providers.mlflow.fluent.setupMlflowTracing
 import ai.dev.kit.tracing.fluent.FluentSpanAttributes
 import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
 import ai.dev.kit.tracing.fluent.dataclasses.TraceInfo
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.SpanBuilder
-import io.opentelemetry.sdk.trace.SdkTracerProvider
 import kotlinx.serialization.json.Json
 
 class MlflowEvaluationClient() : EvaluationClient {
@@ -76,7 +74,8 @@ class MlflowEvaluationClient() : EvaluationClient {
         updateRun(runId, runStatus)
     }
 
-    override suspend fun uploadTraceStart(
+    // used for legacy non-OTEl tracing
+    suspend fun uploadTraceStart(
         experimentId: String,
         runId: String,
         spanBuilder: SpanBuilder,
