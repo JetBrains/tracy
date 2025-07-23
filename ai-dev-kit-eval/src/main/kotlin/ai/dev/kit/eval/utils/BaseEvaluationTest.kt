@@ -3,6 +3,7 @@ package ai.dev.kit.eval.utils
 import ai.dev.kit.tracing.AI_DEVELOPMENT_KIT_TRACER
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.fluent.FluentSpanAttributes
+import ai.dev.kit.tracing.fluent.TracingSessionProvider.currentSessionId
 import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
 import ai.dev.kit.tracing.fluent.withSessionIdBlocking
 import io.opentelemetry.api.GlobalOpenTelemetry
@@ -95,7 +96,6 @@ abstract class BaseEvaluationTest<
                         val (dataPointSpan, dataPointScope) = createDataPointSpan(
                             dataPointIndex,
                             GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER),
-                            runResult.runId,
                             testCase
                         )
 
@@ -106,7 +106,7 @@ abstract class BaseEvaluationTest<
                             val output = withContext(dataPointSpan.asContextElement()) {
                                 generator.generate(testCase.input)
                             }
-                            executeSingleTest(testCase.name, testCase, runNum, runResult.runId, output, traceId)
+                            executeSingleTest(testCase.name, testCase, runNum, output, traceId)
                         } finally {
                             dataPointSpan.end()
                             dataPointScope.close()
@@ -117,15 +117,15 @@ abstract class BaseEvaluationTest<
         )
     }
 
-    private suspend fun createDataPointSpan(
-        dataPointIndex: Int, tracer: Tracer, runId: String, testCase: TestCase<AIInputT, GroundTruthT>
+    private fun createDataPointSpan(
+        dataPointIndex: Int, tracer: Tracer, testCase: TestCase<AIInputT, GroundTruthT>
     ): Pair<Span, io.opentelemetry.context.Scope> {
         val tracedRunName = testCase.name.ifBlank { "Data Point ${dataPointIndex + 1}" }
         val dataPointSpan = tracer.spanBuilder(tracedRunName).setNoParent().let {
             it.setAttribute(
                 FluentSpanAttributes.SPAN_INPUTS.key, testCase.input.toString()
             )
-            loggingClient.uploadTraceStart(experimentId, runId, it, tracedRunName)
+            it.startSpan()
         }
 
         val dataPointScope = dataPointSpan.makeCurrent()
@@ -136,7 +136,6 @@ abstract class BaseEvaluationTest<
         testCaseName: String,
         testCase: TestCase<AIInputT, GroundTruthT>,
         runNum: Int,
-        runId: String,
         output: AIOutputT,
         traceId: String
     ) {
@@ -144,11 +143,11 @@ abstract class BaseEvaluationTest<
             evaluator.evaluate(testCase.groundTruth, output)
         } catch (e: Throwable) {
             val message = "❌ Test Failed: $testCaseName | Case: $testCase | Reason: Evaluator has thrown ${e.message}"
-            logTest(message, runId)
+            logTest(message)
             fail(message)
         }
         runResults[runNum].testResults.add(
-            TestResult<AIInputT, GroundTruthT, AIOutputT, EvalResultT>(
+            TestResult(
                 testCase,
                 output,
                 result,
@@ -158,19 +157,21 @@ abstract class BaseEvaluationTest<
 
         if (result.hasJunitTestSucceeded) {
             logTest(
-                message = "✅ Test Passed: $testCaseName | Case: $testCase | Result: $result", runId = runId
+                message = "✅ Test Passed: $testCaseName | Case: $testCase | Result: $result"
             )
         } else {
             val message = "❌ Test failed: $testCaseName | Case: $testCase | Result: $result"
-            logTest(message, runId)
+            logTest(message)
             fail(message)
         }
     }
 
-    private fun logTest(message: String, runId: String) {
-        val resultsLink = loggingClient.getResultsLink(experimentId, runId)
+    private fun logTest(message: String) {
         logger.info { message }
-        logger.info { "🔗 View results at $resultsLink" }
+        currentSessionId?.let {
+            val resultsLink = loggingClient.getResultsLink(experimentId, it)
+            logger.info { "🔗 View results at $resultsLink" }
+        }
     }
 
     private suspend fun logAverageScore(runId: String, evalResults: List<EvalResultT>) {
