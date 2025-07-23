@@ -53,7 +53,7 @@ class AutologTracingTest() : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test Gemini auto tracing`() = runTest {
-        val model = "gemini-1.5-flash"
+        val model = "gemini-1.5-pro"
         val client = instrument(createGeminiClient())
 
         client.models.generateContent(
@@ -63,14 +63,6 @@ class AutologTracingTest() : BaseOpenTelemetryTracingTest() {
                 .temperature(0.8f)
                 .build()
         )
-
-        // view available models
-        /*
-        val result = client.models.list(ListModelsConfig.builder().build()).toList()
-        for (m in result) {
-            println("RESULT: ${m.name()}")
-        }
-        */
 
         val traces = analyzeSpans()
 
@@ -85,7 +77,7 @@ class AutologTracingTest() : BaseOpenTelemetryTracingTest() {
         assertTrue(
             trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(model) == true
         )
-        val text = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.parts.0.text")]
+        val text = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
         assertNotNull(text)
         assertTrue(text.isNotEmpty())
     }
