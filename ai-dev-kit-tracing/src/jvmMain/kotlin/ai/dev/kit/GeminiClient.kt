@@ -99,12 +99,6 @@ class OpenTelemetryGeminiLogger : Interceptor {
     }
 
     private fun getRequestBodyAttributes(span: Span, url: HttpUrl, body: JsonObject) {
-        body["generationConfig"]?.let {
-            it.jsonObject["temperature"]?.jsonPrimitive?.let { temperature ->
-                span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, temperature.double)
-            }
-        }
-
         // contents: [ { parts: array, role: str } ]
         body["contents"]?.let {
             for ((index, message) in it.jsonArray.withIndex()) {
@@ -113,14 +107,18 @@ class OpenTelemetryGeminiLogger : Interceptor {
 
                 // prompt parts
                 // parts: [ { text: str } ]
-                val parts = message.jsonObject["parts"]?.jsonArray ?: emptyList()
-                for ((partIndex, part) in parts.withIndex()) {
-                    val text = part.jsonObject["text"]?.jsonPrimitive?.content ?: continue
-                    span.setAttribute("gen_ai.prompt.$index.parts.$partIndex.text", text)
+                val content = buildString {
+                    val parts = message.jsonObject["parts"]?.jsonArray ?: emptyList()
+                    for (part in parts) {
+                        val text = part.jsonObject["text"]?.jsonPrimitive?.content ?: continue
+                        append(text)
+                    }
                 }
+                span.setAttribute("gen_ai.prompt.$index.content", content)
             }
         }
 
+        // url ends with `[model]:[operation]`
         val (model, operation) = url.pathSegments.lastOrNull()?.split(":")
             ?.let { it.firstOrNull() to it.lastOrNull() } ?: (null to null)
 
@@ -139,8 +137,6 @@ class OpenTelemetryGeminiLogger : Interceptor {
 
         body["candidates"]?.let {
             for ((index, candidate) in it.jsonArray.withIndex()) {
-                val index = candidate.jsonObject["index"]?.jsonPrimitive?.int ?: index
-
                 candidate.jsonObject["content"]?.let { content ->
                     // role
                     span.setAttribute(
@@ -149,11 +145,14 @@ class OpenTelemetryGeminiLogger : Interceptor {
                     )
 
                     // response parts
-                    val parts = content.jsonObject["parts"]?.jsonArray?.withIndex() ?: emptyList()
-                    for ((partIndex, part) in parts) {
-                        val text = part.jsonObject["text"]?.jsonPrimitive?.content ?: continue
-                        span.setAttribute("gen_ai.completion.$index.parts.$partIndex.text", text)
+                    val content = buildString {
+                        val parts = content.jsonObject["parts"]?.jsonArray ?: emptyList()
+                        for (part in parts) {
+                            val text = part.jsonObject["text"]?.jsonPrimitive?.content ?: continue
+                            append(text)
+                        }
                     }
+                    span.setAttribute("gen_ai.completion.$index.content", content)
 
                     // TODO: add tool and function calling
                     /*
@@ -189,10 +188,11 @@ class OpenTelemetryGeminiLogger : Interceptor {
     }
 
     private fun extractUsageTokenDetails(span: Span, usage: JsonElement, attribute: String) {
-        // turn the attribute into snake-cased format
+        // turn the given attribute into snake-cased format
         val snakeCasedAttribute = attribute.replace(Regex("([a-z])([A-Z])"), "$1_$2").lowercase()
 
         usage.jsonObject[attribute]?.let {
+            // TODO: is attribute naming correct?
             for ((index, detail) in it.jsonArray.withIndex()) {
                 detail.jsonObject["modality"]?.let {
                     span.setAttribute("gen_ai.usage.$snakeCasedAttribute.$index.modality", it.jsonPrimitive.content)
