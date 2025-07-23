@@ -103,8 +103,6 @@ class OpenTelemetryGeminiLogger : Interceptor {
 
     private fun getRequestBodyAttributes(span: Span, url: HttpUrl, body: JsonObject) {
         // contents: [ { parts: array, role: str } ]
-        println("body: $body")
-
         body["contents"]?.let {
             for ((index, message) in it.jsonArray.withIndex()) {
                 // role
@@ -153,8 +151,6 @@ class OpenTelemetryGeminiLogger : Interceptor {
         // See: https://ai.google.dev/api/generate-content#v1beta.GenerateContentResponse
         body["responseId"]?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
         body["modelVersion"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
-
-        println("response: $body")
 
         body["candidates"]?.let {
             for ((index, candidate) in it.jsonArray.withIndex()) {
