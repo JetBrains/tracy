@@ -7,8 +7,11 @@ import com.anthropic.core.ClientOptions
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OUTPUT_TYPE
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MAX_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TEMPERATURE
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_K
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_P
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_FINISH_REASONS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_ID
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_MODEL
@@ -18,6 +21,7 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAG
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.double
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -98,8 +102,29 @@ private class OpenTelemetryAnthropicLogger : Interceptor {
     }
 
     private fun getRequestBodyAttributes(span: Span, body: JsonObject) {
-        body["temperature"]?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.jsonPrimitive.content.toDouble()) }
-        body["model"]?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it.jsonPrimitive.content) }
+        // See: https://docs.anthropic.com/en/api/messages
+        println("request body: $body")
+
+        body["temperature"]?.jsonPrimitive?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.content.toDouble()) }
+        body["model"]?.jsonPrimitive?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it.content) }
+        body["max_tokens"]?.jsonPrimitive?.int?.let { span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it.toLong()) }
+
+        // metadata
+        body["metadata"]?.jsonObject?.let { metadata ->
+            metadata["user_id"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.metadata.user_id", it.content) }
+        }
+        body["service_tier"]?.jsonPrimitive?.let {
+            span.setAttribute("gen_ai.usage.service_tier", it.content)
+        }
+
+        // system prompt
+        body["system"]?.jsonObject?.let { system ->
+            system["text"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.prompt.system.content", it.content) }
+            system["type"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.prompt.system.type", it.content) }
+        }
+
+        body["top_k"]?.jsonPrimitive?.double?.let { span.setAttribute(GEN_AI_REQUEST_TOP_K, it) }
+        body["top_p"]?.jsonPrimitive?.double?.let { span.setAttribute(GEN_AI_REQUEST_TOP_P, it) }
 
         body["messages"]?.let {
             for ((index, message) in it.jsonArray.withIndex()) {
@@ -110,7 +135,10 @@ private class OpenTelemetryAnthropicLogger : Interceptor {
     }
 
     private fun getResultBodyAttributes(span: Span, body: JsonObject) {
+        println("result body: $body")
+
         body["id"]?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
+        // TODO: use `llm.request.type`?
         body["type"]?.let { span.setAttribute(GEN_AI_OUTPUT_TYPE, it.jsonPrimitive.content) }
         body["role"]?.let { span.setAttribute("gen_ai.response.role", it.jsonPrimitive.content) }
         body["model"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
@@ -122,7 +150,7 @@ private class OpenTelemetryAnthropicLogger : Interceptor {
                     "gen_ai.completion.$index.type",
                     message.jsonObject["type"]?.jsonPrimitive?.content
                 )
-                span.setAttribute("gen_ai.completion.$index.text", message.jsonObject["text"]?.toString())
+                span.setAttribute("gen_ai.completion.$index.content", message.jsonObject["text"]?.toString())
 
                 // TODO: add tool and function calling
                 /*
@@ -139,20 +167,20 @@ private class OpenTelemetryAnthropicLogger : Interceptor {
         }
 
         // collecting usage stats (e.g., input/output tokens)
-        body["usage"]?.let { usage ->
-            usage.jsonObject["input_tokens"]?.jsonPrimitive?.int?.let {
+        body["usage"]?.jsonObject?.let { usage ->
+            usage["input_tokens"]?.jsonPrimitive?.int?.let {
                 span.setAttribute(GEN_AI_USAGE_INPUT_TOKENS, it)
             }
-            usage.jsonObject["output_tokens"]?.jsonPrimitive?.int?.let {
+            usage["output_tokens"]?.jsonPrimitive?.int?.let {
                 span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
             }
-            usage.jsonObject["cache_creation_input_tokens"]?.jsonPrimitive?.int?.let {
+            usage["cache_creation_input_tokens"]?.jsonPrimitive?.int?.let {
                 span.setAttribute("gen_ai.usage.cache_creation_input_tokens", it.toLong())
             }
-            usage.jsonObject["cache_read_input_tokens"]?.jsonPrimitive?.int?.let {
+            usage["cache_read_input_tokens"]?.jsonPrimitive?.int?.let {
                 span.setAttribute("gen_ai.usage.cache_read_input_tokens", it.toLong())
             }
-            usage.jsonObject["service_tier"]?.jsonPrimitive?.let {
+            usage["service_tier"]?.jsonPrimitive?.let {
                 span.setAttribute("gen_ai.usage.service_tier", it.content)
             }
         }
