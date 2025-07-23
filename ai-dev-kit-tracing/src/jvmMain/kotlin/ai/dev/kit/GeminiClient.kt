@@ -123,7 +123,8 @@ class OpenTelemetryGeminiLogger : Interceptor {
             ?.let { it.firstOrNull() to it.lastOrNull() } ?: (null to null)
 
         model?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, model) }
-        operation?.let { span.setAttribute(GEN_AI_OPERATION_NAME, operation) }
+        // TODO: use GEN_AI_OPERATION_NAME?
+        operation?.let { span.setAttribute("llm.request.type", operation) }
 
         body["generationConfig"]?.let {
             it.jsonObject["temperature"]?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.jsonPrimitive.content.toDouble()) }
