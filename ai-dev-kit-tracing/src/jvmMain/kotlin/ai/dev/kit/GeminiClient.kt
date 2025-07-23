@@ -58,46 +58,46 @@ class OpenTelemetryGeminiLogger : Interceptor {
         val tracer = GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER)
 
         val span = tracer.spanBuilder(SPAN_NAME).startSpan()
-        val scope = span.makeCurrent()
 
-        try {
-            val request = chain.request()
-            val url = request.url
-            val body = request.body?.let {
-                val buffer = okio.Buffer()
-                it.writeTo(buffer)
-                Json.parseToJsonElement(buffer.readUtf8()).jsonObject
+        span.makeCurrent().use { scopeIgnored ->
+            try {
+                val request = chain.request()
+                val url = request.url
+                val body = request.body?.let {
+                    val buffer = okio.Buffer()
+                    it.writeTo(buffer)
+                    Json.parseToJsonElement(buffer.readUtf8()).jsonObject
+                }
+
+                body?.let { getRequestBodyAttributes(span, url, it) }
+                span.setAttribute("gen_ai.gemini.api_base", "${url.scheme}://${url.host}")
+
+                // TODO: get from parameters
+                span.setAttribute(GEN_AI_SYSTEM, GenAiSystemIncubatingValues.GEMINI)
+
+                val response = chain.proceed(chain.request())
+
+                val contentType = response.body?.contentType()
+                val requiredMediaType = "application/json".toMediaType()
+
+                if (contentType?.type == requiredMediaType.type &&
+                    contentType.subtype == requiredMediaType.subtype) {
+                    // We need to peek the body so the stream is not consumed
+                    val decodedResponse = Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
+                    getResultBodyAttributes(span, decodedResponse)
+                } else {
+                    contentType?.let { span.setAttribute("gen_ai.completion.content.type", it.toString()) }
+                }
+
+                span.setStatus(StatusCode.OK)
+                return response
+            } catch (e: Exception) {
+                span.setStatus(StatusCode.ERROR)
+                span.recordException(e)
+                throw e
+            } finally {
+                span.end()
             }
-
-            body?.let { getRequestBodyAttributes(span, url, it) }
-            span.setAttribute("gen_ai.gemini.api_base", "${url.scheme}://${url.host}")
-
-            // TODO: get from parameters
-            span.setAttribute(GEN_AI_SYSTEM, GenAiSystemIncubatingValues.GEMINI)
-
-            val response = chain.proceed(chain.request())
-
-            val contentType = response.body?.contentType()
-            val requiredMediaType = "application/json".toMediaType()
-
-            if (contentType?.type == requiredMediaType.type &&
-                contentType.subtype == requiredMediaType.subtype) {
-                // We need to peek the body so the stream is not consumed
-                val decodedResponse = Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
-                getResultBodyAttributes(span, decodedResponse)
-            } else {
-                contentType?.let { span.setAttribute("gen_ai.completion.content.type", it.toString()) }
-            }
-
-            span.setStatus(StatusCode.OK)
-            return response
-        } catch (e: Exception) {
-            span.setStatus(StatusCode.ERROR)
-            span.recordException(e)
-            throw e
-        } finally {
-            scope.close()
-            span.end()
         }
     }
 
