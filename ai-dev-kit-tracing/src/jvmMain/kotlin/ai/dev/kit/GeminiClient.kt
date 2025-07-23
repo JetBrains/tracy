@@ -4,9 +4,12 @@ import ai.dev.kit.tracing.AI_DEVELOPMENT_KIT_TRACER
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_CHOICE_COUNT
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MAX_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TEMPERATURE
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_K
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_P
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_ID
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_MODEL
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_SYSTEM
@@ -100,6 +103,8 @@ class OpenTelemetryGeminiLogger : Interceptor {
 
     private fun getRequestBodyAttributes(span: Span, url: HttpUrl, body: JsonObject) {
         // contents: [ { parts: array, role: str } ]
+        println("body: $body")
+
         body["contents"]?.let {
             for ((index, message) in it.jsonArray.withIndex()) {
                 // role
@@ -109,11 +114,15 @@ class OpenTelemetryGeminiLogger : Interceptor {
                 // parts: [ { text: str } ]
                 val content = buildString {
                     val parts = message.jsonObject["parts"]?.jsonArray ?: emptyList()
+                    var isFirst = true
                     for (part in parts) {
                         val text = part.jsonObject["text"]?.jsonPrimitive?.content ?: continue
+                        if (!isFirst) append(" ")
                         append(text)
+                        isFirst = false
                     }
                 }
+
                 span.setAttribute("gen_ai.prompt.$index.content", content)
             }
         }
@@ -126,15 +135,26 @@ class OpenTelemetryGeminiLogger : Interceptor {
         // TODO: use GEN_AI_OPERATION_NAME?
         operation?.let { span.setAttribute("llm.request.type", operation) }
 
+        // See: https://ai.google.dev/api/generate-content#v1beta.GenerationConfig
         body["generationConfig"]?.let {
-            it.jsonObject["temperature"]?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.jsonPrimitive.content.toDouble()) }
-            // TODO: other fields
+            it.jsonObject["candidateCount"]?.jsonPrimitive?.int?.let {
+                span.setAttribute(GEN_AI_REQUEST_CHOICE_COUNT, it.toLong())
+            }
+            it.jsonObject["maxOutputTokens"]?.jsonPrimitive?.int?.let {
+                span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it.toLong())
+            }
+            it.jsonObject["temperature"]?.jsonPrimitive?.double?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it) }
+            it.jsonObject["topP"]?.jsonPrimitive?.double?.let { span.setAttribute(GEN_AI_REQUEST_TOP_P, it) }
+            it.jsonObject["topK"]?.jsonPrimitive?.double?.let { span.setAttribute(GEN_AI_REQUEST_TOP_K, it) }
         }
     }
 
     private fun getResultBodyAttributes(span: Span, body: JsonObject) {
+        // See: https://ai.google.dev/api/generate-content#v1beta.GenerateContentResponse
         body["responseId"]?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
         body["modelVersion"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
+
+        println("response: $body")
 
         body["candidates"]?.let {
             for ((index, candidate) in it.jsonArray.withIndex()) {
@@ -148,9 +168,12 @@ class OpenTelemetryGeminiLogger : Interceptor {
                     // response parts
                     val content = buildString {
                         val parts = content.jsonObject["parts"]?.jsonArray ?: emptyList()
+                        var isFirst = true
                         for (part in parts) {
                             val text = part.jsonObject["text"]?.jsonPrimitive?.content ?: continue
+                            if (!isFirst) append(" ")
                             append(text)
+                            isFirst = false
                         }
                     }
                     span.setAttribute("gen_ai.completion.$index.content", content)
