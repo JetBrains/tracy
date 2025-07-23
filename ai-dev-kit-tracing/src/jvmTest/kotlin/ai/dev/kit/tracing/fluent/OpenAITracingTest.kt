@@ -53,13 +53,14 @@ class OpenAITracingTest() : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test Anthropic auto tracing`() = runTest {
+        val model = Model.CLAUDE_3_5_SONNET_20240620
         val client = instrument(createAnthropicClient())
 
         val params = MessageCreateParams.builder()
             .maxTokens(1000L)
             .temperature(0.8)
             .addUserMessage("Generate polite greeting and introduce yourself")
-            .model(Model.CLAUDE_3_5_SONNET_20240620)
+            .model(model)
             .build()
 
         val message = client.messages().create(params)
@@ -78,7 +79,9 @@ class OpenAITracingTest() : BaseOpenTelemetryTracingTest() {
             trace.attributes[AttributeKey.stringKey("gen_ai.anthropic.api_base")]
         )
 
-        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(Model.CLAUDE_3_5_SONNET_20240620.asString()) == true)
+        assertTrue(
+            trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(model.asString()) == true
+        )
 
         val type = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.type")]
         assertNotNull(type)
