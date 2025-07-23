@@ -63,12 +63,9 @@ class OpenAITracingTest() : BaseOpenTelemetryTracingTest() {
             .model(model)
             .build()
 
-        val message = client.messages().create(params)
-        client.completions()
-        println("MESSAGE: $message")
+        client.messages().create(params)
 
         val traces = analyzeSpans()
-        println("TRACES: $traces")
 
         assertEquals(1, traces.size)
         val trace = traces.firstOrNull()
@@ -87,7 +84,7 @@ class OpenAITracingTest() : BaseOpenTelemetryTracingTest() {
         assertNotNull(type)
         assertTrue(type.isNotEmpty())
 
-        val text = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.text")]
+        val text = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
         assertNotNull(text)
         assertTrue(text.isNotEmpty())
     }

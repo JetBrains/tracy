@@ -103,8 +103,6 @@ private class OpenTelemetryAnthropicLogger : Interceptor {
 
     private fun getRequestBodyAttributes(span: Span, body: JsonObject) {
         // See: https://docs.anthropic.com/en/api/messages
-        println("request body: $body")
-
         body["temperature"]?.jsonPrimitive?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.content.toDouble()) }
         body["model"]?.jsonPrimitive?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it.content) }
         body["max_tokens"]?.jsonPrimitive?.int?.let { span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it.toLong()) }
@@ -135,8 +133,6 @@ private class OpenTelemetryAnthropicLogger : Interceptor {
     }
 
     private fun getResultBodyAttributes(span: Span, body: JsonObject) {
-        println("result body: $body")
-
         body["id"]?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
         // TODO: use `llm.request.type`?
         body["type"]?.let { span.setAttribute(GEN_AI_OUTPUT_TYPE, it.jsonPrimitive.content) }
