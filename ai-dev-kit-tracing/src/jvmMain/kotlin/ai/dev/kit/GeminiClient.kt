@@ -91,6 +91,8 @@ class OpenTelemetryGeminiLogger : Interceptor {
 
                 // for any 4xx response code, treat a failure
                 if (response.code / 100 == 4) {
+                    val decodedResponse = Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
+                    getResultErrorBodyAttributes(span, decodedResponse)
                     span.setStatus(StatusCode.ERROR)
                 } else {
                     span.setStatus(StatusCode.OK)
@@ -104,6 +106,15 @@ class OpenTelemetryGeminiLogger : Interceptor {
             } finally {
                 span.end()
             }
+        }
+    }
+
+    private fun getResultErrorBodyAttributes(span: Span, body: JsonObject) {
+        body["error"]?.jsonObject?.let {
+            it["message"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.message", it.content) }
+            it["type"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.type", it.content) }
+            it["param"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.param", it.content) }
+            it["code"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.code", it.content) }
         }
     }
 

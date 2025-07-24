@@ -151,34 +151,18 @@ class AutologTracingTest() : BaseOpenTelemetryTracingTest() {
     }
 
     @Test
-    fun `test Gemini span error code when returning 400 response code`() {
+    fun `test Gemini span error code when requesting non-existent model`() {
         val client = instrument(createGeminiClient())
-
-        val errorResponseCodeInterceptor = object : Interceptor {
-            override fun intercept(chain: Interceptor.Chain): Response {
-                val response = chain.proceed(chain.request())
-                val newBody = "{ \"invalid\": \"json\" }"
-                    .toResponseBody(response.body?.contentType())
-
-                return response.newBuilder()
-                    .body(newBody)
-                    .code(400)
-                    .build()
-            }
-        }
-
-        // the installed interceptor will imitate a failed request
-        installHttpInterceptor(client, interceptor = errorResponseCodeInterceptor)
 
         try {
             client.models.generateContent(
-                "gemini-1.5-pro",
+                "[non-existent model name!]",
                 "Generate polite greeting and introduce yourself",
                 GeminiGenerateContentConfig.builder()
                     .temperature(0.8f)
                     .build()
             )
-        } catch (_: ClientException) {
+        } catch (e: Exception) {
             // suppress
         }
 
@@ -193,6 +177,9 @@ class AutologTracingTest() : BaseOpenTelemetryTracingTest() {
             LITELLM_URL,
             trace.attributes[AttributeKey.stringKey("gen_ai.gemini.api_base")]
         )
+
+        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")]?.isNotEmpty() == true)
+        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.error.code")]?.isNotEmpty() == true)
     }
 
     private fun installHttpInterceptor(client: GeminiClient, interceptor: Interceptor) {
