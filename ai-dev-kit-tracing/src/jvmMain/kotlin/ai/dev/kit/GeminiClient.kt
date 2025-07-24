@@ -89,7 +89,13 @@ class OpenTelemetryGeminiLogger : Interceptor {
                     contentType?.let { span.setAttribute("gen_ai.completion.content.type", it.toString()) }
                 }
 
-                span.setStatus(StatusCode.OK)
+                // for any 4xx response code, treat a failure
+                if (response.code / 100 == 4) {
+                    span.setStatus(StatusCode.ERROR)
+                } else {
+                    span.setStatus(StatusCode.OK)
+                }
+
                 return response
             } catch (e: Exception) {
                 span.setStatus(StatusCode.ERROR)
