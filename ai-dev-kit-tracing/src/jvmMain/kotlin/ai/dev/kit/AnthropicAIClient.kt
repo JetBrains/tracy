@@ -35,23 +35,14 @@ fun instrument(client: AnthropicClient): AnthropicClient {
     return patchClient(client, interceptor = OpenTelemetryAnthropicLogger())
 }
 
-// TODO: duplicates patchClient for OpenAIClient
 private fun patchClient(client: AnthropicClient, interceptor: Interceptor): AnthropicClient {
-    val clientOptionsField = AnthropicClientImpl::class.java.getDeclaredField("clientOptions").apply { isAccessible = true }
-    val clientOptions = clientOptionsField.get(client)
-
-    val originalHttpClientField = ClientOptions::class.java.getDeclaredField("originalHttpClient").apply { isAccessible = true }
-    val originalHttpClient = originalHttpClientField.get(clientOptions)
-
-    val okHttpClientField = com.anthropic.client.okhttp.OkHttpClient::class.java.getDeclaredField("okHttpClient").apply { isAccessible = true }
-    val okHttpClient = okHttpClientField.get(originalHttpClient) as okhttp3.OkHttpClient
-
-    val interceptorsField = okhttp3.OkHttpClient::class.java.getDeclaredField("interceptors").apply { isAccessible = true }
-
-    // install tracing interceptors
-    interceptorsField.set(okHttpClient, listOf(interceptor))
-
-    return client
+    return patchOpenAICompatibleClient(
+        client = client,
+        clientImplClass = AnthropicClientImpl::class.java,
+        clientOptionsClass = ClientOptions::class.java,
+        clientOkHttpClientClass = com.anthropic.client.okhttp.OkHttpClient::class.java,
+        interceptor = interceptor,
+    )
 }
 
 

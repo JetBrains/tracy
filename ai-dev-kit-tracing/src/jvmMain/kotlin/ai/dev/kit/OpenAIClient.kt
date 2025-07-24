@@ -10,6 +10,8 @@ import kotlinx.serialization.json.*
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Response
 
 @Deprecated("instrument() instead")
 fun createOpenAIClient(): OpenAIClient {
@@ -27,23 +29,13 @@ fun instrument(client: OpenAIClient): OpenAIClient {
 }
 
 private fun patchClient(openAIClient: OpenAIClient, interceptor: Interceptor): OpenAIClient {
-    val clientOptionsField =
-        OpenAIClientImpl::class.java.getDeclaredField("clientOptions").apply { isAccessible = true }
-    val clientOptions = clientOptionsField.get(openAIClient)
-
-    val originalHttpClientField =
-        ClientOptions::class.java.getDeclaredField("originalHttpClient").apply { isAccessible = true }
-    val originalHttpClient = originalHttpClientField.get(clientOptions)
-
-    val okHttpClientField =
-        com.openai.client.okhttp.OkHttpClient::class.java.getDeclaredField("okHttpClient").apply { isAccessible = true }
-    val okHttpClient = okHttpClientField.get(originalHttpClient) as OkHttpClient
-
-    val interceptorsField = OkHttpClient::class.java.getDeclaredField("interceptors").apply { isAccessible = true }
-
-    interceptorsField.set(okHttpClient, listOf(interceptor))
-
-    return openAIClient
+    return patchOpenAICompatibleClient(
+        client = openAIClient,
+        clientImplClass = OpenAIClientImpl::class.java,
+        clientOptionsClass = ClientOptions::class.java,
+        clientOkHttpClientClass = com.openai.client.okhttp.OkHttpClient::class.java,
+        interceptor = interceptor,
+    )
 }
 
 private const val SPAN_NAME = "OpenAI-generation"
