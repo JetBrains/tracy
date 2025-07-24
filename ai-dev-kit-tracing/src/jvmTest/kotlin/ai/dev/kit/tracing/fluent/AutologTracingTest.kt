@@ -9,6 +9,7 @@ import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import io.opentelemetry.api.common.AttributeKey
+import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -70,6 +71,7 @@ class AutologTracingTest() : BaseOpenTelemetryTracingTest() {
         val trace = traces.firstOrNull()
         assertNotNull(trace)
 
+        assertTrue(trace.status.statusCode == StatusCode.OK)
         assertEquals(
             LITELLM_URL,
             trace.attributes[AttributeKey.stringKey("gen_ai.gemini.api_base")]
