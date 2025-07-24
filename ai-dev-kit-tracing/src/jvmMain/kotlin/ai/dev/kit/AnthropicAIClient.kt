@@ -6,6 +6,7 @@ import com.anthropic.client.AnthropicClientImpl
 import com.anthropic.core.ClientOptions
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OUTPUT_TYPE
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MAX_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
@@ -58,6 +59,10 @@ private const val SPAN_NAME = "Anthropic-generation"
 
 
 // TODO: duplicates OpenTelemetryOpenAILogger
+
+/**
+ * For request and response schemas, see: [Anthropic Docs](https://docs.anthropic.com/en/api/messages)
+ */
 private class OpenTelemetryAnthropicLogger : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val tracer = GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER)
@@ -81,7 +86,6 @@ private class OpenTelemetryAnthropicLogger : Interceptor {
             span.setAttribute(GEN_AI_SYSTEM, GenAiSystemIncubatingValues.ANTHROPIC)
 
             val response = chain.proceed(chain.request())
-
             val contentType = response.body?.contentType()
 
             if (contentType == "application/json".toMediaType()) {
@@ -90,6 +94,17 @@ private class OpenTelemetryAnthropicLogger : Interceptor {
                 getResultBodyAttributes(span, decodedResponse)
             } else {
                 contentType?.let { span.setAttribute("gen_ai.completion.content.type", it.toString()) }
+            }
+
+            // treat API errors: https://docs.anthropic.com/en/api/errors
+            if (response.code / 100 == 4 || response.code / 100 == 5) {
+                val decodedResponse = Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
+                span.setAttribute("gen_ai.error.status_code", response.code.toLong())
+                getResultErrorBodyAttributes(span, decodedResponse)
+                span.setStatus(StatusCode.ERROR)
+            }
+            else {
+                span.setStatus(StatusCode.OK)
             }
 
             return response
@@ -101,8 +116,16 @@ private class OpenTelemetryAnthropicLogger : Interceptor {
         }
     }
 
+    private fun getResultErrorBodyAttributes(span: Span, body: JsonObject) {
+        body["error"]?.jsonObject?.let {
+            it["message"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.message", it.content) }
+            it["type"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.type", it.content) }
+            it["param"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.param", it.content) }
+            it["code"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.code", it.content) }
+        }
+    }
+
     private fun getRequestBodyAttributes(span: Span, body: JsonObject) {
-        // See: https://docs.anthropic.com/en/api/messages
         body["temperature"]?.jsonPrimitive?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.content.toDouble()) }
         body["model"]?.jsonPrimitive?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it.content) }
         body["max_tokens"]?.jsonPrimitive?.int?.let { span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it.toLong()) }
