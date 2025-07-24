@@ -96,10 +96,10 @@ private class OpenTelemetryAnthropicLogger : Interceptor {
                 contentType?.let { span.setAttribute("gen_ai.completion.content.type", it.toString()) }
             }
 
+            span.setAttribute("http.status_code", response.code.toLong())
             // treat API errors: https://docs.anthropic.com/en/api/errors
             if (response.code / 100 == 4 || response.code / 100 == 5) {
                 val decodedResponse = Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
-                span.setAttribute("gen_ai.error.status_code", response.code.toLong())
                 getResultErrorBodyAttributes(span, decodedResponse)
                 span.setStatus(StatusCode.ERROR)
             }
