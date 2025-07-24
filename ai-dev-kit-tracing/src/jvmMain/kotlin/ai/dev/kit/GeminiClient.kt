@@ -53,6 +53,9 @@ private fun patchClient(client: GeminiClient, interceptor: Interceptor): GeminiC
 
 private const val SPAN_NAME = "Gemini-generation"
 
+/**
+ * For request and response schemas, see: [Gemini Docs](https://ai.google.dev/api/generate-content)
+ */
 class OpenTelemetryGeminiLogger : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val tracer = GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER)
@@ -120,14 +123,11 @@ class OpenTelemetryGeminiLogger : Interceptor {
     }
 
     private fun getRequestBodyAttributes(span: Span, url: HttpUrl, body: JsonObject) {
-        // contents: [ { parts: array, role: str } ]
+        // See: https://ai.google.dev/api/caching#Content
         body["contents"]?.let {
             for ((index, message) in it.jsonArray.withIndex()) {
-                // role
                 span.setAttribute("gen_ai.prompt.$index.role", message.jsonObject["role"]?.jsonPrimitive?.content)
-
                 // prompt parts
-                // parts: [ { text: str } ]
                 val content = buildString {
                     val parts = message.jsonObject["parts"]?.jsonArray ?: emptyList()
                     var isFirst = true
@@ -138,7 +138,6 @@ class OpenTelemetryGeminiLogger : Interceptor {
                         isFirst = false
                     }
                 }
-
                 span.setAttribute("gen_ai.prompt.$index.content", content)
             }
         }
@@ -173,12 +172,10 @@ class OpenTelemetryGeminiLogger : Interceptor {
         body["candidates"]?.let {
             for ((index, candidate) in it.jsonArray.withIndex()) {
                 candidate.jsonObject["content"]?.let { content ->
-                    // role
                     span.setAttribute(
                         "gen_ai.completion.$index.role",
                         content.jsonObject["role"]?.jsonPrimitive?.content
                     )
-
                     // response parts
                     val content = buildString {
                         val parts = content.jsonObject["parts"]?.jsonArray ?: emptyList()
