@@ -128,16 +128,9 @@ class OpenTelemetryGeminiLogger : Interceptor {
             for ((index, message) in it.jsonArray.withIndex()) {
                 span.setAttribute("gen_ai.prompt.$index.role", message.jsonObject["role"]?.jsonPrimitive?.content)
                 // prompt parts
-                val content = buildString {
-                    val parts = message.jsonObject["parts"]?.jsonArray ?: emptyList()
-                    var isFirst = true
-                    for (part in parts) {
-                        val text = part.jsonObject["text"]?.jsonPrimitive?.content ?: continue
-                        if (!isFirst) append(" ")
-                        append(text)
-                        isFirst = false
-                    }
-                }
+                val content = message.jsonObject["parts"]?.jsonArray
+                    ?.joinToString(" ") { it.jsonObject["text"]?.jsonPrimitive?.content.orEmpty() }
+                    ?: ""
                 span.setAttribute("gen_ai.prompt.$index.content", content)
             }
         }
@@ -177,16 +170,9 @@ class OpenTelemetryGeminiLogger : Interceptor {
                         content.jsonObject["role"]?.jsonPrimitive?.content
                     )
                     // response parts
-                    val content = buildString {
-                        val parts = content.jsonObject["parts"]?.jsonArray ?: emptyList()
-                        var isFirst = true
-                        for (part in parts) {
-                            val text = part.jsonObject["text"]?.jsonPrimitive?.content ?: continue
-                            if (!isFirst) append(" ")
-                            append(text)
-                            isFirst = false
-                        }
-                    }
+                    val content = content.jsonObject["parts"]?.jsonArray
+                        ?.joinToString(" ") { it.jsonObject["text"]?.jsonPrimitive?.content.orEmpty() }
+                        ?: ""
                     span.setAttribute("gen_ai.completion.$index.content", content)
 
                     // TODO: add tool and function calling
