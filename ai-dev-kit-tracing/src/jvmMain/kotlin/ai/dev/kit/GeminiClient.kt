@@ -183,7 +183,6 @@ class OpenTelemetryGeminiLogger : Interceptor {
                      */
                 }
 
-                // finish reason
                 span.setAttribute(
                     "gen_ai.completion.$index.finish_reason",
                     candidate.jsonObject["finishReason"]?.jsonPrimitive?.content
