@@ -51,7 +51,7 @@ private const val SPAN_NAME = "OpenAI-generation"
 class OpenTelemetryOpenAILogger : OpenTelemetryOkHttpInterceptor(
     SPAN_NAME,
     apiBaseAttributeKey = "gen_ai.openai.api_base",
-    genAISystemAttributeKey = GenAiSystemIncubatingValues.OPENAI,
+    genAISystem = GenAiSystemIncubatingValues.OPENAI,
 ) {
     override fun getRequestBodyAttributes(span: Span, url: HttpUrl, body: JsonObject) {
         body["temperature"]?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.jsonPrimitive.content.toDouble()) }

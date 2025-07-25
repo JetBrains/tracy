@@ -52,7 +52,7 @@ private const val SPAN_NAME = "Gemini-generation"
 class OpenTelemetryGeminiLogger : OpenTelemetryOkHttpInterceptor(
     SPAN_NAME,
     apiBaseAttributeKey = "gen_ai.gemini.api_base",
-    genAISystemAttributeKey = GenAiSystemIncubatingValues.GEMINI,
+    genAISystem = GenAiSystemIncubatingValues.GEMINI,
 ) {
     override fun getRequestBodyAttributes(span: Span, url: HttpUrl, body: JsonObject) {
         // See: https://ai.google.dev/api/caching#Content

@@ -17,7 +17,7 @@ import okhttp3.Response
 abstract class OpenTelemetryOkHttpInterceptor(
     private val spanName: String,
     private val apiBaseAttributeKey: String,
-    private val genAISystemAttributeKey: String,
+    private val genAISystem: String,
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val tracer = GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER)
@@ -38,7 +38,7 @@ abstract class OpenTelemetryOkHttpInterceptor(
                 span.setAttribute(apiBaseAttributeKey, "${url.scheme}://${url.host}")
 
                 // TODO: get from parameters
-                span.setAttribute(GEN_AI_SYSTEM, genAISystemAttributeKey)
+                span.setAttribute(GEN_AI_SYSTEM, genAISystem)
 
                 val response = chain.proceed(chain.request())
                 val contentType = response.body?.contentType()
