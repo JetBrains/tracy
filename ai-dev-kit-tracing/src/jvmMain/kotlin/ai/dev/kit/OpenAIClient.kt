@@ -48,7 +48,7 @@ private fun patchClient(openAIClient: OpenAIClient, interceptor: Interceptor): O
 
 private const val SPAN_NAME = "OpenAI-generation"
 
-class OpenTelemetryOpenAILogger : OpenTelemetryOpenAICompatibleLogger(
+class OpenTelemetryOpenAILogger : OpenTelemetryOkHttpInterceptor(
     SPAN_NAME,
     apiBaseAttributeKey = "gen_ai.openai.api_base",
     genAISystemAttributeKey = GenAiSystemIncubatingValues.OPENAI,

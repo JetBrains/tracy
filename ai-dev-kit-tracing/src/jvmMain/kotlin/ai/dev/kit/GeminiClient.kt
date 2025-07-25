@@ -49,7 +49,7 @@ private const val SPAN_NAME = "Gemini-generation"
 /**
  * For request and response schemas, see: [Gemini Docs](https://ai.google.dev/api/generate-content)
  */
-class OpenTelemetryGeminiLogger : OpenTelemetryOpenAICompatibleLogger(
+class OpenTelemetryGeminiLogger : OpenTelemetryOkHttpInterceptor(
     SPAN_NAME,
     apiBaseAttributeKey = "gen_ai.gemini.api_base",
     genAISystemAttributeKey = GenAiSystemIncubatingValues.GEMINI,

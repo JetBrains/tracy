@@ -14,7 +14,7 @@ import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Response
 
-abstract class OpenTelemetryOpenAICompatibleLogger(
+abstract class OpenTelemetryOkHttpInterceptor(
     private val spanName: String,
     private val apiBaseAttributeKey: String,
     private val genAISystemAttributeKey: String,
