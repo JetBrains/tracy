@@ -1,6 +1,5 @@
-package ai.dev.kit.example.haiku
+package ai.dev.kit.examples.haiku
 
-import ai.dev.kit.createOpenAIClient
 import ai.dev.kit.eval.utils.*
 import ai.dev.kit.instrument
 import ai.dev.kit.providers.langfuse.LangfuseEvaluationTest

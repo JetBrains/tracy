@@ -1,6 +1,5 @@
-package ai.dev.kit.example.haiku
+package ai.dev.kit.examples.haiku
 
-import ai.dev.kit.createOpenAIClient
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import ai.dev.kit.eval.utils.AIInput
 import ai.dev.kit.eval.utils.AIOutput

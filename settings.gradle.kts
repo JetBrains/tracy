@@ -1,7 +1,7 @@
 rootProject.name = "ai-dev-kit"
 
 include("ai-dev-kit-eval")
-include("ai-dev-kit-example")
+include("examples")
 include("ai-dev-kit-plugin")
 include("ai-dev-kit-tracing")
 include("ai-dev-kit-tracking-providers")
