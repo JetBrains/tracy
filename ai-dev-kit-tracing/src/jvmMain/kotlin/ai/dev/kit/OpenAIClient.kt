@@ -1,18 +1,15 @@
 package ai.dev.kit
 
-import ai.dev.kit.tracing.AI_DEVELOPMENT_KIT_TRACER
 import com.openai.client.OpenAIClient
 import com.openai.client.OpenAIClientImpl
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.core.ClientOptions
-import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
+import okhttp3.HttpUrl
 import okhttp3.Interceptor
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import okhttp3.Response
 
 @Deprecated("instrument() instead")
 fun createOpenAIClient(): OpenAIClient {
@@ -51,52 +48,12 @@ private fun patchClient(openAIClient: OpenAIClient, interceptor: Interceptor): O
 
 private const val SPAN_NAME = "OpenAI-generation"
 
-class OpenTelemetryOpenAILogger : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val tracer = GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER)
-
-        val span = tracer.spanBuilder(SPAN_NAME).startSpan()
-        val scope = span.makeCurrent()
-
-        try {
-            val request = chain.request()
-            val url = request.url
-            val body = request.body?.let {
-                val buffer = okio.Buffer()
-                it.writeTo(buffer)
-                Json.parseToJsonElement(buffer.readUtf8()).jsonObject
-            }
-
-            body?.let { getRequestBodyAttributes(span, it) }
-            span.setAttribute("gen_ai.openai.api_base", "${url.scheme}://${url.host}")
-
-            // TODO: get from parameters
-            span.setAttribute(GEN_AI_SYSTEM, GenAiSystemIncubatingValues.OPENAI)
-
-            val response = chain.proceed(chain.request())
-
-            val contentType = response.body?.contentType()
-
-            if (contentType == "application/json".toMediaType()) {
-                // We need to peek the body so the stream is not consumed
-                getResultBodyAttributes(
-                    span,
-                    Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
-                )
-            } else {
-                contentType?.let { span.setAttribute("gen_ai.completion.content.type", it.toString()) }
-            }
-
-            return response
-        } catch (e: Exception) {
-            throw e
-        } finally {
-            scope.close()
-            span.end()
-        }
-    }
-
-    private fun getRequestBodyAttributes(span: Span, body: JsonObject) {
+class OpenTelemetryOpenAILogger : OpenTelemetryOpenAICompatibleLogger(
+    SPAN_NAME,
+    apiBaseAttributeKey = "gen_ai.openai.api_base",
+    genAISystemAttributeKey = GenAiSystemIncubatingValues.OPENAI,
+) {
+    override fun getRequestBodyAttributes(span: Span, url: HttpUrl, body: JsonObject) {
         body["temperature"]?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.jsonPrimitive.content.toDouble()) }
         body["model"]?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it.jsonPrimitive.content) }
 
@@ -108,7 +65,7 @@ class OpenTelemetryOpenAILogger : Interceptor {
         }
     }
 
-    private fun getResultBodyAttributes(span: Span, body: JsonObject) {
+    override fun getResultBodyAttributes(span: Span, body: JsonObject) {
         body["id"]?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
         body["object"]?.let { span.setAttribute("llm.request.type", it.jsonPrimitive.content) }
         body["model"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }

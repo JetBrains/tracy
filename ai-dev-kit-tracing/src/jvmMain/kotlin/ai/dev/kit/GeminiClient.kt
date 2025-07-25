@@ -1,9 +1,6 @@
 package ai.dev.kit
 
-import ai.dev.kit.tracing.AI_DEVELOPMENT_KIT_TRACER
-import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.Span
-import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_CHOICE_COUNT
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MAX_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
@@ -12,11 +9,9 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQU
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_P
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_ID
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_MODEL
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_SYSTEM
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.double
@@ -26,9 +21,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import okhttp3.Response
 import com.google.genai.Client as GeminiClient
 
 
@@ -56,73 +49,12 @@ private const val SPAN_NAME = "Gemini-generation"
 /**
  * For request and response schemas, see: [Gemini Docs](https://ai.google.dev/api/generate-content)
  */
-class OpenTelemetryGeminiLogger : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val tracer = GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER)
-
-        val span = tracer.spanBuilder(SPAN_NAME).startSpan()
-
-        span.makeCurrent().use { scopeIgnored ->
-            try {
-                val request = chain.request()
-                val url = request.url
-                val body = request.body?.let {
-                    val buffer = okio.Buffer()
-                    it.writeTo(buffer)
-                    Json.parseToJsonElement(buffer.readUtf8()).jsonObject
-                }
-
-                body?.let { getRequestBodyAttributes(span, url, it) }
-                span.setAttribute("gen_ai.gemini.api_base", "${url.scheme}://${url.host}")
-
-                // TODO: get from parameters
-                span.setAttribute(GEN_AI_SYSTEM, GenAiSystemIncubatingValues.GEMINI)
-
-                val response = chain.proceed(chain.request())
-
-                val contentType = response.body?.contentType()
-                val requiredMediaType = "application/json".toMediaType()
-
-                if (contentType?.type == requiredMediaType.type &&
-                    contentType.subtype == requiredMediaType.subtype) {
-                    // We need to peek the body so the stream is not consumed
-                    val decodedResponse = Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
-                    getResultBodyAttributes(span, decodedResponse)
-                } else {
-                    contentType?.let { span.setAttribute("gen_ai.completion.content.type", it.toString()) }
-                }
-
-                span.setAttribute("http.status_code", response.code.toLong())
-                // for any 4xx response code, treat a failure
-                if (response.code in 400..499 || response.code in 500..599) {
-                    val decodedResponse = Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
-                    getResultErrorBodyAttributes(span, decodedResponse)
-                    span.setStatus(StatusCode.ERROR)
-                } else {
-                    span.setStatus(StatusCode.OK)
-                }
-
-                return response
-            } catch (e: Exception) {
-                span.setStatus(StatusCode.ERROR)
-                span.recordException(e)
-                throw e
-            } finally {
-                span.end()
-            }
-        }
-    }
-
-    private fun getResultErrorBodyAttributes(span: Span, body: JsonObject) {
-        body["error"]?.jsonObject?.let {
-            it["message"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.message", it.content) }
-            it["type"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.type", it.content) }
-            it["param"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.param", it.content) }
-            it["code"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.code", it.content) }
-        }
-    }
-
-    private fun getRequestBodyAttributes(span: Span, url: HttpUrl, body: JsonObject) {
+class OpenTelemetryGeminiLogger : OpenTelemetryOpenAICompatibleLogger(
+    SPAN_NAME,
+    apiBaseAttributeKey = "gen_ai.gemini.api_base",
+    genAISystemAttributeKey = GenAiSystemIncubatingValues.GEMINI,
+) {
+    override fun getRequestBodyAttributes(span: Span, url: HttpUrl, body: JsonObject) {
         // See: https://ai.google.dev/api/caching#Content
         body["contents"]?.let {
             for ((index, message) in it.jsonArray.withIndex()) {
@@ -157,7 +89,7 @@ class OpenTelemetryGeminiLogger : Interceptor {
         }
     }
 
-    private fun getResultBodyAttributes(span: Span, body: JsonObject) {
+    override fun getResultBodyAttributes(span: Span, body: JsonObject) {
         // See: https://ai.google.dev/api/generate-content#v1beta.GenerateContentResponse
         body["responseId"]?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
         body["modelVersion"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
@@ -227,7 +159,6 @@ class OpenTelemetryGeminiLogger : Interceptor {
         val snakeCasedAttribute = attribute.replace(Regex("([a-z])([A-Z])"), "$1_$2").lowercase()
 
         usage.jsonObject[attribute]?.let {
-            // TODO: is attribute naming correct?
             for ((index, detail) in it.jsonArray.withIndex()) {
                 detail.jsonObject["modality"]?.let {
                     span.setAttribute("gen_ai.usage.$snakeCasedAttribute.$index.modality", it.jsonPrimitive.content)
