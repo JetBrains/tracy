@@ -200,6 +200,20 @@ class OpenTelemetryGeminiLogger : Interceptor {
             usage.jsonObject["totalTokenCount"]?.jsonPrimitive?.int?.let {
                 span.setAttribute("gen_ai.usage.total_tokens", it.toLong())
             }
+
+            /**
+             * The following two properties (`promptTokensDetails`, `candidatesTokensDetails`)
+             * and their inner contents are mapped into snake-cased OTEL attributes.
+             *
+             * 1. For `promptTokensDetails`:
+             *   - `"gen_ai.usage.prompt_tokens_details.0.modality"`
+             *   - `"gen_ai.usage.prompt_tokens_details.0.token_count"`
+             * 2. For `candidatesTokensDetails`:
+             *   - `"gen_ai.usage.candidates_tokens_details.0.modality"`
+             *   - `"gen_ai.usage.candidates_tokens_details.0.token_count"`
+             *
+             * See: https://ai.google.dev/api/generate-content#UsageMetadata
+             */
             // prompt tokens details
             extractUsageTokenDetails(span, usage, attribute = "promptTokensDetails")
             // candidate tokens details
