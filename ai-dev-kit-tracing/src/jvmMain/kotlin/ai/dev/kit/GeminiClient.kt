@@ -201,6 +201,7 @@ class OpenTelemetryGeminiLogger : Interceptor {
                 span.setAttribute("gen_ai.usage.total_tokens", it.toLong())
             }
 
+            // TODO: think about the mapping of the below properties (see: https://github.com/JetBrains/ai-dev-kit/pull/54#discussion_r2229750741)
             /**
              * The following two properties (`promptTokensDetails`, `candidatesTokensDetails`)
              * and their inner contents are mapped into snake-cased OTEL attributes.
