@@ -49,11 +49,39 @@ class OpenAITracingTest() : BaseOpenTelemetryTracingTest() {
             trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
         assertTrue(
-            trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(ChatModel.Companion.GPT_4O_MINI.asString()) ?: false
+            trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(ChatModel.Companion.GPT_4O_MINI.asString()) == true
         )
         val content = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
         assertNotNull(content)
         assertTrue(content.isNotEmpty())
+    }
+
+    @Test
+    fun `test OpenAI span error status when request fails`() = runTest {
+        val client = instrument(createLiteLLMClient())
+        val params = ChatCompletionCreateParams.Companion.builder()
+            .addUserMessage("Generate polite greeting and introduce yourself")
+            .model(ChatModel.Companion.GPT_4O_MINI).temperature(-1000.0).build()
+
+        try {
+            client.chat().completions().create(params)
+        }
+        catch (_: Exception) {
+            // suppress
+        }
+
+        val traces = analyzeSpans()
+        val trace = traces.firstOrNull()
+        assertNotNull(trace)
+
+        assertEquals(StatusCode.ERROR, trace.status.statusCode)
+        assertEquals(
+            LITELLM_URL,
+            trace.attributes[AttributeKey.stringKey("gen_ai.openai.api_base")]
+        )
+
+        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")]?.isNotEmpty() == true)
+        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.error.code")]?.isNotEmpty() == true)
     }
 
     @Test

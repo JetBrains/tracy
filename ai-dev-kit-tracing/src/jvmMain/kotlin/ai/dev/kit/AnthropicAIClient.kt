@@ -1,12 +1,9 @@
 package ai.dev.kit
 
-import ai.dev.kit.tracing.AI_DEVELOPMENT_KIT_TRACER
 import com.anthropic.client.AnthropicClient
 import com.anthropic.client.AnthropicClientImpl
 import com.anthropic.core.ClientOptions
-import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.Span
-import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OUTPUT_TYPE
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MAX_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
@@ -16,11 +13,9 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQU
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_FINISH_REASONS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_ID
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_MODEL
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_SYSTEM
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.int
@@ -28,8 +23,6 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Interceptor
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.Response
 
 fun instrument(client: AnthropicClient): AnthropicClient {
     return patchClient(client, interceptor = OpenTelemetryAnthropicLogger())
@@ -48,75 +41,17 @@ private fun patchClient(client: AnthropicClient, interceptor: Interceptor): Anth
 
 private const val SPAN_NAME = "Anthropic-generation"
 
-
-// TODO: duplicates OpenTelemetryOpenAILogger
-
 /**
- * For request and response schemas, see: [Anthropic Docs](https://docs.anthropic.com/en/api/messages)
+ * For request and response schemas, see: [Docs](https://docs.anthropic.com/en/api/messages)
+ *
+ * For API errors, see: [Docs](https://docs.anthropic.com/en/api/errors)
  */
-private class OpenTelemetryAnthropicLogger : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val tracer = GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER)
-
-        val span = tracer.spanBuilder(SPAN_NAME).startSpan()
-        val scope = span.makeCurrent()
-
-        try {
-            val request = chain.request()
-            val url = request.url
-            val body = request.body?.let {
-                val buffer = okio.Buffer()
-                it.writeTo(buffer)
-                Json.parseToJsonElement(buffer.readUtf8()).jsonObject
-            }
-
-            body?.let { getRequestBodyAttributes(span, it) }
-            span.setAttribute("gen_ai.anthropic.api_base", "${url.scheme}://${url.host}")
-
-            // TODO: get from parameters
-            span.setAttribute(GEN_AI_SYSTEM, GenAiSystemIncubatingValues.ANTHROPIC)
-
-            val response = chain.proceed(chain.request())
-            val contentType = response.body?.contentType()
-
-            if (contentType == "application/json".toMediaType()) {
-                // We need to peek the body so the stream is not consumed
-                val decodedResponse = Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
-                getResultBodyAttributes(span, decodedResponse)
-            } else {
-                contentType?.let { span.setAttribute("gen_ai.completion.content.type", it.toString()) }
-            }
-
-            span.setAttribute("http.status_code", response.code.toLong())
-            // treat API errors: https://docs.anthropic.com/en/api/errors
-            if (response.code / 100 == 4 || response.code / 100 == 5) {
-                val decodedResponse = Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
-                getResultErrorBodyAttributes(span, decodedResponse)
-                span.setStatus(StatusCode.ERROR)
-            }
-            else {
-                span.setStatus(StatusCode.OK)
-            }
-
-            return response
-        } catch (e: Exception) {
-            throw e
-        } finally {
-            scope.close()
-            span.end()
-        }
-    }
-
-    private fun getResultErrorBodyAttributes(span: Span, body: JsonObject) {
-        body["error"]?.jsonObject?.let {
-            it["message"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.message", it.content) }
-            it["type"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.type", it.content) }
-            it["param"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.param", it.content) }
-            it["code"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.code", it.content) }
-        }
-    }
-
-    private fun getRequestBodyAttributes(span: Span, body: JsonObject) {
+private class OpenTelemetryAnthropicLogger : OpenTelemetryOpenAICompatibleLogger(
+    SPAN_NAME,
+    apiBaseAttributeKey = "gen_ai.anthropic.api_base",
+    genAISystemAttributeKey = GenAiSystemIncubatingValues.ANTHROPIC,
+) {
+    override fun getRequestBodyAttributes(span: Span, body: JsonObject) {
         body["temperature"]?.jsonPrimitive?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.content.toDouble()) }
         body["model"]?.jsonPrimitive?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it.content) }
         body["max_tokens"]?.jsonPrimitive?.int?.let { span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it.toLong()) }
@@ -146,7 +81,7 @@ private class OpenTelemetryAnthropicLogger : Interceptor {
         }
     }
 
-    private fun getResultBodyAttributes(span: Span, body: JsonObject) {
+    override fun getResultBodyAttributes(span: Span, body: JsonObject) {
         body["id"]?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
         // TODO: use `llm.request.type`?
         body["type"]?.let { span.setAttribute(GEN_AI_OUTPUT_TYPE, it.jsonPrimitive.content) }
