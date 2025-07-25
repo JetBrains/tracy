@@ -94,7 +94,7 @@ class OpenTelemetryGeminiLogger : Interceptor {
 
                 span.setAttribute("http.status_code", response.code.toLong())
                 // for any 4xx response code, treat a failure
-                if (response.code / 100 == 4 || response.code / 100 == 5) {
+                if (response.code in 400..499 || response.code in 500..599) {
                     val decodedResponse = Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
                     getResultErrorBodyAttributes(span, decodedResponse)
                     span.setStatus(StatusCode.ERROR)
