@@ -44,7 +44,7 @@ class GeminiTracingTest() : BaseOpenTelemetryTracingTest() {
         assertEquals(StatusCode.OK, trace.status.statusCode)
         assertEquals(
             LITELLM_URL,
-            trace.attributes[AttributeKey.stringKey("gen_ai.gemini.api_base")]
+            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
         assertTrue(
             trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(model) == true
@@ -88,7 +88,7 @@ class GeminiTracingTest() : BaseOpenTelemetryTracingTest() {
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
         assertEquals(
             LITELLM_URL,
-            trace.attributes[AttributeKey.stringKey("gen_ai.gemini.api_base")]
+            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
 
         val event = trace.events.firstOrNull { it.name == "exception" }
@@ -124,7 +124,7 @@ class GeminiTracingTest() : BaseOpenTelemetryTracingTest() {
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
         assertEquals(
             LITELLM_URL,
-            trace.attributes[AttributeKey.stringKey("gen_ai.gemini.api_base")]
+            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
 
         assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")]?.isNotEmpty() == true)

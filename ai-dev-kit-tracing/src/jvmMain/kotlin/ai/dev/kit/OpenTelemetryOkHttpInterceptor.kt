@@ -14,11 +14,7 @@ import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Response
 
-abstract class OpenTelemetryOkHttpInterceptor(
-    private val spanName: String,
-    private val apiBaseAttributeKey: String,
-    private val genAISystem: String,
-) : Interceptor {
+abstract class OpenTelemetryOkHttpInterceptor(private val spanName: String, private val genAISystem: String) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val tracer = GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER)
 
@@ -35,7 +31,7 @@ abstract class OpenTelemetryOkHttpInterceptor(
                 }
 
                 body?.let { getRequestBodyAttributes(span, url, it) }
-                span.setAttribute(apiBaseAttributeKey, "${url.scheme}://${url.host}")
+                span.setAttribute("gen_ai.api_base", "${url.scheme}://${url.host}")
 
                 // TODO: get from parameters
                 span.setAttribute(GEN_AI_SYSTEM, genAISystem)

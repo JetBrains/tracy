@@ -33,7 +33,7 @@ class OpenAITracingTest() : BaseOpenTelemetryTracingTest() {
 
         assertEquals(
             LITELLM_URL,
-            trace.attributes[AttributeKey.stringKey("gen_ai.openai.api_base")]
+            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
         assertTrue(
             trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(ChatModel.Companion.GPT_4O_MINI.asString()) ?: false
