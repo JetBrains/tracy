@@ -26,6 +26,10 @@ abstract class BaseOpenTelemetryTracingTest {
     internal lateinit var spanExporter: InMemorySpanExporter
     internal lateinit var tracer: Tracer
 
+    companion object {
+        protected const val LITELLM_URL = "https://litellm.labs.jb.gg"
+    }
+
     @BeforeAll
     fun setupTelemetry() {
         val tracing = initOpenTelemetry()
