@@ -2,7 +2,10 @@ package ai.dev.kit.tracing.autologging
 
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.dev.kit.tracing.LITELLM_URL
 import ai.dev.kit.tracing.fluent.processor.withSpan
+import com.anthropic.client.AnthropicClient
+import com.anthropic.client.okhttp.AnthropicOkHttpClient
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.chat.completions.ChatCompletion
@@ -138,10 +141,16 @@ private fun callChat(
     return client.chat().completions().create(params)
 }
 
-private const val LITELLM_URL = "https://litellm.labs.jb.gg"
-
 fun createLiteLLMClient(): OpenAIClient {
     return OpenAIOkHttpClient.builder()
+        .baseUrl(LITELLM_URL)
+        .apiKey(System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set"))
+        .timeout(Duration.ofSeconds(60))
+        .build()
+}
+
+fun createAnthropicClient(): AnthropicClient {
+    return AnthropicOkHttpClient.builder()
         .baseUrl(LITELLM_URL)
         .apiKey(System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set"))
         .timeout(Duration.ofSeconds(60))
