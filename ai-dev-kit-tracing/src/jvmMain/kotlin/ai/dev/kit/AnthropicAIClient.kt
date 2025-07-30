@@ -79,6 +79,19 @@ private class OpenTelemetryAnthropicLogger : OpenTelemetryOkHttpInterceptor(
                 span.setAttribute("gen_ai.prompt.$index.content", message.jsonObject["content"]?.toString())
             }
         }
+
+        // extracting definitions of tool calls
+        // see: https://docs.anthropic.com/en/api/messages#body-tools
+        body["tools"]?.let {
+            if (it is kotlinx.serialization.json.JsonArray) {
+                for ((index, tool) in it.jsonArray.withIndex()) {
+                    span.setAttribute("gen_ai.tool.$index.name", tool.jsonObject["name"]?.jsonPrimitive?.content)
+                    span.setAttribute("gen_ai.tool.$index.description", tool.jsonObject["description"]?.jsonPrimitive?.content)
+                    span.setAttribute("gen_ai.tool.$index.type", tool.jsonObject["type"]?.jsonPrimitive?.content)
+                    span.setAttribute("gen_ai.tool.$index.parameters", tool.jsonObject["input_schema"].toString())
+                }
+            }
+        }
     }
 
     override fun getResultBodyAttributes(span: Span, body: JsonObject) {
@@ -91,18 +104,39 @@ private class OpenTelemetryAnthropicLogger : OpenTelemetryOkHttpInterceptor(
         // collecting response messages
         body["content"]?.let {
             for ((index, message) in it.jsonArray.withIndex()) {
-                span.setAttribute(
-                    "gen_ai.completion.$index.type",
-                    message.jsonObject["type"]?.jsonPrimitive?.content
-                )
-                span.setAttribute("gen_ai.completion.$index.content", message.jsonObject["text"]?.toString())
+                val type = message.jsonObject["type"]?.jsonPrimitive?.content
+                span.setAttribute("gen_ai.completion.$index.type", type)
 
-                // TODO: add tool and function calling
-                /*
-                span.setAttribute("gen_ai.completion.$index.tool_calls", message.jsonObject["tool_calls"]?.jsonPrimitive?.content)
-                span.setAttribute("gen_ai.completion.$index.function_call", message.jsonObject["function_call"]?.jsonPrimitive?.content)
-                span.setAttribute("gen_ai.completion.$index.annotations", message.jsonObject["annotations"].toString())
-                 */
+                if (type == "text") {
+                    // normal text message
+                    span.setAttribute("gen_ai.completion.$index.content", message.jsonObject["text"]?.toString())
+                }
+                else if (type == "tool_use") {
+                    // tool call request by LLM
+                    val toolCall = message
+                    // gen_ai.tool.call.id
+                    span.setAttribute(
+                        "gen_ai.completion.$index.tool.call.id",
+                        toolCall.jsonObject["id"]?.jsonPrimitive?.content
+                    )
+                    // gen_ai.tool.type
+                    span.setAttribute(
+                        "gen_ai.completion.$index.tool.call.type",
+                        toolCall.jsonObject["type"]?.jsonPrimitive?.content
+                    )
+                    // gen_ai.tool.name
+                    span.setAttribute(
+                        "gen_ai.completion.$index.tool.name",
+                        toolCall.jsonObject["name"]?.jsonPrimitive?.content
+                    )
+                    span.setAttribute(
+                        "gen_ai.completion.$index.tool.arguments",
+                        toolCall.jsonObject["input"].toString()
+                    )
+                }
+                else {
+                    span.setAttribute("gen_ai.completion.$index.content", message.toString())
+                }
             }
         }
 
