@@ -19,7 +19,7 @@ import kotlin.test.assertTrue
 
 
 @Tag("SkipForNonLocal")
-class OpenAITracingTest() : BaseOpenTelemetryTracingTest() {
+class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
     @Test
     fun `test OpenAI auto tracing`() = runTest {
         val client = instrument(createLiteLLMClient())
@@ -67,7 +67,7 @@ class OpenAITracingTest() : BaseOpenTelemetryTracingTest() {
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
         assertEquals(
             LITELLM_URL,
-            trace.attributes[AttributeKey.stringKey("gen_ai.openai.api_base")]
+            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
 
         assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")]?.isNotEmpty() == true)

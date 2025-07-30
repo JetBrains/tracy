@@ -22,7 +22,7 @@ import com.google.genai.types.GenerateContentConfig as GeminiGenerateContentConf
 
 
 @Tag("SkipForNonLocal")
-class GeminiTracingTest() : BaseOpenTelemetryTracingTest() {
+class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
     @Test
     fun `test Gemini auto tracing`() = runTest {
         val model = "gemini-1.5-pro"
