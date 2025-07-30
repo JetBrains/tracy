@@ -2,6 +2,7 @@ package ai.dev.kit.tracing.fluent
 
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.dev.kit.tracing.LITELLM_URL
 import ai.dev.kit.tracing.autologging.createLiteLLMClient
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
@@ -14,10 +15,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-const val LITELLM_URL = "https://litellm.labs.jb.gg"
 
 @Tag("SkipForNonLocal")
-class AutologTracingTest() : BaseOpenTelemetryTracingTest() {
+class OpenAITracingTest() : BaseOpenTelemetryTracingTest() {
     @Test
     fun `test OpenAI auto tracing`() = runTest {
         val client = instrument(createLiteLLMClient())
@@ -34,7 +34,7 @@ class AutologTracingTest() : BaseOpenTelemetryTracingTest() {
 
         assertEquals(
             LITELLM_URL,
-            trace.attributes[AttributeKey.stringKey("gen_ai.openai.api_base")]
+            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
         assertTrue(
             trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(ChatModel.Companion.GPT_4O_MINI.asString()) ?: false
