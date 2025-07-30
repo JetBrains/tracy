@@ -2,6 +2,7 @@ package ai.dev.kit.tracing.autologging
 
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.dev.kit.tracing.LITELLM_URL
 import ai.dev.kit.tracing.fluent.processor.withSpan
 import com.anthropic.client.AnthropicClient
 import com.anthropic.client.okhttp.AnthropicOkHttpClient
@@ -139,8 +140,6 @@ private fun callChat(
 
     return client.chat().completions().create(params)
 }
-
-private const val LITELLM_URL = "https://litellm.labs.jb.gg"
 
 fun createLiteLLMClient(): OpenAIClient {
     return OpenAIOkHttpClient.builder()
