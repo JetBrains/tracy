@@ -50,7 +50,10 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
         val client = instrument(createLiteLLMClient())
         val params = ChatCompletionCreateParams.Companion.builder()
             .addUserMessage("Generate polite greeting and introduce yourself")
-            .model(ChatModel.Companion.GPT_4O_MINI).temperature(-1000.0).build()
+            .model(ChatModel.Companion.GPT_4O_MINI)
+            // setting invalid temperature
+            .temperature(-1000.0)
+            .build()
 
         try {
             client.chat().completions().create(params)
