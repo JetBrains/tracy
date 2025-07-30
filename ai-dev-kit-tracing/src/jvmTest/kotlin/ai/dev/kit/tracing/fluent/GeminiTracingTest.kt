@@ -5,6 +5,11 @@ import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.LITELLM_URL
 import ai.dev.kit.tracing.autologging.createGeminiClient
 import com.google.genai.errors.GenAiIOException
+import com.google.genai.types.Content
+import com.google.genai.types.FunctionDeclaration
+import com.google.genai.types.Part
+import com.google.genai.types.Schema
+import com.google.genai.types.Tool
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.test.runTest
@@ -23,6 +28,136 @@ import com.google.genai.types.GenerateContentConfig as GeminiGenerateContentConf
 
 @Tag("SkipForNonLocal")
 class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
+    private fun createGreetTool(): Tool {
+        return Tool.builder()
+            .functionDeclarations(
+                FunctionDeclaration.builder()
+                    .name("greet")
+                    .description("Greet the user")
+                    .parameters(
+                        Schema.builder()
+                            .type("object")
+                            .description("The greeting parameters")
+                            .properties(mapOf(
+                                "name" to Schema.builder()
+                                    .type("string")
+                                    .description("The name of the person to greet")
+                                    .build()
+                            ))
+                            .required("name")
+                            .build()
+                    )
+                    .build()
+            )
+            .build()
+    }
+
+    @Test
+    fun `test Gemini tool calling auto logging`() = runTest {
+        val client = instrument(createGeminiClient())
+        val greetTool = createGreetTool()
+
+        val model = "gemini-1.5-pro"
+        client.models.generateContent(
+            model,
+            "Generate polite greeting and introduce yourself",
+            GeminiGenerateContentConfig.builder()
+                .temperature(0.8f)
+                .tools(greetTool)
+                .build()
+        )
+
+        val traces = analyzeSpans()
+
+        assertEquals(1, traces.size)
+        val trace = traces.firstOrNull()
+        assertNotNull(trace)
+
+        // assert request
+        assertEquals("greet", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.name")])
+        assertEquals("Greet the user", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.description")])
+        assertEquals("object", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.type")])
+
+        // assert response
+        assertEquals("greet", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")])
+        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")]?.isNotEmpty() == true)
+    }
+
+    @Test
+    fun `test Gemini tool calling with tool call result`() = runTest {
+        val client = instrument(createGeminiClient())
+        val greetTool = createGreetTool()
+
+        val model = "gemini-1.5-pro"
+        val config = GeminiGenerateContentConfig.builder()
+            .temperature(0.0f)
+            .tools(greetTool)
+            .build()
+
+        // Step 1: Initial user message
+        val userMessage = Content.builder()
+            .role("user")
+            .parts(Part.fromText("Generate greeting via a tool provided to you"))
+            .build()
+
+        // Step 2: Get AI response (which should contain a function call)
+        val firstResponse = client.models.generateContent(
+            model,
+            userMessage,
+            config,
+        )
+
+        // Step 3: Extract function calls and create function responses
+        val functionCallResponses = buildList {
+            firstResponse.parts()?.forEach { part ->
+                part.functionCall().ifPresent { call ->
+                    add(Part.fromFunctionResponse(
+                        call.name().get(),
+                        mapOf("output" to "Hello, my friend!")
+                    ))
+                }
+            }
+        }
+
+        // Step 4: Create the conversation history with separate turns
+        val conversationHistory = listOf(
+            // Turn 1: User message
+            userMessage,
+            // Turn 2: AI response with function call
+            Content.builder()
+                .role("model")
+                .parts(firstResponse.parts()?.toList() ?: emptyList())
+                .build(),
+            // Turn 3: Function response
+            Content.builder()
+                .role("user")
+                .parts(functionCallResponses)
+                .build()
+        )
+
+        // Step 5: final request to AI
+        client.models.generateContent(
+            model,
+            conversationHistory,
+            config,
+        )
+
+        val traces = analyzeSpans()
+
+        assertEquals(2, traces.size)
+        val trace = traces.firstOrNull()
+        assertNotNull(trace)
+
+        // assert request
+        assertEquals("greet", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.name")])
+        assertEquals("Greet the user", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.description")])
+        assertEquals("object", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.type")])
+
+        // assert response
+        assertEquals("greet", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")])
+        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")]?.isNotEmpty() == true)
+    }
+
     @Test
     fun `test Gemini auto tracing`() = runTest {
         val model = "gemini-1.5-pro"

@@ -12,6 +12,7 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESP
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.double
@@ -58,11 +59,7 @@ class OpenTelemetryGeminiLogger : OpenTelemetryOkHttpInterceptor(
         body["contents"]?.let {
             for ((index, message) in it.jsonArray.withIndex()) {
                 span.setAttribute("gen_ai.prompt.$index.role", message.jsonObject["role"]?.jsonPrimitive?.content)
-                // prompt parts
-                val content = message.jsonObject["parts"]?.jsonArray
-                    ?.joinToString(" ") { it.jsonObject["text"]?.jsonPrimitive?.content.orEmpty() }
-                    ?: ""
-                span.setAttribute("gen_ai.prompt.$index.content", content)
+                span.setAttribute("gen_ai.prompt.$index.content", message.jsonObject["parts"].toString())
             }
         }
 
@@ -73,6 +70,36 @@ class OpenTelemetryGeminiLogger : OpenTelemetryOkHttpInterceptor(
         model?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, model) }
         // TODO: use GEN_AI_OPERATION_NAME?
         operation?.let { span.setAttribute("llm.request.type", operation) }
+
+        // extract tool calls
+        body.jsonObject["tools"]?.let {
+            if (it is JsonArray) {
+                for ((index, tool) in it.jsonArray.withIndex()) {
+                    tool.jsonObject["functionDeclarations"]?.let {
+                        for ((functionIndex, function) in it.jsonArray.withIndex()) {
+                            function.jsonObject["parameters"]?.jsonObject?.let {
+                                span.setAttribute(
+                                    "gen_ai.tool.$index.function.$functionIndex.type",
+                                    it["type"]?.jsonPrimitive?.content
+                                )
+                            }
+                            span.setAttribute(
+                                "gen_ai.tool.$index.function.$functionIndex.name",
+                                function.jsonObject["name"]?.jsonPrimitive?.content
+                            )
+                            span.setAttribute(
+                                "gen_ai.tool.$index.function.$functionIndex.description",
+                                function.jsonObject["description"]?.jsonPrimitive?.content
+                            )
+                            span.setAttribute(
+                                "gen_ai.tool.$index.function.$functionIndex.parameters",
+                                function.jsonObject["parameters"].toString()
+                            )
+                        }
+                    }
+                }
+            }
+        }
 
         // See: https://ai.google.dev/api/generate-content#v1beta.GenerationConfig
         body["generationConfig"]?.let {
@@ -101,17 +128,26 @@ class OpenTelemetryGeminiLogger : OpenTelemetryOkHttpInterceptor(
                         content.jsonObject["role"]?.jsonPrimitive?.content
                     )
                     // response parts
-                    val content = content.jsonObject["parts"]?.jsonArray
-                        ?.joinToString(" ") { it.jsonObject["text"]?.jsonPrimitive?.content.orEmpty() }
-                        ?: ""
-                    span.setAttribute("gen_ai.completion.$index.content", content)
+                    val parts = content.jsonObject["parts"]
+                    span.setAttribute("gen_ai.completion.$index.content", parts.toString())
 
-                    // TODO: add tool and function calling
-                    /*
-                    span.setAttribute("gen_ai.completion.$index.tool_calls", message.jsonObject["tool_calls"]?.jsonPrimitive?.content)
-                    span.setAttribute("gen_ai.completion.$index.function_call", message.jsonObject["function_call"]?.jsonPrimitive?.content)
-                    span.setAttribute("gen_ai.completion.$index.annotations", message.jsonObject["annotations"].toString())
-                     */
+                    // collect requests for a tool call
+                    if (parts is JsonArray) {
+                        var toolCallIndex = 0
+                        for (part in parts.jsonArray) {
+                            part.jsonObject["functionCall"]?.jsonObject?.let {
+                                span.setAttribute(
+                                    "gen_ai.completion.$index.tool.$toolCallIndex.name",
+                                    it["name"]?.jsonPrimitive?.content
+                                )
+                                span.setAttribute(
+                                    "gen_ai.completion.$index.tool.$toolCallIndex.arguments",
+                                    it["args"].toString()
+                                )
+                                ++toolCallIndex
+                            }
+                        }
+                    }
                 }
 
                 span.setAttribute(
