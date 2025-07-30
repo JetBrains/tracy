@@ -22,6 +22,7 @@ import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import okhttp3.HttpUrl
 import okhttp3.Interceptor
 
 fun instrument(client: AnthropicClient): AnthropicClient {
@@ -46,12 +47,11 @@ private const val SPAN_NAME = "Anthropic-generation"
  *
  * For API errors, see: [Docs](https://docs.anthropic.com/en/api/errors)
  */
-private class OpenTelemetryAnthropicLogger : OpenTelemetryOpenAICompatibleLogger(
+private class OpenTelemetryAnthropicLogger : OpenTelemetryOkHttpInterceptor(
     SPAN_NAME,
-    apiBaseAttributeKey = "gen_ai.anthropic.api_base",
-    genAISystemAttributeKey = GenAiSystemIncubatingValues.ANTHROPIC,
+    genAISystem = GenAiSystemIncubatingValues.ANTHROPIC,
 ) {
-    override fun getRequestBodyAttributes(span: Span, body: JsonObject) {
+    override fun getRequestBodyAttributes(span: Span, url: HttpUrl, body: JsonObject) {
         body["temperature"]?.jsonPrimitive?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.content.toDouble()) }
         body["model"]?.jsonPrimitive?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it.content) }
         body["max_tokens"]?.jsonPrimitive?.int?.let { span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it.toLong()) }

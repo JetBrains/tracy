@@ -45,7 +45,7 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
 
         assertEquals(
             LITELLM_URL,
-            trace.attributes[AttributeKey.stringKey("gen_ai.anthropic.api_base")]
+            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
 
         assertTrue(
@@ -86,7 +86,7 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
         assertEquals(
             LITELLM_URL,
-            trace.attributes[AttributeKey.stringKey("gen_ai.anthropic.api_base")]
+            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
 
         assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")]?.isNotEmpty() == true)
@@ -142,7 +142,7 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
         assertEquals(
             LITELLM_URL,
-            trace.attributes[AttributeKey.stringKey("gen_ai.anthropic.api_base")]
+            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
 
         assertEquals(errorMessage, trace.attributes[AttributeKey.stringKey("gen_ai.error.message")])
