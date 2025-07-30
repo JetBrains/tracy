@@ -18,13 +18,10 @@ import java.time.Duration
 import java.util.concurrent.TimeUnit
 import kotlin.test.AfterTest
 
+internal const val LITELLM_URL = "https://litellm.labs.jb.gg"
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class BaseOpenTelemetryTracingTest {
-    companion object {
-        protected const val LITELLM_URL = "https://litellm.labs.jb.gg"
-    }
-
     internal lateinit var tracerProvider: SdkTracerProvider
     internal lateinit var spanExporter: InMemorySpanExporter
     internal lateinit var tracer: Tracer

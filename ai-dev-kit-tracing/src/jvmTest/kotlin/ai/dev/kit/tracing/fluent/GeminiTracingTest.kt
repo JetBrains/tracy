@@ -2,6 +2,7 @@ package ai.dev.kit.tracing.fluent
 
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.dev.kit.tracing.LITELLM_URL
 import ai.dev.kit.tracing.autologging.createGeminiClient
 import com.google.genai.errors.GenAiIOException
 import io.opentelemetry.api.common.AttributeKey
