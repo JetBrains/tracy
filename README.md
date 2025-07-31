@@ -23,7 +23,7 @@ especially within the Kotlin and IntelliJ ecosystem.
 
 ## ⭐ Key features
 * 🔍 Kotlin-native tracing via `@KotlinFlowTrace` and compiler plugin.
-* 🔌 Integration with `Langfuse`, `Mlflow` and `Weights & Biases`.
+* 🔌 Integration with `Langfuse` and `Weights & Biases`.
 * 📊 Evaluation framework with test cases and evaluation criteria.
 * 🤖 Internal `OpenAI` compatible gateway with `LiteLLM` support. For a more detailed description, refer to the [article](https://youtrack.jetbrains.com/articles/JBAI-A-659/LiteLLM-Internal-LLM-Gateway-for-Research-and-Experimentation)
 
@@ -51,10 +51,8 @@ ai-dev-kit-tracing = { module = "com.jetbrains:ai-dev-kit-tracing", version.ref 
 
 # You can choose from multiple tracing providers:
 # - Langfuse (used in the example below)
-# - MLflow
 # - Weights & Biases (W&B)
 ai-dev-kit-tracking-langfuse = { module = "com.jetbrains:ai-dev-kit-tracking-langfuse", version.ref = "ai-dev-kit" }
-# ai-dev-kit-tracking-mlflow = { module = "com.jetbrains:ai-dev-kit-tracking-mlflow", version.ref = "ai-dev-kit" }
 # ai-dev-kit-tracking-wandb = { module = "com.jetbrains:ai-dev-kit-tracking-wandb", version.ref = "ai-dev-kit" }
 
 [plugins]
@@ -83,7 +81,7 @@ plugins {
 * Set up tracing using a tracking provider.
   The example below uses Langfuse,
   but you can replace it with other supported platforms
-  (e.g., Weights & Biases, MLflow) by making the corresponding changes in your setup:
+  (Weights & Biases Weave) by making the corresponding changes in your setup:
 ```kotlin
 // You can pass keys explicitly to config or leave them null to load from environment variables.
 val langfuseConfig = LangfuseConfig()
@@ -132,10 +130,6 @@ withProjectId("my-project-name") {
 ```
 
 If a project with this name does not exist yet, it will be created automatically.
-
-If you're using MLFlow, along with Session ID (called Run ID in the MLFlow terminology), you have to specify the Project
-ID (called Experiment ID).
-You will need to obtain both the Run ID and Experiment ID from the MLFlow server and pass them as arguments:
 
 ```kotlin
 val experimentId = TODO("Implement a nice handle for requesting an experiment ID from the server")
@@ -201,7 +195,6 @@ For more details, refer to the two examples:
 
 | Tracking Platform                                       | Tracing Support | Evaluation Support | Setup Guide                                                                            |
 |---------------------------------------------------------|-----------------|--------------------|----------------------------------------------------------------------------------------|
-| **[Mlflow](https://mlflow.org/docs/latest/index.html)** | ✅               | ✅                  | [MLflow docs](https://mlflow.org/docs/latest/)                                         |
 | **[Weights & Biases](https://docs.wandb.ai/)**          | ✅               | ❌                  | [Weights & Biases docs](https://docs.wandb.ai/)                                        |
 | **[Langfuse](https://github.com/langfuse/langfuse)**    | ✅               | ✅                  | [Setup Langfuse](ai-dev-kit-tracking-providers/ai-dev-kit-tracking-langfuse/README.md) |
 

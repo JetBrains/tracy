@@ -4,7 +4,6 @@ import ai.dev.kit.tracing.fluent.handlers.PlatformMethod
 import ai.dev.kit.tracing.fluent.processor.Span
 import ai.dev.kit.tracing.fluent.processor.SpanBuilder
 
-// applicable to both mlflow and wandb logging clients
 expect fun configureTracingMetadata(
     spanBuilder: SpanBuilder,
     traceAnnotation: KotlinFlowTrace,
@@ -12,5 +11,5 @@ expect fun configureTracingMetadata(
     args: Array<Any?>
 )
 
-// applicable to both mlflow and wandb logging clients
+
 expect fun addOutputAttributesToTracing(span: Span, traceAnnotation: KotlinFlowTrace, result: Any?)
