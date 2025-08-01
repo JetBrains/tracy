@@ -15,7 +15,7 @@ const val AI_DEVELOPMENT_KIT_TRACER = "ai-development-kit"
 
 fun setupTracing(
     tracingConfig: TracingConfig
-): SdkTracerProvider {
+): OpenTelemetrySdk {
     val resource = Resource.getDefault()
         .merge(
             Resource.create(
@@ -43,7 +43,7 @@ fun setupTracing(
         sdk.sdkTracerProvider.shutdown()
     })
 
-    return tracerProvider
+    return openTelemetry
 }
 
 private fun SdkTracerProviderBuilder.addLoggingSpanProcessor(): SdkTracerProviderBuilder {

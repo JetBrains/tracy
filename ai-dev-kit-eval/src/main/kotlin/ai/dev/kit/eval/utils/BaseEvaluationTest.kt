@@ -95,7 +95,7 @@ abstract class BaseEvaluationTest<
                     withSessionIdBlocking(runResult.runId) {
                         val (dataPointSpan, dataPointScope) = createDataPointSpan(
                             dataPointIndex,
-                            GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER),
+                            TracingManager.sdk.getTracer(AI_DEVELOPMENT_KIT_TRACER, "0.0.0"),
                             testCase
                         )
 

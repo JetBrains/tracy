@@ -1,13 +1,16 @@
 package ai.dev.kit.tracing
 
+import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.trace.SdkTracerProvider
 import java.util.concurrent.TimeUnit
 
 object TracingManager {
-    private lateinit var tracerProvider: SdkTracerProvider
+    lateinit var sdk: OpenTelemetrySdk
+    private val tracerProvider: SdkTracerProvider
+        get() = sdk.tracerProvider as SdkTracerProvider
 
     fun setup(tracingConfig: TracingConfig) {
-        tracerProvider = setupTracing(tracingConfig)
+        sdk = setupTracing(tracingConfig)
     }
 
     fun flushTraces(timeoutSeconds: Long = 1) = tracerProvider
