@@ -3,7 +3,6 @@ package ai.dev.kit.eval.utils
 import ai.dev.kit.tracing.AI_DEVELOPMENT_KIT_TRACER
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.fluent.FluentSpanAttributes
-import ai.dev.kit.tracing.fluent.TracingSessionProvider.currentSessionId
 import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
 import ai.dev.kit.tracing.fluent.withSessionIdBlocking
 import io.opentelemetry.api.GlobalOpenTelemetry
@@ -113,6 +112,9 @@ abstract class BaseEvaluationTest<
                         }
                     }
                 }
+            }.also {
+                val runLink = loggingClient.getRunLink(experimentId, runResult.runId)
+                logger.info { "🔗 View run results at $runLink" }
             }
         )
     }
@@ -143,7 +145,7 @@ abstract class BaseEvaluationTest<
             evaluator.evaluate(testCase.groundTruth, output)
         } catch (e: Throwable) {
             val message = "❌ Test Failed: $testCaseName | Case: $testCase | Reason: Evaluator has thrown ${e.message}"
-            logTest(message)
+            logTest(message, traceId)
             fail(message)
         }
         runResults[runNum].testResults.add(
@@ -157,21 +159,20 @@ abstract class BaseEvaluationTest<
 
         if (result.hasJunitTestSucceeded) {
             logTest(
-                message = "✅ Test Passed: $testCaseName | Case: $testCase | Result: $result"
+                message = "✅ Test Passed: $testCaseName | Case: $testCase | Result: $result",
+                traceId
             )
         } else {
             val message = "❌ Test failed: $testCaseName | Case: $testCase | Result: $result"
-            logTest(message)
+            logTest(message, traceId)
             fail(message)
         }
     }
 
-    private fun logTest(message: String) {
+    private fun logTest(message: String, traceId: String) {
         logger.info { message }
-        currentSessionId?.let {
-            val resultsLink = loggingClient.getResultsLink(experimentId, it)
-            logger.info { "🔗 View results at $resultsLink" }
-        }
+        val traceLink = loggingClient.getTraceLink(experimentId, traceId)
+        logger.info { "🔗 View trace at $traceLink" }
     }
 
     private suspend fun logAverageScore(runId: String, evalResults: List<EvalResultT>) {
