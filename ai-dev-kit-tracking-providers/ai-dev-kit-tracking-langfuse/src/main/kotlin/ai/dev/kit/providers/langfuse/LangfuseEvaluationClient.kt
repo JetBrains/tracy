@@ -29,10 +29,19 @@ class LangfuseEvaluationClient(
     // session in Langfuse
     override fun createRun(experimentId: String, runName: String): String = runName
 
-    override fun getResultsLink(experimentId: String, runId: String): String {
+    override fun getRunLink(experimentId: String, runId: String): String {
         return "$LANGFUSE_BASE_URL/project/$experimentId/sessions/${
             URLEncoder.encode(
                 runId,
+                StandardCharsets.UTF_8.toString()
+            )
+        }"
+    }
+
+    override fun getTraceLink(experimentId: String, traceId: String): String {
+        return "$LANGFUSE_BASE_URL/project/$experimentId/traces/${
+            URLEncoder.encode(
+                traceId,
                 StandardCharsets.UTF_8.toString()
             )
         }"
