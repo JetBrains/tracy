@@ -15,6 +15,8 @@ Written in Kotlin Multiplatform (KMP), it serves as the backbone for other modul
 - Automatic context propagation
 - Support for custom attribute handlers
 
-### 🤖 OpenAI Client Integration
-- Built-in OpenAI client with tracing capabilities
+### 🤖 LLM Client Integrations
+- OpenAI: built-in client with tracing and auto tool-call capture
+- Anthropic (Claude): first-class tracing support including streaming/tool_use
+- Google Gemini: tracing for function/tool calls and conversation history flows
 - Custom interceptors for logging and monitoring

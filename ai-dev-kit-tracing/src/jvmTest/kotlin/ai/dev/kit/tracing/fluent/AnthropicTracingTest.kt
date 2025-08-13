@@ -33,8 +33,8 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
 
         val model = Model.CLAUDE_3_5_SONNET_20240620
         val params = MessageCreateParams.builder()
-            .addUserMessage("Use a provided greet tool to greet Alex")
-            .addTool(createGreetTool())
+            .addUserMessage("Use a provided `hi` tool to greet Alex")
+            .addTool(createTool("hi"))
             .maxTokens(1000L)
             .temperature(0.0)
             .model(model)
@@ -49,7 +49,7 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
         assertNotNull(trace)
 
         // Check tool definitions in the request
-        assertEquals("greet", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
+        assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
         assertEquals("custom", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.type")])
         assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.description")]?.isNotEmpty() == true)
         assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.parameters")]?.isNotEmpty() == true)
@@ -60,7 +60,7 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
             val index = listOf(0, 1).firstOrNull {
                 trace.attributes[AttributeKey.stringKey("gen_ai.completion.$it.tool.call.id")]?.isNotEmpty() == true }
 
-            assertEquals("greet", trace.attributes[AttributeKey.stringKey("gen_ai.completion.$index.tool.name")])
+            assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.completion.$index.tool.name")])
             assertEquals("tool_use", trace.attributes[AttributeKey.stringKey("gen_ai.completion.$index.tool.call.type")])
             assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.$index.tool.call.id")]?.isNotEmpty() == true)
             assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.$index.tool.arguments")]?.isNotEmpty() == true)
@@ -71,11 +71,11 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
     fun `test Anthropic tool auto tracing with a response to a tool call`() {
         val client = instrument(createAnthropicClient())
 
-        val greetTool = createGreetTool()
+        val greetTool = createTool("hi")
 
         val model = Model.CLAUDE_3_5_SONNET_20240620
         val paramsBuilder = MessageCreateParams.builder()
-            .addUserMessage("Use a provided greet tool to greet Alex")
+            .addUserMessage("Use a provided `hi` tool to hi Alex")
             .addTool(greetTool)
             .maxTokens(1000L)
             .temperature(0.0)
@@ -143,6 +143,72 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
         assertTrue(jsonContent.jsonObject["tool_use_id"]?.jsonPrimitive?.content?.isNotEmpty() == true)
         assertEquals("tool_result", jsonContent.jsonObject["type"]?.jsonPrimitive?.content)
         assertEquals("Hello, my dear friend!", jsonContent.jsonObject["content"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `test Anthropic multiple tools response to tool calls auto tracing`() {
+        val client = instrument(createAnthropicClient())
+
+        val greetTool = createTool("hi")
+        val goodbyeTool = createTool("goodbye")
+
+        val model = Model.CLAUDE_3_5_SONNET_20240620
+        val paramsBuilder = MessageCreateParams.builder()
+            .addUserMessage("Use the provided tools to greet Alex, then say goodbye to him. You MUST use the tools!")
+            .addTool(greetTool)
+            .addTool(goodbyeTool)
+            .maxTokens(1000L)
+            .temperature(0.0)
+            .model(model)
+
+        // send a request to AI and expect it requests tool call executions
+        val messageAccumulator = MessageAccumulator.create()
+        client.messages().createStreaming(paramsBuilder.build()).use {
+            it.stream().forEach(messageAccumulator::accumulate)
+        }
+        val assistantMessage = messageAccumulator.message()
+        paramsBuilder.addMessage(assistantMessage)
+
+        // respond to ALL tool calls with tool_result blocks
+        assistantMessage.content().forEach { block ->
+            if (block.isToolUse()) {
+                val toolUse = block.toolUse().get()
+                paramsBuilder.addMessage(
+                    MessageParam.builder().contentOfBlockParams(listOf(
+                        ContentBlockParam.ofToolResult(
+                            ToolResultBlockParam.builder()
+                                .type(JsonString.of("tool_result"))
+                                .toolUseId(toolUse.id())
+                                .content(toolUse.name())
+                                .build()
+                        )
+                    ))
+                        .role(MessageParam.Role.USER)
+                        .build()
+                )
+            }
+        }
+
+        // final request to AI after providing tool outputs
+        client.messages().create(paramsBuilder.build())
+
+        val traces = analyzeSpans()
+        assertEquals(2, traces.size)
+
+        val finalTrace = traces.last()
+
+        // Expect two tool_result blocks present among prompts in the final request
+        val toolResultCount = (0..5).sumOf { idx ->
+            val content = finalTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.$idx.content")] ?: return@sumOf 0
+            try {
+                val jsonContent = kotlinx.serialization.json.Json.parseToJsonElement(content)
+                val arr = jsonContent.jsonArray
+                arr.count { it.jsonObject["type"]?.jsonPrimitive?.content == "tool_result" }
+            } catch (_: Exception) {
+                0
+            }
+        }
+        assertTrue(toolResultCount == 2)
     }
 
     @Test
@@ -271,18 +337,18 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
         assertEquals(529, trace.attributes[AttributeKey.longKey("http.status_code")])
     }
 
-    private fun createGreetTool(): Tool {
+    private fun createTool(word: String): Tool {
         return Tool.builder()
             .type(Tool.Type.CUSTOM)
-            .name("greet")
-            .description("Greets a user")
+            .name(word)
+            .description("Say $word to the user")
             .inputSchema(
                 Tool.InputSchema.builder()
                     .type(JsonString.of("object"))
                     .properties(com.anthropic.core.JsonObject.of(mapOf(
                         "name" to com.anthropic.core.JsonObject.of(mapOf(
                             "type" to JsonString.of("string"),
-                            "description" to JsonString.of("Greet a person")
+                            "description" to JsonString.of("Say $word to a person")
                         ))
                     )))
                     .required(listOf("name"))

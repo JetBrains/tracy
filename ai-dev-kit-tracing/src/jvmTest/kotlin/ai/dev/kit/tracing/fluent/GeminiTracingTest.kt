@@ -28,20 +28,20 @@ import com.google.genai.types.GenerateContentConfig as GeminiGenerateContentConf
 
 @Tag("SkipForNonLocal")
 class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
-    private fun createGreetTool(): Tool {
+    private fun createTool(word: String): Tool {
         return Tool.builder()
             .functionDeclarations(
                 FunctionDeclaration.builder()
-                    .name("greet")
-                    .description("Greet the user")
+                    .name(word)
+                    .description("Say $word to the user")
                     .parameters(
                         Schema.builder()
                             .type("object")
-                            .description("The greeting parameters")
+                            .description("The phrase parameters")
                             .properties(mapOf(
                                 "name" to Schema.builder()
                                     .type("string")
-                                    .description("The name of the person to greet")
+                                    .description("The name of the person to say $word to")
                                     .build()
                             ))
                             .required("name")
@@ -55,7 +55,7 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
     @Test
     fun `test Gemini tool calling auto logging`() = runTest {
         val client = instrument(createGeminiClient())
-        val greetTool = createGreetTool()
+        val greetTool = createTool("hi")
 
         val model = "gemini-1.5-pro"
         client.models.generateContent(
@@ -74,19 +74,19 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
         assertNotNull(trace)
 
         // assert request
-        assertEquals("greet", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.name")])
-        assertEquals("Greet the user", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.description")])
+        assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.name")])
+        assertEquals("Say hi to the user", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.description")])
         assertEquals("object", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.type")])
 
         // assert response
-        assertEquals("greet", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")])
+        assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")])
         assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")]?.isNotEmpty() == true)
     }
 
     @Test
     fun `test Gemini tool calling with tool call result`() = runTest {
         val client = instrument(createGeminiClient())
-        val greetTool = createGreetTool()
+        val greetTool = createTool("hi")
 
         val model = "gemini-1.5-pro"
         val config = GeminiGenerateContentConfig.builder()
@@ -149,13 +149,75 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
         assertNotNull(trace)
 
         // assert request
-        assertEquals("greet", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.name")])
-        assertEquals("Greet the user", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.description")])
+        assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.name")])
+        assertEquals("Say hi to the user", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.description")])
         assertEquals("object", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.type")])
 
         // assert response
-        assertEquals("greet", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")])
+        assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")])
         assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")]?.isNotEmpty() == true)
+    }
+
+    @Test
+    fun `test Gemini multiple tools response to tool calls auto tracing`() = runTest {
+        val client = instrument(createGeminiClient())
+        val greetTool = createTool("hi")
+        val goodbyeTool = createTool("goodbye")
+
+        val model = "gemini-1.5-pro"
+        val config = GeminiGenerateContentConfig.builder()
+            .temperature(0.0f)
+            .tools(greetTool, goodbyeTool)
+            .build()
+
+        val userMessage = Content.builder()
+            .role("user")
+            .parts(Part.fromText("Use the provided tools to greet Alex, then say goodbye to him. You MUST use the tools!"))
+            .build()
+
+        val firstResponse = client.models.generateContent(
+            model,
+            userMessage,
+            config,
+        )
+
+        val functionCallResponses = buildList {
+            firstResponse.parts()?.forEach { part ->
+                part.functionCall().ifPresent { call ->
+                    add(Part.fromFunctionResponse(
+                        call.name().get(),
+                        mapOf("output" to "ok")
+                    ))
+                }
+            }
+        }
+
+        val conversationHistory = listOf(
+            userMessage,
+            Content.builder().role("model").parts(firstResponse.parts()?.toList() ?: emptyList()).build(),
+            Content.builder().role("user").parts(functionCallResponses).build()
+        )
+
+        client.models.generateContent(
+            model,
+            conversationHistory,
+            config,
+        )
+
+        val traces = analyzeSpans()
+        assertEquals(2, traces.size)
+
+        val trace = traces.first()
+        // Assert both tools are declared in the request
+        assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.name")])
+        assertEquals("goodbye", trace.attributes[AttributeKey.stringKey("gen_ai.tool.1.function.0.name")])
+
+        // If function calls were made, assert both appear in completion metadata
+        if ((trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.finish_reason")] ?: "").contains("tool_calls") ||
+            trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")] != null) {
+            assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")]?.isNotEmpty() == true)
+            assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.1.name")]?.isNotEmpty() == true)
+        }
     }
 
     @Test
