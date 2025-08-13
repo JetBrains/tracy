@@ -27,5 +27,9 @@ actual fun <T> withProjectIdBlocking(id: String, block: suspend CoroutineScope.(
 actual suspend fun <T> withSessionId(id: String, block: suspend CoroutineScope.() -> T): T =
     withContext(Context.current().with(SESSION_ID_CONTEXT_KEY, id).asContextElement(), block)
 
-actual fun <T> withSessionIdBlocking(id: String, block: suspend CoroutineScope.() -> T): T =
-    runBlocking(Context.current().with(SESSION_ID_CONTEXT_KEY, id).asContextElement(), block)
+actual fun <T> withSessionIdBlocking(id: String?, block: suspend CoroutineScope.() -> T): T {
+    val context = Context.current().let { ctx ->
+        if (id == null) ctx else ctx.with(SESSION_ID_CONTEXT_KEY, id)
+    }
+    return runBlocking(context.asContextElement(), block)
+}

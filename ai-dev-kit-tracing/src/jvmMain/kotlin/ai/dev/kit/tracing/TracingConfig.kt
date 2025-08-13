@@ -62,3 +62,13 @@ data class WeaveConfig(
     override val traceToConsole: Boolean = false,
     override val exporterTimeout: Long = 10
 ) : TracingConfig(traceToConsole, exporterTimeout)
+
+/**
+ * Configuration for exporting OpenTelemetry traces to console only.
+ *
+ * @param traceToConsole If true, also logs traces to the console (useful for local debugging).
+ *        Default: false.
+ */
+data class NoLoggingConfig(
+    override val traceToConsole: Boolean = false
+) : TracingConfig(traceToConsole)

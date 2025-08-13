@@ -147,34 +147,34 @@ IDs ([JBAI-14126](https://youtrack.jetbrains.com/issue/JBAI-14126/Tracing-does-n
 
 ## 📚 How to use Evaluation?
 
-Evaluation includes and relies on tracing.
-In addition to adding the tracing dependency as explained above, add the evaluation dependency:
+The `ai-dev-kit-eval` module provides a lightweight, extensible set of APIs for evaluating AI features and models.
+It helps you define test cases, run generators, compute scores, and optionally log results to external tracking systems.
 
-```toml
-[libraries]
-ai-dev-kit-eval = { module = "com.jetbrains:ai-dev-kit-eval", version.ref = "ai-dev-kit" }
-```
+### ⭐ Key Features
 
-```kotlin
-dependencies {
-  implementation(libs.ai.dev.kit.eval)
-}
-```
+- Test APIs for AI evaluation
+  - Define inputs, expected ground truth, and produce outputs via a Generator
+  - Evaluate outputs with pluggable Evaluator implementations (single or multi-score)
+  - Run multiple times to measure stability and aggregate scores
 
-In code, you will need to define some unified classes for the AI feature you're evaluating:
+- BaseEvaluationTest
+  - Orchestrates runs over your dataset of TestCase entries
+  - Emits per-datapoint spans and run-level metadata (when tracing is enabled via ai-dev-kit-tracing)
+  - Aggregates and logs scores at the end of each run
 
-1. `class InputOfYourFeature : AIInput`, `class OutputOfYourFeature : AIOutput`
-2. `class YourGT : GroundTruth` to add all the information necessary to score the output. If no information is needed,
-   you can use the `NoGroundTruth` stub.
-3. `class YourGenerator : Generator<InputOfYourFeature, OutputOfYourFeature>` that encapsulates your feature.
-4. `class YourEvaluator : Evaluator<OutputOfYourFeature, YourGT, MultiScoreEvalResult>` that assess the output
-5. `class YourEval : LangfuseEvaluationTest<InputOfYourFeature, YourGT, OutputOfYourFeature, MultiScoreEvalResult>`
-   that uses `YourGenerator` internally to execute your AI feature and `YourEvaluator` to score the output.
-   The eval dataset is passed by overriding the `testCases` field.
+- NoLoggingEvaluationTest
+  - Fully local/in-memory evaluation (no external logging)
+  - Ideal for quick iteration in CI or local development
 
-Once you have that, you can run `YourEval` as a usual JUnit test and view the results on Langfuse.
+- LangfuseEvaluationTest
+  - Logging to Langfuse
+  - Ready-to-use provider is available in the [Langfuse module](ai-dev-kit-tracking-providers/ai-dev-kit-tracking-langfuse)
 
-For more details, refer to the two examples:
+### 🚀 Getting Started
+- Extend LangfuseEvaluationTest or NoLoggingEvaluationTest and implement the required hooks from your test class
+- Provide a list of TestCase items, a Generator, and an Evaluator
+
+For a detailed implementation guide, refer to the [Evaluation README](ai-dev-kit-eval/README.md) and two examples:
 
 1. `HaikuGeneratorTest`: simple eval for LLM-written haikus that use LLM-as-a-Judge as a
    metric, [code in this repo](https://github.com/JetBrains/ai-dev-kit/blob/main/ai-dev-kit-example/src/test/kotlin/ai/dev/kit/example/haiku/HaikuGeneratorTest.kt)

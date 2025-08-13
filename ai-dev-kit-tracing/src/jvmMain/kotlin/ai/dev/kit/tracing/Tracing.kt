@@ -29,6 +29,7 @@ fun setupTracing(
             when(tracingConfig) {
                 is LangfuseConfig -> addLangfuseSpanProcessor(tracingConfig)
                 is WeaveConfig -> addWeaveSpanProcessor(tracingConfig)
+                is NoLoggingConfig -> {}
             }
             if (tracingConfig.traceToConsole) addLoggingSpanProcessor()
         }

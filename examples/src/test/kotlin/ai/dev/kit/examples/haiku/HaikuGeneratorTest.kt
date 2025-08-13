@@ -13,10 +13,22 @@ import kotlin.jvm.optionals.getOrElse
 fun haikuTestCase(topic: String) = TestCase(name = topic, HaikuTopic(topic), NoGroundTruth)
 
 @Tag("SkipForNonLocal")
-class HaikuGeneratorTest :
+class LangfuseHaikuGeneratorTest :
     LangfuseEvaluationTest<HaikuTopic, NoGroundTruth, HaikuText, MultiScoreEvalResult>(
         numberOfRuns = 1,
         langfuseConfig = LangfuseConfig(langfuseUrl = "https://langfuse.labs.jb.gg/"),
+    ) {
+    override val testCases: List<TestCase<HaikuTopic, NoGroundTruth>> =
+        listOf("table", "computer", "flower", "horse").map { haikuTestCase(it) }
+
+    override val generator: Generator<HaikuTopic, HaikuText> = HaikuGenerator()
+    override val evaluator: Evaluator<NoGroundTruth, HaikuText, MultiScoreEvalResult> = HaikuEvaluator()
+}
+
+@Tag("SkipForNonLocal")
+class NoLoggingHaikuGeneratorTest :
+    NoLoggingEvaluationTest<HaikuTopic, NoGroundTruth, HaikuText, MultiScoreEvalResult>(
+        numberOfRuns = 1,
     ) {
     override val testCases: List<TestCase<HaikuTopic, NoGroundTruth>> =
         listOf("table", "computer", "flower", "horse").map { haikuTestCase(it) }

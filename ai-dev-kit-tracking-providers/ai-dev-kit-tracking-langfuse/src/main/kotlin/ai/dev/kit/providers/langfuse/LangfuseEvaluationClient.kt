@@ -12,7 +12,7 @@ import java.nio.charset.StandardCharsets
 
 class LangfuseEvaluationClient(
     langfuseConfig: LangfuseConfig
-) : EvaluationClient {
+) : LoggingClient {
     override val clientName: String = "Langfuse"
 
     init {

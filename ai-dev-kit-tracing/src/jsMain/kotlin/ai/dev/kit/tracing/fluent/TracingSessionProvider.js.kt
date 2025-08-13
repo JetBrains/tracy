@@ -16,5 +16,5 @@ actual fun <T> withProjectIdBlocking(id: String, block: suspend CoroutineScope.(
 actual suspend fun <T> withSessionId(id: String, block: suspend CoroutineScope.() -> T): T =
     TODO("Implementation depends on OpenTelemetry, which is JVM-only")
 
-actual fun <T> withSessionIdBlocking(id: String, block: suspend CoroutineScope.() -> T): T =
+actual fun <T> withSessionIdBlocking(id: String?, block: suspend CoroutineScope.() -> T): T =
     TODO("Implementation depends on OpenTelemetry, which is JVM-only")

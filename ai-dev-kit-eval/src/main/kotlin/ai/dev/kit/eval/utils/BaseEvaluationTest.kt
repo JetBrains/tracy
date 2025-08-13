@@ -3,6 +3,7 @@ package ai.dev.kit.eval.utils
 import ai.dev.kit.tracing.AI_DEVELOPMENT_KIT_TRACER
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.fluent.FluentSpanAttributes
+import ai.dev.kit.tracing.fluent.TracingSessionProvider.currentSessionId
 import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
 import ai.dev.kit.tracing.fluent.withSessionIdBlocking
 import io.opentelemetry.api.GlobalOpenTelemetry
@@ -17,7 +18,7 @@ import org.junit.jupiter.api.*
 /**
  * A base abstract class for conducting evaluation tests on AI functionality.
  * The class manages multiple test runs within an experiment and provides mechanisms for evaluating
- * AI outputs against ground-truth data while logging the results into [EvaluationClient].
+ * AI outputs against ground-truth data while logging the results into [LoggingClient].
  *
  * @param AIInputT The type of input provided to the AI system under test.
  * @param GroundTruthT The type of ground-truth data used for evaluation.
@@ -27,7 +28,8 @@ import org.junit.jupiter.api.*
  * @param runNamePrefix A prefix used for naming the runs within the experiment.
  * @param numberOfRuns The number of test runs to execute during the evaluation process.
  * @param tags A list of tags associated with each run, used for metadata. The size of this list must match `numberOfRuns`.
- * @param loggingClient An implementation of the [EvaluationClient] interface that handles logging of evaluation workflows.
+ * @param loggingClient An implementation of the [LoggingClient] interface
+ * that handles logging of evaluation workflows or null for no logging.
  *                      Current implementations include clients: `LangfuseEvaluationClient`.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -37,11 +39,11 @@ abstract class BaseEvaluationTest<
         AIOutputT : AIOutput,
         EvalResultT : EvalResult
         >(
-    private val experimentName: String,
-    private val runNamePrefix: String,
+    private val experimentName: String?,
+    private val runNamePrefix: String?,
     private val numberOfRuns: Int,
     private val tags: List<RunTag>,
-    private val loggingClient: EvaluationClient,
+    private val loggingClient: LoggingClient?,
 ) {
     init {
         require(tags.isEmpty() || tags.size == numberOfRuns) { "The number of tags must match the number of runs" }
@@ -55,7 +57,9 @@ abstract class BaseEvaluationTest<
     fun beforeAll() = runBlocking {
         logger.info { "🔄 Setting up before all tests" }
 
-        experimentId = loggingClient.getOrCreateExperiment(experimentName)
+        loggingClient ?: return@runBlocking
+
+        experimentId = experimentName?.let { loggingClient.getOrCreateExperiment(it) }
             ?: error("Experiment $experimentName not found and could not be created")
         (1..numberOfRuns).map { runNum ->
             val runId = loggingClient.createRun(
@@ -69,8 +73,12 @@ abstract class BaseEvaluationTest<
     @AfterAll
     fun afterAll() = runBlocking {
         logger.info { "📊 Logging evaluation results" }
+
+        loggingClient ?: return@runBlocking
+
         TracingManager.flushTraces()
         TracingManager.shutdownTracing()
+
         runResults.forEachIndexed { runIndex, runResult ->
             val (testResults, runId, runStatus) = runResult
             try {
@@ -86,12 +94,13 @@ abstract class BaseEvaluationTest<
     }
 
     @TestFactory
-    fun Runs() = runResults.mapIndexed { runNum, runResult ->
+    fun Runs() = (1..numberOfRuns).toList().mapIndexed { runNum, runResult ->
+        val runId = runResults.getOrNull(runNum)?.runId
         DynamicContainer.dynamicContainer(
-            "Run ${if (runResults.size > 1) runNum + 1 else ""}",
+            "Run ${if (numberOfRuns > 1) runNum + 1 else ""}",
             testCases.mapIndexed { dataPointIndex, testCase ->
                 DynamicTest.dynamicTest(testCase.name) {
-                    withSessionIdBlocking(runResult.runId) {
+                    withSessionIdBlocking(runId) {
                         val (dataPointSpan, dataPointScope) = createDataPointSpan(
                             dataPointIndex,
                             GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER),
@@ -113,8 +122,11 @@ abstract class BaseEvaluationTest<
                     }
                 }
             }.also {
-                val runLink = loggingClient.getRunLink(experimentId, runResult.runId)
-                logger.info { "🔗 View run results at $runLink" }
+                loggingClient?.let { client ->
+                    runId?.let { id ->
+                        logger.info { "🔗 View run results at ${client.getRunLink(experimentId, id)}" }
+                    }
+                }
             }
         )
     }
@@ -148,14 +160,17 @@ abstract class BaseEvaluationTest<
             logTest(message, traceId)
             fail(message)
         }
-        runResults[runNum].testResults.add(
-            TestResult(
-                testCase,
-                output,
-                result,
-                traceId
+
+        loggingClient?.let {
+            runResults[runNum].testResults.add(
+                TestResult(
+                    testCase,
+                    output,
+                    result,
+                    traceId
+                )
             )
-        )
+        }
 
         if (result.hasJunitTestSucceeded) {
             logTest(
@@ -171,11 +186,18 @@ abstract class BaseEvaluationTest<
 
     private fun logTest(message: String, traceId: String) {
         logger.info { message }
-        val traceLink = loggingClient.getTraceLink(experimentId, traceId)
-        logger.info { "🔗 View trace at $traceLink" }
+
+        loggingClient ?: return
+
+        currentSessionId?.let {
+            val traceLink = loggingClient.getTraceLink(experimentId, traceId)
+            logger.info { "🔗 View trace at $traceLink" }
+        }
     }
 
     private suspend fun logAverageScore(runId: String, evalResults: List<EvalResultT>) {
+        loggingClient ?: return
+
         val aggregateScores = evaluator.aggregateResults(evalResults)
         for (agg in aggregateScores) {
             loggingClient.logMetric(

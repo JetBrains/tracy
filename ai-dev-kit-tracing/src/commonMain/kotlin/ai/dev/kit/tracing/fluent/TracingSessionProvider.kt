@@ -47,4 +47,4 @@ expect suspend fun <T> withSessionId(id: String, block: suspend CoroutineScope.(
 /**
  * Same as [withSessionId] but blocking.
  */
-expect fun <T> withSessionIdBlocking(id: String, block: suspend CoroutineScope.() -> T): T
+expect fun <T> withSessionIdBlocking(id: String?, block: suspend CoroutineScope.() -> T): T

@@ -2,7 +2,7 @@ package ai.dev.kit.eval.utils
 
 import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
 
-interface EvaluationClient {
+interface LoggingClient {
     val clientName: String
     fun createRun(experimentId: String, runName: String): String
     fun getTraceLink(experimentId: String, traceId: String): String
