@@ -65,8 +65,7 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
         try {
             client.chat().completions().create(params)
-        }
-        catch (_: Exception) {
+        } catch (_: Exception) {
             // suppress
         }
 
@@ -89,10 +88,10 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
         val client = instrument(createLiteLLMClient())
 
         // defines: `greet(name: String)`
-        val greetTool = createGreetTool()
+        val greetTool = createTool("hi")
 
         val params = ChatCompletionCreateParams.Companion.builder()
-            .addUserMessage("Use a given `greet` tool to greet two people: Alex and Aleksandr. You MUST do this with the given tool!")
+            .addUserMessage("Use a given `hi` tool to greet two people: Alex and Aleksandr. You MUST do this with the given tool!")
             .addTool(greetTool)
             .model(ChatModel.Companion.GPT_4O_MINI)
             .temperature(0.0)
@@ -106,7 +105,7 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
         val trace = traces.firstOrNull()
         assertNotNull(trace)
 
-        assertEquals("greet", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
+        assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
         assertEquals("function", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.type")])
         assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.description")]?.isNotEmpty() == true)
         assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.parameters")]?.isNotEmpty() == true)
@@ -125,12 +124,12 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
         val client = instrument(createLiteLLMClient())
 
         // defines: `greet(name: String)`
-        val greetTool = createGreetTool()
+        val greetTool = createTool("hi")
 
         // See example at:
         // https://github.com/openai/openai-java/blob/main/openai-java-example/src/main/java/com/openai/example/FunctionCallingRawExample.java
         val paramsBuilder = ChatCompletionCreateParams.Companion.builder()
-            .addUserMessage("Use a given `greet` tool to greet a person Alex. You MUST do this with the given tool!")
+            .addUserMessage("Use a given `hi` tool to greet a person Alex. You MUST do this with the given tool!")
             .addTool(greetTool)
             .model(ChatModel.Companion.GPT_4O_MINI)
             .temperature(0.0)
@@ -163,7 +162,7 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
         assertNotNull(toolCallRequestTrace)
         assertNotNull(toolCallResponseTrace)
 
-        assertEquals("greet", toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
+        assertEquals("hi", toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
         assertEquals("function", toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.tool.0.type")])
 
         // if AI called the tool when check its props
@@ -171,6 +170,59 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
             assertEquals("tool", toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.role")])
             assertTrue(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.content")]?.isNotEmpty() == true)
             assertTrue(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.tool_call_id")]?.isNotEmpty() == true)
+        }
+    }
+
+    @Test
+    fun `test OpenAI multiple tools response to tool calls auto tracing`() = runTest {
+        val client = instrument(createLiteLLMClient())
+
+        val greetTool = createTool("hi")
+        val farewellTool = createTool("goodbye")
+
+        val paramsBuilder = ChatCompletionCreateParams.Companion.builder()
+            .addUserMessage("Use the provided tools to greet Alex, then say goodbye to him. You MUST use the tools!")
+            .addTool(greetTool)
+            .addTool(farewellTool)
+            .model(ChatModel.Companion.GPT_4O_MINI)
+            .temperature(0.0)
+
+
+        client.chat().completions().create(paramsBuilder.build()).choices().stream()
+            .map(ChatCompletion.Choice::message)
+            .peek(paramsBuilder::addMessage)
+            .flatMap { msg -> msg.toolCalls().stream().flatMap { it.stream() } }
+            .forEach { toolCall ->
+                paramsBuilder.addMessage(
+                    ChatCompletionToolMessageParam.builder()
+                        .toolCallId(toolCall.id())
+                        .content(toolCall.function().name())
+                        .build()
+                )
+            }
+
+        client.chat().completions().create(paramsBuilder.build())
+
+        val traces = analyzeSpans()
+        assertEquals(2, traces.size)
+
+        val toolCallRequestTrace = traces.first()
+        val toolCallResponseTrace = traces.last()
+
+        assertEquals("hi", toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
+        assertEquals("goodbye", toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.tool.1.name")])
+
+        if (toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.finish_reason")] == "tool_calls") {
+            assertTrue(toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")]?.isNotEmpty() == true)
+            assertTrue(toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.1.name")]?.isNotEmpty() == true)
+
+            assertEquals("tool", toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.role")])
+            assertTrue(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.content")]?.isNotEmpty() == true)
+            assertTrue(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.tool_call_id")]?.isNotEmpty() == true)
+
+            assertEquals("tool", toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.role")])
+            assertTrue(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.content")]?.isNotEmpty() == true)
+            assertTrue(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.tool_call_id")]?.isNotEmpty() == true)
         }
     }
 
@@ -193,26 +245,26 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
         assertTrue(content.isNotEmpty())
     }
 
-    private fun createGreetTool(): ChatCompletionTool {
+    private fun createTool(word: String): ChatCompletionTool {
         return ChatCompletionTool.builder()
             .type(JsonString.of("function"))
             .function(
                 FunctionDefinition.builder()
-                    .description("Greet the user")
-                    .name("greet")
-                    .parameters(FunctionParameters.builder()
-                        .putAdditionalProperty("type", JsonValue.from("object"))
-                        .putAdditionalProperty(
-                            "properties", JsonValue.from(mapOf(
-                                "name" to mapOf("type" to "string"),
-                            )))
-                        .putAdditionalProperty("required", JsonArray.of(listOf(
-                            JsonString.of("name")
-                        )))
-                        .putAdditionalProperty("additionalProperties", JsonValue.from(false))
-                        .build()
+                    .description("Say $word to the user")
+                    .name(word)
+                    .parameters(
+                        FunctionParameters.builder()
+                            .putAdditionalProperty("type", JsonValue.from("object"))
+                            .putAdditionalProperty(
+                                "properties",
+                                JsonValue.from(mapOf("name" to mapOf("type" to "string")))
+                            )
+                            .putAdditionalProperty("required", JsonArray.of(listOf(JsonString.of("name"))))
+                            .putAdditionalProperty("additionalProperties", JsonValue.from(false))
+                            .build()
                     )
                     .build()
-            ).build()
+            )
+            .build()
     }
 }
