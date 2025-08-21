@@ -14,6 +14,8 @@ import com.openai.models.chat.completions.ChatCompletion
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import com.openai.models.chat.completions.ChatCompletionTool
 import com.openai.models.chat.completions.ChatCompletionToolMessageParam
+import com.openai.models.responses.FunctionTool
+import com.openai.models.responses.ResponseCreateParams
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.test.runTest
@@ -28,13 +30,28 @@ import kotlin.test.assertTrue
 @Tag("SkipForNonLocal")
 class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
     @Test
-    fun `test OpenAI auto tracing`() = runTest {
+    fun `test OpenAI chat completions auto tracing`() = runTest {
         val client = instrument(createLiteLLMClient())
-        val params = ChatCompletionCreateParams.Companion.builder()
+        val params = ChatCompletionCreateParams.builder()
             .addUserMessage("Generate polite greeting and introduce yourself")
-            .model(ChatModel.Companion.GPT_4O_MINI).temperature(1.1).build()
+            .model(ChatModel.GPT_4O_MINI).temperature(1.1).build()
         client.chat().completions().create(params)
 
+        validateBasicTracing()
+    }
+
+    @Test
+    fun `test OpenAI responses API auto tracing`() = runTest {
+        val client = instrument(createLiteLLMClient())
+        val params = ResponseCreateParams.builder()
+            .input("Generate polite greeting and introduce yourself")
+            .model(ChatModel.GPT_4O_MINI).temperature(1.1).build()
+        client.responses().create(params)
+
+        validateBasicTracing()
+    }
+
+    private fun validateBasicTracing() {
         val traces = analyzeSpans()
 
         assertEquals(1, traces.size)
@@ -46,7 +63,7 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
             trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
         assertTrue(
-            trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(ChatModel.Companion.GPT_4O_MINI.asString()) == true
+            trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(ChatModel.GPT_4O_MINI.asString()) == true
         )
         val content = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
         assertNotNull(content)
@@ -54,11 +71,11 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
     }
 
     @Test
-    fun `test OpenAI span error status when request fails`() = runTest {
+    fun `test OpenAI chat completions span error status when request fails`() = runTest {
         val client = instrument(createLiteLLMClient())
-        val params = ChatCompletionCreateParams.Companion.builder()
+        val params = ChatCompletionCreateParams.builder()
             .addUserMessage("Generate polite greeting and introduce yourself")
-            .model(ChatModel.Companion.GPT_4O_MINI)
+            .model(ChatModel.GPT_4O_MINI)
             // setting invalid temperature
             .temperature(-1000.0)
             .build()
@@ -69,6 +86,29 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
             // suppress
         }
 
+        validateErrorStatus()
+    }
+
+    @Test
+    fun `test OpenAI responses API span error status when request fails`() = runTest {
+        val client = instrument(createLiteLLMClient())
+        val params = ResponseCreateParams.builder()
+            .input("Generate polite greeting and introduce yourself")
+            .model(ChatModel.GPT_4O_MINI)
+            // setting invalid temperature
+            .temperature(-1000.0)
+            .build()
+
+        try {
+            client.responses().create(params)
+        } catch (_: Exception) {
+            // suppress
+        }
+
+        validateErrorStatus()
+    }
+
+    private fun validateErrorStatus() {
         val traces = analyzeSpans()
         val trace = traces.firstOrNull()
         assertNotNull(trace)
@@ -84,21 +124,44 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
     }
 
     @Test
-    fun `test OpenAI tool calls auto tracing`() = runTest {
+    fun `test OpenAI chat completions tool calls auto tracing`() = runTest {
         val client = instrument(createLiteLLMClient())
 
         // defines: `greet(name: String)`
         val greetTool = createTool("hi")
 
-        val params = ChatCompletionCreateParams.Companion.builder()
+        val params = ChatCompletionCreateParams.builder()
             .addUserMessage("Use a given `hi` tool to greet two people: Alex and Aleksandr. You MUST do this with the given tool!")
             .addTool(greetTool)
-            .model(ChatModel.Companion.GPT_4O_MINI)
+            .model(ChatModel.GPT_4O_MINI)
             .temperature(0.0)
             .build()
 
         client.chat().completions().create(params)
 
+        validateToolCall()
+    }
+
+    @Test
+    fun `test OpenAI responses API tool calls auto tracing`() = runTest {
+        val client = instrument(createLiteLLMClient())
+
+        // defines: `greet(name: String)`
+        val greetTool = createFunctionTool("hi")
+
+        val params = ResponseCreateParams.builder()
+            .input("Use a given `hi` tool to greet two people: Alex and Aleksandr. You MUST do this with the given tool!")
+            .addTool(greetTool)
+            .model(ChatModel.GPT_4O_MINI)
+            .temperature(0.0)
+            .build()
+
+        client.responses().create(params)
+
+        validateToolCall()
+    }
+
+    fun validateToolCall() {
         val traces = analyzeSpans()
 
         assertEquals(1, traces.size)
@@ -120,7 +183,7 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
     }
 
     @Test
-    fun `test OpenAI response to a tool call auto tracing`() = runTest {
+    fun `test OpenAI chat completions response to a tool call auto tracing`() = runTest {
         val client = instrument(createLiteLLMClient())
 
         // defines: `greet(name: String)`
@@ -128,10 +191,10 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
         // See example at:
         // https://github.com/openai/openai-java/blob/main/openai-java-example/src/main/java/com/openai/example/FunctionCallingRawExample.java
-        val paramsBuilder = ChatCompletionCreateParams.Companion.builder()
+        val paramsBuilder = ChatCompletionCreateParams.builder()
             .addUserMessage("Use a given `hi` tool to greet a person Alex. You MUST do this with the given tool!")
             .addTool(greetTool)
-            .model(ChatModel.Companion.GPT_4O_MINI)
+            .model(ChatModel.GPT_4O_MINI)
             .temperature(0.0)
 
         // expect AI to request a tool call
@@ -152,6 +215,57 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
         // give an answer to a tool call
         client.chat().completions().create(paramsBuilder.build())
 
+        validateToolCallResponse()
+    }
+
+    @Test
+    fun `test OpenAI responses API response to a tool call auto tracing`() = runTest {
+        val client = instrument(createLiteLLMClient())
+
+        val greetTool = createFunctionTool("hi")
+
+        val userPrompt = "Use the provided `hi` tool to greet Alex. You MUST use the tool!"
+
+        val paramsBuilderFirst = ResponseCreateParams.builder()
+            .model(ChatModel.GPT_4O_MINI)
+            .addTool(greetTool)
+            .input(userPrompt)
+
+        val first = client.responses().create(paramsBuilderFirst.build())
+
+        val toolCalls = first.output().mapNotNull { it.functionCall().orElse(null) }
+
+        val assistantWithToolResults = mapOf(
+            "role" to "assistant",
+            "content" to (
+                    toolCalls.map { call ->
+                        mapOf(
+                            "type" to "output_text",
+                            "tool_use_id" to call.callId(),
+                            "text" to "Hello! I'm greeting you!"
+                        )
+                    }
+                    )
+        )
+
+        val paramsBuilderSecond = ResponseCreateParams.builder()
+            .model(ChatModel.GPT_4O_MINI)
+            .addTool(greetTool)
+            .input(
+                JsonValue.from(
+                    listOf(
+                        mapOf("role" to "user", "content" to userPrompt),
+                        assistantWithToolResults
+                    )
+                )
+            )
+
+        client.responses().create(paramsBuilderSecond.build())
+
+        validateToolCallResponse()
+    }
+
+    fun validateToolCallResponse() {
         val traces = analyzeSpans()
 
         assertEquals(2, traces.size)
@@ -174,17 +288,17 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
     }
 
     @Test
-    fun `test OpenAI multiple tools response to tool calls auto tracing`() = runTest {
+    fun `test OpenAI chat completions multiple tools response to tool calls auto tracing`() = runTest {
         val client = instrument(createLiteLLMClient())
 
         val greetTool = createTool("hi")
         val farewellTool = createTool("goodbye")
 
-        val paramsBuilder = ChatCompletionCreateParams.Companion.builder()
+        val paramsBuilder = ChatCompletionCreateParams.builder()
             .addUserMessage("Use the provided tools to greet Alex, then say goodbye to him. You MUST use the tools!")
             .addTool(greetTool)
             .addTool(farewellTool)
-            .model(ChatModel.Companion.GPT_4O_MINI)
+            .model(ChatModel.GPT_4O_MINI)
             .temperature(0.0)
 
 
@@ -203,6 +317,67 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
         client.chat().completions().create(paramsBuilder.build())
 
+        validateMultipleToolCallResponseWithInput()
+    }
+
+    @Test
+    fun `test OpenAI responses API multiple tools response to tool calls auto tracing`() = runTest {
+        val client = instrument(createLiteLLMClient())
+
+        val greetTool = createFunctionTool("hi")
+        val farewellTool = createFunctionTool("goodbye")
+
+        val userPrompt = "Use the provided tools to greet Alex, then say goodbye to him. You MUST use the tools!"
+
+        val paramsBuilderFirst = ResponseCreateParams.builder()
+            .model(ChatModel.GPT_4O_MINI)
+            .addTool(greetTool)
+            .addTool(farewellTool)
+            .input(userPrompt)
+        val first = client.responses().create(paramsBuilderFirst.build())
+        val toolCalls = first.output().mapNotNull { it.functionCall().orElse(null) }
+        val assistantWithToolResults = mapOf(
+            "role" to "assistant",
+            "content" to (
+                    listOf(
+                        mapOf(
+                            "type" to "output_text",
+                            "text" to "Tool results:"
+                        )
+                    ) + toolCalls.map { call ->
+                        val resultText = when (call.name()) {
+                            "hi" -> "hi, Alex!"
+                            "goodbye" -> "goodbye, Alex!"
+                            else -> "done"
+                        }
+                        mapOf(
+                            "type" to "output_text",
+                            "tool_use_id" to call.callId(),
+                            "text" to resultText
+                        )
+                    }
+                    )
+        )
+
+        val paramsBuilderSecond = ResponseCreateParams.builder()
+            .model(ChatModel.GPT_4O_MINI)
+            .addTool(greetTool)
+            .addTool(farewellTool)
+            .input(
+                JsonValue.from(
+                    listOf(
+                        mapOf("role" to "user", "content" to userPrompt),
+                        assistantWithToolResults
+                    )
+                )
+            )
+
+        client.responses().create(paramsBuilderSecond.build())
+
+        validateMultipleToolCallResponseWithInput()
+    }
+
+    fun validateMultipleToolCallResponseWithInput() {
         val traces = analyzeSpans()
         assertEquals(2, traces.size)
 
@@ -229,17 +404,15 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
     @Test
     fun `test OpenAI auto tracing when instrumentation is off`() = runTest {
         val client = createLiteLLMClient()
-        val params = ChatCompletionCreateParams.Companion.builder()
+        val params = ChatCompletionCreateParams.builder()
             .addUserMessage("Generate polite greeting and introduce yourself")
-            .model(ChatModel.Companion.GPT_4O_MINI).temperature(1.1).build()
+            .model(ChatModel.GPT_4O_MINI).temperature(1.1).build()
         val result = client.chat().completions().create(params)
 
         val traces = analyzeSpans()
 
         assertEquals(0, traces.size)
-        assertTrue(
-            result.model().startsWith(ChatModel.Companion.GPT_4O_MINI.asString())
-        )
+        assertTrue(result.model().startsWith(ChatModel.GPT_4O_MINI.asString()))
         val content = result.choices().first().message().content().getOrNull()
         assertNotNull(content)
         assertTrue(content.isNotEmpty())
@@ -265,6 +438,23 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
                     )
                     .build()
             )
+            .build()
+    }
+
+    private fun createFunctionTool(word: String): FunctionTool {
+        val schema = JsonValue.from(
+            mapOf(
+                "type" to "object",
+                "properties" to mapOf("name" to mapOf("type" to "string")),
+                "required" to listOf("name"),
+                "additionalProperties" to false
+            )
+        )
+        return FunctionTool.builder()
+            .name(word)
+            .description("Say $word to the user")
+            .parameters(schema)
+            .strict(false)
             .build()
     }
 }
