@@ -2,6 +2,7 @@ package ai.dev.kit.tracing.fluent
 
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.dev.kit.tracing.LITELLM_URL
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.mock.*
@@ -24,10 +25,9 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
             )
         }
         // Apache5
-        val client = HttpClient(mockEngine)
-//        HttpClient {
-//
-//        }
+        // val client = HttpClient(mockEngine)
+        val client = HttpClient()
+
         return client
     }
 
@@ -36,14 +36,31 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val client: HttpClient = instrument(createKtorHttpClient())
 
         // Trigger a request (your interceptor should be called here)
-        val response: HttpResponse = client.get("https://example.org/test")
+        // val response: HttpResponse = client.get("https://example.org/test")
+        val response: HttpResponse = client.post("$LITELLM_URL/v1/messages") {
+            val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
+            header("x-api-key", apiKey)
+            header("Content-Type", "application/json")
+            setBody("""
+                {
+                    "max_tokens": 1024,
+                    "messages": [
+                        {
+                            "content": "Hello, world!",
+                            "role": "user"
+                        }
+                    ],
+                    "model": "claude-sonnet-4-20250514"
+                }
+            """.trimIndent())
+        }
+
         val body: String = response.body()
 
         println("Response status: ${response.status}")
         println("Response body: $body")
 
         assertEquals(HttpStatusCode.OK, response.status)
-        assert(body.contains("hello from mock"))
 
         val traces = analyzeSpans()
 
