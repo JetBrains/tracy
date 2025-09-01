@@ -1,5 +1,11 @@
 package ai.dev.kit
 
+import ai.dev.kit.adapters.AnthropicLLMTracingAdapter
+import ai.dev.kit.adapters.ContentType
+import ai.dev.kit.adapters.GeminiLLMTracingAdapter
+import ai.dev.kit.adapters.LLMTracingAdapter
+import ai.dev.kit.adapters.OpenAILLMTracingAdapter
+import ai.dev.kit.adapters.Url
 import ai.dev.kit.tracing.AI_DEVELOPMENT_KIT_TRACER
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
@@ -11,41 +17,26 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 
-fun instrument(client: HttpClient): HttpClient {
-    return patchClient(client/*, interceptor = TODO()*/)
+// TODO: add description
+enum class HttpClientLLMProvider {
+    OpenAI,
+    Anthropic,
+    Gemini,
 }
 
-private fun patchClient(client: HttpClient /*interceptor: String*/): HttpClient {
-//    client.plugin(HttpSend).intercept { request ->
-//        execute(request)
-//    }
-
-    return client.config {
-        NetworkParamsPlugin().setup(this)
+fun instrument(client: HttpClient, provider: HttpClientLLMProvider): HttpClient {
+    val adapter = when (provider) {
+        HttpClientLLMProvider.OpenAI -> OpenAILLMTracingAdapter()
+        HttpClientLLMProvider.Anthropic -> AnthropicLLMTracingAdapter()
+        HttpClientLLMProvider.Gemini -> GeminiLLMTracingAdapter()
     }
 
-//    val clientClass: Class<HttpClient> = client.javaClass
-//    val configField = clientClass.getDeclaredField("config").apply { isAccessible = true }
-//    val config = configField.get(client) as HttpClientConfig<*> // HttpClientConfig<HttpClientEngineConfig>
-//
-//    val configClass = config.javaClass
-//    val customInterceptorsField = configClass.getDeclaredField("customInterceptors").apply { isAccessible = true }
-//    val customInterceptors = customInterceptorsField.get(config) as MutableMap<String, (HttpClient) -> Unit>
-//
-//    customInterceptors.put("Value123") {
-//        println("HIHIHI!")
-//        println("In interceptor:\n$it")
-//    }
-//
-//    // client.config.customInterceptors.put("") { httpClient -> }
-//    println("[HERE] customInterceptors: $customInterceptors")
-
-    return client
+    return client.config {
+        NetworkParamsPlugin(adapter).setup(this)
+    }
 }
 
-class NetworkParamsPlugin {
-    private val adapter = AnthropicAdapter()
-
+class NetworkParamsPlugin(private val adapter: LLMTracingAdapter) {
     fun setup(config: HttpClientConfig<*>) {
         val tracer = GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER)
 
@@ -55,10 +46,6 @@ class NetworkParamsPlugin {
             config.install(createClientPlugin("NetworkParamsPlugin") {
                 onRequest { request, content ->
                     try {
-                        println("[LISTENER body]: ${request.body}")
-                        println("[LISTENER content]: $content")
-                        println("Attributes: ${request.attributes}")
-
                         val body = try {
                             Json.parseToJsonElement(request.body.toString()).jsonObject
                         } catch (_: Exception) {
@@ -72,7 +59,6 @@ class NetworkParamsPlugin {
                         )
                     }
                     catch (e: Exception) {
-                        println("Error")
                         span.setStatus(StatusCode.ERROR)
                         span.recordException(e)
                         span.end()
@@ -82,8 +68,6 @@ class NetworkParamsPlugin {
 
                 onResponse { response ->
                     try {
-                        println("[LISTENER response]: ${response.bodyAsText()}")
-
                         val body = try {
                             Json.parseToJsonElement(response.bodyAsText()).jsonObject
                         }
@@ -101,7 +85,6 @@ class NetworkParamsPlugin {
                         span.setStatus(StatusCode.OK)
                     }
                     catch (e: Exception) {
-                        println("Error")
                         span.setStatus(StatusCode.ERROR)
                         span.recordException(e)
                         throw e

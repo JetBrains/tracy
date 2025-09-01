@@ -1,9 +1,8 @@
-package ai.dev.kit
+package ai.dev.kit.adapters
 
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_SYSTEM
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -15,7 +14,7 @@ data class ContentType(val type: String, val subtype: String) {
     fun asString(): String = "$type/$subtype"
 }
 
-sealed class Adapter(private val genAISystem: String) {
+sealed class LLMTracingAdapter(private val genAISystem: String) {
     companion object {
         private const val REQUIRED_TYPE = "application"
         private const val REQUIRED_SUBTYPE = "json"

@@ -1,5 +1,6 @@
 package ai.dev.kit.tracing.fluent
 
+import ai.dev.kit.HttpClientLLMProvider
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.LITELLM_URL
@@ -9,7 +10,9 @@ import io.ktor.client.engine.mock.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.opentelemetry.api.common.AttributeKey
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -33,12 +36,14 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test Ktor HttpClient auto tracing`() = runTest {
-        val client: HttpClient = instrument(createKtorHttpClient())
+        val client: HttpClient = instrument(createKtorHttpClient(), provider = HttpClientLLMProvider.Anthropic)
 
         // Trigger a request (your interceptor should be called here)
         // val response: HttpResponse = client.get("https://example.org/test")
+        val model = "claude-sonnet-4-20250514"
         val response: HttpResponse = client.post("$LITELLM_URL/v1/messages") {
             val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
+
             header("x-api-key", apiKey)
             header("Content-Type", "application/json")
             setBody("""
@@ -50,7 +55,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
                             "role": "user"
                         }
                     ],
-                    "model": "claude-sonnet-4-20250514"
+                    "model": "$model"
                 }
             """.trimIndent())
         }
@@ -68,6 +73,21 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val trace = traces.firstOrNull()
         assertNotNull(trace)
 
-        println("TRACE\n $trace")
+        assertEquals(
+            LITELLM_URL,
+            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
+        )
+
+        assertTrue(
+            trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(model) == true
+        )
+
+        val type = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.type")]
+        assertNotNull(type)
+        assertTrue(type.isNotEmpty())
+
+        val text = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
+        assertNotNull(text)
+        assertTrue(text.isNotEmpty())
     }
 }

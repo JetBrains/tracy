@@ -1,16 +1,15 @@
 package ai.dev.kit
 
+import ai.dev.kit.adapters.ContentType
+import ai.dev.kit.adapters.LLMTracingAdapter
+import ai.dev.kit.adapters.Url
 import ai.dev.kit.tracing.AI_DEVELOPMENT_KIT_TRACER
 import io.opentelemetry.api.GlobalOpenTelemetry
-import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import okhttp3.HttpUrl
 import okhttp3.Interceptor
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Response
 
@@ -60,7 +59,7 @@ internal fun <Client, ClientImpl, ClientOptions, ClientOkHttpClient> patchOpenAI
 
 sealed class OpenTelemetryOkHttpInterceptor(
     private val spanName: String,
-    private val adapter: Adapter,
+    private val adapter: LLMTracingAdapter,
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val tracer = GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER)
