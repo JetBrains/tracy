@@ -5,27 +5,24 @@ import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.LITELLM_URL
 import io.ktor.client.*
-import io.ktor.client.call.*
 import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
 import io.opentelemetry.api.common.AttributeKey
+import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 
+@Tag("SkipForNonLocal")
 class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
     @Test
-    fun `test Ktor HttpClient auto tracing`() = runTest {
+    fun `test Ktor HttpClient auto tracing for Anthropic`() = runTest {
         val client: HttpClient = instrument(HttpClient(), provider = HttpClientLLMProvider.Anthropic)
-
-        // Trigger a request (your interceptor should be called here)
-        // val response: HttpResponse = client.get("https://example.org/test")
         val model = "claude-sonnet-4-20250514"
-        val response: HttpResponse = client.post("$LITELLM_URL/v1/messages") {
+        client.post("$LITELLM_URL/v1/messages") {
             val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
 
             header("x-api-key", apiKey)
@@ -44,13 +41,6 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
             """.trimIndent())
         }
 
-        val body: String = response.body()
-
-        println("Response status: ${response.status}")
-        println("Response body: $body")
-
-        assertEquals(HttpStatusCode.OK, response.status)
-
         val traces = analyzeSpans()
 
         assertEquals(1, traces.size)
@@ -66,6 +56,8 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
             trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(model) == true
         )
 
+        assertEquals(StatusCode.OK, trace.status.statusCode)
+
         val type = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.type")]
         assertNotNull(type)
         assertTrue(type.isNotEmpty())
@@ -73,5 +65,47 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val text = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
         assertNotNull(text)
         assertTrue(text.isNotEmpty())
+    }
+
+    @Test
+    fun `test Ktor HttpClient auto tracing for OpenAI`() = runTest {
+        val client: HttpClient = instrument(HttpClient(), provider = HttpClientLLMProvider.OpenAI)
+        val model = "gpt-4o-mini"
+        val response = client.post("$LITELLM_URL/v1/chat/completions") {
+            val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
+
+            header("Authorization", "Bearer $apiKey")
+            header("Content-Type", "application/json")
+            setBody("""
+                {
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": "hello world"
+                        }
+                    ],
+                    "model": "gpt-4o-mini"
+                }
+            """.trimIndent())
+        }
+
+        println("response\n $response")
+
+        val traces = analyzeSpans()
+
+        assertEquals(1, traces.size)
+        val trace = traces.firstOrNull()
+        assertNotNull(trace)
+
+        assertEquals(StatusCode.OK, trace.status.statusCode)
+
+        assertEquals(LITELLM_URL, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
+        assertTrue(
+            trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(model) == true
+        )
+
+        val content = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
+        assertNotNull(content)
+        assertTrue(content.isNotEmpty())
     }
 }
