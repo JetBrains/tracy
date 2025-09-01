@@ -71,7 +71,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
     fun `test Ktor HttpClient auto tracing for OpenAI`() = runTest {
         val client: HttpClient = instrument(HttpClient(), provider = HttpClientLLMProvider.OpenAI)
         val model = "gpt-4o-mini"
-        val response = client.post("$LITELLM_URL/v1/chat/completions") {
+        client.post("$LITELLM_URL/v1/chat/completions") {
             val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
 
             header("Authorization", "Bearer $apiKey")
@@ -89,8 +89,6 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
             """.trimIndent())
         }
 
-        println("response\n $response")
-
         val traces = analyzeSpans()
 
         assertEquals(1, traces.size)
@@ -107,5 +105,46 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val content = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
         assertNotNull(content)
         assertTrue(content.isNotEmpty())
+    }
+
+    @Test
+    fun `test Ktor HttpClient auto tracing for Gemini`() = runTest {
+        val client: HttpClient = instrument(HttpClient(), provider = HttpClientLLMProvider.Gemini)
+        val model = "gemini-2.5-flash"
+        client.post("$LITELLM_URL/gemini/v1beta/models/$model:generateContent") {
+            val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
+
+            header("x-goog-api-key", apiKey)
+            header("Content-Type", "application/json")
+            setBody("""
+                {
+                    "contents": [
+                        {
+                            "parts": [
+                                { "text": "Explain how AI works in a few words" }
+                            ]
+                        }
+                    ]
+                }
+            """.trimIndent())
+        }
+
+        val traces = analyzeSpans()
+
+        assertEquals(1, traces.size)
+        val trace = traces.firstOrNull()
+        assertNotNull(trace)
+
+        assertEquals(StatusCode.OK, trace.status.statusCode)
+        assertEquals(
+            LITELLM_URL,
+            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
+        )
+        kotlin.test.assertTrue(
+            trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(model) == true
+        )
+        val text = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
+        assertNotNull(text)
+        kotlin.test.assertTrue(text.isNotEmpty())
     }
 }
