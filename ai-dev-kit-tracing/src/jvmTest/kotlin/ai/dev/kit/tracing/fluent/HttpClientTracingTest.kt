@@ -6,7 +6,6 @@ import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.LITELLM_URL
 import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.engine.mock.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -19,24 +18,9 @@ import kotlin.test.assertNotNull
 
 
 class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
-    private fun createKtorHttpClient(): HttpClient {
-        val mockEngine = MockEngine { request ->
-            respond(
-                content = """{"message": "hello from mock"}""",
-                status = HttpStatusCode.OK,
-                headers = headersOf(HttpHeaders.ContentType, "application/json")
-            )
-        }
-        // Apache5
-        // val client = HttpClient(mockEngine)
-        val client = HttpClient()
-
-        return client
-    }
-
     @Test
     fun `test Ktor HttpClient auto tracing`() = runTest {
-        val client: HttpClient = instrument(createKtorHttpClient(), provider = HttpClientLLMProvider.Anthropic)
+        val client: HttpClient = instrument(HttpClient(), provider = HttpClientLLMProvider.Anthropic)
 
         // Trigger a request (your interceptor should be called here)
         // val response: HttpResponse = client.get("https://example.org/test")
