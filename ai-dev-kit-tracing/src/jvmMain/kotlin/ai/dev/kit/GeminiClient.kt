@@ -50,11 +50,10 @@ private const val SPAN_NAME = "Gemini-generation"
 /**
  * For request and response schemas, see: [Gemini Docs](https://ai.google.dev/api/generate-content)
  */
-class OpenTelemetryGeminiLogger : OpenTelemetryOkHttpInterceptor(
-    SPAN_NAME,
-    genAISystem = GenAiSystemIncubatingValues.GEMINI,
-) {
-    override fun getRequestBodyAttributes(span: Span, url: HttpUrl, body: JsonObject) {
+class OpenTelemetryGeminiLogger : OpenTelemetryOkHttpInterceptor(SPAN_NAME, adapter = GeminiAdapter())
+
+private class GeminiAdapter : Adapter(genAISystem = GenAiSystemIncubatingValues.GEMINI) {
+    override fun getRequestBodyAttributes(span: Span, url: Url, body: JsonObject) {
         // See: https://ai.google.dev/api/caching#Content
         body["contents"]?.let {
             for ((index, message) in it.jsonArray.withIndex()) {
@@ -64,7 +63,7 @@ class OpenTelemetryGeminiLogger : OpenTelemetryOkHttpInterceptor(
         }
 
         // url ends with `[model]:[operation]`
-        val (model, operation) = url.pathSegments.lastOrNull()?.split(":")
+        val (model, operation) = url.host.split("/").lastOrNull()?.split(":")
             ?.let { it.firstOrNull() to it.lastOrNull() } ?: (null to null)
 
         model?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, model) }
