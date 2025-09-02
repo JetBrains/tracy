@@ -14,7 +14,7 @@ data class ContentType(val type: String, val subtype: String) {
     fun asString(): String = "$type/$subtype"
 }
 
-sealed class LLMTracingAdapter(private val genAISystem: String) {
+internal sealed class LLMTracingAdapter(private val genAISystem: String) {
     companion object {
         private const val REQUIRED_TYPE = "application"
         private const val REQUIRED_SUBTYPE = "json"

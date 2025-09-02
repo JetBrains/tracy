@@ -36,7 +36,7 @@ fun instrument(client: HttpClient, provider: HttpClientLLMProvider): HttpClient 
     }
 }
 
-class NetworkParamsPlugin(private val adapter: LLMTracingAdapter) {
+private class NetworkParamsPlugin(private val adapter: LLMTracingAdapter) {
     fun setup(config: HttpClientConfig<*>) {
         val tracer = GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER)
 

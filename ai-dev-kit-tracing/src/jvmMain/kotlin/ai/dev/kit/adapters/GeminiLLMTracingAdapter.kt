@@ -21,7 +21,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.GEMINI) {
+internal class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.GEMINI) {
     override fun getRequestBodyAttributes(span: Span, url: Url, body: JsonObject) {
         // See: https://ai.google.dev/api/caching#Content
         body["contents"]?.let {
