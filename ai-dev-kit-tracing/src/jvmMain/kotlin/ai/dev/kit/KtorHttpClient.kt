@@ -98,8 +98,6 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                             responseCode = response.status.value.toLong(),
                             responseBody = body,
                         )
-
-                        span.setStatus(StatusCode.OK)
                     }
                     catch (e: Exception) {
                         span.setStatus(StatusCode.ERROR)
