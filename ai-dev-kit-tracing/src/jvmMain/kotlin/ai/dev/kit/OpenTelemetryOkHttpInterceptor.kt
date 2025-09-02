@@ -78,7 +78,7 @@ sealed class OpenTelemetryOkHttpInterceptor(
 
                 adapter.registerRequest(
                     span = span,
-                    url = Url(url.scheme, url.host),
+                    url = Url(url.scheme, url.host, url.pathSegments),
                     requestBody = body ?: JsonObject(emptyMap()),
                 )
 

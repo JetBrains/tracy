@@ -54,7 +54,11 @@ private class NetworkParamsPlugin(private val adapter: LLMTracingAdapter) {
 
                         adapter.registerRequest(
                             span = span,
-                            url = Url(scheme = request.url.protocol.name, host = request.url.host),
+                            url = Url(
+                                scheme = request.url.protocol.name,
+                                host = request.url.host,
+                                pathSegments = request.url.pathSegments,
+                            ),
                             requestBody = body
                         )
                     }

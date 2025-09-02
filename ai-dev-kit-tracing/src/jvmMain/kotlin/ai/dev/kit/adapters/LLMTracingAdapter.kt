@@ -8,7 +8,11 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 
-data class Url(val scheme: String, val host: String)
+data class Url(
+    val scheme: String,
+    val host: String,
+    val pathSegments: List<String>,
+)
 
 data class ContentType(val type: String, val subtype: String) {
     fun asString(): String = "$type/$subtype"

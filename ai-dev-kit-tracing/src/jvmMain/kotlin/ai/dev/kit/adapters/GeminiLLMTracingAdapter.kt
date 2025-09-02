@@ -32,7 +32,7 @@ internal class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSy
         }
 
         // url ends with `[model]:[operation]`
-        val (model, operation) = url.host.split("/").lastOrNull()?.split(":")
+        val (model, operation) = url.pathSegments.lastOrNull()?.split(":")
             ?.let { it.firstOrNull() to it.lastOrNull() } ?: (null to null)
 
         model?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, model) }
