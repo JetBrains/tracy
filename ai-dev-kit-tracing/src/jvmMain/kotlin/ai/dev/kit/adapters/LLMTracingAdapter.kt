@@ -18,6 +18,14 @@ data class ContentType(val type: String, val subtype: String) {
     fun asString(): String = "$type/$subtype"
 }
 
+/**
+ * A sealed class representing an adapter for tracing LLM interactions.
+ * This adapter handles the tracing of HTTP requests and responses, extracting relevant attributes
+ * from both the request and response bodies to populate spans.
+ *
+ * @constructor Initializes the adapter with the name of the GenAI system being traced.
+ * @param genAISystem The name of the Generative AI system that this adapter represents.
+ */
 internal sealed class LLMTracingAdapter(private val genAISystem: String) {
     companion object {
         private const val REQUIRED_TYPE = "application"

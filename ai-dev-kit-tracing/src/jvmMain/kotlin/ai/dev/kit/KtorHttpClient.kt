@@ -17,13 +17,26 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 
-// TODO: add description
+/**
+ * Selection of the supported LLM providers that can be
+ * instrumented for tracing when Ktor's `HttpClient` is
+ * used under the hood.
+ *
+ * @see ai.dev.kit.instrument
+ */
 enum class HttpClientLLMProvider {
     OpenAI,
     Anthropic,
     Gemini,
 }
 
+/**
+ * Configures a Ktor `HttpClient` for tracing client calls when one of the supported LLM providers is used.
+ *
+ * @param client The `HttpClient` instance to be configured for tracing.
+ * @param provider The `HttpClientLLMProvider` specifying the LLM provider for which tracing should be enabled.
+ * @return A configured `HttpClient` instance with tracing capabilities for the selected provider.
+ */
 fun instrument(client: HttpClient, provider: HttpClientLLMProvider): HttpClient {
     val adapter = when (provider) {
         HttpClientLLMProvider.OpenAI -> OpenAILLMTracingAdapter()
@@ -32,11 +45,11 @@ fun instrument(client: HttpClient, provider: HttpClientLLMProvider): HttpClient 
     }
 
     return client.config {
-        NetworkParamsPlugin(adapter).setup(this)
+        TracingPlugin(adapter).setup(this)
     }
 }
 
-private class NetworkParamsPlugin(private val adapter: LLMTracingAdapter) {
+private class TracingPlugin(private val adapter: LLMTracingAdapter) {
     fun setup(config: HttpClientConfig<*>) {
         val tracer = GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER)
 
