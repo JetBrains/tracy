@@ -14,6 +14,12 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import io.ktor.client.engine.mock.*
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
+import io.ktor.utils.io.ByteReadChannel
 
 
 @Tag("SkipForNonLocal")
@@ -84,7 +90,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
                             "content": "hello world"
                         }
                     ],
-                    "model": "gpt-4o-mini"
+                    "model": "$model"
                 }
             """.trimIndent())
         }
@@ -105,6 +111,72 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val content = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
         assertNotNull(content)
         assertTrue(content.isNotEmpty())
+    }
+
+    @Test
+    fun `test Ktor HttpClient auto tracing for Bad Request in OpenAI`() = runTest {
+        val mockedClient = HttpClient(MockEngine) {
+            engine {
+                addHandler { request ->
+                    respond(
+                        content = ByteReadChannel("""
+                            {
+                                "error": {
+                                    "message": "Bad Request Mock",
+                                    "type": "exception",
+                                    "param": null,
+                                    "code": "invalid_request"
+                                }
+                            }
+                        """.trimIndent()),
+                        status = HttpStatusCode.BadRequest,
+                        headers = headersOf(
+                            HttpHeaders.ContentType,
+                            ContentType.Application.Json.toString()
+                        )
+                    )
+                }
+            }
+        }
+
+        val client: HttpClient = instrument(mockedClient, provider = HttpClientLLMProvider.OpenAI)
+
+        client.post("$LITELLM_URL/v1/chat/completions") {
+            val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
+
+            header("Authorization", "Bearer $apiKey")
+            header("Content-Type", "application/json")
+            setBody("""
+                {
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": "hello world"
+                        }
+                    ],
+                    "model": "gpt-4o-mini"
+                }
+            """.trimIndent())
+        }
+
+        val traces = analyzeSpans()
+
+        assertEquals(1, traces.size)
+        val trace = traces.firstOrNull()
+        assertNotNull(trace)
+
+        assertEquals(StatusCode.ERROR, trace.status.statusCode)
+
+        // trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
+        println("attributes:\n${trace.attributes}")
+
+        assertEquals(LITELLM_URL, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
+
+        // check error
+        assertEquals("Bad Request Mock", trace.attributes[AttributeKey.stringKey("gen_ai.error.message")])
+        assertEquals("invalid_request", trace.attributes[AttributeKey.stringKey("gen_ai.error.code")])
+        assertEquals("exception", trace.attributes[AttributeKey.stringKey("gen_ai.error.type")])
+        assertEquals(400, trace.attributes[AttributeKey.longKey("http.status_code")])
     }
 
     @Test
