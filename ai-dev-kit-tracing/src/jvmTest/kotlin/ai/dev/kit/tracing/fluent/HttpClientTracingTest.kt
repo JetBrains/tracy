@@ -166,10 +166,6 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         assertNotNull(trace)
 
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
-
-        // trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
-        println("attributes:\n${trace.attributes}")
-
         assertEquals(LITELLM_URL, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
 
         // check error
