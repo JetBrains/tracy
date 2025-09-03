@@ -53,6 +53,8 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val trace = traces.firstOrNull()
         assertNotNull(trace)
 
+        assertEquals(StatusCode.OK, trace.status.statusCode)
+
         assertEquals(
             LITELLM_URL,
             trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
@@ -61,8 +63,6 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         assertTrue(
             trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(model) == true
         )
-
-        assertEquals(StatusCode.OK, trace.status.statusCode)
 
         val type = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.type")]
         assertNotNull(type)
@@ -208,15 +208,16 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         assertNotNull(trace)
 
         assertEquals(StatusCode.OK, trace.status.statusCode)
+
         assertEquals(
             LITELLM_URL,
             trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
-        kotlin.test.assertTrue(
+        assertTrue(
             trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(model) == true
         )
         val text = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
         assertNotNull(text)
-        kotlin.test.assertTrue(text.isNotEmpty())
+        assertTrue(text.isNotEmpty())
     }
 }
