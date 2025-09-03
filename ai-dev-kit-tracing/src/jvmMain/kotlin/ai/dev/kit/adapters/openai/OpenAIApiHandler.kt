@@ -25,7 +25,6 @@ internal object OpenAIApiUtils {
     fun setCommonRequestAttributes(span: Span, url: Url, body: JsonObject) {
         body["temperature"]?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.jsonPrimitive.content.toDouble()) }
         body["model"]?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it.jsonPrimitive.content) }
-        span.setAttribute("gen_ai.api_base", "${url.scheme}://${url.host}")
     }
     
     /**
