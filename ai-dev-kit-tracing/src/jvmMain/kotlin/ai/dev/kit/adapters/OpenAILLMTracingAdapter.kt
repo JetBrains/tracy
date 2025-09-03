@@ -1,7 +1,7 @@
 package ai.dev.kit.adapters
 
-import ai.dev.kit.openai.ChatCompletionsHandler
-import ai.dev.kit.openai.ResponsesApiHandler
+import ai.dev.kit.adapters.openai.ChatCompletionsHandler
+import ai.dev.kit.adapters.openai.ResponsesApiHandler
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
 import kotlinx.serialization.json.JsonObject

@@ -1,4 +1,4 @@
-package ai.dev.kit.openai
+package ai.dev.kit.adapters.openai
 
 import ai.dev.kit.adapters.Url
 import io.opentelemetry.api.trace.Span
