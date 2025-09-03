@@ -1,16 +1,16 @@
 package ai.dev.kit.openai
 
+import ai.dev.kit.adapters.Url
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import okhttp3.HttpUrl
 
 /**
  * Base interface for OpenAI API handlers
  */
 internal interface OpenAIApiHandler {
-    fun handleRequestAttributes(span: Span, url: HttpUrl, body: JsonObject)
+    fun handleRequestAttributes(span: Span, url: Url, body: JsonObject)
     fun handleResponseAttributes(span: Span, body: JsonObject)
 }
 
@@ -22,7 +22,7 @@ internal object OpenAIApiUtils {
     /**
      * Sets common request attributes (temperature, model, API base)
      */
-    fun setCommonRequestAttributes(span: Span, url: HttpUrl, body: JsonObject) {
+    fun setCommonRequestAttributes(span: Span, url: Url, body: JsonObject) {
         body["temperature"]?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.jsonPrimitive.content.toDouble()) }
         body["model"]?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it.jsonPrimitive.content) }
         span.setAttribute("gen_ai.api_base", "${url.scheme}://${url.host}")

@@ -1,23 +1,44 @@
 package ai.dev.kit.adapters
 
+import ai.dev.kit.openai.ChatCompletionsHandler
+import ai.dev.kit.openai.ResponsesApiHandler
 import io.opentelemetry.api.trace.Span
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TEMPERATURE
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_ID
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_MODEL
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.boolean
-import kotlinx.serialization.json.int
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+
+
+/**
+ * Detects which OpenAI API is being used based on the request / response structure
+ */
+private enum class OpenAIApiType {
+    CHAT_COMPLETIONS,
+    RESPONSES_API
+}
 
 internal class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.OPENAI) {
+    private val chatHandler = ChatCompletionsHandler()
+    private val responsesHandler = ResponsesApiHandler()
+
     override fun getRequestBodyAttributes(span: Span, url: Url, body: JsonObject) {
+        val handler = when (detectApiType(body, null)) {
+            OpenAIApiType.CHAT_COMPLETIONS -> chatHandler
+            OpenAIApiType.RESPONSES_API -> responsesHandler
+        }
+
+        handler.handleRequestAttributes(span, url, body)
+    }
+
+    override fun getResultBodyAttributes(span: Span, body: JsonObject) {
+        val handler = when (detectApiType(null, body)) {
+            OpenAIApiType.CHAT_COMPLETIONS -> chatHandler
+            OpenAIApiType.RESPONSES_API -> responsesHandler
+        }
+
+        handler.handleResponseAttributes(span, body)
+    }
+
+
+    /*override fun getRequestBodyAttributes(span: Span, url: Url, body: JsonObject) {
         body["temperature"]?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.jsonPrimitive.content.toDouble()) }
         body["model"]?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it.jsonPrimitive.content) }
 
@@ -46,9 +67,9 @@ internal class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSy
                 }
             }
         }
-    }
+    }*/
 
-    override fun getResultBodyAttributes(span: Span, body: JsonObject) {
+    /*override fun getResultBodyAttributes(span: Span, body: JsonObject) {
         body["id"]?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
         body["object"]?.let { span.setAttribute("llm.request.type", it.jsonPrimitive.content) }
         body["model"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
@@ -122,5 +143,20 @@ internal class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSy
             }
             // TODO: add other usage attributes
         }
+    }*/
+}
+
+private fun detectApiType(requestBody: JsonObject?, responseBody: JsonObject?): OpenAIApiType {
+    requestBody?.let { body ->
+        if (body.containsKey("messages")) return OpenAIApiType.CHAT_COMPLETIONS
+        if (body.containsKey("input")) return OpenAIApiType.RESPONSES_API
     }
+
+    responseBody?.let { body ->
+        if (body.containsKey("choices")) return OpenAIApiType.CHAT_COMPLETIONS
+        if (body.containsKey("output")) return OpenAIApiType.RESPONSES_API
+    }
+
+    // Default to chat completions for backwards compatibility
+    return OpenAIApiType.CHAT_COMPLETIONS
 }
