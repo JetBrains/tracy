@@ -1,12 +1,10 @@
 package ai.dev.kit.eval.utils
 
-import ai.dev.kit.tracing.AI_DEVELOPMENT_KIT_TRACER
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.fluent.FluentSpanAttributes
 import ai.dev.kit.tracing.fluent.TracingSessionProvider.currentSessionId
 import ai.dev.kit.tracing.fluent.dataclasses.RunStatus
 import ai.dev.kit.tracing.fluent.withSessionIdBlocking
-import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.extension.kotlin.asContextElement
@@ -103,7 +101,7 @@ abstract class BaseEvaluationTest<
                     withSessionIdBlocking(runId) {
                         val (dataPointSpan, dataPointScope) = createDataPointSpan(
                             dataPointIndex,
-                            GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER),
+                            TracingManager.tracer,
                             testCase
                         )
 

@@ -11,11 +11,9 @@ import io.opentelemetry.sdk.trace.SdkTracerProvider
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor
 
-const val AI_DEVELOPMENT_KIT_TRACER = "ai-development-kit"
-
 fun setupTracing(
     tracingConfig: TracingConfig
-): SdkTracerProvider {
+): OpenTelemetrySdk {
     val resource = Resource.getDefault()
         .merge(
             Resource.create(
@@ -37,14 +35,13 @@ fun setupTracing(
 
     val openTelemetry = OpenTelemetrySdk.builder()
         .setTracerProvider(tracerProvider)
-        .buildAndRegisterGlobal()
+        .build()
 
-    val sdk = openTelemetry
     Runtime.getRuntime().addShutdownHook(Thread {
-        sdk.sdkTracerProvider.shutdown()
+        openTelemetry.sdkTracerProvider.shutdown()
     })
 
-    return tracerProvider
+    return openTelemetry
 }
 
 private fun SdkTracerProviderBuilder.addLoggingSpanProcessor(): SdkTracerProviderBuilder {

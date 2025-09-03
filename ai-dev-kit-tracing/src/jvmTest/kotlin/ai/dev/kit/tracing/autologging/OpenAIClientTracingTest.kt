@@ -3,6 +3,7 @@ package ai.dev.kit.tracing.autologging
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.LITELLM_URL
+import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.fluent.processor.withSpan
 import com.anthropic.client.AnthropicClient
 import com.anthropic.client.okhttp.AnthropicOkHttpClient
@@ -10,7 +11,6 @@ import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.chat.completions.ChatCompletion
 import com.openai.models.chat.completions.ChatCompletionCreateParams
-import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
@@ -170,7 +170,7 @@ fun createGeminiClient(): GeminiClient {
 }
 
 private fun chatCallingFunction(client: OpenAIClient): String {
-    val tracer = GlobalOpenTelemetry.getTracer("custom.test.tracer")
+    val tracer = TracingManager.tracer
 
     val span = tracer.spanBuilder("custom call").startSpan()
     val scope = span.makeCurrent()
