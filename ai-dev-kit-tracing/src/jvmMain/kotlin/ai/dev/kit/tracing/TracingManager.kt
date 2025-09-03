@@ -1,21 +1,32 @@
 package ai.dev.kit.tracing
 
-import io.opentelemetry.sdk.trace.SdkTracerProvider
+import io.opentelemetry.sdk.OpenTelemetrySdk
+import org.jetbrains.annotations.TestOnly
 import java.util.concurrent.TimeUnit
 
 object TracingManager {
-    private lateinit var tracerProvider: SdkTracerProvider
+    const val AI_DEVELOPMENT_KIT_TRACER = "ai-development-kit"
+    private lateinit var openTelemetrySdk: OpenTelemetrySdk
+    val tracer
+        get() = openTelemetrySdk.getTracer(AI_DEVELOPMENT_KIT_TRACER)
 
     fun setup(tracingConfig: TracingConfig) {
-        tracerProvider = setupTracing(tracingConfig)
+        openTelemetrySdk = setupTracing(tracingConfig)
     }
 
-    fun flushTraces(timeoutSeconds: Long = 1) = tracerProvider
+    fun flushTraces(timeoutSeconds: Long = 1) = openTelemetrySdk
+        .sdkTracerProvider
         .forceFlush()
         .join(timeoutSeconds, TimeUnit.SECONDS)
 
 
-    fun shutdownTracing(timeoutSeconds: Long = 5) = tracerProvider
+    fun shutdownTracing(timeoutSeconds: Long = 5) = openTelemetrySdk
+        .sdkTracerProvider
         .shutdown()
         .join(timeoutSeconds, TimeUnit.SECONDS)
+
+    @TestOnly
+    fun setSdkForTest(testOpenTelemetrySdk: OpenTelemetrySdk) {
+        openTelemetrySdk = testOpenTelemetrySdk
+    }
 }

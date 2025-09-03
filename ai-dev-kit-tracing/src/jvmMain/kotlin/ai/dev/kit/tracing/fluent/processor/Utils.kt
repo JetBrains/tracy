@@ -1,12 +1,11 @@
 package ai.dev.kit.tracing.fluent.processor
 
-import ai.dev.kit.tracing.AI_DEVELOPMENT_KIT_TRACER
+import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.fluent.FluentSpanAttributes
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import ai.dev.kit.tracing.fluent.TracingSessionProvider
 import ai.dev.kit.tracing.fluent.addOutputAttributesToTracing
 import ai.dev.kit.tracing.fluent.configureTracingMetadata
-import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.context.Context
@@ -50,7 +49,7 @@ inline fun <T> withSpan(
     attributes: Map<String, Any?>,
     block: (Span) -> T
 ): T {
-    val tracer = GlobalOpenTelemetry.getTracer("ai.dev.kit.fluent.tracer")
+    val tracer = TracingManager.tracer
 
     val span = tracer.spanBuilder(name).startSpan()
     val scope = span.makeCurrent()
@@ -119,7 +118,7 @@ fun createSpan(
     args: Array<Any?>,
     context: Context = Context.current(),
 ): Span {
-    val tracer = GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER)
+    val tracer = TracingManager.tracer
     val spanName = traceAnnotation.name.ifBlank { method.name }
     val spanBuilder = tracer.spanBuilder(spanName)
 

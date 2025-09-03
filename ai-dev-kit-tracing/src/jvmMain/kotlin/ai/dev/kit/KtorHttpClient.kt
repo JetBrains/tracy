@@ -6,12 +6,11 @@ import ai.dev.kit.adapters.GeminiLLMTracingAdapter
 import ai.dev.kit.adapters.LLMTracingAdapter
 import ai.dev.kit.adapters.OpenAILLMTracingAdapter
 import ai.dev.kit.adapters.Url
-import ai.dev.kit.tracing.AI_DEVELOPMENT_KIT_TRACER
+import ai.dev.kit.tracing.TracingManager
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -51,7 +50,7 @@ fun instrument(client: HttpClient, provider: HttpClientLLMProvider): HttpClient 
 
 private class TracingPlugin(private val adapter: LLMTracingAdapter) {
     fun setup(config: HttpClientConfig<*>) {
-        val tracer = GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER)
+        val tracer = TracingManager.tracer
 
         val span = tracer.spanBuilder("http-client-span").startSpan()
 

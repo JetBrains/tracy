@@ -1,38 +1,30 @@
 package ai.dev.kit.tracing
 
-import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
-import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.resources.Resource
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter
 import io.opentelemetry.sdk.trace.SdkTracerProvider
 import io.opentelemetry.sdk.trace.data.SpanData
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
-import io.opentelemetry.sdk.trace.export.SpanExporter
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
 import java.time.Duration
-import java.util.concurrent.TimeUnit
 import kotlin.test.AfterTest
 
 internal const val LITELLM_URL = "https://litellm.labs.jb.gg"
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class BaseOpenTelemetryTracingTest {
-    internal lateinit var tracerProvider: SdkTracerProvider
     internal lateinit var spanExporter: InMemorySpanExporter
-    internal lateinit var tracer: Tracer
 
     @BeforeAll
     fun setupTelemetry() {
-        val tracing = initOpenTelemetry()
-
-        tracerProvider = tracing.tracerProvider
-        spanExporter = tracing.spanExporter as InMemorySpanExporter
-        tracer = GlobalOpenTelemetry.getTracer(AI_DEVELOPMENT_KIT_TRACER)
+        val testTracing = initOpenTelemetry()
+        TracingManager.setSdkForTest(testTracing.openTelemetrySdk)
+        spanExporter = testTracing.spanExporter
     }
 
     @AfterTest
@@ -42,20 +34,16 @@ abstract class BaseOpenTelemetryTracingTest {
 
     @AfterAll
     fun shutdownTelemetry() {
-        tracerProvider.apply {
-            forceFlush().join(1, TimeUnit.SECONDS)
-            shutdown().join(1, TimeUnit.SECONDS)
-        }
-        GlobalOpenTelemetry.resetForTest()
+        TracingManager.shutdownTracing()
     }
 
     fun analyzeSpans(): List<SpanData> {
-        tracerProvider.forceFlush().join(30, TimeUnit.SECONDS)
+        TracingManager.flushTraces(10)
         return spanExporter.finishedSpanItems.mapNotNull { it }
     }
 }
 
-fun initOpenTelemetry(): Tracing {
+private fun initOpenTelemetry(): TestTracing {
     val resource = Resource.getDefault()
         .merge(
             Resource.create(
@@ -78,17 +66,16 @@ fun initOpenTelemetry(): Tracing {
 
     val openTelemetry = OpenTelemetrySdk.builder()
         .setTracerProvider(tracerProvider)
-        .buildAndRegisterGlobal()
+        .build()
 
-    val sdk = openTelemetry
     Runtime.getRuntime().addShutdownHook(Thread {
-        sdk.sdkTracerProvider.shutdown()
+        openTelemetry.sdkTracerProvider.shutdown()
     })
 
-    return Tracing(tracerProvider, spanExporter)
+    return TestTracing(openTelemetry, spanExporter)
 }
 
-data class Tracing(
-    val tracerProvider: SdkTracerProvider,
-    val spanExporter: SpanExporter
+private data class TestTracing(
+    val openTelemetrySdk: OpenTelemetrySdk,
+    val spanExporter: InMemorySpanExporter
 )
