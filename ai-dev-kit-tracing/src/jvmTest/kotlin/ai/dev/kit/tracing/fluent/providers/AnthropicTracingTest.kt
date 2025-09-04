@@ -1,4 +1,4 @@
-package ai.dev.kit.tracing.fluent
+package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
@@ -6,7 +6,9 @@ import ai.dev.kit.tracing.LITELLM_URL
 import ai.dev.kit.tracing.autologging.createAnthropicClient
 import com.anthropic.client.AnthropicClient
 import com.anthropic.client.AnthropicClientImpl
+import com.anthropic.client.okhttp.OkHttpClient
 import com.anthropic.core.ClientOptions
+import com.anthropic.core.JsonObject
 import com.anthropic.core.JsonString
 import com.anthropic.helpers.MessageAccumulator
 import com.anthropic.models.messages.*
@@ -14,6 +16,7 @@ import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_FINISH_REASONS
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -127,7 +130,7 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
             val content = traceWithToolCallResult.attributes[AttributeKey.stringKey("gen_ai.prompt.$it.content")] ?: ""
 
             val containsToolResult = try {
-                val jsonContent = kotlinx.serialization.json.Json.parseToJsonElement(content)
+                val jsonContent = Json.parseToJsonElement(content)
                 // content is an array of objects (content blocks)
                 // e.g.: [{"tool_use_id":"id","type":"tool_result","content":"text"}]
                 jsonContent.jsonArray.firstOrNull()?.jsonObject["type"]?.jsonPrimitive?.content == "tool_result"
@@ -140,7 +143,7 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
         assertTrue(index != null, "Expected to find a tool result in the prompt")
 
         val content = traceWithToolCallResult.attributes[AttributeKey.stringKey("gen_ai.prompt.$index.content")]!!
-        val jsonContent = kotlinx.serialization.json.Json.parseToJsonElement(content).jsonArray.firstOrNull()!!
+        val jsonContent = Json.parseToJsonElement(content).jsonArray.firstOrNull()!!
 
         assertTrue(jsonContent.jsonObject["tool_use_id"]?.jsonPrimitive?.content?.isNotEmpty() == true)
         assertEquals("tool_result", jsonContent.jsonObject["type"]?.jsonPrimitive?.content)
@@ -203,7 +206,7 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
         val toolResultCount = (0..5).sumOf { idx ->
             val content = finalTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.$idx.content")] ?: return@sumOf 0
             try {
-                val jsonContent = kotlinx.serialization.json.Json.parseToJsonElement(content)
+                val jsonContent = Json.parseToJsonElement(content)
                 val arr = jsonContent.jsonArray
                 arr.count { it.jsonObject["type"]?.jsonPrimitive?.content == "tool_result" }
             } catch (_: Exception) {
@@ -347,8 +350,9 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
             .inputSchema(
                 Tool.InputSchema.builder()
                     .type(JsonString.of("object"))
-                    .properties(com.anthropic.core.JsonObject.of(mapOf(
-                        "name" to com.anthropic.core.JsonObject.of(mapOf(
+                    .properties(
+                        JsonObject.of(mapOf(
+                        "name" to JsonObject.of(mapOf(
                             "type" to JsonString.of("string"),
                             "description" to JsonString.of("Say $word to a person")
                         ))
@@ -365,7 +369,7 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
         val originalHttpClientField = ClientOptions::class.java.getDeclaredField("originalHttpClient").apply { isAccessible = true }
         val originalHttpClient = originalHttpClientField.get(clientOptions)
 
-        val okHttpClientField = com.anthropic.client.okhttp.OkHttpClient::class.java.getDeclaredField("okHttpClient").apply { isAccessible = true }
+        val okHttpClientField = OkHttpClient::class.java.getDeclaredField("okHttpClient").apply { isAccessible = true }
         val okHttpClient = okHttpClientField.get(originalHttpClient) as okhttp3.OkHttpClient
 
         val modifiedHttpClient = okHttpClient.newBuilder()
