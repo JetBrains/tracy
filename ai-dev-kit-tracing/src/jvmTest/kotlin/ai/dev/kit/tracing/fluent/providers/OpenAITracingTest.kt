@@ -1,4 +1,4 @@
-package ai.dev.kit.tracing.fluent
+package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest

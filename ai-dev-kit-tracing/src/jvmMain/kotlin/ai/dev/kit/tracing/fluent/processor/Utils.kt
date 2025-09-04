@@ -22,11 +22,10 @@ import kotlin.reflect.jvm.javaMethod
 actual inline fun <T> withTrace(
     function: KFunction<*>,
     args: Array<Any?>,
+    traceAnnotation: KotlinFlowTrace,
     block: () -> T
 ): T {
     val method = function.javaMethod ?: throw IllegalArgumentException("Function must be a Java method")
-    val traceAnnotation = method.getAnnotation(KotlinFlowTrace::class.java)
-        ?: throw IllegalArgumentException("Function must be annotated with @KotlinFlowTrace annotation")
     val span = createSpan(traceAnnotation, method, args)
     val scope = span.makeCurrent()
     try {
@@ -78,10 +77,10 @@ inline fun <T> withSpan(
 actual suspend inline fun <T> withTraceSuspended(
     function: KFunction<*>,
     args: Array<Any?>,
+    traceAnnotation: KotlinFlowTrace,
     crossinline block: suspend () -> T
 ): T {
     val method = function.javaMethod ?: throw IllegalArgumentException("Function must be a Java method")
-    val traceAnnotation = method.getAnnotation(KotlinFlowTrace::class.java)
     val span = createSpan(
         traceAnnotation, method, args, getOpenTelemetryContext(coroutineContext)
     )

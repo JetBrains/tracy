@@ -40,11 +40,10 @@ fun handleUserInput(input: String): String {
 ```
 After:
 ```kotlin
-@KotlinFlowTrace
 fun handleUserInput(input: String): String {
-    return withTrace(
-        function = ::handleUserInput,
-        args = listOf(input)
+    return withSpan(
+        name = "Handle User Input",
+        attributes = emptyMap(),
     ) {
         "Response for $input"
     }

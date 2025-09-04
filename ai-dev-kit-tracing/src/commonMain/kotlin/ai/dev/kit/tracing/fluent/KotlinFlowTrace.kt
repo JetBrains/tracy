@@ -20,5 +20,5 @@ import kotlin.reflect.KClass
 annotation class KotlinFlowTrace(
     val name: String = "",
     val spanType: String = SpanType.UNKNOWN,
-    val attributeHandler: KClass<out SpanAttributeHandler> = BaseSpanAttributeHandler::class
+    val attributeHandler: KClass<out SpanAttributeHandler> = BaseSpanAttributeHandler::class,
 )

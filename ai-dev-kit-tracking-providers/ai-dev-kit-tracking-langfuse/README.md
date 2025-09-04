@@ -56,7 +56,6 @@ Set the following environment variables in your shell, `.env` file, or CI:
 ```env
 LANGFUSE_PUBLIC_KEY=your_public_key
 LANGFUSE_SECRET_KEY=your_secret_key
-USER_ID=your_user_id   # any unique string identifying you
 ```
 
 ### Option 2: Programmatic Setup
@@ -64,10 +63,12 @@ USER_ID=your_user_id   # any unique string identifying you
 a. Setup Langfuse Tracing Manually
 
 ```kotlin
-setupLangfuseTracing(
-    userId = USER_ID,
-    secretKey = LANGFUSE_SECRET_KEY,
-    publicKey = LANGFUSE_PUBLIC_KEY
+TracingManager.setup(
+    LangfuseConfig(
+        langfuseUrl = "https://langfuse.labs.jb.gg/", 
+        langfusePublicKey = "...", 
+        langfuseSecretKey = "...")
+    )
 )
 ```
 
@@ -76,9 +77,7 @@ b. Use in Evaluation Tests
 ```kotlin
 class MyTest : LangfuseEvaluationTest<..., ..., ..., ...>(
     numberOfRuns = ...,
-    userId = USER_ID,
-    secretKey = LANGFUSE_SECRET_KEY,
-    publicKey = LANGFUSE_PUBLIC_KEY
+    langfuseConfig = LangfuseConfig(...)
 ) {
     // Your test logic here
 }
