@@ -40,6 +40,8 @@ kotlin {
                 implementation(libs.gemini)
                 implementation(libs.anthropic)
                 implementation(libs.okhttp)
+                implementation(libs.ktor.client.cio)
+                implementation(libs.ktor.client.mock)
 
                 implementation(libs.opentelemetry)
                 implementation(libs.opentelemetry.kotlin)

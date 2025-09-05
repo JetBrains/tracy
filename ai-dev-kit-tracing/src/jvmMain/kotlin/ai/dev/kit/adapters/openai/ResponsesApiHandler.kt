@@ -1,17 +1,17 @@
-package ai.dev.kit.openai
+package ai.dev.kit.adapters.openai
 
+import ai.dev.kit.adapters.Url
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
 import kotlinx.serialization.json.*
-import okhttp3.HttpUrl
 
 /**
  * Handler for OpenAI Responses API
  */
 internal class ResponsesApiHandler : OpenAIApiHandler {
 
-    override fun handleRequestAttributes(span: Span, url: HttpUrl, body: JsonObject) {
+    override fun handleRequestAttributes(span: Span, url: Url, body: JsonObject) {
         OpenAIApiUtils.setCommonRequestAttributes(span, url, body)
 
         body["input"]?.let { input ->

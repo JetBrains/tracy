@@ -1,17 +1,17 @@
-package ai.dev.kit.openai
+package ai.dev.kit.adapters.openai
 
+import ai.dev.kit.adapters.Url
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
 import kotlinx.serialization.json.*
-import okhttp3.HttpUrl
 
 /**
  * Handler for OpenAI Chat Completions API
  */
 internal class ChatCompletionsHandler : OpenAIApiHandler {
     
-    override fun handleRequestAttributes(span: Span, url: HttpUrl, body: JsonObject) {
+    override fun handleRequestAttributes(span: Span, url: Url, body: JsonObject) {
         OpenAIApiUtils.setCommonRequestAttributes(span, url, body)
         
         body["messages"]?.let {
@@ -27,6 +27,7 @@ internal class ChatCompletionsHandler : OpenAIApiHandler {
             }
         }
 
+        // See: https://platform.openai.com/docs/api-reference/chat/create
         body["tools"]?.let {
             for ((index, tool) in it.jsonArray.withIndex()) {
                 span.setAttribute("gen_ai.tool.$index.type", tool.jsonObject["type"]?.jsonPrimitive?.content)
@@ -59,6 +60,7 @@ internal class ChatCompletionsHandler : OpenAIApiHandler {
                     )
                     span.setAttribute("gen_ai.completion.$index.content", message.jsonObject["content"]?.toString())
 
+                    // See: https://platform.openai.com/docs/api-reference/chat/object
                     message.jsonObject["tool_calls"]?.let {
                         // sometimes, this prop is explicitly set to null, hence, being JsonNull.
                         // therefore, we check for the required array type

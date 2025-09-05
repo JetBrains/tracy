@@ -22,10 +22,12 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
+@Tag("SkipForNonLocal")
 class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
     @Test
     fun `test Anthropic tool auto tracing`() {
