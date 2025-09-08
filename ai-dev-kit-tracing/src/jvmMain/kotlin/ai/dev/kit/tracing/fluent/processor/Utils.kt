@@ -1,11 +1,7 @@
 package ai.dev.kit.tracing.fluent.processor
 
 import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.fluent.FluentSpanAttributes
-import ai.dev.kit.tracing.fluent.KotlinFlowTrace
-import ai.dev.kit.tracing.fluent.TracingSessionProvider
-import ai.dev.kit.tracing.fluent.addOutputAttributesToTracing
-import ai.dev.kit.tracing.fluent.configureTracingMetadata
+import ai.dev.kit.tracing.fluent.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.context.Context
@@ -100,17 +96,6 @@ actual suspend inline fun <T> withTraceSuspended(
     }
 }
 
-fun getOpenTelemetryContext(coroutineContext: CoroutineContext): Context {
-    return coroutineContext.getOpenTelemetryContext().let {
-        if (it == Context.root()) Context.current() else it
-    }
-}
-
-fun Span.addExceptionAttributes(exception : Throwable) {
-    this.recordException(exception)
-    this.setStatus(StatusCode.ERROR, exception.message ?: "Unknown error")
-}
-
 fun createSpan(
     traceAnnotation: KotlinFlowTrace,
     method: Method,
@@ -118,16 +103,22 @@ fun createSpan(
     context: Context = Context.current(),
 ): Span {
     val tracer = TracingManager.tracer
-    val spanName = traceAnnotation.name.ifBlank { method.name }
-    val spanBuilder = tracer.spanBuilder(spanName)
 
+    /**
+     * Resolution pipeline:
+     * 1. If [ai.dev.kit.tracing.fluent.handlers.SpanMetadataCustomizer.resolveSpanName]
+     *    returns a non-null value, that name is used.
+     * 2. Otherwise, the tracing system checks the annotation name.
+     * 3. If blank, the method name is used.
+     */
+    val spanName = traceAnnotation.getSpanAttributeHandler().resolveSpanName(method, args)
+        ?: traceAnnotation.name.ifBlank { method.name }
+    val spanBuilder = tracer.spanBuilder(spanName)
     TracingSessionProvider.currentSessionId?.let {
         spanBuilder.setAttribute(FluentSpanAttributes.SOURCE_RUN.key, it)
     }
     configureTracingMetadata(spanBuilder, traceAnnotation, method, args)
-
     val parentSpan = Span.fromContext(context)
-
     val span = if (parentSpan.spanContext.isValid) {
         // If parent exists, set parent
         spanBuilder.setParent(context)
@@ -137,4 +128,18 @@ fun createSpan(
         spanBuilder.setNoParent().startSpan()
     }
     return span
+}
+
+fun KotlinFlowTrace.getSpanAttributeHandler() = this.attributeHandler.objectInstance
+    ?: error("Handler must be an object singleton")
+
+fun getOpenTelemetryContext(coroutineContext: CoroutineContext): Context {
+    return coroutineContext.getOpenTelemetryContext().let {
+        if (it == Context.root()) Context.current() else it
+    }
+}
+
+fun Span.addExceptionAttributes(exception: Throwable) {
+    this.recordException(exception)
+    this.setStatus(StatusCode.ERROR, exception.message ?: "Unknown error")
 }

@@ -5,8 +5,8 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlin.jvm.java
 
-actual object BaseSpanAttributeHandler : SpanAttributeHandler {
-    actual override fun processInput(method: PlatformMethod, args: Array<Any?>): String {
+actual object DefaultSpanMetadataCustomizer : SpanMetadataCustomizer {
+    actual override fun formatInputAttributes(method: PlatformMethod, args: Array<Any?>): String {
         val inputJsonObject = buildJsonObject {
             method.parameters
                 .filter { it.type != Continuation::class.java } // Exclude Continuation parameters
@@ -28,6 +28,4 @@ actual object BaseSpanAttributeHandler : SpanAttributeHandler {
             else -> JsonPrimitive(value.toString())
         }
     }
-
-    actual override fun processOutput(result: Any?): String = result.toString()
 }

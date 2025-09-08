@@ -1,7 +1,7 @@
 package ai.dev.kit.tracing.fluent
 
-import ai.dev.kit.tracing.fluent.handlers.BaseSpanAttributeHandler
-import ai.dev.kit.tracing.fluent.handlers.SpanAttributeHandler
+import ai.dev.kit.tracing.fluent.handlers.DefaultSpanMetadataCustomizer
+import ai.dev.kit.tracing.fluent.handlers.SpanMetadataCustomizer
 import kotlin.reflect.KClass
 
 /**
@@ -11,7 +11,7 @@ import kotlin.reflect.KClass
  *
  * @property name The name of the span. If left empty, a default name will be derived from the function name.
  * @property spanType The type of the span, representing its role or context within the trace (e.g., entry point, exit)
- * @property attributeHandler A reference to a custom attribute handler that extends [SpanAttributeHandler].
+ * @property attributeHandler A reference to a custom attribute handler that extends [SpanMetadataCustomizer].
  *                            This handler is responsible for adding specific attributes to the span.
  */
 
@@ -20,5 +20,5 @@ import kotlin.reflect.KClass
 annotation class KotlinFlowTrace(
     val name: String = "",
     val spanType: String = SpanType.UNKNOWN,
-    val attributeHandler: KClass<out SpanAttributeHandler> = BaseSpanAttributeHandler::class,
+    val attributeHandler: KClass<out SpanMetadataCustomizer> = DefaultSpanMetadataCustomizer::class,
 )
