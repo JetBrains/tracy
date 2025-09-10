@@ -5,7 +5,11 @@ import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.LITELLM_URL
 import io.ktor.client.*
+import io.ktor.client.engine.mock.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import io.ktor.utils.io.*
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.test.runTest
@@ -14,12 +18,6 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import io.ktor.client.engine.mock.*
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.utils.io.ByteReadChannel
 
 
 @Tag("SkipForNonLocal")
@@ -28,7 +26,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
     fun `test Ktor HttpClient auto tracing for Anthropic`() = runTest {
         val client: HttpClient = instrument(HttpClient(), provider = HttpClientLLMProvider.Anthropic)
         val model = "claude-sonnet-4-20250514"
-        client.post("$LITELLM_URL/v1/messages") {
+        val response = client.post("$LITELLM_URL/v1/messages") {
             val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
 
             header("x-api-key", apiKey)
@@ -71,13 +69,16 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val text = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
         assertNotNull(text)
         assertTrue(text.isNotEmpty())
+
+        // assert that tracing doesn't consume the response body
+        assertTrue(response.bodyAsText().isNotEmpty())
     }
 
     @Test
     fun `test Ktor HttpClient auto tracing for OpenAI`() = runTest {
         val client: HttpClient = instrument(HttpClient(), provider = HttpClientLLMProvider.OpenAI)
         val model = "gpt-4o-mini"
-        client.post("$LITELLM_URL/v1/chat/completions") {
+        val response = client.post("$LITELLM_URL/v1/chat/completions") {
             val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
 
             header("Authorization", "Bearer $apiKey")
@@ -111,6 +112,9 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val content = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
         assertNotNull(content)
         assertTrue(content.isNotEmpty())
+
+        // assert that tracing doesn't consume the response body
+        assertTrue(response.bodyAsText().isNotEmpty())
     }
 
     @Test
@@ -141,7 +145,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
 
         val client: HttpClient = instrument(mockedClient, provider = HttpClientLLMProvider.OpenAI)
 
-        client.post("$LITELLM_URL/v1/chat/completions") {
+        val response = client.post("$LITELLM_URL/v1/chat/completions") {
             val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
 
             header("Authorization", "Bearer $apiKey")
@@ -173,13 +177,16 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         assertEquals("invalid_request", trace.attributes[AttributeKey.stringKey("gen_ai.error.code")])
         assertEquals("exception", trace.attributes[AttributeKey.stringKey("gen_ai.error.type")])
         assertEquals(400, trace.attributes[AttributeKey.longKey("http.status_code")])
+
+        // assert that tracing doesn't consume the response body
+        assertTrue(response.bodyAsText().isNotEmpty())
     }
 
     @Test
     fun `test Ktor HttpClient auto tracing for Gemini`() = runTest {
         val client: HttpClient = instrument(HttpClient(), provider = HttpClientLLMProvider.Gemini)
         val model = "gemini-2.5-flash"
-        client.post("$LITELLM_URL/gemini/v1beta/models/$model:generateContent") {
+        val response = client.post("$LITELLM_URL/gemini/v1beta/models/$model:generateContent") {
             val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
 
             header("x-goog-api-key", apiKey)
@@ -215,5 +222,8 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val text = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
         assertNotNull(text)
         assertTrue(text.isNotEmpty())
+
+        // assert that tracing doesn't consume the response body
+        assertTrue(response.bodyAsText().isNotEmpty())
     }
 }
