@@ -1,17 +1,17 @@
 package ai.dev.kit
 
-import ai.dev.kit.adapters.AnthropicLLMTracingAdapter
+import ai.dev.kit.adapters.*
 import ai.dev.kit.adapters.ContentType
-import ai.dev.kit.adapters.GeminiLLMTracingAdapter
-import ai.dev.kit.adapters.LLMTracingAdapter
-import ai.dev.kit.adapters.OpenAILLMTracingAdapter
 import ai.dev.kit.adapters.Url
 import ai.dev.kit.tracing.TracingManager
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
-import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.utils.io.*
 import io.opentelemetry.api.trace.StatusCode
+import kotlinx.io.Buffer
+import kotlinx.io.InternalIoApi
+import kotlinx.io.readString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
@@ -49,6 +49,7 @@ fun instrument(client: HttpClient, provider: HttpClientLLMProvider): HttpClient 
 }
 
 private class TracingPlugin(private val adapter: LLMTracingAdapter) {
+    @OptIn(InternalAPI::class, InternalIoApi::class)
     fun setup(config: HttpClientConfig<*>) {
         val tracer = TracingManager.tracer
 
@@ -85,7 +86,16 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 onResponse { response ->
                     try {
                         val body = try {
-                            Json.parseToJsonElement(response.bodyAsText()).jsonObject
+                            // peek the response body to avoid consuming the underlying channel
+                            val responseString = run {
+                                val peeked = response.rawContent.readBuffer.peek()
+                                response.rawContent.awaitContent(Int.MAX_VALUE)
+                                peeked.request(Long.MAX_VALUE)
+                                val buffer = Buffer()
+                                buffer.write(peeked, peeked.buffer.size)
+                                buffer.readString()
+                            }
+                            Json.parseToJsonElement(responseString).jsonObject
                         }
                         catch (_: Exception) {
                             JsonObject(emptyMap())
