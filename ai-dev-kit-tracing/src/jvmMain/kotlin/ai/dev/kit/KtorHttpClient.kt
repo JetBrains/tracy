@@ -88,6 +88,8 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                         val body = try {
                             // peek the response body to avoid consuming the underlying channel
                             val responseString = run {
+                                // NOTE: we must first peek and only then await.
+                                // otherwise there are cases when an empty body gets peeked
                                 val peeked = response.rawContent.readBuffer.peek()
                                 response.rawContent.awaitContent(Int.MAX_VALUE)
                                 peeked.request(Long.MAX_VALUE)
