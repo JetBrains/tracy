@@ -6,32 +6,26 @@ import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.LITELLM_URL
 import io.ktor.client.*
 import io.ktor.client.engine.mock.*
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.json
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.utils.io.*
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.int
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
+import java.util.stream.Stream
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.MethodSource
-import org.junit.jupiter.params.provider.Arguments
-import java.util.stream.Stream
-
 
 
 @Tag("SkipForNonLocal")
@@ -47,7 +41,8 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
 
             header("x-api-key", apiKey)
             header("Content-Type", "application/json")
-            setBody("""
+            setBody(
+                """
                 {
                     "max_tokens": 1024,
                     "messages": [
@@ -58,7 +53,8 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
                     ],
                     "model": "$model"
                 }
-            """.trimIndent())
+            """.trimIndent()
+            )
         }
 
         val traces = analyzeSpans()
@@ -96,10 +92,16 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         // compare trace with the actual response
         val responseJson = Json.parseToJsonElement(responseBody).jsonObject
 
-        assertEquals(responseJson["id"]!!.jsonPrimitive.content, trace.attributes[AttributeKey.stringKey("gen_ai.response.id")])
+        assertEquals(
+            responseJson["id"]!!.jsonPrimitive.content,
+            trace.attributes[AttributeKey.stringKey("gen_ai.response.id")]
+        )
         assertEquals(responseJson["model"]!!.jsonPrimitive.content, tracedModel)
         assertEquals(responseJson["content"]!!.jsonArray[0].jsonObject["type"]!!.jsonPrimitive.content, completionType)
-        assertEquals(responseJson["content"]!!.jsonArray[0].jsonObject["text"]!!.jsonPrimitive.content, completionText.unquote())
+        assertEquals(
+            responseJson["content"]!!.jsonArray[0].jsonObject["text"]!!.jsonPrimitive.content,
+            completionText.unquote()
+        )
 
         val usage = responseJson["usage"]!!.jsonObject
         assertEquals(
@@ -200,7 +202,8 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
             engine {
                 addHandler { request ->
                     respond(
-                        content = ByteReadChannel("""
+                        content = ByteReadChannel(
+                            """
                             {
                                 "error": {
                                     "message": "Bad Request Mock",
@@ -209,7 +212,8 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
                                     "code": "invalid_request"
                                 }
                             }
-                        """.trimIndent()),
+                        """.trimIndent()
+                        ),
                         status = HttpStatusCode.BadRequest,
                         headers = headersOf(
                             HttpHeaders.ContentType,
@@ -227,7 +231,8 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
 
             header("Authorization", "Bearer $apiKey")
             header("Content-Type", "application/json")
-            setBody("""
+            setBody(
+                """
                 {
                     "messages": [
                         {
@@ -237,7 +242,8 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
                     ],
                     "model": "gpt-4o-mini"
                 }
-            """.trimIndent())
+            """.trimIndent()
+            )
         }
 
         val traces = analyzeSpans()
@@ -270,7 +276,8 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
 
             header("x-goog-api-key", apiKey)
             header("Content-Type", "application/json")
-            setBody("""
+            setBody(
+                """
                 {
                     "contents": [
                         {
@@ -280,7 +287,8 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
                         }
                     ]
                 }
-            """.trimIndent())
+            """.trimIndent()
+            )
         }
 
         val traces = analyzeSpans()
@@ -296,8 +304,9 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val tracedModel = trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]
         assertEquals(true, tracedModel?.startsWith(model))
 
-        val tracedPrompt = Json.parseToJsonElement(trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]!!).jsonArray[0]
-            .jsonObject["text"]?.jsonPrimitive?.content
+        val tracedPrompt =
+            Json.parseToJsonElement(trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]!!).jsonArray[0]
+                .jsonObject["text"]?.jsonPrimitive?.content
         assertEquals(promptMessage, tracedPrompt)
 
         val completionRole = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.role")]
