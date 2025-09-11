@@ -5,6 +5,7 @@ import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 private class TestSpanAttributeHandlerClass {
     @KotlinFlowTrace
@@ -20,11 +21,14 @@ private class TestSpanAttributeHandlerClass {
     fun baseAttributeHandlerWithNameAndHandler(param: Int): Int = param
 
     object TestMetadataCustomizer : SpanMetadataCustomizer {
+        override fun resolveSpanName(
+            method: PlatformMethod,
+            args: Array<Any?>,
+            boundReceiverRuntimeClassName: String?
+        ) = "Test.${method.name}"
+
         override fun formatInputAttributes(method: PlatformMethod, args: Array<Any?>): String =
             DefaultSpanMetadataCustomizer.formatInputAttributes(method, args)
-
-        override fun resolveSpanName(method: PlatformMethod, args: Array<Any?>): String? =
-            "Test.${method.name}"
     }
 }
 
@@ -71,6 +75,69 @@ class SpanAttributeHandlerTest : BaseOpenTelemetryTracingTest() {
         val trace = traces.first()
         assertEquals(
             "Test.baseAttributeHandlerWithNameAndHandler",
+            trace.name
+        )
+    }
+
+    object BoundReceiverRuntimeClassNameAttributeHandler : SpanMetadataCustomizer {
+        override fun resolveSpanName(
+            method: PlatformMethod,
+            args: Array<Any?>,
+            boundReceiverRuntimeClassName: String?
+        ): String? = boundReceiverRuntimeClassName
+
+        override fun formatInputAttributes(
+            method: PlatformMethod,
+            args: Array<Any?>
+        ): String = DefaultSpanMetadataCustomizer.formatInputAttributes(method, args)
+    }
+
+    object MethodDelegateClassNameAttributeHandler : SpanMetadataCustomizer {
+        override fun resolveSpanName(
+            method: PlatformMethod,
+            args: Array<Any?>,
+            boundReceiverRuntimeClassName: String?
+        ): String? = method.declaringClass.name
+
+        override fun formatInputAttributes(
+            method: PlatformMethod,
+            args: Array<Any?>
+        ): String = DefaultSpanMetadataCustomizer.formatInputAttributes(method, args)
+    }
+
+    private abstract class TestClassWithBoundReceiverAndMethodDelegateBase {
+        @KotlinFlowTrace(attributeHandler = BoundReceiverRuntimeClassNameAttributeHandler::class)
+        fun foo() = 3
+
+        @KotlinFlowTrace(attributeHandler = MethodDelegateClassNameAttributeHandler::class)
+        fun boo() = 3
+    }
+
+    private class TestClassWithBoundReceiverAndMethodDelegateImpl :
+        TestClassWithBoundReceiverAndMethodDelegateBase()
+
+    @Test
+    fun `span name comes from bound receiver runtime class when boundReceiverRuntimeClassName is used`() = runTest {
+        TestClassWithBoundReceiverAndMethodDelegateImpl().foo()
+        val traces = analyzeSpans()
+
+        assertEquals(1, traces.size)
+        val trace = traces.first()
+        assertEquals(
+            "ai.dev.kit.tracing.fluent.handlers.SpanAttributeHandlerTest\$TestClassWithBoundReceiverAndMethodDelegateImpl",
+            trace.name
+        )
+    }
+
+    @Test
+    fun `span name falls back to default resolution when method declaring class name is used`() = runTest {
+        TestClassWithBoundReceiverAndMethodDelegateImpl().boo()
+        val traces = analyzeSpans()
+
+        assertEquals(1, traces.size)
+        val trace = traces.first()
+        assertEquals(
+            "ai.dev.kit.tracing.fluent.handlers.SpanAttributeHandlerTest\$TestClassWithBoundReceiverAndMethodDelegateBase",
             trace.name
         )
     }
