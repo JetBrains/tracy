@@ -71,7 +71,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                             val bodyType = request.bodyType?.type
                             when {
                                 request.body is EmptyContent -> JsonObject(emptyMap())
-                                (bodyType != null) && isAnnotatedAsSerializable(bodyType) -> {
+                                (bodyType != null) && bodyType.hasAnnotation<Serializable>() -> {
                                     serializeToJson(request.body)
                                         ?.let { Json.parseToJsonElement(it).jsonObject }
                                         ?: JsonObject(emptyMap())
@@ -147,8 +147,8 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
         return try {
             val kClass = obj::class
 
-            if (isAnnotatedAsSerializable(kClass)) {
-                JSON_CONFIG.encodeToString(Json.serializersModule.serializer(obj::class.starProjectedType), obj)
+            if (kClass.hasAnnotation<Serializable>()) {
+                JSON_CONFIG.encodeToString(Json.serializersModule.serializer(kClass.starProjectedType), obj)
             }
             else {
                 null
@@ -156,13 +156,6 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
         } catch (_: Exception) {
             null
         }
-    }
-
-    /**
-     * Checks if a given [KClass] is marked with `@Serializable` annotation.
-     */
-    private fun isAnnotatedAsSerializable(kClass: KClass<*>): Boolean {
-        return kClass.hasAnnotation<Serializable>()
     }
 
     companion object {
