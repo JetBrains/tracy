@@ -6,7 +6,7 @@ import ai.dev.kit.adapters.Url
 import ai.dev.kit.tracing.TracingManager
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
-import io.ktor.client.utils.EmptyContent
+import io.ktor.client.utils.*
 import io.ktor.http.*
 import io.ktor.utils.io.*
 import io.opentelemetry.api.trace.StatusCode
@@ -15,13 +15,11 @@ import kotlinx.io.InternalIoApi
 import kotlinx.io.readString
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.serializer
-import kotlinx.serialization.serializerOrNull
 import kotlin.reflect.KClass
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
@@ -151,19 +149,6 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
 
             if (isAnnotatedAsSerializable(kClass)) {
                 JSON_CONFIG.encodeToString(Json.serializersModule.serializer(obj::class.starProjectedType), obj)
-                // NOTE: we perform an unsafe cast that's actually safe
-                // because we know the serializer matches the object's actual type
-                /*val serializer = kClass.serializerOrNull()?.let {
-                    @Suppress("UNCHECKED_CAST")
-                    it as? KSerializer<Any>
-                }
-
-                if (serializer != null) {
-                    JSON_CONFIG.encodeToString(serializer, obj)
-                }
-                else {
-                    null
-                }*/
             }
             else {
                 null
