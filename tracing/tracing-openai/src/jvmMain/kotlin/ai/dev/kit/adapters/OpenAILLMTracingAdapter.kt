@@ -1,10 +1,15 @@
 package ai.dev.kit.adapters
 
 import ai.dev.kit.adapters.openai.ChatCompletionsHandler
+import ai.dev.kit.adapters.openai.OpenAIApiHandler
+import ai.dev.kit.adapters.openai.OpenAIApiUtils
 import ai.dev.kit.adapters.openai.ResponsesApiHandler
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_SYSTEM
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.jsonPrimitive
 
 
 /**
@@ -18,39 +23,42 @@ private enum class OpenAIApiType {
 }
 
 class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.OPENAI) {
-    private val chatHandler = ChatCompletionsHandler()
-    private val responsesHandler = ResponsesApiHandler()
+    private var handler: OpenAIApiHandler? = null
 
     override fun getRequestBodyAttributes(span: Span, url: Url, body: JsonObject) {
-        val handler = when (detectApiType(body, null)) {
-            OpenAIApiType.CHAT_COMPLETIONS -> chatHandler
-            OpenAIApiType.RESPONSES_API -> responsesHandler
+        // Set a common system attribute
+        span.setAttribute(GEN_AI_SYSTEM, GenAiSystemIncubatingValues.OPENAI)
+        if (handler == null) {
+            handler = when (detectApiType(body)) {
+                OpenAIApiType.CHAT_COMPLETIONS -> ChatCompletionsHandler()
+                OpenAIApiType.RESPONSES_API -> ResponsesApiHandler()
+            }
         }
 
-        handler.handleRequestAttributes(span, url, body)
+        handler?.handleRequestAttributes(span, url, body)
     }
 
     override fun getResultBodyAttributes(span: Span, body: JsonObject) {
-        val handler = when (detectApiType(null, body)) {
-            OpenAIApiType.CHAT_COMPLETIONS -> chatHandler
-            OpenAIApiType.RESPONSES_API -> responsesHandler
-        }
+        OpenAIApiUtils.setCommonResponseAttributes(span, body)
 
-        handler.handleResponseAttributes(span, body)
+        handler?.handleResponseAttributes(span, body)
+    }
+
+    override fun isStreamingRequest(body: JsonObject?) =
+        body?.get("stream")?.jsonPrimitive?.boolean == true
+
+    override fun handleStreaming(span: Span, events: String) {
+        handler?.handleStreaming(span, events)
     }
 }
 
-private fun detectApiType(requestBody: JsonObject?, responseBody: JsonObject?): OpenAIApiType {
+private fun detectApiType(
+    requestBody: JsonObject?
+): OpenAIApiType {
     requestBody?.let { body ->
         if (body.containsKey("messages")) return OpenAIApiType.CHAT_COMPLETIONS
         if (body.containsKey("input")) return OpenAIApiType.RESPONSES_API
     }
 
-    responseBody?.let { body ->
-        if (body.containsKey("choices")) return OpenAIApiType.CHAT_COMPLETIONS
-        if (body.containsKey("output")) return OpenAIApiType.RESPONSES_API
-    }
-
-    // Default to chat completions for backwards compatibility
     return OpenAIApiType.CHAT_COMPLETIONS
 }

@@ -26,6 +26,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+
 @Tag("SkipForNonLocal")
 class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
     @Test
@@ -455,5 +456,60 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
             .parameters(schema)
             .strict(false)
             .build()
+    }
+
+    @Test
+    fun `test OpenAI responses API streaming`(): Unit = runTest {
+        val client = instrument(createLiteLLMClient())
+
+        val params = ResponseCreateParams.builder()
+            .input("Generate polite greeting and introduce yourself")
+            .model(ChatModel.GPT_4O_MINI)
+            .temperature(0.7)
+
+        val sb = StringBuilder()
+        client.responses().createStreaming(params.build())
+            .use { stream ->
+                stream.stream().forEach { event ->
+                    event.outputTextDelta().ifPresent { delta ->
+                        sb.append(delta.delta())
+                    }
+                }
+            }
+
+        validateStreaming(sb.toString())
+    }
+
+    @Test
+    fun `test OpenAI chat completions streaming`(): Unit = runTest {
+        val client = instrument(createLiteLLMClient())
+        val params = ChatCompletionCreateParams.builder()
+            .addUserMessage("Generate polite greeting and introduce yourself")
+            .model(ChatModel.GPT_4O_MINI)
+            .temperature(0.7)
+            .build()
+
+        val sb = StringBuilder()
+        client.chat().completions().createStreaming(params).use { stream ->
+            stream.stream().forEach { chunk ->
+                chunk.choices().forEach { choice ->
+                    val delta = choice.delta()
+                    delta.content().ifPresent { parts ->
+                        parts.forEach { part -> sb.append(part.toString()) }
+                    }
+                }
+            }
+        }
+
+        validateStreaming(sb.toString())
+    }
+
+    fun validateStreaming(output: String){
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+        val trace = traces.first()
+        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.content.type")]?.startsWith("text/event-stream") == true)
+        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]?.isNotEmpty() == true)
+        assertEquals(output, trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")])
     }
 }

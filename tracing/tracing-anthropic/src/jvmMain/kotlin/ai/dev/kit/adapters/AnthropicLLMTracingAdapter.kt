@@ -126,4 +126,8 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubati
             }
         }
     }
+
+    // streaming is not supported
+    override fun isStreamingRequest(body: JsonObject?) = false
+    override fun handleStreaming(span: Span, events: String) = Unit
 }
