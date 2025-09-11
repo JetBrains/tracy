@@ -55,8 +55,11 @@ kotlin {
         val jvmTest by getting {
             dependencies {
                 implementation(libs.kotlin.test)
+                implementation(libs.junit.params)
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.opentelemetry.sdk.testing)
+                implementation(libs.ktor.client.negotiation)
+                implementation(libs.ktor.serialization.json)
             }
         }
     }
