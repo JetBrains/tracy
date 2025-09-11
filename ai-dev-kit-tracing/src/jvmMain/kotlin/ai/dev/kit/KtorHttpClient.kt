@@ -72,21 +72,15 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                             when {
                                 request.body is EmptyContent -> JsonObject(emptyMap())
                                 (bodyType != null) && isAnnotatedAsSerializable(bodyType) -> {
-                                    println("PARSE AS SERIALIZABLE: $bodyType")
-
                                     serializeToJson(request.body)
                                         ?.let { Json.parseToJsonElement(it).jsonObject }
                                         ?: JsonObject(emptyMap())
                                 }
-                                else -> Json.parseToJsonElement(request.body.toString()).jsonObject.also {
-                                    println("PARSE AS STRING: $bodyType")
-                                }
+                                else -> Json.parseToJsonElement(request.body.toString()).jsonObject
                             }
                         } catch (_: Exception) {
                             JsonObject(emptyMap())
                         }
-
-                        println("PARSED BODY:\n$body")
 
                         adapter.registerRequest(
                             span = span,
