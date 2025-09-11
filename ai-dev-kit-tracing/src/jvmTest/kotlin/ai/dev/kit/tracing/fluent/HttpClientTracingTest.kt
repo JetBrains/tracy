@@ -199,6 +199,41 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
     }
 
     @Test
+    fun `test Ktor HttpClient auto tracing streaming for OpenAI`() = runTest {
+        val client: HttpClient = instrument(HttpClient(), provider = HttpClientLLMProvider.OpenAI)
+        val model = "gpt-4o-mini"
+        client.post("$LITELLM_URL/v1/chat/completions") {
+            val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
+
+            header("Authorization", "Bearer $apiKey")
+            header("Content-Type", "application/json")
+            header("Accept", "text/event-stream")
+            setBody("""
+                {
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": "hello world"
+                        }
+                    ],
+                    "model": "$model",
+                    "stream": true
+                }
+            """.trimIndent())
+        }
+
+        val traces = analyzeSpans()
+
+        assertEquals(1, traces.size)
+        val trace = traces.firstOrNull()
+        assertNotNull(trace)
+
+        val content = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
+        assertNotNull(content)
+        assertTrue(content.isNotEmpty())
+    }
+
+    @Test
     fun `test Ktor HttpClient auto tracing for Bad Request in OpenAI`() = runTest {
         val mockedClient = HttpClient(MockEngine) {
             engine {

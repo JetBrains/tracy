@@ -13,6 +13,7 @@ import kotlinx.serialization.json.jsonPrimitive
 internal interface OpenAIApiHandler {
     fun handleRequestAttributes(span: Span, url: Url, body: JsonObject)
     fun handleResponseAttributes(span: Span, body: JsonObject)
+    fun handleStreaming(span: Span, events: String)
 }
 
 /**
@@ -21,9 +22,9 @@ internal interface OpenAIApiHandler {
 internal object OpenAIApiUtils {
     
     /**
-     * Sets common request attributes (temperature, model, API base)
+     * Sets common request attributes (temperature, model)
      */
-    fun setCommonRequestAttributes(span: Span, url: Url, body: JsonObject) {
+    fun setCommonRequestAttributes(span: Span, body: JsonObject) {
         body["temperature"]?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.jsonPrimitive.doubleOrNull) }
         body["model"]?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it.jsonPrimitive.content) }
     }

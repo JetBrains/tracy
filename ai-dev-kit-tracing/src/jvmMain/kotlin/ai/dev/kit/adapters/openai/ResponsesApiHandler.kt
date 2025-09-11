@@ -12,7 +12,7 @@ import kotlinx.serialization.json.*
 internal class ResponsesApiHandler : OpenAIApiHandler {
 
     override fun handleRequestAttributes(span: Span, url: Url, body: JsonObject) {
-        OpenAIApiUtils.setCommonRequestAttributes(span, url, body)
+        OpenAIApiUtils.setCommonRequestAttributes(span, body)
 
         body["input"]?.let { input ->
             if (input is JsonArray) {
@@ -86,8 +86,6 @@ internal class ResponsesApiHandler : OpenAIApiHandler {
     }
 
     override fun handleResponseAttributes(span: Span, body: JsonObject) {
-        OpenAIApiUtils.setCommonResponseAttributes(span, body)
-
         body["output"]?.let { output ->
             val functionCalls =
                 output.jsonArray.filter { it.jsonObject["type"]?.jsonPrimitive?.content == "function_call" }
@@ -140,6 +138,22 @@ internal class ResponsesApiHandler : OpenAIApiHandler {
 
         body["usage"]?.let { usage ->
             setUsageAttributes(span, usage.jsonObject)
+        }
+    }
+
+    override fun handleStreaming(span: Span, events: String) {
+        for (line in events.lineSequence()) {
+            if (!line.startsWith("data:")) continue
+            val data = line.removePrefix("data:").trim()
+
+            val obj = runCatching { Json.parseToJsonElement(data).jsonObject }.getOrNull() ?: continue
+            if (obj["type"]?.jsonPrimitive?.content == "response.output_text.done") {
+                obj["text"]?.jsonPrimitive?.content?.let { finalText ->
+                    span.setAttribute("gen_ai.completion.0.content", finalText)
+                    span.setAttribute("gen_ai.completion.0.finish_reason", "stop")
+                }
+                return
+            }
         }
     }
 
