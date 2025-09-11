@@ -6,13 +6,17 @@ import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.LITELLM_URL
 import io.ktor.client.*
 import io.ktor.client.engine.mock.*
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.*
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
@@ -23,17 +27,15 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.Arguments
+import java.util.stream.Stream
+
 
 
 @Tag("SkipForNonLocal")
 class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
-    private fun String.unquote(): String {
-        if (this.startsWith("\"") && this.endsWith("\"")) {
-            return this.substring(1, this.length - 1)
-        }
-        return this
-    }
-
     @Test
     fun `test Ktor HttpClient auto tracing for Anthropic`() = runTest {
         val client: HttpClient = instrument(HttpClient(), provider = HttpClientLLMProvider.Anthropic)
@@ -110,28 +112,31 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         )
     }
 
-    @Test
-    fun `test Ktor HttpClient auto tracing for OpenAI`() = runTest {
-        val client: HttpClient = instrument(HttpClient(), provider = HttpClientLLMProvider.OpenAI)
-        val model = "gpt-4o-mini"
-        val promptMessage = "greet me and introduce yourself"
+    @ParameterizedTest
+    @MethodSource("provideTestParameters")
+    fun `test Ktor HttpClient auto tracing with different request body types for OpenAI`(
+        testName: String,
+        prompt: String,
+        model: String,
+        requestBody: Any,
+    ) = runTest {
+        val client: HttpClient = instrument(HttpClient {
+            install(ContentNegotiation) {
+                json(Json { prettyPrint = true })
+            }
+        }, provider = HttpClientLLMProvider.OpenAI)
 
         val response = client.post("$LITELLM_URL/v1/chat/completions") {
             val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
 
             header("Authorization", "Bearer $apiKey")
             header("Content-Type", "application/json")
-            setBody("""
-                {
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": "$promptMessage"
-                        }
-                    ],
-                    "model": "$model"
-                }
-            """.trimIndent())
+            when (requestBody) {
+                // for the request.bodyType to be set correctly
+                is Request -> setBody<Request>(requestBody)
+                is String -> setBody<String>(requestBody)
+                else -> setBody(requestBody)
+            }
         }
 
         val traces = analyzeSpans()
@@ -149,7 +154,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         assertEquals(true, tracedModel?.startsWith(model))
 
         assertEquals("user", trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")])
-        assertEquals(promptMessage, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]?.unquote())
+        assertEquals(prompt, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]?.unquote())
 
         val completionRole = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.role")]
         val completionContent = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
@@ -188,8 +193,6 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
             trace.attributes[AttributeKey.longKey("gen_ai.usage.output_tokens")]!!.toInt()
         )
     }
-
-    // TODO: write test where a serializable object is set as a request body
 
     @Test
     fun `test Ktor HttpClient auto tracing for Bad Request in OpenAI`() = runTest {
@@ -333,5 +336,57 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
             responseJson["usageMetadata"]!!.jsonObject["candidatesTokenCount"]!!.jsonPrimitive.int,
             trace.attributes[AttributeKey.longKey("gen_ai.usage.output_tokens")]!!.toInt()
         )
+    }
+
+    companion object {
+        @Serializable
+        private data class Request(
+            val messages: List<Message>,
+            val model: String,
+        )
+
+        @Serializable
+        private data class Message(
+            val role: String,
+            val content: String,
+        )
+
+        @JvmStatic
+        fun provideTestParameters(): Stream<Arguments> = Stream.of(
+            Arguments.of(
+                "Request as a string",
+                "greet me and introduce yourself",
+                "gpt-4o-mini",
+                """
+                    {
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": "greet me and introduce yourself"
+                            }
+                        ],
+                        "model": "gpt-4o-mini"
+                    }
+                """.trimIndent()
+            ),
+            Arguments.of(
+                "Request as a Serializable object",
+                "Introduce yourself",
+                "gpt-4o-mini",
+                Request(
+                    messages = listOf(
+                        Message(role = "user", content = "Introduce yourself")
+                    ),
+                    model = "gpt-4o-mini"
+                )
+            ),
+        )
+
+        private fun String.unquote(): String {
+            if (this.startsWith("\"") && this.endsWith("\"")) {
+                return this.substring(1, this.length - 1)
+            }
+            return this
+        }
     }
 }
