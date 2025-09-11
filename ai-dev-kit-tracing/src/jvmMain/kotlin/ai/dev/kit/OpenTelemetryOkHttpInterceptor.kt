@@ -4,13 +4,17 @@ import ai.dev.kit.adapters.ContentType
 import ai.dev.kit.adapters.LLMTracingAdapter
 import ai.dev.kit.adapters.Url
 import ai.dev.kit.tracing.TracingManager
+import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.*
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
+import okhttp3.ResponseBody
+import okio.Buffer
+import okio.BufferedSource
+import okio.ForwardingSource
+import okio.buffer
 
 
 /**
@@ -64,16 +68,18 @@ sealed class OpenTelemetryOkHttpInterceptor(
         val tracer = TracingManager.tracer
 
         val span = tracer.spanBuilder(spanName).startSpan()
+        var isStreamingRequest = false
 
         span.makeCurrent().use { scopeIgnored ->
             try {
                 val request = chain.request()
                 val url = request.url
                 val body = request.body?.let {
-                    val buffer = okio.Buffer()
+                    val buffer = Buffer()
                     it.writeTo(buffer)
                     Json.parseToJsonElement(buffer.readUtf8()).jsonObject
                 }
+                isStreamingRequest = body?.get("stream")?.jsonPrimitive?.boolean == true
 
                 adapter.registerRequest(
                     span = span,
@@ -81,13 +87,25 @@ sealed class OpenTelemetryOkHttpInterceptor(
                     requestBody = body ?: JsonObject(emptyMap()),
                 )
 
-
                 val response = chain.proceed(chain.request())
                 val contentType = response.body?.contentType()
+
+                if (isStreamingRequest) {
+                    val streamingMarker = JsonObject(mapOf("stream" to JsonPrimitive(true)))
+
+                    adapter.registerResponse(
+                        span = span,
+                        contentType = contentType?.let { ContentType(contentType.type, contentType.subtype) },
+                        responseCode = response.code.toLong(),
+                        responseBody = streamingMarker,
+                    )
+
+                    return wrapStreamingResponse(response, span)
+                }
+
                 val decodedResponse = try {
                     Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
-                }
-                catch(_: Exception) {
+                } catch (_: Exception) {
                     JsonObject(emptyMap())
                 }
 
@@ -104,8 +122,56 @@ sealed class OpenTelemetryOkHttpInterceptor(
                 span.recordException(e)
                 throw e
             } finally {
-                span.end()
+                if (!isStreamingRequest) span.end()
             }
         }
+    }
+
+    internal fun wrapStreamingResponse(originalResponse: Response, span: Span): Response {
+        val originalBody = originalResponse.body ?: return originalResponse
+
+        val tracingBody = object : ResponseBody() {
+            private val capturedText = StringBuilder()
+
+            override fun contentType() = originalBody.contentType()
+            override fun contentLength() = -1L
+
+            override fun source(): BufferedSource {
+                val originalSource = originalBody.source()
+
+                return object : ForwardingSource(originalSource) {
+                    private val acc = Buffer()
+                    override fun read(sink: Buffer, byteCount: Long): Long {
+                        val bytesRead = try {
+                            super.read(sink, byteCount)
+                        } catch (e: Exception) {
+                            span.setStatus(StatusCode.ERROR)
+                            span.recordException(e)
+                            span.end()
+                            throw e
+                        }
+
+                        if (bytesRead > 0) {
+                            val start = sink.size - bytesRead
+                            sink.copyTo(acc, start, bytesRead)
+
+                            capturedText.append(acc.readUtf8())
+                        }
+
+                        return bytesRead
+                    }
+                }.buffer()
+            }
+
+            override fun close() {
+                try {
+                    adapter.handleStreaming(span, capturedText.toString())
+                } finally {
+                    span.end()
+                }
+            }
+        }
+
+        return originalResponse.newBuilder().body(tracingBody).build()
     }
 }

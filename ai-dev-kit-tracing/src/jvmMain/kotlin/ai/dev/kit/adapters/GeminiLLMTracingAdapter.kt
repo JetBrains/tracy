@@ -172,4 +172,6 @@ internal class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSy
             }
         }
     }
+
+    override fun handleStreaming(span: Span, events: String) = Unit
 }

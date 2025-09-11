@@ -4,6 +4,7 @@ import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_SYSTEM
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -40,8 +41,13 @@ internal sealed class LLMTracingAdapter(private val genAISystem: String) {
     }
 
     fun registerResponse(span: Span, contentType: ContentType?, responseCode: Long, responseBody: JsonObject) {
+        val isStreamingRequest = responseBody["stream"]?.jsonPrimitive?.boolean == true
+
         if (contentType?.type == REQUIRED_TYPE && contentType.subtype == REQUIRED_SUBTYPE) {
             getResultBodyAttributes(span, responseBody)
+        } else if (isStreamingRequest && contentType.toString().contains("text/event-stream")) {
+            span.setAttribute("gen_ai.response.streaming", true)
+            span.setAttribute("gen_ai.completion.content.type", contentType.toString())
         } else {
             contentType?.let { span.setAttribute("gen_ai.completion.content.type", it.asString()) }
         }
@@ -50,8 +56,7 @@ internal sealed class LLMTracingAdapter(private val genAISystem: String) {
         if (responseCode in 400..499 || responseCode in 500..599) {
             getResultErrorBodyAttributes(span, responseBody)
             span.setStatus(StatusCode.ERROR)
-        }
-        else {
+        } else {
             span.setStatus(StatusCode.OK)
         }
     }
@@ -68,4 +73,6 @@ internal sealed class LLMTracingAdapter(private val genAISystem: String) {
     protected abstract fun getRequestBodyAttributes(span: Span, url: Url, body: JsonObject)
 
     protected abstract fun getResultBodyAttributes(span: Span, body: JsonObject)
+
+    internal abstract fun handleStreaming(span: Span, events: String)
 }

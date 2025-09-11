@@ -137,4 +137,6 @@ internal class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenA
             }
         }
     }
+
+    override fun handleStreaming(span: Span, events: String) = Unit
 }

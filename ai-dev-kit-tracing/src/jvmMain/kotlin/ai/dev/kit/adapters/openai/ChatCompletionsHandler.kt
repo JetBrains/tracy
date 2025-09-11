@@ -10,10 +10,9 @@ import kotlinx.serialization.json.*
  * Handler for OpenAI Chat Completions API
  */
 internal class ChatCompletionsHandler : OpenAIApiHandler {
-    
     override fun handleRequestAttributes(span: Span, url: Url, body: JsonObject) {
-        OpenAIApiUtils.setCommonRequestAttributes(span, url, body)
-        
+        OpenAIApiUtils.setCommonRequestAttributes(span, body)
+
         body["messages"]?.let {
             for ((index, message) in it.jsonArray.withIndex()) {
                 val role = message.jsonObject["role"]?.jsonPrimitive?.content
@@ -44,8 +43,6 @@ internal class ChatCompletionsHandler : OpenAIApiHandler {
     }
 
     override fun handleResponseAttributes(span: Span, body: JsonObject) {
-        OpenAIApiUtils.setCommonResponseAttributes(span, body)
-        
         body["choices"]?.let {
             for ((index, choice) in it.jsonArray.withIndex()) {
                 val index = choice.jsonObject["index"]?.jsonPrimitive?.intOrNull ?: index
@@ -91,7 +88,10 @@ internal class ChatCompletionsHandler : OpenAIApiHandler {
                         }
                     }
 
-                    span.setAttribute("gen_ai.completion.$index.annotations", message.jsonObject["annotations"].toString())
+                    span.setAttribute(
+                        "gen_ai.completion.$index.annotations",
+                        message.jsonObject["annotations"].toString()
+                    )
                 }
             }
         }
@@ -100,7 +100,27 @@ internal class ChatCompletionsHandler : OpenAIApiHandler {
             setUsageAttributes(span, usage.jsonObject)
         }
     }
-    
+
+    override fun handleStreaming(span: Span, events: String) {
+        var role: String? = null
+        val out = buildString {
+            for (line in events.lineSequence()) {
+                if (!line.startsWith("data:")) continue
+                val data = line.removePrefix("data:").trim()
+
+                val e = runCatching { Json.parseToJsonElement(data).jsonObject }.getOrNull() ?: continue
+                val choice = e["choices"]?.jsonArray?.firstOrNull()?.jsonObject ?: continue
+                val delta = choice["delta"]?.jsonObject ?: continue
+
+                if (role == null) role = delta["role"]?.jsonPrimitive?.content
+                delta["content"]?.jsonPrimitive?.content?.let { append(it) }
+            }
+        }
+
+        if (out.isNotEmpty()) span.setAttribute("gen_ai.completion.0.content", out)
+        role?.let { span.setAttribute("gen_ai.completion.0.role", it) }
+    }
+
     /**
      * Sets usage attributes (prompt_tokens/completion_tokens)
      */
