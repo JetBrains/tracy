@@ -20,7 +20,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.serializer
-import kotlin.reflect.KClass
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
 
@@ -76,6 +75,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                                         ?.let { Json.parseToJsonElement(it).jsonObject }
                                         ?: JsonObject(emptyMap())
                                 }
+
                                 else -> Json.parseToJsonElement(request.body.toString()).jsonObject
                             }
                         } catch (_: Exception) {
@@ -91,8 +91,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                             ),
                             requestBody = body
                         )
-                    }
-                    catch (e: Exception) {
+                    } catch (e: Exception) {
                         span.setStatus(StatusCode.ERROR)
                         span.recordException(e)
                         span.end()
@@ -115,19 +114,18 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                                 buffer.readString()
                             }
                             Json.parseToJsonElement(responseString).jsonObject
-                        }
-                        catch (_: Exception) {
+                        } catch (_: Exception) {
                             JsonObject(emptyMap())
                         }
 
                         adapter.registerResponse(
                             span = span,
-                            contentType = response.contentType()?.let { ContentType(it.contentType, it.contentSubtype) },
+                            contentType = response.contentType()
+                                ?.let { ContentType(it.contentType, it.contentSubtype) },
                             responseCode = response.status.value.toLong(),
                             responseBody = body,
                         )
-                    }
-                    catch (e: Exception) {
+                    } catch (e: Exception) {
                         span.setStatus(StatusCode.ERROR)
                         span.recordException(e)
                         throw e
@@ -149,8 +147,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
 
             if (kClass.hasAnnotation<Serializable>()) {
                 JSON_CONFIG.encodeToString(Json.serializersModule.serializer(kClass.starProjectedType), obj)
-            }
-            else {
+            } else {
                 null
             }
         } catch (_: Exception) {
