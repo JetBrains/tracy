@@ -21,8 +21,10 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.serializer
+import kotlinx.serialization.serializerOrNull
 import kotlin.reflect.KClass
 import kotlin.reflect.full.hasAnnotation
+import kotlin.reflect.full.starProjectedType
 
 /**
  * Selection of the supported LLM providers that can be
@@ -147,19 +149,25 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
         return try {
             val kClass = obj::class
 
-            val jsonString = if (isAnnotatedAsSerializable(kClass)) {
+            if (isAnnotatedAsSerializable(kClass)) {
+                JSON_CONFIG.encodeToString(Json.serializersModule.serializer(obj::class.starProjectedType), obj)
                 // NOTE: we perform an unsafe cast that's actually safe
                 // because we know the serializer matches the object's actual type
-                @Suppress("UNCHECKED_CAST")
-                val serializer = kClass.serializer() as KSerializer<Any>
+                /*val serializer = kClass.serializerOrNull()?.let {
+                    @Suppress("UNCHECKED_CAST")
+                    it as? KSerializer<Any>
+                }
 
-                JSON_CONFIG.encodeToString(serializer, obj)
+                if (serializer != null) {
+                    JSON_CONFIG.encodeToString(serializer, obj)
+                }
+                else {
+                    null
+                }*/
             }
             else {
                 null
             }
-
-            jsonString
         } catch (_: Exception) {
             null
         }
