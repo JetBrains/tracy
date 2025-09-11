@@ -6,15 +6,23 @@ import ai.dev.kit.adapters.Url
 import ai.dev.kit.tracing.TracingManager
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
+import io.ktor.client.utils.EmptyContent
 import io.ktor.http.*
 import io.ktor.utils.io.*
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.io.Buffer
 import kotlinx.io.InternalIoApi
 import kotlinx.io.readString
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.InternalSerializationApi
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.serializer
+import kotlin.reflect.KClass
+import kotlin.reflect.full.hasAnnotation
 
 /**
  * Selection of the supported LLM providers that can be
@@ -57,13 +65,28 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
 
         span.makeCurrent().use { scopeIgnored ->
             config.install(createClientPlugin("NetworkParamsPlugin") {
-                onRequest { request, content ->
+                onRequest { request, _ ->
                     try {
                         val body = try {
-                            Json.parseToJsonElement(request.body.toString()).jsonObject
+                            val bodyType = request.bodyType?.type
+                            when {
+                                request.body is EmptyContent -> JsonObject(emptyMap())
+                                (bodyType != null) && isAnnotatedAsSerializable(bodyType) -> {
+                                    println("PARSE AS SERIALIZABLE: $bodyType")
+
+                                    serializeToJson(request.body)
+                                        ?.let { Json.parseToJsonElement(it).jsonObject }
+                                        ?: JsonObject(emptyMap())
+                                }
+                                else -> Json.parseToJsonElement(request.body.toString()).jsonObject.also {
+                                    println("PARSE AS STRING: $bodyType")
+                                }
+                            }
                         } catch (_: Exception) {
                             JsonObject(emptyMap())
                         }
+
+                        println("PARSED BODY:\n$body")
 
                         adapter.registerRequest(
                             span = span,
@@ -120,6 +143,44 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 }
             })
         }
+    }
+
+    /**
+     * Helper function to serialize `@Serializable` objects with an unknown type
+     */
+    @OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)
+    fun serializeToJson(obj: Any): String? {
+        return try {
+            val kClass = obj::class
+
+            val jsonString = if (isAnnotatedAsSerializable(kClass)) {
+                // NOTE: we perform an unsafe cast that's actually safe
+                // because we know the serializer matches the object's actual type
+                @Suppress("UNCHECKED_CAST")
+                val serializer = kClass.serializer() as KSerializer<Any>
+
+                val json = Json {
+                    ignoreUnknownKeys = true
+                    encodeDefaults = true
+                }
+
+                json.encodeToString(serializer, obj)
+            }
+            else {
+                null
+            }
+
+            jsonString
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Checks if a given [KClass] is marked with `@Serializable` annotation.
+     */
+    private fun isAnnotatedAsSerializable(kClass: KClass<*>): Boolean {
+        return kClass.hasAnnotation<Serializable>()
     }
 }
 
