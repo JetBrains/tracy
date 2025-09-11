@@ -153,12 +153,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 @Suppress("UNCHECKED_CAST")
                 val serializer = kClass.serializer() as KSerializer<Any>
 
-                val json = Json {
-                    ignoreUnknownKeys = true
-                    encodeDefaults = true
-                }
-
-                json.encodeToString(serializer, obj)
+                JSON_CONFIG.encodeToString(serializer, obj)
             }
             else {
                 null
@@ -175,6 +170,13 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
      */
     private fun isAnnotatedAsSerializable(kClass: KClass<*>): Boolean {
         return kClass.hasAnnotation<Serializable>()
+    }
+
+    companion object {
+        private val JSON_CONFIG = Json {
+            ignoreUnknownKeys = true
+            encodeDefaults = true
+        }
     }
 }
 
