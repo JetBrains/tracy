@@ -260,6 +260,8 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
     fun `test Ktor HttpClient auto tracing for Gemini`() = runTest {
         val client: HttpClient = instrument(HttpClient(), provider = HttpClientLLMProvider.Gemini)
         val model = "gemini-2.5-flash"
+        val promptMessage = "Explain how AI works in a few words"
+
         val response = client.post("$LITELLM_URL/gemini/v1beta/models/$model:generateContent") {
             val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
 
@@ -270,7 +272,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
                     "contents": [
                         {
                             "parts": [
-                                { "text": "Explain how AI works in a few words" }
+                                { "text": "$promptMessage" }
                             ]
                         }
                     ]
@@ -285,19 +287,51 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         assertNotNull(trace)
 
         assertEquals(StatusCode.OK, trace.status.statusCode)
+        assertEquals("gemini", trace.attributes[AttributeKey.stringKey("gen_ai.system")])
+        assertEquals(LITELLM_URL, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
 
-        assertEquals(
-            LITELLM_URL,
-            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
-        )
-        assertTrue(
-            trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(model) == true
-        )
-        val text = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
-        assertNotNull(text)
-        assertTrue(text.isNotEmpty())
+        val tracedModel = trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]
+        assertEquals(true, tracedModel?.startsWith(model))
+
+        val tracedPrompt = Json.parseToJsonElement(trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]!!).jsonArray[0]
+            .jsonObject["text"]?.jsonPrimitive?.content
+        assertEquals(promptMessage, tracedPrompt)
+
+        val completionRole = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.role")]
+        val completionContent = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
+
+        assertNotNull(completionRole)
+        assertTrue(completionRole.isNotEmpty())
+
+        assertNotNull(completionContent)
+        assertTrue(completionContent.isNotEmpty())
 
         // assert that tracing doesn't consume the response body
-        assertTrue(response.bodyAsText().isNotEmpty())
+        val responseBody = response.bodyAsText()
+        assertTrue(responseBody.isNotEmpty())
+
+        val responseJson = Json.parseToJsonElement(responseBody).jsonObject
+
+        assertEquals(
+            responseJson["responseId"]!!.jsonPrimitive.content,
+            trace.attributes[AttributeKey.stringKey("gen_ai.response.id")]
+        )
+        assertEquals(responseJson["modelVersion"]!!.jsonPrimitive.content, tracedModel)
+        assertEquals(
+            responseJson["candidates"]?.jsonArray[0]?.jsonObject["content"]?.jsonObject["role"]?.jsonPrimitive?.content,
+            completionRole
+        )
+        assertEquals(
+            responseJson["candidates"]?.jsonArray[0]?.jsonObject["content"]?.jsonObject["parts"]?.toString(),
+            completionContent
+        )
+        assertEquals(
+            responseJson["usageMetadata"]!!.jsonObject["promptTokenCount"]!!.jsonPrimitive.int,
+            trace.attributes[AttributeKey.longKey("gen_ai.usage.input_tokens")]!!.toInt()
+        )
+        assertEquals(
+            responseJson["usageMetadata"]!!.jsonObject["candidatesTokenCount"]!!.jsonPrimitive.int,
+            trace.attributes[AttributeKey.longKey("gen_ai.usage.output_tokens")]!!.toInt()
+        )
     }
 }
