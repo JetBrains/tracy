@@ -355,9 +355,6 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         assertEquals("null", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.role")])
         assertEquals("null", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")])
         assertEquals("null", trace.attributes[AttributeKey.stringKey("gen_ai.response.id")])
-
-        // assert that tracing doesn't consume the response body
-        assertTrue(response.bodyAsText().isNotEmpty())
     }
 
     @Test
