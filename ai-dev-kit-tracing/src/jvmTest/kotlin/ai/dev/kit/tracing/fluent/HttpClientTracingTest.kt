@@ -274,7 +274,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
                 addHandler { _ ->
                     respond(
                         content = ByteReadChannel(
-                        """
+                            """
                                 {
                                   "id": null,
                                   "object": "chat.completion",
@@ -346,8 +346,6 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
 
         assertEquals(StatusCode.OK, trace.status.statusCode)
         assertEquals(LITELLM_URL, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
-
-        println(trace.attributes)
 
         assertEquals("null", trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")])
         assertEquals("null", trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
