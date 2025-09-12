@@ -14,6 +14,7 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAG
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
@@ -44,16 +45,18 @@ internal class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenA
         body["top_p"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_P, it) }
 
         body["messages"]?.let {
-            for ((index, message) in it.jsonArray.withIndex()) {
-                span.setAttribute("gen_ai.prompt.$index.role", message.jsonObject["role"]?.jsonPrimitive?.content)
-                span.setAttribute("gen_ai.prompt.$index.content", message.jsonObject["content"]?.toString())
+            if (it is JsonArray) {
+                for ((index, message) in it.jsonArray.withIndex()) {
+                    span.setAttribute("gen_ai.prompt.$index.role", message.jsonObject["role"]?.jsonPrimitive?.content)
+                    span.setAttribute("gen_ai.prompt.$index.content", message.jsonObject["content"]?.toString())
+                }
             }
         }
 
         // extracting definitions of tool calls
         // see: https://docs.anthropic.com/en/api/messages#body-tools
         body["tools"]?.let {
-            if (it is kotlinx.serialization.json.JsonArray) {
+            if (it is JsonArray) {
                 for ((index, tool) in it.jsonArray.withIndex()) {
                     span.setAttribute("gen_ai.tool.$index.name", tool.jsonObject["name"]?.jsonPrimitive?.content)
                     span.setAttribute("gen_ai.tool.$index.description", tool.jsonObject["description"]?.jsonPrimitive?.content)

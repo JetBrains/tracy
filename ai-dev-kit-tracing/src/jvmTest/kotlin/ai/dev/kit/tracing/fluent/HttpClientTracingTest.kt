@@ -352,7 +352,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
 
         val client: HttpClient = instrument(mockedClient, provider = HttpClientLLMProvider.OpenAI)
 
-        val response = client.post("$LITELLM_URL/v1/chat/completions") {
+        client.post("$LITELLM_URL/v1/chat/completions") {
             val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
 
             header("Authorization", "Bearer $apiKey")
@@ -390,6 +390,44 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         assertEquals("null", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.role")])
         assertEquals("null", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")])
         assertEquals("null", trace.attributes[AttributeKey.stringKey("gen_ai.response.id")])
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideOpenAIBodies")
+    fun `test tracing for OpenAI doesn't fail when tools are null`(
+        testName: String,
+        endpoint: String,
+        requestBody: String,
+    ) = runTest {
+        val client: HttpClient = instrument(HttpClient(), provider = HttpClientLLMProvider.OpenAI)
+
+        val response = client.post(endpoint) {
+            val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
+
+            header("Authorization", "Bearer $apiKey")
+            header("Content-Type", "application/json")
+            setBody(requestBody)
+        }
+
+        val traces = analyzeSpans()
+
+        assertEquals(1, traces.size)
+        val trace = traces.firstOrNull()
+        assertNotNull(trace)
+
+        val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+
+        assertEquals(StatusCode.OK, trace.status.statusCode)
+        assertEquals(LITELLM_URL, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
+
+        assertEquals(true, trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.isNotEmpty())
+        assertEquals(null, trace.attributes[GEN_AI_REQUEST_TEMPERATURE])
+
+        assertEquals(body["id"]!!.jsonPrimitive.content, trace.attributes[AttributeKey.stringKey("gen_ai.response.id")])
+        assertEquals(true, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")]?.isNotEmpty())
+        assertEquals(true, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]?.isNotEmpty())
+        assertEquals(true, trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.role")]?.isNotEmpty())
+        assertEquals(true, trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]?.isNotEmpty())
     }
 
     @Test
@@ -515,6 +553,67 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
                     ),
                     model = "gpt-4o-mini"
                 )
+            ),
+        )
+
+        @JvmStatic
+        fun provideOpenAIBodies(): Stream<Arguments> = Stream.of(
+            Arguments.of(
+                "Completions API",
+                "$LITELLM_URL/v1/chat/completions",
+                """
+                    {
+                        "model": "gpt-4.1-mini-2025-04-14",
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": "You are a programming task description summarizer",
+                                "tool_calls": null,
+                                "tool_call_id": null,
+                                "logits": null
+                            }
+                        ],
+                        "tools": null,
+                        "tool_choice": null,
+                        "temperature": null,
+                        "top_p": null,
+                        "n": null,
+                        "stream": false,
+                        "stop": null,
+                        "max_tokens": null,
+                        "parallel_tool_calls": null,
+                        "max_completion_tokens": null,
+                        "presence_penalty": null,
+                        "frequency_penalty": null,
+                        "logit_bias": null,
+                        "user": null,
+                        "seed": 100000,
+                        "reasoning_effort": null,
+                        "response_format": null
+                    }
+                """.trimIndent()
+            ),
+            Arguments.of(
+                "Responses API",
+                "$LITELLM_URL/v1/responses",
+                """
+                    {
+                        "model": "gpt-4",
+                        "input": [
+                            {
+                                "role": "user",
+                                "content": "say only the word 'hello' in response."
+                            }
+                        ],
+                        "tools": null,
+                        "temperature": null,
+                        "top_p": null,
+                        "parallel_tool_calls": false,
+                        "stream": false,
+                        "response_format": null,
+                        "tool_choice": null
+                    }
+                """.trimIndent()
             ),
         )
 

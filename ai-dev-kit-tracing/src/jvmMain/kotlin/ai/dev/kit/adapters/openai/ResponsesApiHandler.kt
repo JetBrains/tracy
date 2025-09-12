@@ -56,6 +56,9 @@ internal class ResponsesApiHandler : OpenAIApiHandler {
                                 message.jsonObject["tool_call_id"]?.jsonPrimitive?.content
                             )
                         }
+                        else {
+                            span.setAttribute("gen_ai.prompt.$promptIndex.content", content.toString())
+                        }
                         promptIndex++
                     }
                 }
@@ -66,20 +69,22 @@ internal class ResponsesApiHandler : OpenAIApiHandler {
         }
 
         body["tools"]?.let {
-            for ((index, tool) in it.jsonArray.withIndex()) {
-                span.setAttribute("gen_ai.tool.$index.type", tool.jsonObject["type"]?.jsonPrimitive?.content)
+            if (it is JsonArray) {
+                for ((index, tool) in it.jsonArray.withIndex()) {
+                    span.setAttribute("gen_ai.tool.$index.type", tool.jsonObject["type"]?.jsonPrimitive?.content)
 
-                tool.jsonObject["name"]?.let {
-                    span.setAttribute("gen_ai.tool.$index.name", it.jsonPrimitive.content)
-                }
-                tool.jsonObject["description"]?.let {
-                    span.setAttribute("gen_ai.tool.$index.description", it.jsonPrimitive.content)
-                }
-                tool.jsonObject["parameters"]?.let {
-                    span.setAttribute("gen_ai.tool.$index.parameters", it.jsonObject.toString())
-                }
-                tool.jsonObject["strict"]?.let {
-                    span.setAttribute("gen_ai.tool.$index.strict", it.jsonPrimitive.boolean.toString())
+                    tool.jsonObject["name"]?.let {
+                        span.setAttribute("gen_ai.tool.$index.name", it.jsonPrimitive.content)
+                    }
+                    tool.jsonObject["description"]?.let {
+                        span.setAttribute("gen_ai.tool.$index.description", it.jsonPrimitive.content)
+                    }
+                    tool.jsonObject["parameters"]?.let {
+                        span.setAttribute("gen_ai.tool.$index.parameters", it.jsonObject.toString())
+                    }
+                    tool.jsonObject["strict"]?.let {
+                        span.setAttribute("gen_ai.tool.$index.strict", it.jsonPrimitive.boolean.toString())
+                    }
                 }
             }
         }

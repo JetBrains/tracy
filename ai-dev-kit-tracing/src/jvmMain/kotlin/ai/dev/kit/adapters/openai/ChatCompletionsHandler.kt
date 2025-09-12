@@ -28,13 +28,15 @@ internal class ChatCompletionsHandler : OpenAIApiHandler {
 
         // See: https://platform.openai.com/docs/api-reference/chat/create
         body["tools"]?.let {
-            for ((index, tool) in it.jsonArray.withIndex()) {
-                span.setAttribute("gen_ai.tool.$index.type", tool.jsonObject["type"]?.jsonPrimitive?.content)
-                tool.jsonObject["function"]?.jsonObject?.let {
-                    span.setAttribute("gen_ai.tool.$index.name", it["name"]?.jsonPrimitive?.content)
-                    span.setAttribute("gen_ai.tool.$index.description", it["description"]?.jsonPrimitive?.content)
-                    span.setAttribute("gen_ai.tool.$index.parameters", it["parameters"]?.jsonObject?.toString())
-                    span.setAttribute("gen_ai.tool.$index.strict", it["strict"]?.jsonPrimitive?.boolean.toString())
+            if (it is JsonArray) {
+                for ((index, tool) in it.jsonArray.withIndex()) {
+                    span.setAttribute("gen_ai.tool.$index.type", tool.jsonObject["type"]?.jsonPrimitive?.content)
+                    tool.jsonObject["function"]?.jsonObject?.let {
+                        span.setAttribute("gen_ai.tool.$index.name", it["name"]?.jsonPrimitive?.content)
+                        span.setAttribute("gen_ai.tool.$index.description", it["description"]?.jsonPrimitive?.content)
+                        span.setAttribute("gen_ai.tool.$index.parameters", it["parameters"]?.jsonObject?.toString())
+                        span.setAttribute("gen_ai.tool.$index.strict", it["strict"]?.jsonPrimitive?.boolean.toString())
+                    }
                 }
             }
         }

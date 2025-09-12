@@ -19,7 +19,7 @@ class AiDevKitTraceGradlePlugin : KotlinCompilerPluginSupportPlugin {
     override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
         groupId = "com.jetbrains",
         artifactId = "ai-dev-kit-trace-plugin",
-        version = "1.0.16"
+        version = "1.0.17"
     )
 
     override fun getPluginArtifactForNative(): SubpluginArtifact? = null

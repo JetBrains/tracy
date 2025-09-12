@@ -5,7 +5,7 @@ plugins {
 
 }
 group = "com.jetbrains"
-version = "1.0.16"
+version = "1.0.17"
 
 subprojects {
     group = rootProject.group
