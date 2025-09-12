@@ -1,14 +1,18 @@
 package ai.dev.kit.tracing.fluent.processor
 
 import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.fluent.*
+import ai.dev.kit.tracing.fluent.FluentSpanAttributes
+import ai.dev.kit.tracing.fluent.KotlinFlowTrace
+import ai.dev.kit.tracing.fluent.TracingSessionProvider
+import ai.dev.kit.tracing.fluent.addOutputAttributesToTracing
+import ai.dev.kit.tracing.fluent.configureTracingMetadata
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.context.Context
 import io.opentelemetry.extension.kotlin.asContextElement
 import io.opentelemetry.extension.kotlin.getOpenTelemetryContext
 import kotlinx.coroutines.withContext
-import java.lang.reflect.Method
+import kotlin.jvm.internal.CallableReference
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KFunction
@@ -21,8 +25,7 @@ actual inline fun <T> withTrace(
     traceAnnotation: KotlinFlowTrace,
     block: () -> T
 ): T {
-    val method = function.javaMethod ?: throw IllegalArgumentException("Function must be a Java method")
-    val span = createSpan(traceAnnotation, method, args)
+    val span = createSpan(function, args, traceAnnotation)
     val scope = span.makeCurrent()
     try {
         val result = block()
@@ -76,9 +79,8 @@ actual suspend inline fun <T> withTraceSuspended(
     traceAnnotation: KotlinFlowTrace,
     crossinline block: suspend () -> T
 ): T {
-    val method = function.javaMethod ?: throw IllegalArgumentException("Function must be a Java method")
     val span = createSpan(
-        traceAnnotation, method, args, getOpenTelemetryContext(coroutineContext)
+        function, args, traceAnnotation, getOpenTelemetryContext(coroutineContext)
     )
     try {
         val result = withContext(span.asContextElement()) {
@@ -97,22 +99,24 @@ actual suspend inline fun <T> withTraceSuspended(
 }
 
 fun createSpan(
-    traceAnnotation: KotlinFlowTrace,
-    method: Method,
+    function: KFunction<*>,
     args: Array<Any?>,
+    traceAnnotation: KotlinFlowTrace,
     context: Context = Context.current(),
 ): Span {
     val tracer = TracingManager.tracer
+    val method = function.javaMethod ?: throw IllegalArgumentException("Function must be a Java method")
+    val boundReceiverDeclaringClassName = (function as? CallableReference)?.boundReceiver?.javaClass?.name
 
     /**
      * Resolution pipeline:
-     * 1. If [ai.dev.kit.tracing.fluent.handlers.SpanMetadataCustomizer.resolveSpanName]
-     *    returns a non-null value, that name is used.
+     * 1. If this method returns a non-null value, that name is used.
      * 2. Otherwise, the tracing system checks the annotation name.
      * 3. If blank, the method name is used.
      */
-    val spanName = traceAnnotation.getSpanAttributeHandler().resolveSpanName(method, args)
-        ?: traceAnnotation.name.ifBlank { method.name }
+    val spanName =
+        traceAnnotation.getSpanAttributeHandler().resolveSpanName(method, args, boundReceiverDeclaringClassName)
+            ?: traceAnnotation.name.ifBlank { method.name }
     val spanBuilder = tracer.spanBuilder(spanName)
     TracingSessionProvider.currentSessionId?.let {
         spanBuilder.setAttribute(FluentSpanAttributes.SOURCE_RUN.key, it)
