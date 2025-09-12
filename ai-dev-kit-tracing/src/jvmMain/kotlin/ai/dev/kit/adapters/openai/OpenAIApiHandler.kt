@@ -4,6 +4,7 @@ import ai.dev.kit.adapters.Url
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
@@ -23,7 +24,7 @@ internal object OpenAIApiUtils {
      * Sets common request attributes (temperature, model, API base)
      */
     fun setCommonRequestAttributes(span: Span, url: Url, body: JsonObject) {
-        body["temperature"]?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.jsonPrimitive.content.toDouble()) }
+        body["temperature"]?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.jsonPrimitive.doubleOrNull) }
         body["model"]?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it.jsonPrimitive.content) }
     }
     

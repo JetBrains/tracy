@@ -15,8 +15,8 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystem
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.double
-import kotlinx.serialization.json.int
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -71,15 +71,15 @@ internal class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSy
 
         // See: https://ai.google.dev/api/generate-content#v1beta.GenerationConfig
         body["generationConfig"]?.let {
-            it.jsonObject["candidateCount"]?.jsonPrimitive?.int?.let {
+            it.jsonObject["candidateCount"]?.jsonPrimitive?.intOrNull?.let {
                 span.setAttribute(GEN_AI_REQUEST_CHOICE_COUNT, it.toLong())
             }
-            it.jsonObject["maxOutputTokens"]?.jsonPrimitive?.int?.let {
+            it.jsonObject["maxOutputTokens"]?.jsonPrimitive?.intOrNull?.let {
                 span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it.toLong())
             }
-            it.jsonObject["temperature"]?.jsonPrimitive?.double?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it) }
-            it.jsonObject["topP"]?.jsonPrimitive?.double?.let { span.setAttribute(GEN_AI_REQUEST_TOP_P, it) }
-            it.jsonObject["topK"]?.jsonPrimitive?.double?.let { span.setAttribute(GEN_AI_REQUEST_TOP_K, it) }
+            it.jsonObject["temperature"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it) }
+            it.jsonObject["topP"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_P, it) }
+            it.jsonObject["topK"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_K, it) }
         }
     }
 
@@ -126,13 +126,13 @@ internal class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSy
         }
 
         body["usageMetadata"]?.let { usage ->
-            usage.jsonObject["promptTokenCount"]?.jsonPrimitive?.int?.let {
+            usage.jsonObject["promptTokenCount"]?.jsonPrimitive?.intOrNull?.let {
                 span.setAttribute(GEN_AI_USAGE_INPUT_TOKENS, it)
             }
-            usage.jsonObject["candidatesTokenCount"]?.jsonPrimitive?.int?.let {
+            usage.jsonObject["candidatesTokenCount"]?.jsonPrimitive?.intOrNull?.let {
                 span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
             }
-            usage.jsonObject["totalTokenCount"]?.jsonPrimitive?.int?.let {
+            usage.jsonObject["totalTokenCount"]?.jsonPrimitive?.intOrNull?.let {
                 span.setAttribute("gen_ai.usage.total_tokens", it.toLong())
             }
 
@@ -166,7 +166,7 @@ internal class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSy
                 detail.jsonObject["modality"]?.let {
                     span.setAttribute("gen_ai.usage.$snakeCasedAttribute.$index.modality", it.jsonPrimitive.content)
                 }
-                detail.jsonObject["tokenCount"]?.jsonPrimitive?.int?.let {
+                detail.jsonObject["tokenCount"]?.jsonPrimitive?.intOrNull?.let {
                     span.setAttribute("gen_ai.usage.$snakeCasedAttribute.$index.token_count", it.toLong())
                 }
             }

@@ -147,10 +147,10 @@ internal class ResponsesApiHandler : OpenAIApiHandler {
      * Sets usage attributes (input_tokens/output_tokens)
      */
     private fun setUsageAttributes(span: Span, usage: JsonObject) {
-        usage["input_tokens"]?.jsonPrimitive?.int?.let {
+        usage["input_tokens"]?.jsonPrimitive?.intOrNull?.let {
             span.setAttribute(GEN_AI_USAGE_INPUT_TOKENS, it)
         }
-        usage["output_tokens"]?.jsonPrimitive?.int?.let {
+        usage["output_tokens"]?.jsonPrimitive?.intOrNull?.let {
             span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
         }
     }

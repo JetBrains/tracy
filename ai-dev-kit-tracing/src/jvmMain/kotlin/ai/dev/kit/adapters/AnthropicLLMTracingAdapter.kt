@@ -14,17 +14,17 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAG
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.double
-import kotlinx.serialization.json.int
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 internal class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.ANTHROPIC) {
     override fun getRequestBodyAttributes(span: Span, url: Url, body: JsonObject) {
-        body["temperature"]?.jsonPrimitive?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.content.toDouble()) }
+        body["temperature"]?.jsonPrimitive?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.doubleOrNull) }
         body["model"]?.jsonPrimitive?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it.content) }
-        body["max_tokens"]?.jsonPrimitive?.int?.let { span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it.toLong()) }
+        body["max_tokens"]?.jsonPrimitive?.intOrNull?.let { span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it.toLong()) }
 
         // metadata
         body["metadata"]?.jsonObject?.let { metadata ->
@@ -40,8 +40,8 @@ internal class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenA
             system["type"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.prompt.system.type", it.content) }
         }
 
-        body["top_k"]?.jsonPrimitive?.double?.let { span.setAttribute(GEN_AI_REQUEST_TOP_K, it) }
-        body["top_p"]?.jsonPrimitive?.double?.let { span.setAttribute(GEN_AI_REQUEST_TOP_P, it) }
+        body["top_k"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_K, it) }
+        body["top_p"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_P, it) }
 
         body["messages"]?.let {
             for ((index, message) in it.jsonArray.withIndex()) {
@@ -117,16 +117,16 @@ internal class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenA
 
         // collecting usage stats (e.g., input/output tokens)
         body["usage"]?.jsonObject?.let { usage ->
-            usage["input_tokens"]?.jsonPrimitive?.int?.let {
+            usage["input_tokens"]?.jsonPrimitive?.intOrNull?.let {
                 span.setAttribute(GEN_AI_USAGE_INPUT_TOKENS, it)
             }
-            usage["output_tokens"]?.jsonPrimitive?.int?.let {
+            usage["output_tokens"]?.jsonPrimitive?.intOrNull?.let {
                 span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
             }
-            usage["cache_creation_input_tokens"]?.jsonPrimitive?.int?.let {
+            usage["cache_creation_input_tokens"]?.jsonPrimitive?.intOrNull?.let {
                 span.setAttribute("gen_ai.usage.cache_creation_input_tokens", it.toLong())
             }
-            usage["cache_read_input_tokens"]?.jsonPrimitive?.int?.let {
+            usage["cache_read_input_tokens"]?.jsonPrimitive?.intOrNull?.let {
                 span.setAttribute("gen_ai.usage.cache_read_input_tokens", it.toLong())
             }
             usage["service_tier"]?.jsonPrimitive?.let {

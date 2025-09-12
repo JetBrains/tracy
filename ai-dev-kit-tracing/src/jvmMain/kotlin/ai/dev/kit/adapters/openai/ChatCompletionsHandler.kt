@@ -18,7 +18,7 @@ internal class ChatCompletionsHandler : OpenAIApiHandler {
             for ((index, message) in it.jsonArray.withIndex()) {
                 val role = message.jsonObject["role"]?.jsonPrimitive?.content
                 span.setAttribute("gen_ai.prompt.$index.role", role)
-                span.setAttribute("gen_ai.prompt.$index.content", message.jsonObject["content"]?.toString())
+                span.setAttribute("gen_ai.prompt.$index.content", message.jsonObject["content"]?.jsonPrimitive?.content)
 
                 // when a tool result is encountered
                 if (role?.lowercase() == "tool") {
@@ -46,7 +46,7 @@ internal class ChatCompletionsHandler : OpenAIApiHandler {
         
         body["choices"]?.let {
             for ((index, choice) in it.jsonArray.withIndex()) {
-                val index = choice.jsonObject["index"]?.jsonPrimitive?.int ?: index
+                val index = choice.jsonObject["index"]?.jsonPrimitive?.intOrNull ?: index
 
                 span.setAttribute(
                     "gen_ai.completion.$index.finish_reason",
@@ -103,10 +103,10 @@ internal class ChatCompletionsHandler : OpenAIApiHandler {
      * Sets usage attributes (prompt_tokens/completion_tokens)
      */
     private fun setUsageAttributes(span: Span, usage: JsonObject) {
-        usage["prompt_tokens"]?.jsonPrimitive?.int?.let {
+        usage["prompt_tokens"]?.jsonPrimitive?.intOrNull?.let {
             span.setAttribute(GEN_AI_USAGE_INPUT_TOKENS, it)
         }
-        usage["completion_tokens"]?.jsonPrimitive?.int?.let {
+        usage["completion_tokens"]?.jsonPrimitive?.intOrNull?.let {
             span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
         }
     }
