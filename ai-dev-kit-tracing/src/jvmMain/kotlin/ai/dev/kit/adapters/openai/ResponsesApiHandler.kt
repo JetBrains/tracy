@@ -56,6 +56,9 @@ internal class ResponsesApiHandler : OpenAIApiHandler {
                                 message.jsonObject["tool_call_id"]?.jsonPrimitive?.content
                             )
                         }
+                        else {
+                            span.setAttribute("gen_ai.prompt.$promptIndex.content", content.toString())
+                        }
                         promptIndex++
                     }
                 }
