@@ -6,10 +6,15 @@ import ai.dev.kit.adapters.Url
 import ai.dev.kit.tracing.TracingManager
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.utils.*
 import io.ktor.http.*
 import io.ktor.utils.io.*
+import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.io.Buffer
 import kotlinx.io.InternalIoApi
 import kotlinx.io.readString
@@ -18,7 +23,10 @@ import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
@@ -61,6 +69,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
         val tracer = TracingManager.tracer
 
         val span = tracer.spanBuilder("http-client-span").startSpan()
+        var isStreamingRequest = false
 
         span.makeCurrent().use { scopeIgnored ->
             config.install(createClientPlugin("NetworkParamsPlugin") {
@@ -82,6 +91,8 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                             JsonObject(emptyMap())
                         }
 
+                        isStreamingRequest = body["stream"]?.jsonPrimitive?.boolean == true
+
                         adapter.registerRequest(
                             span = span,
                             url = Url(
@@ -100,6 +111,20 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 }
 
                 onResponse { response ->
+                    if (isStreamingRequest) {
+                        val streamingMarker = JsonObject(mapOf("stream" to JsonPrimitive(true)))
+
+                        adapter.registerResponse(
+                            span = span,
+                            contentType = response.contentType()
+                                ?.let { ContentType(it.contentType, it.contentSubtype) },
+                            responseCode = response.status.value.toLong(),
+                            responseBody = streamingMarker,
+                        )
+
+                        wrapStreamingResponse(response, span)
+                        return@onResponse
+                    }
                     try {
                         val body = try {
                             // peek the response body to avoid consuming the underlying channel
@@ -130,7 +155,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                         span.recordException(e)
                         throw e
                     } finally {
-                        span.end()
+                        if (!isStreamingRequest) span.end()
                     }
                 }
             })
@@ -152,6 +177,39 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
             }
         } catch (_: Exception) {
             null
+        }
+    }
+    private suspend fun wrapStreamingResponse(originalResponse: HttpResponse, span: Span) {
+        val upstream = originalResponse.bodyAsChannel()
+        val channel = ByteChannel(autoFlush = true)
+        val capturedText = StringBuilder()
+
+        CoroutineScope(originalResponse.coroutineContext).launch {
+            try {
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                while (!upstream.isClosedForRead) {
+                    val bytesRead = upstream.readAvailable(buffer, 0, buffer.size)
+                    if (bytesRead == -1) break
+                    if (bytesRead > 0) {
+                        capturedText.append(buffer.decodeToString(0, bytesRead))
+                        channel.writeFully(buffer, 0, bytesRead)
+                        channel.flush()
+                    }
+                }
+                upstream.cancel()
+            } catch (e: Exception) {
+                span.setStatus(StatusCode.ERROR)
+                span.recordException(e)
+                if (!channel.isClosedForWrite) channel.close(e)
+                throw e
+            } finally {
+                try {
+                    adapter.handleStreaming(span, capturedText.toString())
+                } finally {
+                    span.end()
+                }
+                if (!channel.isClosedForWrite) channel.close()
+            }
         }
     }
 
