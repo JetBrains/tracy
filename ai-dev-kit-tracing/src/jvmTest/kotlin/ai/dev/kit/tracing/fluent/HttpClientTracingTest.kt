@@ -14,6 +14,8 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.utils.io.*
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TEMPERATURE
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
@@ -260,6 +262,101 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         assertEquals("invalid_request", trace.attributes[AttributeKey.stringKey("gen_ai.error.code")])
         assertEquals("exception", trace.attributes[AttributeKey.stringKey("gen_ai.error.type")])
         assertEquals(400, trace.attributes[AttributeKey.longKey("http.status_code")])
+
+        // assert that tracing doesn't consume the response body
+        assertTrue(response.bodyAsText().isNotEmpty())
+    }
+
+    @Test
+    fun `test tracing for OpenAI doesn't fail when all properties are null`() = runTest {
+        val mockedClient = HttpClient(MockEngine) {
+            engine {
+                addHandler { _ ->
+                    respond(
+                        content = ByteReadChannel(
+                        """
+                                {
+                                  "id": null,
+                                  "object": "chat.completion",
+                                  "model": null,
+                                  "choices": [
+                                    {
+                                      "index": null,
+                                      "message": {
+                                        "role": null,
+                                        "content": null,
+                                        "refusal": null,
+                                        "annotations": null
+                                      },
+                                      "logprobs": null,
+                                      "finish_reason": null
+                                    }
+                                  ],
+                                  "usage": {
+                                    "prompt_tokens": null,
+                                    "completion_tokens": null,
+                                    "total_tokens": null,
+                                    "prompt_tokens_details": {
+                                      "cached_tokens": null,
+                                      "audio_tokens": null
+                                    }
+                                  },
+                                  "service_tier": null
+                                }
+                            """.trimIndent()
+                        ),
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(
+                            HttpHeaders.ContentType,
+                            ContentType.Application.Json.toString()
+                        )
+                    )
+                }
+            }
+        }
+
+        val client: HttpClient = instrument(mockedClient, provider = HttpClientLLMProvider.OpenAI)
+
+        val response = client.post("$LITELLM_URL/v1/chat/completions") {
+            val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
+
+            header("Authorization", "Bearer $apiKey")
+            header("Content-Type", "application/json")
+            setBody(
+                """
+                {
+                    "messages": [
+                        {
+                            "role": null,
+                            "content": null
+                        }
+                    ],
+                    "model": null,
+                    "temperature": null
+                }
+            """.trimIndent()
+            )
+        }
+
+        val traces = analyzeSpans()
+
+        assertEquals(1, traces.size)
+        val trace = traces.firstOrNull()
+        assertNotNull(trace)
+
+        assertEquals(StatusCode.OK, trace.status.statusCode)
+        assertEquals(LITELLM_URL, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
+
+        println(trace.attributes)
+
+        assertEquals("null", trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")])
+        assertEquals("null", trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
+        assertEquals(null, trace.attributes[GEN_AI_REQUEST_TEMPERATURE])
+        assertEquals("null", trace.attributes[GEN_AI_REQUEST_MODEL])
+        assertEquals("null", trace.attributes[AttributeKey.stringKey("gen_ai.response.model")])
+        assertEquals("null", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.role")])
+        assertEquals("null", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")])
+        assertEquals("null", trace.attributes[AttributeKey.stringKey("gen_ai.response.id")])
 
         // assert that tracing doesn't consume the response body
         assertTrue(response.bodyAsText().isNotEmpty())
