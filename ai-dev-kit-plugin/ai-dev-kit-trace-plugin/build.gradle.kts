@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.jetbrains"
-version = "1.0.17-junie"
+version = "1.0.17-junie-version"
 
 repositories {
     mavenCentral()
