@@ -5,7 +5,7 @@ plugins {
 
 }
 group = "com.jetbrains"
-version = "1.0.17-junie-support"
+version = "1.0.17-junie"
 
 subprojects {
     group = rootProject.group
@@ -25,7 +25,8 @@ subprojects {
 
 tasks.register("publishContentModules") {
     group = "publishing"
-    description = "Publishes all modules that apply the ai.dev.kit.space.publishing plugin. All important modules except plugin"
+    description =
+        "Publishes all modules that apply the ai.dev.kit.space.publishing plugin. All important modules except plugin"
     val publishTasks = subprojects.filter { subproject ->
         subproject.plugins.hasPlugin("ai.dev.kit.space.publishing")
     }.mapNotNull { subproject ->
