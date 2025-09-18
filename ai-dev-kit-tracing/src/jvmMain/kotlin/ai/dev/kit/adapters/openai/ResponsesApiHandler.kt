@@ -10,6 +10,7 @@ import kotlinx.serialization.json.*
  * Handler for OpenAI Responses API
  */
 internal class ResponsesApiHandler : OpenAIApiHandler {
+    private val SUPPORTED_TYPES = listOf("reasoning", "function_call", "function_call_output")
 
     override fun handleRequestAttributes(span: Span, url: Url, body: JsonObject) {
         OpenAIApiUtils.setCommonRequestAttributes(span, url, body)
@@ -18,6 +19,18 @@ internal class ResponsesApiHandler : OpenAIApiHandler {
             if (input is JsonArray) {
                 var promptIndex = 0
                 for (message in input.jsonArray) {
+                    val type = message.jsonObject["type"]?.jsonPrimitive?.content
+
+                    if (type in SUPPORTED_TYPES) {
+                        val obj = message.jsonObject
+                        for ((key, value) in obj) {
+                            val content = if (value is JsonPrimitive) value.content else value.toString()
+                            span.setAttribute("gen_ai.prompt.$promptIndex.$key", content)
+                        }
+                        promptIndex++
+                        continue
+                    }
+
                     val role = message.jsonObject["role"]?.jsonPrimitive?.content
                     val content = message.jsonObject["content"]
                     span.setAttribute("gen_ai.prompt.$promptIndex.role", role)
@@ -55,8 +68,7 @@ internal class ResponsesApiHandler : OpenAIApiHandler {
                                 "gen_ai.prompt.$promptIndex.tool_call_id",
                                 message.jsonObject["tool_call_id"]?.jsonPrimitive?.content
                             )
-                        }
-                        else {
+                        } else {
                             span.setAttribute("gen_ai.prompt.$promptIndex.content", content.toString())
                         }
                         promptIndex++
