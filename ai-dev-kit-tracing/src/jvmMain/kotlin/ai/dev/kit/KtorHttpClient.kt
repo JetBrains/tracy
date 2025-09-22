@@ -5,6 +5,7 @@ import ai.dev.kit.adapters.ContentType
 import ai.dev.kit.adapters.Url
 import ai.dev.kit.tracing.TracingManager
 import io.ktor.client.*
+import io.ktor.client.call.save
 import io.ktor.client.plugins.api.*
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
@@ -180,7 +181,8 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
         }
     }
     private suspend fun wrapStreamingResponse(originalResponse: HttpResponse, span: Span) {
-        val upstream = originalResponse.bodyAsChannel()
+        val savedCall = originalResponse.call.save()
+        val upstream = savedCall.response.bodyAsChannel()
         val channel = ByteChannel(autoFlush = true)
         val capturedText = StringBuilder()
 
