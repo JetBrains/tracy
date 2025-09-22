@@ -43,6 +43,7 @@ enum class HttpClientLLMProvider {
     OpenAI,
     Anthropic,
     Gemini,
+    Grazie
 }
 
 /**
@@ -57,6 +58,7 @@ fun instrument(client: HttpClient, provider: HttpClientLLMProvider): HttpClient 
         HttpClientLLMProvider.OpenAI -> OpenAILLMTracingAdapter()
         HttpClientLLMProvider.Anthropic -> AnthropicLLMTracingAdapter()
         HttpClientLLMProvider.Gemini -> GeminiLLMTracingAdapter()
+        HttpClientLLMProvider.Grazie -> GrazieLLMTracingAdapter()
     }
 
     return client.config {
@@ -92,7 +94,8 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                             JsonObject(emptyMap())
                         }
 
-                        isStreamingRequest = body["stream"]?.jsonPrimitive?.boolean == true
+                        isStreamingRequest =
+                            body["stream"]?.jsonPrimitive?.boolean == true || request.url.toString().contains("stream")
 
                         adapter.registerRequest(
                             span = span,

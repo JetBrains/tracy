@@ -5,6 +5,11 @@ plugins {
     id("ai.dev.kit.space.publishing")
 }
 
+repositories {
+    mavenCentral()
+    maven("https://packages.jetbrains.team/maven/p/grazi/grazie-platform-public/")
+}
+
 kotlin {
     jvm {
         compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
@@ -54,6 +59,8 @@ kotlin {
 
         val jvmTest by getting {
             dependencies {
+                implementation("ai.grazie.api:api-gateway-client-jvm:0.8.9")
+                implementation("ai.grazie.client:client-ktor-jvm:0.8.9")
                 implementation(libs.kotlin.test)
                 implementation(libs.junit.params)
                 implementation(libs.kotlinx.coroutines.test)
