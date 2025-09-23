@@ -11,6 +11,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.utils.*
 import io.ktor.http.*
+import io.ktor.util.AttributeKey
 import io.ktor.utils.io.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
@@ -71,100 +72,136 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
     fun setup(config: HttpClientConfig<*>) {
         val tracer = TracingManager.tracer
 
-        val span = tracer.spanBuilder("http-client-span").startSpan()
-        var isStreamingRequest = false
+        // Per-request storage keys
+        val SpanKey = AttributeKey<io.opentelemetry.api.trace.Span>("HttpClientSpan")
+        val ScopeKey = AttributeKey<io.opentelemetry.context.Scope>("HttpClientSpanScope")
+        val StreamingKey = AttributeKey<Boolean>("HttpClientIsStreaming")
 
-        span.makeCurrent().use { scopeIgnored ->
-            config.install(createClientPlugin("NetworkParamsPlugin") {
-                onRequest { request, _ ->
-                    try {
-                        val body = try {
-                            val bodyType = request.bodyType?.type
-                            when {
-                                request.body is EmptyContent -> JsonObject(emptyMap())
-                                (bodyType != null) && bodyType.hasAnnotation<Serializable>() -> {
-                                    serializeToJson(request.body)
-                                        ?.let { Json.parseToJsonElement(it).jsonObject }
-                                        ?: JsonObject(emptyMap())
-                                }
+        config.install(createClientPlugin("NetworkParamsPlugin") {
+            onRequest { request, _ ->
+                // ---- create a fresh span per request
+                val span = tracer.spanBuilder("http-client-span").startSpan()
+                val scope = span.makeCurrent()
 
-                                else -> Json.parseToJsonElement(request.body.toString()).jsonObject
+                // store for onResponse
+                request.attributes.put(SpanKey, span)
+                request.attributes.put(ScopeKey, scope)
+
+                try {
+                    val body = try {
+                        val bodyType = request.bodyType?.type
+                        when {
+                            request.body is EmptyContent -> JsonObject(emptyMap())
+                            (bodyType != null) && bodyType.hasAnnotation<Serializable>() -> {
+                                serializeToJson(request.body)
+                                    ?.let { Json.parseToJsonElement(it).jsonObject }
+                                    ?: JsonObject(emptyMap())
                             }
-                        } catch (_: Exception) {
-                            JsonObject(emptyMap())
+
+                            else -> Json.parseToJsonElement(request.body.toString()).jsonObject
                         }
-
-                        isStreamingRequest =
-                            body["stream"]?.jsonPrimitive?.boolean == true || request.url.toString().contains("stream")
-
-                        adapter.registerRequest(
-                            span = span,
-                            url = Url(
-                                scheme = request.url.protocol.name,
-                                host = request.url.host,
-                                pathSegments = request.url.pathSegments,
-                            ),
-                            requestBody = body
-                        )
-                    } catch (e: Exception) {
-                        span.setStatus(StatusCode.ERROR)
-                        span.recordException(e)
-                        span.end()
-                        throw e
+                    } catch (_: Exception) {
+                        JsonObject(emptyMap())
                     }
+
+                    val isStreamingRequest =
+                        body["stream"]?.jsonPrimitive?.boolean == true ||
+                                request.url.toString().contains("stream")
+
+                    request.attributes.put(StreamingKey, isStreamingRequest)
+
+                    adapter.registerRequest(
+                        span = span,
+                        url = Url(
+                            scheme = request.url.protocol.name,
+                            host = request.url.host,
+                            pathSegments = request.url.pathSegments,
+                        ),
+                        requestBody = body
+                    )
+                } catch (e: Exception) {
+                    // mark error and close early since onResponse may never run
+                    span.setStatus(StatusCode.ERROR)
+                    span.recordException(e)
+                    // close scope then end span
+                    try {
+                        scope.close()
+                    } catch (_: Throwable) {
+                    }
+                    span.end()
+                    throw e
+                }
+            }
+
+            onResponse { response ->
+                // read per-request state
+                val span = runCatching { response.call.request.attributes[SpanKey] }.getOrNull()
+                val scope = runCatching { response.call.request.attributes[ScopeKey] }.getOrNull()
+                val isStreamingRequest =
+                    runCatching { response.call.request.attributes[StreamingKey] }.getOrNull() ?: false
+
+                if (span == null || scope == null) {
+                    // nothing to do (defensive: if onRequest failed before storing attrs)
+                    return@onResponse
                 }
 
-                onResponse { response ->
-                    if (isStreamingRequest) {
-                        val streamingMarker = JsonObject(mapOf("stream" to JsonPrimitive(true)))
+                if (isStreamingRequest) {
+                    val streamingMarker = JsonObject(mapOf("stream" to JsonPrimitive(true)))
 
-                        adapter.registerResponse(
-                            span = span,
-                            contentType = response.contentType()
-                                ?.let { ContentType(it.contentType, it.contentSubtype) },
-                            responseCode = response.status.value.toLong(),
-                            responseBody = streamingMarker,
-                        )
+                    adapter.registerResponse(
+                        span = span,
+                        contentType = response.contentType()
+                            ?.let { ContentType(it.contentType, it.contentSubtype) },
+                        responseCode = response.status.value.toLong(),
+                        responseBody = streamingMarker,
+                    )
 
-                        wrapStreamingResponse(response, span)
-                        return@onResponse
-                    }
-                    try {
-                        val body = try {
-                            // peek the response body to avoid consuming the underlying channel
-                            val responseString = run {
-                                // NOTE: we must first peek and only then await.
-                                // otherwise there are cases when an empty body gets peeked
-                                val peeked = response.rawContent.readBuffer.peek()
-                                response.rawContent.awaitContent(Int.MAX_VALUE)
-                                peeked.request(Long.MAX_VALUE)
-                                val buffer = Buffer()
-                                buffer.write(peeked, peeked.buffer.size)
-                                buffer.readString()
-                            }
-                            Json.parseToJsonElement(responseString).jsonObject
-                        } catch (_: Exception) {
-                            JsonObject(emptyMap())
-                        }
-
-                        adapter.registerResponse(
-                            span = span,
-                            contentType = response.contentType()
-                                ?.let { ContentType(it.contentType, it.contentSubtype) },
-                            responseCode = response.status.value.toLong(),
-                            responseBody = body,
-                        )
-                    } catch (e: Exception) {
-                        span.setStatus(StatusCode.ERROR)
-                        span.recordException(e)
-                        throw e
-                    } finally {
-                        if (!isStreamingRequest) span.end()
-                    }
+                    // Wrap the streaming response so the span ends when the stream completes
+                    wrapStreamingResponse(response, span)
+                    return@onResponse
                 }
-            })
-        }
+
+                try {
+                    val body = try {
+                        // Non-destructive peek with a bounded copy to avoid huge allocations
+                        val responseString = run {
+                            val peeked = response.rawContent.readBuffer.peek()
+                            response.rawContent.awaitContent(Int.MAX_VALUE)
+                            // Limit copied bytes to, say, 256 KiB (tune as needed)
+                            val toCopy = minOf(peeked.buffer.size, 256 * 1024L)
+                            peeked.request(toCopy)
+                            val buffer = Buffer()
+                            buffer.write(peeked, toCopy)
+                            buffer.readString()
+                        }
+                        Json.parseToJsonElement(responseString).jsonObject
+                    } catch (_: Exception) {
+                        JsonObject(emptyMap())
+                    }
+
+                    adapter.registerResponse(
+                        span = span,
+                        contentType = response.contentType()
+                            ?.let { ContentType(it.contentType, it.contentSubtype) },
+                        responseCode = response.status.value.toLong(),
+                        responseBody = body,
+                    )
+                } catch (e: Exception) {
+                    span.setStatus(StatusCode.ERROR)
+                    span.recordException(e)
+                    throw e
+                } finally {
+                    // Non-streaming: always close scope then end span
+                    try {
+                        scope.close()
+                    } catch (_: Throwable) {
+                    }
+                    span.end()
+                }
+            }
+        })
     }
+
 
     /**
      * Helper function to serialize `@Serializable` objects with an unknown type
@@ -183,6 +220,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
             null
         }
     }
+
     private suspend fun wrapStreamingResponse(originalResponse: HttpResponse, span: Span) {
         val savedCall = originalResponse.call.save()
         val upstream = savedCall.response.bodyAsChannel()

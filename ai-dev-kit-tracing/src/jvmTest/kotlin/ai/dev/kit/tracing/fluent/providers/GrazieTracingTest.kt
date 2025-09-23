@@ -3,6 +3,8 @@ package ai.dev.kit.tracing.fluent.providers
 import ai.dev.kit.HttpClientLLMProvider
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.dev.kit.tracing.LangfuseConfig
+import ai.dev.kit.tracing.TracingManager
 import ai.grazie.api.gateway.client.DefaultUrlResolver
 import ai.grazie.api.gateway.client.PlatformConfigurationUrl
 import ai.grazie.api.gateway.client.ResolutionResult
@@ -15,9 +17,12 @@ import ai.grazie.model.cloud.AuthType
 import ai.grazie.model.llm.profile.OpenAIProfileIDs
 import ai.grazie.model.llm.prompt.LLMPromptID
 import ai.grazie.utils.http.PlatformHttpClient
+import ai.grazie.utils.json.JSONObject
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import kotlin.String
 
 suspend fun configureClient(userToken: String = "???"): SuspendableAPIGatewayClient {
     val httpClient = SuspendableHTTPClient.WithV5(
@@ -53,12 +58,13 @@ suspend fun callToChat(client: SuspendableAPIGatewayClient) {
             system("You are a helpful assistant")
             user("When was the first version of IntelliJ IDEA released?")
         }
+        temperature = 0.7
+        topP = 0.6
     }
     // Display the response
     chatResponseStream.collect {
         print(it.content)
     }
-    val f = 4
 }
 
 @Tag("SkipForNonLocal")
@@ -67,5 +73,22 @@ class GrazieTracingTest : BaseOpenTelemetryTracingTest() {
     fun `test OpenAI chat completions auto tracing`() = runTest {
         val grazie = configureClient()
         callToChat(grazie)
+    }
+}
+
+class A {
+    @Test
+    fun test() = runBlocking {
+        TracingManager.setup(
+            LangfuseConfig(
+                langfuseUrl = "https://langfuse.labs.jb.gg/",
+                langfusePublicKey = "???",
+                langfuseSecretKey = "???"
+            )
+        )
+        val grazie = configureClient()
+        callToChat(grazie)
+        TracingManager.flushTraces()
+        return@runBlocking
     }
 }
