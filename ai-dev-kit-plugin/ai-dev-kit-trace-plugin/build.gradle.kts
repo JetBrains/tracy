@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
 
 plugins {
-    id("org.jetbrains.kotlin.multiplatform") version "2.1.0"
+    id("org.jetbrains.kotlin.multiplatform") version "2.2.10"
     `maven-publish`
 }
 

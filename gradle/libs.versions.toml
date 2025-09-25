@@ -1,6 +1,6 @@
 [versions]
 junit = "5.10.0"
-kotlin = "2.1.0"
+kotlin = "2.2.10"
 kotlinx-coroutines = "1.9.0"
 kotlinx-dataframe = "0.15.0"
 kotlinx-serialization = "1.5.1"
@@ -49,8 +49,8 @@ opentelemetry-sdk-testing = { module = "io.opentelemetry:opentelemetry-sdk-testi
 
 snakeyaml = { module = "org.yaml:snakeyaml", version.ref = "snakeyaml" }
 testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
-kotlin-logging = {    module = "io.github.microutils:kotlin-logging", version.ref = "logging"}
-logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback"}
+kotlin-logging = { module = "io.github.microutils:kotlin-logging", version.ref = "logging" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

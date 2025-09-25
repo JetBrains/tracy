@@ -13,14 +13,14 @@ import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
-import org.jetbrains.kotlin.ir.IrElement
+import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
+import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.Name
 
@@ -35,14 +35,9 @@ class AiDevKitTraceGeneratorExtension : IrGenerationExtension {
         val withTraceSuspendedSymbol = pluginContext.referenceFunctions(
             CallableId(FqName("ai.dev.kit.tracing.fluent.processor"), Name.identifier("withTraceSuspended"))
         ).findMultiplatformSymbol()
-
-        moduleFragment.accept(object : IrElementVisitorVoid {
-            override fun visitElement(element: IrElement) {
-                element.acceptChildren(this, null)
-            }
-
-            override fun visitFunction(declaration: IrFunction) {
-                // Try to get this function's own @KotlinFlowTrace annotation,
+        moduleFragment.accept(object : IrElementTransformerVoid() {
+            override fun visitSimpleFunction(declaration: IrSimpleFunction): IrStatement {
+                // Try to get this function's own @KotlinFlowTrace annotation
                 // or fall back to a propagated one from an overridden function.
                 val traceAnnotation = declaration.findTraceAnnotation()
                     ?: declaration.findOverriddenAnnotationWithPropagation()
@@ -55,7 +50,7 @@ class AiDevKitTraceGeneratorExtension : IrGenerationExtension {
                         withTraceSuspendedSymbol
                     )
                 }
-                super.visitFunction(declaration)
+                return super.visitFunction(declaration)
             }
         }, null)
     }
@@ -113,31 +108,27 @@ class AiDevKitTraceGeneratorExtension : IrGenerationExtension {
         val builder = DeclarationIrBuilder(pluginContext, function.symbol)
 
         val functionRefType = pluginContext.irBuiltIns
-            .functionN(function.valueParameters.size)
-            .typeWith(function.valueParameters.map { it.type } + function.returnType)
+            .functionN(function.parameters.size)
+            .typeWith(function.parameters.map { it.type } + function.returnType)
 
-        // Reference to original function
+        // Reference to the original function
         val functionReference = builder.irFunctionReference(
             type = functionRefType,
             symbol = function.symbol
         ).apply {
             function.typeParameters.forEachIndexed { index, typeParameter ->
-                putTypeArgument(index, typeParameter.symbol.defaultType)
-            }
-            function.dispatchReceiverParameter?.let {
-                dispatchReceiver = builder.irGet(it)
-            }
-            function.extensionReceiverParameter?.let {
-                extensionReceiver = builder.irGet(it)
+                typeArguments[index] = typeParameter.symbol.defaultType
             }
         }
 
         // Function arguments
         val argsArray = builder.irVararg(
             pluginContext.irBuiltIns.anyNType,
-            function.valueParameters.map { param ->
-                builder.irGet(param.type, param.symbol)
-            }
+            function.parameters
+                .filter { it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context }
+                .map { param ->
+                    builder.irGet(param.type, param.symbol)
+                }
         )
 
         // Lambda with function, which covered in withTrace logic
@@ -164,10 +155,10 @@ class AiDevKitTraceGeneratorExtension : IrGenerationExtension {
 
         val withTraceCall =
             builder.irCall(if (function.isSuspend) withTraceSuspendedSymbol else withTraceSymbol).apply {
-                putValueArgument(0, functionReference)
-                putValueArgument(1, argsArray)
-                putValueArgument(2, traceAnnotation)
-                putValueArgument(3, lambdaExpression)
+                arguments[0] = functionReference
+                arguments[1] = argsArray
+                arguments[2] = traceAnnotation
+                arguments[3] = lambdaExpression
             }
 
         function.body = builder.irBlockBody {
