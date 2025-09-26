@@ -1,10 +1,10 @@
 package ai.dev.kit.examples.haiku
 
-import ai.dev.kit.tracing.fluent.KotlinFlowTrace
+import ai.dev.kit.clients.instrument
 import ai.dev.kit.eval.utils.AIInput
 import ai.dev.kit.eval.utils.AIOutput
 import ai.dev.kit.eval.utils.Generator
-import ai.dev.kit.instrument
+import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.ChatModel

@@ -6,9 +6,8 @@ plugins {
 dependencies {
     implementation(libs.kotlinx.coroutines)
     implementation(libs.openai)
-    implementation(project(":ai-dev-kit-tracing"))
-    implementation(project(":ai-dev-kit-eval"))
-    implementation(project(":ai-dev-kit-tracking-providers:ai-dev-kit-tracking-langfuse"))
+    implementation(project(":tracing"))
+    implementation(project(":eval"))
     testImplementation(libs.kotlin.test)
 }
 
