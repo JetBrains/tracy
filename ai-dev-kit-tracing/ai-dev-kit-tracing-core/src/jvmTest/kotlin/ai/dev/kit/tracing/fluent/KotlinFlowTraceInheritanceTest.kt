@@ -1,9 +1,9 @@
 package ai.dev.kit.tracing.fluent
 
-import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import io.opentelemetry.sdk.trace.data.StatusData
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
+import tracing.ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue

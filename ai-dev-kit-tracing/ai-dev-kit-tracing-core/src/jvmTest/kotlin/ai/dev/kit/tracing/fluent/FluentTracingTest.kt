@@ -1,6 +1,5 @@
 package ai.dev.kit.tracing.fluent
 
-import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.addTagsToCurrentTrace
 import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.api.trace.StatusCode
@@ -11,6 +10,7 @@ import io.opentelemetry.sdk.trace.data.StatusData
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import tracing.ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull

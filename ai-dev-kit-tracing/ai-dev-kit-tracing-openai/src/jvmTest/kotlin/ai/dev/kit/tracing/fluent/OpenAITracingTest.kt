@@ -1,6 +1,7 @@
 package ai.dev.kit.tracing.fluent
 
 import ai.dev.kit.instrument
+import ai.dev.kit.tracing.createLiteLLMClient
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.core.JsonArray
@@ -31,14 +32,6 @@ import kotlin.text.get
 
 @Tag("SkipForNonLocal")
 class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
-    fun createLiteLLMClient(): OpenAIClient {
-        return OpenAIOkHttpClient.builder()
-            .baseUrl(LITELLM_URL)
-            .apiKey(System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set"))
-            .timeout(Duration.ofSeconds(60))
-            .build()
-    }
-
     @Test
     fun `test OpenAI chat completions auto tracing`() = runTest {
         val client = instrument(createLiteLLMClient())

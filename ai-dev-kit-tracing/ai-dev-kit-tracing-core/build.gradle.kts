@@ -55,6 +55,7 @@ kotlin {
                 implementation(libs.junit.params)
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.opentelemetry.sdk.testing)
+                implementation(project(":ai-dev-kit-tracing:ai-dev-kit-tracing-test-utils"))
             }
         }
     }

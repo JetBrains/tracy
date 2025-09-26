@@ -1,9 +1,9 @@
 package ai.dev.kit.tracing.fluent.handlers
 
-import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
+import tracing.ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import kotlin.test.assertEquals
 
 private class TestSpanAttributeHandlerClass {

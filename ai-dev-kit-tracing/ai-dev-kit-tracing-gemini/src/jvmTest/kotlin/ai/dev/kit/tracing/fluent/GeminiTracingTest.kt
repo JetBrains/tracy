@@ -33,6 +33,7 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
             .apiKey(System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set"))
             .httpOptions(
                 GeminiHttpOptions.builder()
+                    // TODO: see litellm channel, gemini was sunset
                     .baseUrl("$LITELLM_URL/gemini")
                     .timeout(Duration.ofSeconds(60).toMillis().toInt())
                     .build()

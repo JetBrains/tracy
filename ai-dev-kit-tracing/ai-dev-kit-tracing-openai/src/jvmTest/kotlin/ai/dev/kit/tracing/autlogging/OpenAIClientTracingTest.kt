@@ -1,31 +1,21 @@
-package ai.dev.kit.tracing.autologging
+package ai.dev.kit.tracing.autlogging
 
 import ai.dev.kit.instrument
-import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
-import ai.dev.kit.tracing.LITELLM_URL
 import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.createLiteLLMClient
 import ai.dev.kit.tracing.fluent.processor.withSpan
-import com.anthropic.client.AnthropicClient
-import com.anthropic.client.okhttp.AnthropicOkHttpClient
 import com.openai.client.OpenAIClient
-import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.chat.completions.ChatCompletion
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_SYSTEM
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Tag
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import java.time.Duration
+import org.junit.jupiter.api.*
+import tracing.ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import com.google.genai.Client as GeminiClient
-import com.google.genai.types.HttpOptions as GeminiHttpOptions
 
 @Tag("SkipForNonLocal")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -34,9 +24,7 @@ class TracingTest : BaseOpenTelemetryTracingTest() {
 
     @BeforeAll
     fun createClient() {
-        client = instrument(
-            createLiteLLMClient()
-        )
+        client = instrument(createLiteLLMClient())
     }
 
     @AfterAll
@@ -65,9 +53,9 @@ class TracingTest : BaseOpenTelemetryTracingTest() {
             assertEquals("openai", attributes[GEN_AI_SYSTEM])
             assertEquals("https://litellm.labs.jb.gg", attributes[AttributeKey.stringKey("gen_ai.api_base")])
             assertEquals("system", attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")])
-            assertEquals("\"$systemMessage\"", attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
+            assertEquals(systemMessage, attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
             assertEquals("user", attributes[AttributeKey.stringKey("gen_ai.prompt.1.role")])
-            assertEquals("\"$userMessage\"", attributes[AttributeKey.stringKey("gen_ai.prompt.1.content")])
+            assertEquals(userMessage, attributes[AttributeKey.stringKey("gen_ai.prompt.1.content")])
             assertEquals(24L, attributes[AttributeKey.longKey("gen_ai.usage.input_tokens")])
             assertEquals(temperature, attributes[AttributeKey.doubleKey("gen_ai.request.temperature")] as Double, absoluteTolerance = 0.00001)
 
