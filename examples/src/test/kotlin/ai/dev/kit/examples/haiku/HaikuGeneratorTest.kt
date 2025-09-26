@@ -1,8 +1,8 @@
 package ai.dev.kit.examples.haiku
 
+import ai.dev.kit.eval.providers.langfuse.LangfuseEvaluationTest
 import ai.dev.kit.eval.utils.*
-import ai.dev.kit.instrument
-import ai.dev.kit.providers.langfuse.LangfuseEvaluationTest
+import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.LangfuseConfig
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import com.openai.models.ChatModel
