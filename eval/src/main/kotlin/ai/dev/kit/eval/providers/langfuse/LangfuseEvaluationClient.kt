@@ -26,7 +26,6 @@ class LangfuseEvaluationClient(
 
     override suspend fun getOrCreateExperiment(experimentName: String): String? {
         val resp = getLangfuseProject()
-        // use createLangfuseProject() after TODO is completed
         return resp.firstOrNull()?.jsonObject?.get("id")?.jsonPrimitive?.content
     }
 
