@@ -59,9 +59,9 @@ class TracingTest : BaseOpenTelemetryTracingTest() {
             assertEquals("openai", attributes[GEN_AI_SYSTEM])
             assertEquals("https://litellm.labs.jb.gg", attributes[AttributeKey.stringKey("gen_ai.api_base")])
             assertEquals("system", attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")])
-            assertEquals("\"$systemMessage\"", attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
+            assertEquals(systemMessage, attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
             assertEquals("user", attributes[AttributeKey.stringKey("gen_ai.prompt.1.role")])
-            assertEquals("\"$userMessage\"", attributes[AttributeKey.stringKey("gen_ai.prompt.1.content")])
+            assertEquals(userMessage, attributes[AttributeKey.stringKey("gen_ai.prompt.1.content")])
             assertEquals(24L, attributes[AttributeKey.longKey("gen_ai.usage.input_tokens")])
             assertEquals(
                 temperature,
