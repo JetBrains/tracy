@@ -32,6 +32,15 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+private fun HttpRequestBuilder.addAuthHeaders(acceptStream: Boolean = false) {
+    header("Authorization", "Bearer ${getApiKey()}")
+    header("Content-Type", "application/json")
+    if (acceptStream) header("Accept", "text/event-stream")
+}
+
+private fun getApiKey(): String =
+    System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY is not set")
+
 @Tag("SkipForNonLocal")
 class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
     @Test
@@ -41,8 +50,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val promptMessage = "Hello, world!"
 
         val response = client.post("$LITELLM_URL/v1/messages") {
-            val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
-
+            val apiKey = getApiKey()
             header("x-api-key", apiKey)
             header("Content-Type", "application/json")
             setBody(
@@ -133,10 +141,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         }, Adapters.OpenAI)
 
         val response = client.post("$LITELLM_URL/v1/chat/completions") {
-            val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
-
-            header("Authorization", "Bearer $apiKey")
-            header("Content-Type", "application/json")
+            addAuthHeaders()
             when (requestBody) {
                 // for the request.bodyType to be set correctly
                 is Request -> setBody<Request>(requestBody)
@@ -202,15 +207,12 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test Ktor HttpClient auto tracing streaming for OpenAI`() = runTest {
-        val client: HttpClient = instrument(HttpClient(), provider = HttpClientLLMProvider.OpenAI)
+        val client: HttpClient = instrument(HttpClient(), adapter = Adapters.OpenAI)
         val model = "gpt-4o-mini"
         val response = client.post("$LITELLM_URL/v1/chat/completions") {
-            val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
-
-            header("Authorization", "Bearer $apiKey")
-            header("Content-Type", "application/json")
-            header("Accept", "text/event-stream")
-            setBody("""
+            addAuthHeaders(acceptStream = true)
+            setBody(
+                """
                 {
                     "messages": [
                         {
@@ -241,7 +243,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test Ktor HttpClient auto tracing for Bad Request in OpenAI`() = runTest {
-        val mockedClient = io.ktor.client.HttpClient(MockEngine) {
+        val mockedClient = HttpClient(MockEngine) {
             engine {
                 addHandler { request ->
                     respond(
@@ -270,10 +272,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val client: HttpClient = instrument(mockedClient, Adapters.OpenAI)
 
         val response = client.post("$LITELLM_URL/v1/chat/completions") {
-            val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
-
-            header("Authorization", "Bearer $apiKey")
-            header("Content-Type", "application/json")
+            addAuthHeaders()
             setBody(
                 """
                 {
@@ -310,7 +309,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test tracing for OpenAI doesn't fail when all properties are null`() = runTest {
-        val mockedClient = io.ktor.client.HttpClient(MockEngine) {
+        val mockedClient = HttpClient(MockEngine) {
             engine {
                 addHandler { _ ->
                     respond(
@@ -359,10 +358,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val client: HttpClient = instrument(mockedClient, Adapters.OpenAI)
 
         client.post("$LITELLM_URL/v1/chat/completions") {
-            val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
-
-            header("Authorization", "Bearer $apiKey")
-            header("Content-Type", "application/json")
+            addAuthHeaders()
             setBody(
                 """
                 {
@@ -408,10 +404,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val client: HttpClient = instrument(HttpClient(), Adapters.OpenAI)
 
         val response = client.post(endpoint) {
-            val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
-
-            header("Authorization", "Bearer $apiKey")
-            header("Content-Type", "application/json")
+            addAuthHeaders()
             setBody(requestBody)
         }
 
@@ -443,7 +436,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val promptMessage = "Explain how AI works in a few words"
 
         val response = client.post("$LITELLM_URL/gemini/v1beta/models/$model:generateContent") {
-            val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
+            val apiKey = getApiKey()
 
             header("x-goog-api-key", apiKey)
             header("Content-Type", "application/json")
@@ -493,7 +486,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val responseBody = response.bodyAsText()
         assertTrue(responseBody.isNotEmpty())
 
-        val responseJson = Json.Default.parseToJsonElement(responseBody).jsonObject
+        val responseJson = Json.parseToJsonElement(responseBody).jsonObject
 
         assertEquals(
             responseJson["responseId"]!!.jsonPrimitive.content,
@@ -640,5 +633,89 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
             }
             return this
         }
+    }
+
+    private suspend fun HttpClient.postChatCompletion(
+        model: String,
+        userRequest: String,
+        acceptStream: Boolean = false
+    ): HttpResponse {
+        return post("$LITELLM_URL/v1/chat/completions") {
+            addAuthHeaders(acceptStream = acceptStream)
+            setBody(
+                """
+            {
+                "messages": [
+                    { "role": "user", "content": "$userRequest" }
+                ],
+                "model": "$model",
+                "stream": true
+            }
+            """.trimIndent()
+            )
+        }
+    }
+
+    private suspend fun consumeResponses(vararg responses: HttpResponse) {
+        responses.forEach { it.bodyAsChannel() }
+    }
+
+    private fun validateTracesContent(expectedPrompts: List<String>) {
+        val traces = analyzeSpans()
+        assertEquals(expectedPrompts.size, traces.size)
+        expectedPrompts.zip(traces).forEach { (expected, trace) ->
+            assertEquals(
+                expected,
+                trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
+            )
+        }
+    }
+
+    @Test
+    fun `test streaming requests`() = runTest {
+        val client = instrument(HttpClient(), adapter = Adapters.OpenAI)
+        val model = "gpt-4o-mini"
+
+        val firstRequest = "first request"
+        val secondRequest = "second request"
+
+        val resp1 = client.postChatCompletion(model, firstRequest, acceptStream = true)
+        val resp2 = client.postChatCompletion(model, secondRequest, acceptStream = true)
+
+        consumeResponses(resp1, resp2)
+
+        validateTracesContent(listOf(firstRequest, secondRequest))
+    }
+
+    @Test
+    fun `test non-streaming requests`() = runTest {
+        val client = instrument(HttpClient(), adapter = Adapters.OpenAI)
+        val model = "gpt-4o-mini"
+
+        val firstRequest = "first request"
+        val secondRequest = "second request"
+
+        val resp1 = client.postChatCompletion(model, firstRequest)
+        val resp2 = client.postChatCompletion(model, secondRequest)
+
+        consumeResponses(resp1, resp2)
+
+        validateTracesContent(listOf(firstRequest, secondRequest))
+    }
+
+    @Test
+    fun `test mixed stream and non-stream requests`() = runTest {
+        val client = instrument(HttpClient(), adapter = Adapters.OpenAI)
+        val model = "gpt-4o-mini"
+
+        val firstRequest = "first request"
+        val secondRequest = "second request"
+
+        val resp1 = client.postChatCompletion(model, firstRequest) // regular
+        val resp2 = client.postChatCompletion(model, secondRequest, acceptStream = true)
+
+        consumeResponses(resp1, resp2)
+
+        validateTracesContent(listOf(firstRequest, secondRequest))
     }
 }
