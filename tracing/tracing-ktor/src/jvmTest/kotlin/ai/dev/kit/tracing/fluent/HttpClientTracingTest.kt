@@ -1,24 +1,27 @@
 package ai.dev.kit.tracing.fluent
 
-import io.ktor.client.HttpClient
-import io.ktor.client.HttpClientConfig
-import io.ktor.client.request.header
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.util.AttributeKey
-import io.ktor.utils.io.ByteReadChannel
+import ai.dev.kit.adapters.AnthropicLLMTracingAdapter
+import ai.dev.kit.adapters.GeminiLLMTracingAdapter
+import ai.dev.kit.adapters.LLMTracingAdapter
+import ai.dev.kit.adapters.OpenAILLMTracingAdapter
+import ai.dev.kit.instrument
+import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.dev.kit.tracing.LITELLM_URL
+import io.ktor.client.*
+import io.ktor.client.engine.mock.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
+import io.ktor.utils.io.*
+import io.opentelemetry.api.common.AttributeKey
+import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TEMPERATURE
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.int
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -28,13 +31,12 @@ import java.util.stream.Stream
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import kotlin.text.get
 
 @Tag("SkipForNonLocal")
 class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
     @Test
     fun `test Ktor HttpClient auto tracing for Anthropic`() = runTest {
-        val client: HttpClient = instrument(HttpClient(), provider = HttpClientLLMProvider.Anthropic)
+        val client: HttpClient = instrument(HttpClient(), Adapters.Anthropic)
         val model = "claude-sonnet-4-20250514"
         val promptMessage = "Hello, world!"
 
@@ -125,10 +127,10 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         requestBody: Any,
     ) = runTest {
         val client: HttpClient = instrument(HttpClient {
-            HttpClientConfig.install(ContentNegotiation) {
+            install(ContentNegotiation) {
                 json(Json { prettyPrint = true })
             }
-        }, provider = HttpClientLLMProvider.OpenAI)
+        }, Adapters.OpenAI)
 
         val response = client.post("$LITELLM_URL/v1/chat/completions") {
             val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
@@ -226,7 +228,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
             }
         }
 
-        val client: HttpClient = instrument(mockedClient, provider = HttpClientLLMProvider.OpenAI)
+        val client: HttpClient = instrument(mockedClient, Adapters.OpenAI)
 
         val response = client.post("$LITELLM_URL/v1/chat/completions") {
             val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
@@ -315,7 +317,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
             }
         }
 
-        val client: HttpClient = instrument(mockedClient, provider = HttpClientLLMProvider.OpenAI)
+        val client: HttpClient = instrument(mockedClient, Adapters.OpenAI)
 
         client.post("$LITELLM_URL/v1/chat/completions") {
             val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
@@ -364,7 +366,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         endpoint: String,
         requestBody: String,
     ) = runTest {
-        val client: HttpClient = instrument(HttpClient(), provider = HttpClientLLMProvider.OpenAI)
+        val client: HttpClient = instrument(HttpClient(), Adapters.OpenAI)
 
         val response = client.post(endpoint) {
             val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
@@ -397,7 +399,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test Ktor HttpClient auto tracing for Gemini`() = runTest {
-        val client: HttpClient = instrument(HttpClient(), provider = HttpClientLLMProvider.Gemini)
+        val client: HttpClient = instrument(HttpClient(), Adapters.Gemini)
         val model = "gemini-2.5-flash"
         val promptMessage = "Explain how AI works in a few words"
 
@@ -478,6 +480,17 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
     }
 
     companion object {
+        private object Adapters {
+            val Anthropic: LLMTracingAdapter
+                get() = AnthropicLLMTracingAdapter()
+
+            val Gemini: LLMTracingAdapter
+                get() = GeminiLLMTracingAdapter()
+
+            val OpenAI: LLMTracingAdapter
+                get() = OpenAILLMTracingAdapter()
+        }
+
         @Serializable
         private data class Request(
             val messages: List<Message>,

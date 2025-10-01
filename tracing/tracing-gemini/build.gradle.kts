@@ -44,6 +44,7 @@ kotlin {
 
         jvmTest {
             dependencies {
+                implementation(libs.gemini)
                 implementation(libs.kotlin.test)
                 implementation(libs.junit.params)
                 implementation(libs.kotlinx.coroutines.test)

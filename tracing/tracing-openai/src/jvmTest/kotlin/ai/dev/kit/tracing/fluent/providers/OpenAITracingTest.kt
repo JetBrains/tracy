@@ -1,12 +1,30 @@
 package ai.dev.kit.tracing.fluent.providers
 
+import ai.dev.kit.clients.instrument
+import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.dev.kit.tracing.LITELLM_URL
+import ai.dev.kit.tracing.autologging.createLiteLLMClient
+import com.openai.core.JsonArray
+import com.openai.core.JsonString
+import com.openai.core.JsonValue
+import com.openai.models.ChatModel
+import com.openai.models.FunctionDefinition
+import com.openai.models.FunctionParameters
+import com.openai.models.chat.completions.ChatCompletion
+import com.openai.models.chat.completions.ChatCompletionCreateParams
+import com.openai.models.chat.completions.ChatCompletionTool
+import com.openai.models.chat.completions.ChatCompletionToolMessageParam
+import com.openai.models.responses.FunctionTool
+import com.openai.models.responses.ResponseCreateParams
+import io.opentelemetry.api.common.AttributeKey
+import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import kotlin.jvm.optionals.getOrNull
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import kotlin.text.get
 
 @Tag("SkipForNonLocal")
 class OpenAITracingTest : BaseOpenTelemetryTracingTest() {

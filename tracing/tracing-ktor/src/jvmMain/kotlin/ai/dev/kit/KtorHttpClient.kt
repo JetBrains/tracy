@@ -1,6 +1,8 @@
 package ai.dev.kit
 
-import ai.dev.kit.adapters.*
+import  ai.dev.kit.adapters.Url
+import ai.dev.kit.adapters.ContentType
+import ai.dev.kit.adapters.LLMTracingAdapter
 import ai.dev.kit.tracing.TracingManager
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
@@ -21,33 +23,15 @@ import kotlinx.serialization.serializer
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
 
-/**
- * Selection of the supported LLM providers that can be
- * instrumented for tracing when Ktor's `HttpClient` is
- * used under the hood.
- *
- * @see instrument
- */
-enum class HttpClientLLMProvider {
-    OpenAI,
-    Anthropic,
-    Gemini,
-}
 
 /**
- * Configures a Ktor `HttpClient` for tracing client calls when one of the supported LLM providers is used.
+ * Configures a Ktor [HttpClient] for tracing client calls when one of the supported LLM providers is used.
  *
- * @param client The `HttpClient` instance to be configured for tracing.
- * @param provider The `HttpClientLLMProvider` specifying the LLM provider for which tracing should be enabled.
- * @return A configured `HttpClient` instance with tracing capabilities for the selected provider.
+ * @param client The [HttpClient] instance to be configured for tracing.
+ * @param adapter The [LLMTracingAdapter] specifying the LLM adapter for which tracing should be enabled.
+ * @return A configured [HttpClient] instance with tracing capabilities for the selected provider.
  */
-fun instrument(client: HttpClient, provider: HttpClientLLMProvider): HttpClient {
-    val adapter = when (provider) {
-        HttpClientLLMProvider.OpenAI -> OpenAILLMTracingAdapter()
-        HttpClientLLMProvider.Anthropic -> AnthropicLLMTracingAdapter()
-        HttpClientLLMProvider.Gemini -> GeminiLLMTracingAdapter()
-    }
-
+fun instrument(client: HttpClient, adapter: LLMTracingAdapter): HttpClient {
     return client.config {
         TracingPlugin(adapter).setup(this)
     }

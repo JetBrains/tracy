@@ -7,10 +7,10 @@ import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.context.Context
 import io.opentelemetry.extension.kotlin.asContextElement
 import io.opentelemetry.extension.kotlin.getOpenTelemetryContext
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 import java.lang.reflect.Method
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KFunction
 import kotlin.reflect.jvm.javaMethod
 
@@ -78,7 +78,7 @@ actual suspend inline fun <T> withTraceSuspended(
 ): T {
     val method = function.javaMethod ?: throw IllegalArgumentException("Function must be a Java method")
     val span = createSpan(
-        traceAnnotation, method, args, getOpenTelemetryContext(coroutineContext)
+        traceAnnotation, method, args, getOpenTelemetryContext(currentCoroutineContext())
     )
     try {
         val result = withContext(span.asContextElement()) {

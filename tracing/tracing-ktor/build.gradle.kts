@@ -33,6 +33,7 @@ kotlin {
 
         jvmMain {
             dependencies {
+                implementation(libs.kotlin.reflect)
                 implementation(libs.ktor.client)
                 implementation(libs.ktor.client.cio)
                 implementation(libs.okhttp)
@@ -48,11 +49,17 @@ kotlin {
                 implementation(libs.kotlin.test)
                 implementation(libs.junit.params)
                 implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.ktor.client.cio)
                 implementation(libs.ktor.client.mock)
                 implementation(libs.ktor.client.negotiation)
                 implementation(libs.ktor.serialization.json)
                 implementation(libs.opentelemetry.sdk.testing)
                 implementation(project(":tracing:tracing-test-utils"))
+                implementation(project(":tracing:tracing-core"))
+                implementation(project(":tracing:tracing-openai"))
+                implementation(project(":tracing:tracing-anthropic"))
+                implementation(project(":tracing:tracing-gemini"))
+
             }
         }
     }

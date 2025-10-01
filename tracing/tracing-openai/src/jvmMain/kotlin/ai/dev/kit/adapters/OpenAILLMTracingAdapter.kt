@@ -17,7 +17,7 @@ private enum class OpenAIApiType {
     RESPONSES_API,
 }
 
-internal class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.OPENAI) {
+class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.OPENAI) {
     private val chatHandler = ChatCompletionsHandler()
     private val responsesHandler = ResponsesApiHandler()
 

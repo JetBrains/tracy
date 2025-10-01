@@ -8,12 +8,12 @@ import io.opentelemetry.sdk.internal.ExceptionAttributeResolver
 import io.opentelemetry.sdk.trace.data.ExceptionEventData
 import io.opentelemetry.sdk.trace.data.SpanData
 import io.opentelemetry.sdk.trace.data.StatusData
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import kotlin.coroutines.coroutineContext
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
@@ -29,7 +29,7 @@ internal class MyTestClassWithSuspend {
     @KotlinFlowTrace(name = "Main Span", spanType = "mySpanType")
     suspend fun testFunctionWithTag(paramName: Int): Int {
         delay(12)
-        addTagsToCurrentTrace(listOf("Tag1", "Tag2"), coroutineContext)
+        addTagsToCurrentTrace(listOf("Tag1", "Tag2"), currentCoroutineContext())
         return paramName
     }
 

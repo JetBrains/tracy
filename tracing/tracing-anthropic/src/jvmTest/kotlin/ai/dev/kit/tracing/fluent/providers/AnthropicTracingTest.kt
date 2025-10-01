@@ -1,9 +1,39 @@
 package ai.dev.kit.tracing.fluent.providers
 
+import ai.dev.kit.clients.instrument
+import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.dev.kit.tracing.LITELLM_URL
+import com.anthropic.client.AnthropicClient
+import com.anthropic.client.AnthropicClientImpl
+import com.anthropic.client.okhttp.AnthropicOkHttpClient
+import com.anthropic.client.okhttp.OkHttpClient
+import com.anthropic.core.ClientOptions
+import com.anthropic.core.JsonObject
+import com.anthropic.core.JsonString
+import com.anthropic.helpers.MessageAccumulator
+import com.anthropic.models.messages.ContentBlockParam
+import com.anthropic.models.messages.MessageCreateParams
+import com.anthropic.models.messages.MessageParam
+import com.anthropic.models.messages.Model
+import com.anthropic.models.messages.Tool
+import com.anthropic.models.messages.ToolResultBlockParam
+import io.opentelemetry.api.common.AttributeKey
+import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_FINISH_REASONS
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import okhttp3.Interceptor
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import java.time.Duration
 import kotlin.invoke
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -11,6 +41,14 @@ import kotlin.text.get
 
 @Tag("SkipForNonLocal")
 class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
+    fun createAnthropicClient(): AnthropicClient {
+        return AnthropicOkHttpClient.builder()
+            .baseUrl(LITELLM_URL)
+            .apiKey(System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set"))
+            .timeout(Duration.ofSeconds(60))
+            .build()
+    }
+
     @Test
     fun `test Anthropic tool auto tracing`() {
         val client = instrument(createAnthropicClient())
@@ -228,7 +266,7 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
             trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
 
-        Assertions.assertTrue(
+        assertTrue(
             trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(model.asString()) == true
         )
 

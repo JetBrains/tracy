@@ -26,7 +26,7 @@ data class ContentType(val type: String, val subtype: String) {
  * @constructor Initializes the adapter with the name of the GenAI system being traced.
  * @param genAISystem The name of the Generative AI system that this adapter represents.
  */
-internal sealed class LLMTracingAdapter(private val genAISystem: String) {
+abstract class LLMTracingAdapter(private val genAISystem: String) {
     companion object {
         private const val REQUIRED_TYPE = "application"
         private const val REQUIRED_SUBTYPE = "json"

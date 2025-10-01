@@ -8,9 +8,9 @@ import com.google.genai.Client as GeminiClient
 
 
 fun instrument(client: GeminiClient): GeminiClient {
-    return _root_ide_package_.ai.dev.kit.clients.patchClient(
+    return patchClient(
         client,
-        interceptor = _root_ide_package_.ai.dev.kit.clients.OpenTelemetryGeminiLogger()
+        interceptor = OpenTelemetryGeminiLogger()
     )
 }
 

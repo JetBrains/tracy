@@ -32,7 +32,7 @@ import okio.Buffer
  * @param interceptor The interceptor to be injected into the internal HTTP client of the OpenAI-compatible client.
  * @return The patched client instance with the custom interceptor injected into its HTTP client.
  */
-internal fun <Client, ClientImpl, ClientOptions, ClientOkHttpClient> patchOpenAICompatibleClient(
+fun <Client, ClientImpl, ClientOptions, ClientOkHttpClient> patchOpenAICompatibleClient(
     client: Client,
     clientImplClass: Class<out ClientImpl>,
     clientOptionsClass: Class<out ClientOptions>,
@@ -57,7 +57,7 @@ internal fun <Client, ClientImpl, ClientOptions, ClientOkHttpClient> patchOpenAI
 }
 
 
-sealed class OpenTelemetryOkHttpInterceptor(
+abstract class OpenTelemetryOkHttpInterceptor(
     private val spanName: String,
     private val adapter: LLMTracingAdapter,
 ) : Interceptor {

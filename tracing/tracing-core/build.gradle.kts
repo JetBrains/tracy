@@ -33,7 +33,13 @@ kotlin {
 
         val jvmMain by getting {
             dependencies {
+                implementation(libs.okhttp)
                 implementation(libs.kotlin.reflect)
+                implementation(libs.opentelemetry.sdk)
+                implementation(libs.opentelemetry.kotlin)
+                implementation(libs.opentelemetry.exporter.otlp)
+                implementation(libs.opentelemetry.exporter.logging)
+                implementation(libs.opentelemetry.semconv.incubating)
             }
         }
 
@@ -42,6 +48,7 @@ kotlin {
                 implementation(libs.kotlin.test)
                 implementation(libs.junit.params)
                 implementation(libs.kotlinx.coroutines.test)
+                implementation(project(":tracing:tracing-test-utils"))
             }
         }
     }

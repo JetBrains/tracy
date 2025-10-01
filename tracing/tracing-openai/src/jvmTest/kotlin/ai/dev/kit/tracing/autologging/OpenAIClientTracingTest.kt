@@ -1,11 +1,10 @@
 package ai.dev.kit.tracing.autologging
 
+import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.LITELLM_URL
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.fluent.processor.withSpan
-import com.anthropic.client.AnthropicClient
-import com.anthropic.client.okhttp.AnthropicOkHttpClient
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.chat.completions.ChatCompletion
@@ -23,8 +22,6 @@ import java.time.Duration
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import com.google.genai.Client as GeminiClient
-import com.google.genai.types.HttpOptions as GeminiHttpOptions
 
 @Tag("SkipForNonLocal")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -33,9 +30,7 @@ class TracingTest : BaseOpenTelemetryTracingTest() {
 
     @BeforeAll
     fun createClient() {
-        client = instrument(
-            createLiteLLMClient()
-        )
+        client = instrument(createLiteLLMClient())
     }
 
     @AfterAll
@@ -156,25 +151,6 @@ fun createLiteLLMClient(): OpenAIClient {
         .build()
 }
 
-fun createAnthropicClient(): AnthropicClient {
-    return AnthropicOkHttpClient.builder()
-        .baseUrl(LITELLM_URL)
-        .apiKey(System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set"))
-        .timeout(Duration.ofSeconds(60))
-        .build()
-}
-
-fun createGeminiClient(): GeminiClient {
-    return GeminiClient.builder()
-        .apiKey(System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set"))
-        .httpOptions(
-            GeminiHttpOptions.builder()
-                .baseUrl("$LITELLM_URL/gemini")
-                .timeout(Duration.ofSeconds(60).toMillis().toInt())
-                .build()
-        )
-        .build()
-}
 
 private fun chatCallingFunction(client: OpenAIClient): String {
     val tracer = TracingManager.tracer

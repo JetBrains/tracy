@@ -1,16 +1,46 @@
 package ai.dev.kit.tracing.fluent.providers
 
+import ai.dev.kit.clients.instrument
+import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.dev.kit.tracing.LITELLM_URL
+import com.google.genai.errors.GenAiIOException
+import com.google.genai.types.Content
+import com.google.genai.types.FunctionDeclaration
+import com.google.genai.types.Part
+import com.google.genai.types.GenerateContentConfig as GeminiGenerateContentConfig
+import com.google.genai.types.Schema
+import com.google.genai.types.Tool
+import io.opentelemetry.api.common.AttributeKey
+import io.opentelemetry.api.trace.StatusCode
+import com.google.genai.types.HttpOptions as GeminiHttpOptions
 import kotlinx.coroutines.test.runTest
+import okhttp3.Interceptor
+import okhttp3.OkHttpClient
+import okhttp3.Response
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import java.net.SocketTimeoutException
+import java.time.Duration
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import com.google.genai.Client as GeminiClient
 import kotlin.text.get
 
 @Tag("SkipForNonLocal")
 class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
+    fun createGeminiClient(): GeminiClient {
+        return GeminiClient.builder()
+            .apiKey(System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set"))
+            .httpOptions(
+                GeminiHttpOptions.builder()
+                    .baseUrl("$LITELLM_URL/gemini")
+                    .timeout(Duration.ofSeconds(60).toMillis().toInt())
+                    .build()
+            )
+            .build()
+    }
+
     private fun createTool(word: String): Tool {
         return Tool.builder()
             .functionDeclarations(
