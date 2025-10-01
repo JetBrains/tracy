@@ -3,7 +3,6 @@ rootProject.name = "ai-dev-kit"
 include("eval")
 include("examples")
 include("plugin")
-include("tracing")
 include("tracing:tracing-core")
 include("tracing:tracing-anthropic")
 include("tracing:tracing-gemini")
