@@ -1,6 +1,5 @@
 package ai.dev.kit.eval.providers.langfuse
 
-import ai.dev.kit.eval.langfuse.LangfuseEvaluationClient
 import ai.dev.kit.eval.utils.*
 import ai.dev.kit.tracing.LangfuseConfig
 

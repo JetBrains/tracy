@@ -1,10 +1,9 @@
-package ai.dev.kit.eval.langfuse
+package ai.dev.kit.eval.providers.langfuse
 
 import ai.dev.kit.eval.providers.dataclasses.RequestMetadata
 import ai.dev.kit.eval.providers.dataclasses.Tag
 import ai.dev.kit.eval.providers.dataclasses.TraceInfo
 import ai.dev.kit.eval.providers.dataclasses.TracesResponse
-import ai.dev.kit.eval.providers.langfuse.KotlinLangfuseClient
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
