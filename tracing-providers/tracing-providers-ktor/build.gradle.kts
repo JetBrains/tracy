@@ -24,19 +24,19 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(project(":ai-dev-kit-tracing:ai-dev-kit-tracing-core"))
+                implementation(project(":tracing-providers:tracing-providers-core"))
                 implementation(libs.kotlin)
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
+                implementation(libs.ktor.client)
             }
         }
 
         jvmMain {
             dependencies {
-                implementation(libs.openai)
-                implementation(libs.okhttp)
-//                implementation(libs.opentelemetry)
-//                implementation(libs.opentelemetry.kotlin)
+                implementation(libs.kotlin.reflect)
+                implementation(libs.ktor.client.cio)
+                implementation(libs.ktor.client.mock)
                 implementation(libs.opentelemetry.sdk)
                 implementation(libs.opentelemetry.semconv.incubating)
             }
@@ -47,10 +47,14 @@ kotlin {
                 implementation(libs.kotlin.test)
                 implementation(libs.junit.params)
                 implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.ktor.client.negotiation)
+                implementation(libs.ktor.serialization.json)
                 implementation(libs.opentelemetry.sdk.testing)
-                implementation(libs.openai)
-                implementation(libs.okhttp)
-                implementation(project(":ai-dev-kit-tracing:ai-dev-kit-tracing-test-utils"))
+                implementation(libs.opentelemetry.semconv.incubating)
+                implementation(project(":tracing-providers:tracing-providers-openai"))
+                implementation(project(":tracing-providers:tracing-providers-anthropic"))
+                implementation(project(":tracing-providers:tracing-providers-gemini"))
+                implementation(project(":tracing-providers:tracing-providers-test-utils"))
             }
         }
     }

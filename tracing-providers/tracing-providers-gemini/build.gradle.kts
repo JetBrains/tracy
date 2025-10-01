@@ -24,7 +24,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(project(":ai-dev-kit-tracing:ai-dev-kit-tracing-core"))
+                implementation(project(":tracing-providers:tracing-providers-core"))
                 implementation(libs.kotlin)
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
@@ -48,7 +48,7 @@ kotlin {
                 implementation(libs.okhttp)
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.opentelemetry.sdk.testing)
-                implementation(project(":ai-dev-kit-tracing:ai-dev-kit-tracing-test-utils"))
+                implementation(project(":tracing-providers:tracing-providers-test-utils"))
             }
         }
     }

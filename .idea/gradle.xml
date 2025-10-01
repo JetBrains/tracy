@@ -34,18 +34,18 @@
             <option value="$PROJECT_DIR$/ai-dev-kit-plugin" />
             <option value="$PROJECT_DIR$/ai-dev-kit-plugin/ai-dev-kit-trace-gradle" />
             <option value="$PROJECT_DIR$/ai-dev-kit-plugin/ai-dev-kit-trace-plugin" />
-            <option value="$PROJECT_DIR$/ai-dev-kit-tracing" />
-            <option value="$PROJECT_DIR$/ai-dev-kit-tracing/ai-dev-kit-tracing-anthropic" />
-            <option value="$PROJECT_DIR$/ai-dev-kit-tracing/ai-dev-kit-tracing-core" />
-            <option value="$PROJECT_DIR$/ai-dev-kit-tracing/ai-dev-kit-tracing-gemini" />
-            <option value="$PROJECT_DIR$/ai-dev-kit-tracing/ai-dev-kit-tracing-ktor" />
-            <option value="$PROJECT_DIR$/ai-dev-kit-tracing/ai-dev-kit-tracing-openai" />
-            <option value="$PROJECT_DIR$/ai-dev-kit-tracing/ai-dev-kit-tracing-test-utils" />
             <option value="$PROJECT_DIR$/ai-dev-kit-tracking-providers" />
             <option value="$PROJECT_DIR$/ai-dev-kit-tracking-providers/ai-dev-kit-tracking-langfuse" />
             <option value="$PROJECT_DIR$/ai-dev-kit-tracking-providers/ai-dev-kit-tracking-wandb" />
             <option value="$PROJECT_DIR$/buildSrc" />
             <option value="$PROJECT_DIR$/examples" />
+            <option value="$PROJECT_DIR$/tracing-providers" />
+            <option value="$PROJECT_DIR$/tracing-providers/tracing-providers-anthropic" />
+            <option value="$PROJECT_DIR$/tracing-providers/tracing-providers-core" />
+            <option value="$PROJECT_DIR$/tracing-providers/tracing-providers-gemini" />
+            <option value="$PROJECT_DIR$/tracing-providers/tracing-providers-ktor" />
+            <option value="$PROJECT_DIR$/tracing-providers/tracing-providers-openai" />
+            <option value="$PROJECT_DIR$/tracing-providers/tracing-providers-test-utils" />
           </set>
         </option>
       </GradleProjectSettings>

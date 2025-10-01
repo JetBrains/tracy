@@ -9,11 +9,6 @@ kotlin {
     jvm {
         compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         withJava()
-        // Enable test fixtures for JVM
-        testRuns["test"].executionTask.configure {
-            useJUnitPlatform()
-        }
-
     }
 
     js(IR) {
@@ -29,23 +24,21 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
+                implementation(project(":tracing-providers:tracing-providers-core"))
                 implementation(libs.kotlin)
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
-                implementation(libs.kotlinx.coroutines)
             }
         }
 
         jvmMain {
             dependencies {
-                implementation(libs.kotlin.reflect)
-                implementation(libs.opentelemetry)
-                implementation(libs.opentelemetry.kotlin)
-                implementation(libs.opentelemetry.sdk)
-                implementation(libs.opentelemetry.exporter.otlp)
-                implementation(libs.opentelemetry.exporter.logging)
-                implementation(libs.opentelemetry.semconv.incubating)
+                implementation(libs.openai)
                 implementation(libs.okhttp)
+//                implementation(libs.opentelemetry)
+//                implementation(libs.opentelemetry.kotlin)
+                implementation(libs.opentelemetry.sdk)
+                implementation(libs.opentelemetry.semconv.incubating)
             }
         }
 
@@ -55,15 +48,11 @@ kotlin {
                 implementation(libs.junit.params)
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.opentelemetry.sdk.testing)
-                implementation(project(":ai-dev-kit-tracing:ai-dev-kit-tracing-test-utils"))
+                implementation(libs.openai)
+                implementation(libs.okhttp)
+                implementation(project(":tracing-providers:tracing-providers-test-utils"))
             }
         }
-    }
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    compilerOptions {
-        freeCompilerArgs.add("-java-parameters")
     }
 }
 

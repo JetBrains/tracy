@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
+    id("ai.dev.kit.trace")
+    id("ai.dev.kit.space.publishing")
 }
 
 kotlin {
@@ -20,23 +22,33 @@ kotlin {
     }
 
     sourceSets {
-        jvmMain {
+        commonMain {
             dependencies {
-                implementation(project(":ai-dev-kit-tracing:ai-dev-kit-tracing-core"))
-                implementation(libs.junit)
-                implementation(libs.junit.params)
+                implementation(project(":tracing-providers:tracing-providers-core"))
                 implementation(libs.kotlin)
-                implementation(libs.kotlin.test)
-                implementation(libs.kotlin.reflect)
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
+            }
+        }
+
+        jvmMain {
+            dependencies {
+                implementation(libs.anthropic)
+                implementation(libs.okhttp)
                 implementation(libs.opentelemetry)
                 implementation(libs.opentelemetry.kotlin)
-                implementation(libs.opentelemetry.exporter.otlp)
-                implementation(libs.opentelemetry.exporter.logging)
-                implementation(libs.opentelemetry.semconv.incubating)
                 implementation(libs.opentelemetry.sdk)
+                implementation(libs.opentelemetry.semconv.incubating)
+            }
+        }
+
+        jvmTest {
+            dependencies {
+                implementation(libs.kotlin.test)
+                implementation(libs.junit.params)
+                implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.opentelemetry.sdk.testing)
+                implementation(project(":tracing-providers:tracing-providers-test-utils"))
             }
         }
     }

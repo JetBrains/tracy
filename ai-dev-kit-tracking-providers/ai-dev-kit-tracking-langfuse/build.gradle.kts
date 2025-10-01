@@ -16,7 +16,7 @@ dependencies {
     implementation(libs.opentelemetry.sdk)
     implementation(libs.opentelemetry.kotlin)
     implementation(project(":ai-dev-kit-eval"))
-    implementation(project(":ai-dev-kit-tracing"))
+    implementation(project(":tracing-providers:tracing-providers-core"))
     testImplementation(libs.kotlin.test)
 }
 
