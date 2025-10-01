@@ -1,6 +1,7 @@
 package ai.dev.kit.clients
 
 import ai.dev.kit.OpenTelemetryOkHttpInterceptor
+import ai.dev.kit.adapters.AnthropicLLMTracingAdapter
 import ai.dev.kit.patchOpenAICompatibleClient
 import com.anthropic.client.AnthropicClient
 import com.anthropic.client.AnthropicClientImpl
@@ -31,4 +32,4 @@ private fun patchClient(client: AnthropicClient, interceptor: Interceptor): Anth
  * For API errors, see: [Docs](https://docs.anthropic.com/en/api/errors)
  */
 private class OpenTelemetryAnthropicLogger :
-    OpenTelemetryOkHttpInterceptor("Anthropic-generation", adapter = _root_ide_package_.ai.dev.kit.adapters.AnthropicLLMTracingAdapter())
+    OpenTelemetryOkHttpInterceptor("Anthropic-generation", adapter = AnthropicLLMTracingAdapter())
