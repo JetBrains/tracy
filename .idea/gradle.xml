@@ -7,19 +7,19 @@
         <compositeConfiguration>
           <compositeBuild compositeDefinitionSource="SCRIPT">
             <builds>
-              <build path="$PROJECT_DIR$/ai-dev-kit-plugin/ai-dev-kit-trace-gradle" name="ai-dev-kit-trace-gradle">
-                <projects>
-                  <project path="$PROJECT_DIR$/ai-dev-kit-plugin/ai-dev-kit-trace-gradle" />
-                </projects>
-              </build>
-              <build path="$PROJECT_DIR$/ai-dev-kit-plugin/ai-dev-kit-trace-plugin" name="ai-dev-kit-trace-plugin">
-                <projects>
-                  <project path="$PROJECT_DIR$/ai-dev-kit-plugin/ai-dev-kit-trace-plugin" />
-                </projects>
-              </build>
               <build path="$PROJECT_DIR$/buildSrc" name="buildSrc">
                 <projects>
                   <project path="$PROJECT_DIR$/buildSrc" />
+                </projects>
+              </build>
+              <build path="$PROJECT_DIR$/plugin/gradle-tracing-plugin" name="gradle-tracing-plugin">
+                <projects>
+                  <project path="$PROJECT_DIR$/plugin/gradle-tracing-plugin" />
+                </projects>
+              </build>
+              <build path="$PROJECT_DIR$/plugin/tracing-compiler-plugin" name="tracing-compiler-plugin">
+                <projects>
+                  <project path="$PROJECT_DIR$/plugin/tracing-compiler-plugin" />
                 </projects>
               </build>
             </builds>
@@ -30,16 +30,19 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
-            <option value="$PROJECT_DIR$/ai-dev-kit-eval" />
-            <option value="$PROJECT_DIR$/ai-dev-kit-plugin" />
-            <option value="$PROJECT_DIR$/ai-dev-kit-plugin/ai-dev-kit-trace-gradle" />
-            <option value="$PROJECT_DIR$/ai-dev-kit-plugin/ai-dev-kit-trace-plugin" />
-            <option value="$PROJECT_DIR$/ai-dev-kit-tracing" />
-            <option value="$PROJECT_DIR$/ai-dev-kit-tracking-providers" />
-            <option value="$PROJECT_DIR$/ai-dev-kit-tracking-providers/ai-dev-kit-tracking-langfuse" />
-            <option value="$PROJECT_DIR$/ai-dev-kit-tracking-providers/ai-dev-kit-tracking-wandb" />
             <option value="$PROJECT_DIR$/buildSrc" />
+            <option value="$PROJECT_DIR$/eval" />
             <option value="$PROJECT_DIR$/examples" />
+            <option value="$PROJECT_DIR$/plugin" />
+            <option value="$PROJECT_DIR$/plugin/gradle-tracing-plugin" />
+            <option value="$PROJECT_DIR$/plugin/tracing-compiler-plugin" />
+            <option value="$PROJECT_DIR$/tracing" />
+            <option value="$PROJECT_DIR$/tracing/tracing-anthropic" />
+            <option value="$PROJECT_DIR$/tracing/tracing-core" />
+            <option value="$PROJECT_DIR$/tracing/tracing-gemini" />
+            <option value="$PROJECT_DIR$/tracing/tracing-ktor" />
+            <option value="$PROJECT_DIR$/tracing/tracing-openai" />
+            <option value="$PROJECT_DIR$/tracing/tracing-test-utils" />
           </set>
         </option>
       </GradleProjectSettings>
