@@ -259,13 +259,15 @@ For a detailed implementation guide, refer to the [Evaluation README](ai-dev-kit
 
 ### 📦 How to publish `ai-dev-kit`
 
+* Change a version [here](publishing-logic/src/main/kotlin/SpacePublishingPlugin.kt)
+  and [here](plugin/gradle-tracing-plugin/src/main/kotlin/ai/dev/kit/trace/gradle/AiDevKitTraceGradlePlugin.kt)
 * When a pull request is created, a comment is automatically added with instructions for running the publishing build.
 * To publish locally, you need to provide `SPACE_USERNAME` and `SPACE_PASSWORD` `.env` variables with write access
   to the `ai-dev-kit` [repository](https://jetbrains.team/p/ai-development-kit/packages/maven/ai-development-kit).
   Then run the following command
 
 ```bash
-./gradlew ai-dev-kit-trace-gradle:publish ai-dev-kit-trace-plugin:publish :publishContentModules
+./gradlew publishContentModules
 ```
 
 When a pull request is created, a comment is automatically added with instructions for running the publishing build.

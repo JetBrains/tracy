@@ -1,15 +1,8 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
 
 plugins {
+    id("ai.dev.kit.space.publishing")
     id("org.jetbrains.kotlin.multiplatform") version "2.1.0"
-    `maven-publish`
-}
-
-group = "com.jetbrains"
-version = "1.0.17"
-
-repositories {
-    mavenCentral()
 }
 
 java {
@@ -17,7 +10,6 @@ java {
         languageVersion.set(JavaLanguageVersion.of(17))
     }
 }
-
 
 kotlin {
     jvm {
@@ -32,16 +24,3 @@ kotlin {
         }
     }
 }
-
-publishing {
-    repositories {
-        maven {
-            url = uri("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")
-            credentials {
-                username = System.getenv("SPACE_USERNAME")
-                password = System.getenv("SPACE_PASSWORD")
-            }
-        }
-    }
-}
-

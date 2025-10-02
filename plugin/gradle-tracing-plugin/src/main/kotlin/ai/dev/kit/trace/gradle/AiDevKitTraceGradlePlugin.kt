@@ -5,6 +5,10 @@ import org.gradle.api.provider.Provider
 import org.jetbrains.kotlin.gradle.plugin.*
 
 class AiDevKitTraceGradlePlugin : KotlinCompilerPluginSupportPlugin {
+    companion object {
+        const val VERSION = "1.0.18"
+    }
+
     override fun apply(target: Project) {
         super.apply(target)
     }
@@ -18,8 +22,8 @@ class AiDevKitTraceGradlePlugin : KotlinCompilerPluginSupportPlugin {
 
     override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
         groupId = "com.jetbrains",
-        artifactId = "tracing-compiler-plugin",
-        version = "1.0.17"
+        artifactId = "ai-dev-kit-tracing-compiler-plugin",
+        version = VERSION
     )
 
     override fun getPluginArtifactForNative(): SubpluginArtifact? = null

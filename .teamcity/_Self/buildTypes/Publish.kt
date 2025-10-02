@@ -25,7 +25,7 @@ object Publish : BuildType({
         gradle {
             name = "Publish space"
             id = "Publish_space"
-            tasks = "gradle-trace-plugin:publish ai-dev-kit-trace-plugin:publish :publishContentModules"
+            tasks = "publishContentModules"
         }
     }
 

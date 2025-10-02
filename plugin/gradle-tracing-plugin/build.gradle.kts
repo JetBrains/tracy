@@ -1,15 +1,7 @@
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "2.1.0"
+    id("ai.dev.kit.space.publishing")
     id("java-gradle-plugin")
-    `maven-publish`
-}
-
-group = "com.jetbrains"
-version = "1.0.17"
-
-repositories {
-    mavenCentral()
-    gradlePluginPortal()
+    id("org.jetbrains.kotlin.jvm") version "2.1.0"
 }
 
 dependencies {
@@ -22,18 +14,6 @@ gradlePlugin {
         create("aiDevKitTracePlugin") {
             id = "ai.dev.kit.trace"
             implementationClass = "ai.dev.kit.trace.gradle.AiDevKitTraceGradlePlugin"
-        }
-    }
-}
-
-publishing {
-    repositories {
-        maven {
-            url = uri("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")
-            credentials {
-                username = System.getenv("SPACE_USERNAME")
-                password = System.getenv("SPACE_PASSWORD")
-            }
         }
     }
 }

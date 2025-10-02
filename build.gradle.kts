@@ -4,12 +4,8 @@ plugins {
     alias(libs.plugins.kotlin.serialization) apply false
 
 }
-group = "com.jetbrains"
-version = "1.0.17"
 
 subprojects {
-    group = rootProject.group
-    version = rootProject.version
     repositories {
         mavenCentral()
     }
@@ -25,11 +21,17 @@ subprojects {
 
 tasks.register("publishContentModules") {
     group = "publishing"
-    description = "Publishes all modules that apply the ai.dev.kit.space.publishing plugin. All important modules except plugin"
+    description =
+        "Publishes all modules that apply the ai.dev.kit.space.publishing plugin"
     val publishTasks = subprojects.filter { subproject ->
         subproject.plugins.hasPlugin("ai.dev.kit.space.publishing")
     }.mapNotNull { subproject ->
         subproject.tasks.findByName("publish")
     }
-    dependsOn(publishTasks)
+    val pluginPublishes = listOf(
+        gradle.includedBuild("plugin").task(":ai-dev-kit-tracing-compiler-plugin:publish"),
+        gradle.includedBuild("plugin").task(":gradle-tracing-plugin:publish")
+    )
+
+    dependsOn(publishTasks + pluginPublishes)
 }

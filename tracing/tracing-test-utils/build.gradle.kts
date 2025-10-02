@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
     id("ai.dev.kit.trace")
-    id("ai.dev.kit.space.publishing")
 }
 
 kotlin {
