@@ -1,7 +1,6 @@
-package ai.dev.kit.eval.langfuse
+package ai.dev.kit.eval.providers.langfuse
 
 import ai.dev.kit.eval.providers.dataclasses.RunStatus
-import ai.dev.kit.eval.providers.langfuse.KotlinLangfuseClient
 import ai.dev.kit.eval.utils.*
 import ai.dev.kit.eval.providers.langfuse.KotlinLangfuseClient.LANGFUSE_BASE_URL
 import ai.dev.kit.tracing.LangfuseConfig

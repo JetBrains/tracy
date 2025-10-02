@@ -17,7 +17,7 @@ dependencies {
     implementation(libs.ktor.serialization.json)
     implementation(libs.opentelemetry.kotlin)
     implementation(libs.opentelemetry.sdk)
-    implementation(project(":tracing"))
+    implementation(project(":tracing:tracing-core"))
     runtimeOnly(libs.logback.classic)
     testImplementation(libs.kotlin.test)
 }
