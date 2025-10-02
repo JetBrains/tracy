@@ -54,6 +54,12 @@ kotlin {
     }
 }
 
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    compilerOptions {
+        freeCompilerArgs.add("-java-parameters")
+    }
+}
+
 kotlin {
     jvmToolchain(17)
 }
