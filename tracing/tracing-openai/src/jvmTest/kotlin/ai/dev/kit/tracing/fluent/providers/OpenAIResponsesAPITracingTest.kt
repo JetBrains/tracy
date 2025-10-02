@@ -76,6 +76,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
 
         val paramsBuilderFirst = ResponseCreateParams.builder()
             .model(ChatModel.GPT_4O_MINI)
+            .temperature(0.0)
             .addTool(greetTool)
             .input(userPrompt)
 
@@ -98,6 +99,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
 
         val paramsBuilderSecond = ResponseCreateParams.builder()
             .model(ChatModel.GPT_4O_MINI)
+            .temperature(0.0)
             .addTool(greetTool)
             .input(
                 JsonValue.from(
@@ -124,6 +126,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
 
         val paramsBuilderFirst = ResponseCreateParams.builder()
             .model(ChatModel.GPT_4O_MINI)
+            .temperature(0.0)
             .addTool(greetTool)
             .addTool(farewellTool)
             .input(userPrompt)
@@ -154,6 +157,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
 
         val paramsBuilderSecond = ResponseCreateParams.builder()
             .model(ChatModel.GPT_4O_MINI)
+            .temperature(0.0)
             .addTool(greetTool)
             .addTool(farewellTool)
             .input(
@@ -177,7 +181,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
         val params = ResponseCreateParams.builder()
             .input("Generate polite greeting and introduce yourself")
             .model(ChatModel.GPT_4O_MINI)
-            .temperature(0.7)
+            .temperature(0.0)
 
         val sb = StringBuilder()
         client.responses().createStreaming(params.build())
@@ -190,6 +194,27 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
             }
 
         validateStreaming(sb.toString())
+    }
+
+    @Test
+    fun `test OpenAI responses API additional attributes`() = runTest {
+        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
+
+        val paramsBuilder = ResponseCreateParams.builder()
+            .input("Say hi to user")
+            .model(ChatModel.GPT_4O_MINI)
+            .temperature(0.0)
+            .metadata(
+                ResponseCreateParams.Metadata.builder()
+                    .additionalProperties(mapOf("metadataKey" to JsonValue.from("metadataValue")))
+                    .build()
+            )
+            .additionalBodyProperties(
+                mapOf("additionalBodyPropertyKey" to JsonValue.from("additionalBodyPropertyValue"))
+            )
+
+        client.responses().create(paramsBuilder.build())
+        validateAdditionalAttributes()
     }
 
     @ParameterizedTest

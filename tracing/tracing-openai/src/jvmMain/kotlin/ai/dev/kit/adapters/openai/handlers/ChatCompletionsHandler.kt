@@ -1,5 +1,7 @@
 package ai.dev.kit.adapters.openai.handlers
 
+import ai.dev.kit.adapters.LLMTracingAdapter.Companion.PayloadType
+import ai.dev.kit.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
 import ai.dev.kit.adapters.media.MediaContent
 import ai.dev.kit.adapters.media.MediaContentExtractor
 import ai.dev.kit.adapters.media.MediaContentPart
@@ -21,6 +23,28 @@ import mu.KotlinLogging
  */
 internal class ChatCompletionsHandler(
     private val extractor: MediaContentExtractor) : OpenAIApiHandler {
+
+    companion object {
+        // https://platform.openai.com/docs/api-reference/chat/create
+        private val mappedRequestAttributes: List<String> = listOf(
+            "messages",
+            "model",
+            "tools",
+            "choices",
+            "temperature"
+        )
+
+        // https://platform.openai.com/docs/api-reference/chat/object
+        private val mappedResponseAttributes: List<String> = listOf(
+            "choices",
+            "usage"
+        )
+
+        private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes
+
+        private val logger = KotlinLogging.logger {}
+    }
+
     override fun handleRequestAttributes(span: Span, request: Request) {
         val body = request.body.asJson()?.jsonObject ?: return
         OpenAIApiUtils.setCommonRequestAttributes(span, request)
@@ -57,6 +81,8 @@ internal class ChatCompletionsHandler(
                 }
             }
         }
+
+        span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.REQUEST)
     }
 
     /**
@@ -155,6 +181,8 @@ internal class ChatCompletionsHandler(
         body["usage"]?.let { usage ->
             setUsageAttributes(span, usage.jsonObject)
         }
+
+        span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
     }
 
     override fun handleStreaming(span: Span, events: String): Unit = runCatching {
@@ -252,9 +280,5 @@ internal class ChatCompletionsHandler(
         }
 
         return MediaContent(parts)
-    }
-
-    companion object {
-        private val logger = KotlinLogging.logger {}
     }
 }

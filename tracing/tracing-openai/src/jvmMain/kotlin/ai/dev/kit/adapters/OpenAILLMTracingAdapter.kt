@@ -66,7 +66,7 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
         handler?.handleRequestAttributes(span, request)
     }
 
-    override fun getResultBodyAttributes(span: Span, response: Response) {
+    override fun getResponseBodyAttributes(span: Span, response: Response) {
         OpenAIApiUtils.setCommonResponseAttributes(span, response)
         handler?.handleResponseAttributes(span, response)
     }

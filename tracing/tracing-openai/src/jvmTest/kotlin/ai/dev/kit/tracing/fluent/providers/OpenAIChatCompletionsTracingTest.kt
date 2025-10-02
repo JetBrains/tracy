@@ -1,12 +1,16 @@
 package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
+import com.openai.core.JsonValue
 import ai.dev.kit.tracing.MediaSource
 import ai.dev.kit.tracing.loadFileAsBase64Encoded
 import ai.dev.kit.tracing.toDataUrl
 import ai.dev.kit.tracing.toMediaContentAttributeValues
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.*
+import com.openai.models.embeddings.EmbeddingCreateParams
+import com.openai.models.embeddings.EmbeddingModel
+import io.opentelemetry.api.common.AttributeKey
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -16,9 +20,9 @@ import org.junit.jupiter.params.provider.MethodSource
 import java.util.concurrent.TimeUnit
 import kotlin.jvm.optionals.getOrNull
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-
 
 @Tag("openai")
 class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
@@ -197,6 +201,51 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
         }
 
         validateStreaming(sb.toString())
+    }
+
+    @Test
+    fun `test OpenAI chat completions additional attributes`() = runTest {
+        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
+
+        val paramsBuilder = ChatCompletionCreateParams.builder()
+            .model(ChatModel.O1)
+            .addUserMessage("Say hi to user using reasoning and tool `hi`")
+            .metadata(
+                ChatCompletionCreateParams.Metadata.builder()
+                    .additionalProperties(mapOf("metadataKey" to JsonValue.from("metadataValue")))
+                    .build()
+            )
+            .additionalBodyProperties(
+                mapOf("additionalBodyPropertyKey" to JsonValue.from("additionalBodyPropertyValue"))
+            )
+
+        client.chat().completions().create(paramsBuilder.build())
+        validateAdditionalAttributes()
+    }
+
+    @Test
+    fun `test OpenAI embeddings`() = runTest {
+        // handler defaults to chat/completions, but the specific embedding parameters are still propagated to the span
+        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
+
+        val params = EmbeddingCreateParams.builder()
+            .model(EmbeddingModel.TEXT_EMBEDDING_3_SMALL)
+            .input("The quick brown fox jumps over the lazy dog.")
+            .input("Sphinx of black quartz, judge my vow.")
+            .build()
+
+        client.embeddings().create(params)
+        val traces = analyzeSpans()
+        val trace = traces.firstOrNull()
+
+        val responseData = trace?.attributes?.get(AttributeKey.stringKey("tracy.response.data"))
+        assertFalse(responseData.isNullOrEmpty())
+
+        val responseObject = trace.attributes?.get(AttributeKey.stringKey("tracy.response.object"))
+        assertFalse(responseObject.isNullOrEmpty())
+
+        val requestEncodingFormat = trace.attributes?.get(AttributeKey.stringKey("tracy.request.encoding_format"))
+        assertFalse(requestEncodingFormat.isNullOrEmpty())
     }
 
     @ParameterizedTest

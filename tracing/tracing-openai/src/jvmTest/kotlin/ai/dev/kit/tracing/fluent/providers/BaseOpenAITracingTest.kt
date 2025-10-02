@@ -44,7 +44,7 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
      *
      * See [LiteLLM: Create Pass Through Endpoints](https://docs.litellm.ai/docs/proxy/pass_through)
      */
-    protected val patchedProviderUrl = when(val baseUrl = llmProviderUrl.removeSuffix("/v1")) {
+    protected val patchedProviderUrl = when (val baseUrl = llmProviderUrl.removeSuffix("/v1")) {
         // TODO: remove direct use of litellm
         // when using LiteLLM, switch to the pass-through
         "https://litellm.labs.jb.gg" -> "$baseUrl/openai"
@@ -73,9 +73,7 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
         assertNotNull(trace)
 
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
-        assertTrue(
-            llmProviderUrl.startsWith(trace.attributes[AttributeKey.stringKey("gen_ai.api_base")].toString())
-        )
+        assertTrue(llmProviderUrl.startsWith(trace.attributes[AttributeKey.stringKey("gen_ai.api_base")].toString()))
 
         assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")].isNullOrEmpty())
         assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.error.code")].isNullOrEmpty())
@@ -146,6 +144,20 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
             assertFalse(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.content")].isNullOrEmpty())
             assertFalse(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.tool_call_id")].isNullOrEmpty())
         }
+    }
+
+    protected fun validateAdditionalAttributes() {
+        val traces = analyzeSpans()
+        val trace = traces.firstOrNull()
+
+        assertEquals(
+            "{\"metadataKey\":\"metadataValue\"}",
+            trace?.attributes?.get(AttributeKey.stringKey("tracy.request.metadata"))
+        )
+        assertEquals(
+            "\"additionalBodyPropertyValue\"",
+            trace?.attributes?.get(AttributeKey.stringKey("tracy.request.additionalBodyPropertyKey"))
+        )
     }
 
     protected fun createTool(word: String): ChatCompletionTool {
@@ -221,11 +233,9 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
             val toolCall = this
             val name = if (toolCall.isFunction()) {
                 toolCall.function().get().function().name()
-            }
-            else if (toolCall.isCustom()) {
+            } else if (toolCall.isCustom()) {
                 toolCall.custom().get().custom().name()
-            }
-            else {
+            } else {
                 throw IllegalStateException("Cannot extract name of the tool call $toolCall")
             }
             return name

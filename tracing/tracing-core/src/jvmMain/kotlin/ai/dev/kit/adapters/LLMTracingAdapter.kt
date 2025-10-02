@@ -8,13 +8,14 @@ import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.sdk.trace.ReadableSpan
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_SYSTEM
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 
 /**
- * A sealed class representing an adapter for tracing LLM interactions.
+ * An abstract class representing an adapter for tracing LLM interactions.
  * This adapter handles the tracing of HTTP requests and responses, extracting relevant attributes
  * from both the request and response bodies to populate spans.
  *
@@ -27,6 +28,31 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
         private val EVENT_STREAM_CONTENT_TYPE = ContentType.Text.EventStream
 
         private const val ATTRIBUTES_NUMBER_ATTRIBUTE_KEY = "gen_ai.request.SpanAttributeNumber"
+
+        /**
+         * Adds unmapped payload attributes from a JSON body to the given [Span].
+         *
+         * @param body the request or response body
+         * @param mappedAttributes a list of attribute keys that have already been
+         *  handled and should be skipped when populating unmapped attributes
+         */
+        fun Span.populateUnmappedAttributes(
+            body: JsonObject,
+            mappedAttributes: List<String>,
+            payloadType: PayloadType
+        ) {
+            body.entries.forEach { (key, value) ->
+                if (key !in (mappedAttributes)) {
+                    val attributeKey = "tracy.${payloadType.value}.$key"
+                    setAttribute(attributeKey, value.toString())
+                }
+            }
+        }
+
+        enum class PayloadType(val value: String) {
+            REQUEST("request"),
+            RESPONSE("response")
+        }
     }
 
     fun registerRequest(span: Span, request: Request): Unit = runCatching {
@@ -48,7 +74,7 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
 
             if (response.contentType != null) {
                 if (response.contentType.match(REQUIRED_CONTENT_TYPE)) {
-                    getResultBodyAttributes(span, response)
+                    getResponseBodyAttributes(span, response)
                 } else if (isStreamingRequest && response.contentType.match(EVENT_STREAM_CONTENT_TYPE)) {
                     span.setAttribute("gen_ai.response.streaming", true)
                     span.setAttribute("gen_ai.completion.content.type", response.contentType.toString())
@@ -60,7 +86,7 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
             span.setAttribute("http.status_code", response.code.toLong())
 
             if (response.isError()) {
-                getResultErrorBodyAttributes(span, response.body)
+                getResponseErrorBodyAttributes(span, response.body)
                 span.setStatus(StatusCode.ERROR)
             } else {
                 span.setStatus(StatusCode.OK)
@@ -91,7 +117,7 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
             ?: DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES
 
 
-    protected open fun getResultErrorBodyAttributes(span: Span, body: ResponseBody) {
+    protected open fun getResponseErrorBodyAttributes(span: Span, body: ResponseBody) {
         body.asJson()?.jsonObject["error"]?.jsonObject?.let { error ->
             error["message"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.message", it.content) }
             error["type"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.type", it.content) }
@@ -101,7 +127,7 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
     }
 
     protected abstract fun getRequestBodyAttributes(span: Span, request: Request)
-    protected abstract fun getResultBodyAttributes(span: Span, response: Response)
+    protected abstract fun getResponseBodyAttributes(span: Span, response: Response)
 
     abstract fun isStreamingRequest(request: Request): Boolean
     abstract fun handleStreaming(span: Span, events: String)

@@ -407,6 +407,32 @@ class GeminiTracingTest : BaseAITracingTest() {
         assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.error.code")].isNullOrEmpty())
     }
 
+    @Test
+    fun `test Gemini additional attributes`() = runTest {
+        val model = "gemini-2.5-flash"
+        val client = instrument(createGeminiClient())
+
+        client.models.generateContent(
+            model,
+            "Generate polite greeting and introduce yourself",
+            GeminiGenerateContentConfig.builder()
+                // "labels" attribute is not mapped in the API handler
+                .labels(mapOf("labelKey" to "labelValue"))
+                .temperature(0.0f)
+                .build()
+        )
+
+        val traces = analyzeSpans()
+
+        assertEquals(1, traces.size)
+        val trace = traces.firstOrNull()
+        assertNotNull(trace)
+        val labelsAttribute = trace.attributes[AttributeKey.stringKey("tracy.request.labels")]
+
+        assertNotNull(labelsAttribute)
+        assertEquals("{\"labelKey\":\"labelValue\"}",labelsAttribute)
+    }
+
     private fun installHttpInterceptor(client: GeminiClient, interceptor: Interceptor) {
         val apiClientField = GeminiClient::class.java.getDeclaredField("apiClient")
             .apply { isAccessible = true }

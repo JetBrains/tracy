@@ -2,6 +2,7 @@ package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
 import com.anthropic.core.JsonString
+import com.anthropic.core.JsonValue
 import com.anthropic.helpers.MessageAccumulator
 import com.anthropic.models.messages.*
 import io.opentelemetry.api.common.AttributeKey
@@ -358,5 +359,29 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
 
         assertEquals(errorMessage, trace.attributes[AttributeKey.stringKey("gen_ai.error.message")])
         assertEquals(529, trace.attributes[AttributeKey.longKey("http.status_code")])
+    }
+
+    @Test
+    fun `test Anthropic additional attributes`() = runTest {
+        val client = instrument(createAnthropicClient())
+
+        val model = Model.CLAUDE_3_5_HAIKU_LATEST
+        val paramsBuilder = MessageCreateParams.builder()
+            .addUserMessage("Say hi to the user.")
+            .maxTokens(1000L)
+            .additionalBodyProperties(
+                mapOf("additionalBodyPropertyKey" to JsonValue.from("additionalBodyPropertyValue"))
+            )
+            .model(model)
+
+        client.messages().create(paramsBuilder.build())
+
+        val traces = analyzeSpans()
+        val trace = traces.firstOrNull()
+
+        assertEquals(
+            "\"additionalBodyPropertyValue\"",
+            trace?.attributes?.get(AttributeKey.stringKey("tracy.request.additionalBodyPropertyKey"))
+        )
     }
 }

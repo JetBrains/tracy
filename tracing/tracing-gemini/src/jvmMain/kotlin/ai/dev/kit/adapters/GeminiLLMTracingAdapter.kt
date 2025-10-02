@@ -1,13 +1,14 @@
 package ai.dev.kit.adapters
 
+import ai.dev.kit.adapters.LLMTracingAdapter.Companion.PayloadType
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.asJson
 import io.opentelemetry.api.trace.Span
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
 
-class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingAttributes.GenAiSystemIncubatingValues.GEMINI) {
+class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.GEMINI) {
     override fun getRequestBodyAttributes(span: Span, request: Request) {
         // See: https://ai.google.dev/api/caching#Content
         val body = request.body.asJson()?.jsonObject ?: return
@@ -21,8 +22,7 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingA
 
                 if (textMessage != null) {
                     span.setAttribute("gen_ai.prompt.$index.content", textMessage)
-                }
-                else {
+                } else {
                     span.setAttribute("gen_ai.prompt.$index.content", parts.toString())
                 }
             }
@@ -32,8 +32,8 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingA
         val (model, operation) = request.url.pathSegments.lastOrNull()?.split(":")
             ?.let { it.firstOrNull() to it.lastOrNull() } ?: (null to null)
 
-        model?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL, model) }
-        operation?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME, operation) }
+        model?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, model) }
+        operation?.let { span.setAttribute(GEN_AI_OPERATION_NAME, operation) }
 
         // extract tool calls
         body.jsonObject["tools"]?.let { tools ->
@@ -68,23 +68,25 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingA
         // See: https://ai.google.dev/api/generate-content#v1beta.GenerationConfig
         body["generationConfig"]?.let { config ->
             config.jsonObject["candidateCount"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_CHOICE_COUNT, it.toLong())
+                span.setAttribute(GEN_AI_REQUEST_CHOICE_COUNT, it.toLong())
             }
             config.jsonObject["maxOutputTokens"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_MAX_TOKENS, it.toLong())
+                span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it.toLong())
             }
-            config.jsonObject["temperature"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_TEMPERATURE, it) }
-            config.jsonObject["topP"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_P, it) }
-            config.jsonObject["topK"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_K, it) }
+            config.jsonObject["temperature"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it) }
+            config.jsonObject["topP"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_P, it) }
+            config.jsonObject["topK"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_K, it) }
         }
+
+        span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.REQUEST)
     }
 
-    override fun getResultBodyAttributes(span: Span, response: Response) {
+    override fun getResponseBodyAttributes(span: Span, response: Response) {
         // See: https://ai.google.dev/api/generate-content#v1beta.GenerateContentResponse
         val body = response.body.asJson()?.jsonObject ?: return
 
-        body["responseId"]?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
-        body["modelVersion"]?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
+        body["responseId"]?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
+        body["modelVersion"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
 
         body["candidates"]?.let {
             for ((index, candidate) in it.jsonArray.withIndex()) {
@@ -99,8 +101,7 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingA
 
                     if (textMessage != null) {
                         span.setAttribute("gen_ai.completion.$index.content", textMessage)
-                    }
-                    else {
+                    } else {
                         span.setAttribute("gen_ai.completion.$index.content", parts.toString())
                     }
 
@@ -132,10 +133,10 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingA
 
         body["usageMetadata"]?.let { usage ->
             usage.jsonObject["promptTokenCount"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute(GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS, it)
+                span.setAttribute(GEN_AI_USAGE_INPUT_TOKENS, it)
             }
             usage.jsonObject["candidatesTokenCount"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute(GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS, it)
+                span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
             }
             usage.jsonObject["totalTokenCount"]?.jsonPrimitive?.intOrNull?.let {
                 span.setAttribute("gen_ai.usage.total_tokens", it.toLong())
@@ -159,6 +160,8 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingA
             // candidate tokens details
             extractUsageTokenDetails(span, usage, attribute = "candidatesTokensDetails")
         }
+
+        span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
     }
 
     // streaming is not supported
@@ -220,5 +223,22 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingA
                 }
             }
         }
+    }
+
+    companion object {
+        private val mappedRequestAttributes: List<String> = listOf(
+            "contents",
+            "tools",
+            "generationConfig"
+        )
+
+        private val mappedResponseAttributes: List<String> = listOf(
+            "responseId",
+            "modelVersion",
+            "candidates",
+            "usageMetadata"
+        )
+
+        private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes
     }
 }

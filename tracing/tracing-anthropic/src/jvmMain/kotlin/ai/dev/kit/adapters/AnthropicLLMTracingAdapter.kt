@@ -8,20 +8,21 @@ import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.asJson
 import io.opentelemetry.api.trace.Span
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
+import ai.dev.kit.adapters.LLMTracingAdapter.Companion.PayloadType
 import kotlinx.serialization.json.*
 import mu.KotlinLogging
 import io.ktor.http.ContentType
 
 class AnthropicLLMTracingAdapter(
     private val extractor: MediaContentExtractor
-): LLMTracingAdapter(genAISystem = GenAiIncubatingAttributes.GenAiSystemIncubatingValues.ANTHROPIC) {
+): LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.ANTHROPIC) {
     override fun getRequestBodyAttributes(span: Span, request: Request) {
         val body = request.body.asJson()?.jsonObject ?: return
 
-        body["temperature"]?.jsonPrimitive?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_TEMPERATURE, it.doubleOrNull) }
-        body["model"]?.jsonPrimitive?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL, it.content) }
-        body["max_tokens"]?.jsonPrimitive?.intOrNull?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_MAX_TOKENS, it.toLong()) }
+        body["temperature"]?.jsonPrimitive?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.doubleOrNull) }
+        body["model"]?.jsonPrimitive?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it.content) }
+        body["max_tokens"]?.jsonPrimitive?.intOrNull?.let { span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it.toLong()) }
 
         // metadata
         body["metadata"]?.jsonObject?.let { metadata ->
@@ -37,8 +38,8 @@ class AnthropicLLMTracingAdapter(
             system["type"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.prompt.system.type", it.content) }
         }
 
-        body["top_k"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_K, it) }
-        body["top_p"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_P, it) }
+        body["top_k"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_K, it) }
+        body["top_p"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_P, it) }
 
         body["messages"]?.let {
             if (it is JsonArray) {
@@ -66,15 +67,17 @@ class AnthropicLLMTracingAdapter(
         if (mediaContent != null) {
             extractor.setUploadableContentAttributes(span, field = "input", mediaContent)
         }
+
+        span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.REQUEST)
     }
 
-    override fun getResultBodyAttributes(span: Span, response: Response) {
+    override fun getResponseBodyAttributes(span: Span, response: Response) {
         val body = response.body.asJson()?.jsonObject ?: return
 
-        body["id"]?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
-        body["type"]?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_OUTPUT_TYPE, it.jsonPrimitive.content) }
+        body["id"]?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
+        body["type"]?.let { span.setAttribute(GEN_AI_OUTPUT_TYPE, it.jsonPrimitive.content) }
         body["role"]?.let { span.setAttribute("gen_ai.response.role", it.jsonPrimitive.content) }
-        body["model"]?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
+        body["model"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
 
         // collecting response messages
         body["content"]?.let {
@@ -85,8 +88,7 @@ class AnthropicLLMTracingAdapter(
                 if (type == "text") {
                     // normal text message
                     span.setAttribute("gen_ai.completion.$index.content", message.jsonObject["text"]?.toString())
-                }
-                else if (type == "tool_use") {
+                } else if (type == "tool_use") {
                     // tool call request by LLM
                     val toolCall = message
                     // gen_ai.tool.call.id
@@ -108,8 +110,7 @@ class AnthropicLLMTracingAdapter(
                         "gen_ai.completion.$index.tool.arguments",
                         toolCall.jsonObject["input"].toString()
                     )
-                }
-                else {
+                } else {
                     span.setAttribute("gen_ai.completion.$index.content", message.toString())
                 }
             }
@@ -117,16 +118,16 @@ class AnthropicLLMTracingAdapter(
 
         // finish reason
         body["stop_reason"]?.let {
-            span.setAttribute(GenAiIncubatingAttributes.GEN_AI_RESPONSE_FINISH_REASONS, listOf(it.jsonPrimitive.content))
+            span.setAttribute(GEN_AI_RESPONSE_FINISH_REASONS, listOf(it.jsonPrimitive.content))
         }
 
         // collecting usage stats (e.g., input/output tokens)
         body["usage"]?.jsonObject?.let { usage ->
             usage["input_tokens"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute(GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS, it)
+                span.setAttribute(GEN_AI_USAGE_INPUT_TOKENS, it)
             }
             usage["output_tokens"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute(GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS, it)
+                span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
             }
             usage["cache_creation_input_tokens"]?.jsonPrimitive?.intOrNull?.let {
                 span.setAttribute("gen_ai.usage.cache_creation_input_tokens", it.toLong())
@@ -138,6 +139,8 @@ class AnthropicLLMTracingAdapter(
                 span.setAttribute("gen_ai.usage.service_tier", it.content)
             }
         }
+
+        span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
     }
 
     // streaming is not supported
@@ -273,8 +276,33 @@ class AnthropicLLMTracingAdapter(
 
         return resources
     }
-
     companion object {
+        // https://docs.claude.com/en/api/messages
+        private val mappedRequestAttributes: List<String> = listOf(
+            "temperature",
+            "model",
+            "max_tokens",
+            "metadata",
+            "service_tier",
+            "system",
+            "top_k",
+            "top_p",
+            "messages",
+            "tools"
+        )
+
+        private val mappedResponseAttributes: List<String> = listOf(
+            "id",
+            "type",
+            "role",
+            "model",
+            "content",
+            "stop_reason",
+            "usage"
+        )
+
+        private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes
+
         private val logger = KotlinLogging.logger {}
     }
 }

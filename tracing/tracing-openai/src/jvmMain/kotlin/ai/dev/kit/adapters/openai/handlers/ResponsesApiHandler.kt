@@ -1,5 +1,7 @@
 package ai.dev.kit.adapters.openai.handlers
 
+import ai.dev.kit.adapters.LLMTracingAdapter.Companion.PayloadType
+import ai.dev.kit.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
 import ai.dev.kit.adapters.media.MediaContent
 import ai.dev.kit.adapters.media.MediaContentExtractor
 import ai.dev.kit.adapters.media.MediaContentPart
@@ -17,7 +19,8 @@ import kotlinx.serialization.json.*
  * Handler for OpenAI Responses API
  */
 internal class ResponsesApiHandler(
-    private val extractor: MediaContentExtractor) : OpenAIApiHandler {
+    private val extractor: MediaContentExtractor
+) : OpenAIApiHandler {
     override fun handleRequestAttributes(span: Span, request: Request) {
         val body = request.body.asJson()?.jsonObject ?: return
         OpenAIApiUtils.setCommonRequestAttributes(span, request)
@@ -95,6 +98,8 @@ internal class ResponsesApiHandler(
                 }
             }
         }
+
+        span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.REQUEST)
     }
 
     /**
@@ -122,6 +127,8 @@ internal class ResponsesApiHandler(
         body["usage"]?.let { usage ->
             setUsageAttributes(span, usage.jsonObject)
         }
+
+        span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
     }
 
     override fun handleStreaming(span: Span, events: String): Unit = runCatching {
@@ -142,7 +149,7 @@ internal class ResponsesApiHandler(
         span.recordException(exception)
     }
 
-   private fun processAttributeTypes(span: Span, events: JsonArray, indexOfFirstAttribute: Int, type: String) {
+    private fun processAttributeTypes(span: Span, events: JsonArray, indexOfFirstAttribute: Int, type: String) {
         var index = indexOfFirstAttribute
 
         for (output in events.jsonArray) {
@@ -259,8 +266,7 @@ internal class ResponsesApiHandler(
                         if ("file_url" in part.jsonObject) {
                             val url = part.jsonObject["file_url"]?.jsonPrimitive?.content ?: continue
                             if (url.isValidUrl()) MediaContentPart(Resource.Url(url)) else null
-                        }
-                        else if ("file_data" in part.jsonObject) {
+                        } else if ("file_data" in part.jsonObject) {
                             val dataUrl = part.jsonObject["file_data"]?.jsonPrimitive?.content ?: continue
                             MediaContentPart(Resource.DataUrl(dataUrl))
                         } else {
@@ -278,5 +284,35 @@ internal class ResponsesApiHandler(
         }
 
         return MediaContent(parts)
+    }
+
+    companion object {
+        // https://platform.openai.com/docs/api-reference/responses/create
+        private val mappedRequestAttributes: List<String> = listOf(
+            "temperature",
+            "model",
+            "previous_response_id",
+            "store",
+            "top_p",
+            "max_output_tokens",
+            "truncation",
+            "parallel_tool_calls",
+            "stream",
+            "response_format",
+            "tool_choice",
+            "reasoning",
+            "text",
+            "input",
+            "instructions",
+            "tools",
+        )
+
+        // https://platform.openai.com/docs/api-reference/responses/object
+        private val mappedResponseAttributes: List<String> = listOf(
+            "output",
+            "usage"
+        )
+
+        private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes
     }
 }
