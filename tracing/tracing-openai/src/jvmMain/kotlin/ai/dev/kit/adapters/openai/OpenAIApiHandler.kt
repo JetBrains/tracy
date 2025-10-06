@@ -34,7 +34,7 @@ internal object OpenAIApiUtils {
      */
     fun setCommonResponseAttributes(span: Span, body: JsonObject) {
         body["id"]?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
-        body["object"]?.let { span.setAttribute("llm.request.type", it.jsonPrimitive.content) }
+        body["object"]?.let { span.setAttribute(GEN_AI_OPERATION_NAME, it.jsonPrimitive.content) }
         body["model"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
     }
 }

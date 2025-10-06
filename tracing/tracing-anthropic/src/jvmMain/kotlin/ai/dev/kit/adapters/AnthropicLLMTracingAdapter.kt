@@ -58,7 +58,6 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubati
 
     override fun getResultBodyAttributes(span: Span, body: JsonObject) {
         body["id"]?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
-        // TODO: use `llm.request.type`?
         body["type"]?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_OUTPUT_TYPE, it.jsonPrimitive.content) }
         body["role"]?.let { span.setAttribute("gen_ai.response.role", it.jsonPrimitive.content) }
         body["model"]?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
