@@ -48,62 +48,20 @@ internal class ResponsesApiHandler : OpenAIApiHandler {
             span.setAttribute("gen_ai.request.text", it.toString())
         }
 
-        body["input"]?.let { input ->
-            var promptIndex = 0
-            if (input is JsonArray) {
-                for (message in input.jsonArray) {
-                    val role = message.jsonObject["role"]?.jsonPrimitive?.content
-                    val content = message.jsonObject["content"]
-                    span.setAttribute("gen_ai.prompt.$promptIndex.role", role)
+        var promptIndex = 0
 
-                    if (role == "assistant" && content is JsonArray) {
-                        val toolResults = content.jsonArray.filter {
-                            it.jsonObject["type"]?.jsonPrimitive?.content == "output_text" &&
-                                    it.jsonObject["tool_use_id"] != null
-                        }
+        body["instructions"]?.jsonPrimitive?.let {
+            span.setAttribute("gen_ai.prompt.0.content", it.toString())
+            span.setAttribute("gen_ai.prompt.0.role", "system")
+            promptIndex++
+        }
 
-                        if (toolResults.isNotEmpty()) {
-                            span.setAttribute("gen_ai.prompt.$promptIndex.content", null)
-                            promptIndex++
-
-                            for (toolResult in toolResults) {
-                                span.setAttribute("gen_ai.prompt.$promptIndex.role", "tool")
-                                span.setAttribute(
-                                    "gen_ai.prompt.$promptIndex.content",
-                                    toolResult.jsonObject["text"]?.jsonPrimitive?.content
-                                )
-                                span.setAttribute(
-                                    "gen_ai.prompt.$promptIndex.tool_call_id",
-                                    toolResult.jsonObject["tool_use_id"]?.jsonPrimitive?.content
-                                )
-                                promptIndex++
-                            }
-                        } else {
-                            span.setAttribute("gen_ai.prompt.$promptIndex.role", role)
-                            span.setAttribute("gen_ai.prompt.$promptIndex.content", content.toString())
-                            promptIndex++
-                        }
-                    } else {
-                        if (role == "tool") {
-                            span.setAttribute(
-                                "gen_ai.prompt.$promptIndex.tool_call_id",
-                                message.jsonObject["tool_call_id"]?.jsonPrimitive?.content
-                            )
-                        } else {
-                            span.setAttribute("gen_ai.prompt.$promptIndex.content", content.toString())
-                        }
-                        promptIndex++
-                    }
-                }
+        body["input"]?.let { inputs ->
+            if (inputs is JsonArray) {
+                processAttributeTypes(span, inputs, promptIndex, "prompt")
             } else {
                 span.setAttribute("gen_ai.prompt.0.role", "user")
-                span.setAttribute("gen_ai.prompt.0.content", input.toString())
-                promptIndex++
-            }
-
-            body["instructions"]?.jsonPrimitive?.let {
-                span.setAttribute("gen_ai.prompt.$promptIndex.content", it.toString())
-                span.setAttribute("gen_ai.prompt.$promptIndex.role", "system")
+                span.setAttribute("gen_ai.prompt.0.content", inputs.toString())
             }
         }
 
@@ -133,75 +91,90 @@ internal class ResponsesApiHandler : OpenAIApiHandler {
         OpenAIApiUtils.setCommonResponseAttributes(span, body)
 
         body["output"]?.let { outputs ->
-            for ((index, output) in outputs.jsonArray.withIndex()) {
-                when (output.jsonObject["type"]?.jsonPrimitive?.content) {
-                    "function_call" -> {
-                        output.jsonObject["call_id"]?.jsonPrimitive?.content?.let {
-                            span.setAttribute("gen_ai.completion.$index.tool_call_id", it)
-                        }
-                        output.jsonObject["type"]?.jsonPrimitive?.content?.let {
-                            span.setAttribute("gen_ai.completion.$index.tool_call_type", it)
-                        }
-                        output.jsonObject["name"]?.jsonPrimitive?.content?.let {
-                            span.setAttribute("gen_ai.completion.$index.tool_name", it)
-                        }
-                        output.jsonObject["arguments"]?.jsonPrimitive?.content?.let {
-                            span.setAttribute("gen_ai.completion.$index.tool_arguments", it)
-                        }
+            processAttributeTypes(span, outputs.jsonArray, 0, "completion")
+        }
+
+        body["usage"]?.let { usage ->
+            setUsageAttributes(span, usage.jsonObject)
+        }
+    }
+
+    fun processAttributeTypes(span: Span, events: JsonArray, indexOfFirstAttribute: Int, type: String) {
+        var index = indexOfFirstAttribute
+        for (output in events.jsonArray) {
+            when (output.jsonObject["type"]?.jsonPrimitive?.content) {
+                "function_call", "function_call_output" -> {
+                    // "type" attribute is not rendered on Langfuse
+                    output.jsonObject["type"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.$type.$index.tool_call_type", it)
+                    }
+                    output.jsonObject["call_id"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.$type.$index.tool_call_id", it)
+                    }
+                    output.jsonObject["name"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.$type.$index.tool_name", it)
+                    }
+                    output.jsonObject["arguments"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.$type.$index.tool_arguments", it)
+                    }
+                    output.jsonObject["output"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.$type.$index.output", it)
+                    }
+                }
+
+                "message", null -> {
+                    output.jsonObject["role"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.$type.$index.role", it)
                     }
 
-                    "message" -> {
-                        output.jsonObject["role"]?.jsonPrimitive?.content?.let {
-                            span.setAttribute("gen_ai.completion.$index.role", it)
-                        }
-
+                    if (output.jsonObject["content"] is JsonArray) {
                         output.jsonObject["content"]?.jsonArray?.let { contentArray ->
                             val textContent = contentArray.firstOrNull {
                                 it.jsonObject["type"]?.jsonPrimitive?.content == "output_text"
                             }?.jsonObject
 
                             textContent?.get("text")?.jsonPrimitive?.content?.let {
-                                span.setAttribute("gen_ai.completion.$index.content", it)
+                                span.setAttribute("gen_ai.$type.$index.content", it)
                             }
 
                             textContent?.get("annotations")?.let {
-                                span.setAttribute("gen_ai.completion.$index.annotations", it.toString())
+                                span.setAttribute("gen_ai.$type.$index.annotations", it.toString())
                             }
                         }
-                        output.jsonObject["status"]?.jsonPrimitive?.content?.let {
-                            span.setAttribute("gen_ai.completion.$index.finish_reason", it)
-                        }
+                    } else {
+                        span.setAttribute("gen_ai.$type.$index.content", output.jsonObject["content"].toString())
                     }
 
-                    "reasoning" -> {
-                        // "type" attribute is not rendered on Langfuse
-                        output.jsonObject["type"]?.jsonPrimitive?.content?.let {
-                            span.setAttribute("gen_ai.completion.$index.output_type", it)
-                        }
-                        output.jsonObject["id"]?.jsonPrimitive?.content?.let {
-                            span.setAttribute("gen_ai.completion.$index.id", it)
-                        }
-                        output.jsonObject["encrypted_content"]?.jsonPrimitive?.content?.let {
-                            span.setAttribute("gen_ai.completion.$index.encrypted_content", it)
-                        }
-                        output.jsonObject["status"]?.jsonPrimitive?.content?.let {
-                            span.setAttribute("gen_ai.completion.$index.status", it)
-                        }
-                        output.jsonObject["summary"]?.jsonArray?.toString()?.let {
-                            span.setAttribute("gen_ai.completion.$index.summary", it)
-                        }
+                    output.jsonObject["status"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.$type.$index.finish_reason", it)
+                    }
+                }
 
-                        // content = null breaks rendering on Langfuse
-                        output.jsonObject["content"]?.jsonPrimitive?.content?.let {
-                            span.setAttribute("gen_ai.completion.$index.output_content", it)
-                        }
+                "reasoning" -> {
+                    // "type" attribute is not rendered on Langfuse
+                    output.jsonObject["type"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.$type.$index.output_type", it)
+                    }
+                    output.jsonObject["id"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.$type.$index.id", it)
+                    }
+                    output.jsonObject["encrypted_content"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.$type.$index.encrypted_content", it)
+                    }
+                    output.jsonObject["status"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.$type.$index.status", it)
+                    }
+                    output.jsonObject["summary"]?.jsonArray?.toString()?.let {
+                        span.setAttribute("gen_ai.$type.$index.summary", it)
+                    }
+
+                    // content = null breaks rendering on Langfuse
+                    output.jsonObject["content"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.$type.$index.output_content", it)
                     }
                 }
             }
-        }
-
-        body["usage"]?.let { usage ->
-            setUsageAttributes(span, usage.jsonObject)
+            index++
         }
     }
 
