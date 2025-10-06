@@ -392,3 +392,8 @@ and metrics in **Tracing/Scores** tab:
 ---
 For additional info refer to [Langfuse docs](https://langfuse.com/docs).
 
+## License
+
+This project is licensed under the Apache License 2.0 — see the [LICENSE](LICENSE) file for details.
+
+
