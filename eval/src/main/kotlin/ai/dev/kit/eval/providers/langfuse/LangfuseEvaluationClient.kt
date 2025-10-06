@@ -78,7 +78,7 @@ class LangfuseEvaluationClient(
 
                 else -> {
                     // Now supports only SingleScoreEvalResult and MultiScoreEvalResult similarly to ToTable()
-                    // TODO: decide how to make it better
+                    // TODO: improve
                     throw IllegalArgumentException("Unsupported EvalResult type: ${evalResult::class.simpleName}. For now use SingleScoreEvalResult or MultiScoreEvalResult")
                 }
             }

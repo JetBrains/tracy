@@ -26,8 +26,7 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingA
             ?.let { it.firstOrNull() to it.lastOrNull() } ?: (null to null)
 
         model?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL, model) }
-        // TODO: use GEN_AI_OPERATION_NAME?
-        operation?.let { span.setAttribute("llm.request.type", operation) }
+        operation?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME, operation) }
 
         // extract tool calls
         body.jsonObject["tools"]?.let {
@@ -126,7 +125,6 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingA
                 span.setAttribute("gen_ai.usage.total_tokens", it.toLong())
             }
 
-            // TODO: think about the mapping of the below properties (see: https://github.com/JetBrains/ai-dev-kit/pull/54#discussion_r2229750741)
             /**
              * The following two properties (`promptTokensDetails`, `candidatesTokensDetails`)
              * and their inner contents are mapped into snake-cased OTEL attributes.

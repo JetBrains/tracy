@@ -36,7 +36,6 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
     fun registerRequest(span: Span, url: Url, requestBody: JsonObject) {
         getRequestBodyAttributes(span, url, requestBody)
         span.setAttribute("gen_ai.api_base", "${url.scheme}://${url.host}")
-        // TODO: get from parameters
         span.setAttribute(GEN_AI_SYSTEM, genAISystem)
     }
 

@@ -26,8 +26,6 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
     private var handler: OpenAIApiHandler? = null
 
     override fun getRequestBodyAttributes(span: Span, url: Url, body: JsonObject) {
-        // Set a common system attribute
-        span.setAttribute(GEN_AI_SYSTEM, GenAiSystemIncubatingValues.OPENAI)
         if (handler == null) {
             handler = when (detectApiType(body)) {
                 OpenAIApiType.CHAT_COMPLETIONS -> ChatCompletionsHandler()
