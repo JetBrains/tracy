@@ -7,7 +7,7 @@ import org.gradle.api.tasks.bundling.Jar
 
 class SpacePublishingPlugin : Plugin<Project> {
     companion object {
-        private const val VERSION = "1.0.18"
+        private const val VERSION = "1.0.19"
         private const val PROJECT_PREFIX = "ai-dev-kit-"
     }
 
