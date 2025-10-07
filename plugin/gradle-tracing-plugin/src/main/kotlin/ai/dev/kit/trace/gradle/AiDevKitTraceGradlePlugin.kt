@@ -6,7 +6,7 @@ import org.jetbrains.kotlin.gradle.plugin.*
 
 class AiDevKitTraceGradlePlugin : KotlinCompilerPluginSupportPlugin {
     companion object {
-        const val VERSION = "1.0.19"
+        const val VERSION = "1.0.20"
     }
 
     override fun apply(target: Project) {
