@@ -435,10 +435,14 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val model = "gemini-2.5-flash"
         val promptMessage = "Explain how AI works in a few words"
 
-        val response = client.post("$LITELLM_URL/gemini/v1beta/models/$model:generateContent") {
+        val projectId = "jetbrains-grazie"
+        val location = "us-central1"
+        val url = "$LITELLM_URL/vertex_ai/v1/projects/$projectId/locations/$location/publishers/google/models/$model:generateContent"
+
+        val response = client.post(url) {
             val apiKey = getApiKey()
 
-            header("x-goog-api-key", apiKey)
+            header("x-litellm-api-key", "Bearer $apiKey")
             header("Content-Type", "application/json")
             setBody(
                 """
@@ -447,7 +451,8 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
                         {
                             "parts": [
                                 { "text": "$promptMessage" }
-                            ]
+                            ],
+                            "role": "user"
                         }
                     ]
                 }

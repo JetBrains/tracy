@@ -25,11 +25,18 @@ import com.google.genai.types.HttpOptions as GeminiHttpOptions
 @Tag("SkipForNonLocal")
 class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
     fun createGeminiClient(): GeminiClient {
+        val projectId = "jetbrains-grazie"
+        val location = "us-central1"
+        val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
+
         return GeminiClient.builder()
-            .apiKey(System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set"))
+            .vertexAI(true)
+            .project(projectId)
+            .location(location)
             .httpOptions(
                 GeminiHttpOptions.builder()
-                    .baseUrl("$LITELLM_URL/gemini")
+                    .baseUrl("$LITELLM_URL/vertex_ai")
+                    .headers(mapOf("x-litellm-api-key" to "Bearer $apiKey"))
                     .timeout(Duration.ofSeconds(60).toMillis().toInt())
                     .build()
             )
@@ -65,12 +72,13 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
     @Test
     fun `test Gemini tool calling auto logging`() = runTest {
         val client = instrument(createGeminiClient())
-        val greetTool = createTool("hi")
+        val toolName = "hi"
+        val greetTool = createTool(toolName)
 
-        val model = "gemini-1.5-pro"
+        val model = "gemini-2.5-flash"
         client.models.generateContent(
             model,
-            "Generate polite greeting and introduce yourself",
+            "Generate polite greeting and introduce yourself. You MUST use the tool named '${toolName}' for greeting!",
             GeminiGenerateContentConfig.builder()
                 .temperature(0.8f)
                 .tools(greetTool)
@@ -101,7 +109,7 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
         val client = instrument(createGeminiClient())
         val greetTool = createTool("hi")
 
-        val model = "gemini-1.5-pro"
+        val model = "gemini-2.5-flash"
         val config = GeminiGenerateContentConfig.builder()
             .temperature(0.0f)
             .tools(greetTool)
@@ -110,7 +118,7 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
         // Step 1: Initial user message
         val userMessage = Content.builder()
             .role("user")
-            .parts(Part.fromText("Generate greeting via a tool provided to you"))
+            .parts(Part.fromText("Generate greeting via a tool provided to you. Use the name USER. You MUST call the tool exactly once!"))
             .build()
 
         // Step 2: Get AI response (which should contain a function call)
@@ -182,7 +190,7 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
         val greetTool = createTool("hi")
         val goodbyeTool = createTool("goodbye")
 
-        val model = "gemini-1.5-pro"
+        val model = "gemini-2.5-flash"
         val config = GeminiGenerateContentConfig.builder()
             .temperature(0.0f)
             .tools(greetTool, goodbyeTool)
@@ -244,7 +252,7 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test Gemini auto tracing`() = runTest {
-        val model = "gemini-1.5-pro"
+        val model = "gemini-2.5-flash"
         val client = instrument(createGeminiClient())
 
         client.models.generateContent(
@@ -289,7 +297,7 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
 
         try {
             client.models.generateContent(
-                "gemini-1.5-pro",
+                "gemini-2.5-flash",
                 "Generate polite greeting and introduce yourself",
                 GeminiGenerateContentConfig.builder()
                     .temperature(0.8f)
