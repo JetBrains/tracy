@@ -15,17 +15,10 @@ kotlin {
         browser()
     }
 
-    sourceSets.all {
-        compilerOptions {
-            freeCompilerArgs.add("-Xexpected-actual-classes")
-        }
-    }
-
     sourceSets {
         commonMain {
             dependencies {
                 implementation(project(":tracing:tracing-core"))
-                implementation(libs.kotlin)
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
             }

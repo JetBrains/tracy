@@ -1,7 +1,7 @@
 plugins {
     id("ai.dev.kit.space.publishing")
     id("java-gradle-plugin")
-    id("org.jetbrains.kotlin.jvm") version "2.1.0"
+    id("org.jetbrains.kotlin.jvm") version "2.0.0"
 }
 
 dependencies {

@@ -6,7 +6,6 @@ plugins {
 
 dependencies {
     implementation(libs.junit)
-    implementation(libs.kotlin)
     implementation(libs.kotlin.logging)
     implementation(libs.kotlinx.coroutines)
     implementation(libs.kotlinx.dataframe)

@@ -15,16 +15,9 @@ kotlin {
         browser()
     }
 
-    sourceSets.all {
-        compilerOptions {
-            freeCompilerArgs.add("-Xexpected-actual-classes")
-        }
-    }
-
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(libs.kotlin)
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.ktor.client)

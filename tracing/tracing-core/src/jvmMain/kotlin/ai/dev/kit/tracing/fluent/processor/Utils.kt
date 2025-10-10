@@ -14,31 +14,6 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KFunction
 import kotlin.reflect.jvm.javaMethod
 
-@Deprecated("use withSpan() instead")
-actual inline fun <T> withTrace(
-    function: KFunction<*>,
-    args: Array<Any?>,
-    traceAnnotation: KotlinFlowTrace,
-    block: () -> T
-): T {
-    val method = function.javaMethod ?: throw IllegalArgumentException("Function must be a Java method")
-    val span = createSpan(traceAnnotation, method, args)
-    val scope = span.makeCurrent()
-    try {
-        val result = block()
-        return result.also {
-            addOutputAttributesToTracing(span, traceAnnotation, it)
-            span.setStatus(StatusCode.OK)
-        }
-    } catch (exception: Throwable) {
-        span.addExceptionAttributes(exception)
-        throw exception
-    } finally {
-        span.end()
-        scope.close()
-    }
-}
-
 inline fun <T> withSpan(
     name: String,
     attributes: Map<String, Any?>,
@@ -69,7 +44,32 @@ inline fun <T> withSpan(
     }
 }
 
-// TODO: try to reduce code duplication
+@Deprecated("use withSpan() instead", level = DeprecationLevel.HIDDEN)
+actual inline fun <T> withTrace(
+    function: KFunction<*>,
+    args: Array<Any?>,
+    traceAnnotation: KotlinFlowTrace,
+    crossinline block: () -> T
+): T {
+    val method = function.javaMethod ?: throw IllegalArgumentException("Function must be a Java method")
+    val span = createSpan(traceAnnotation, method, args)
+    val scope = span.makeCurrent()
+    try {
+        val result = block()
+        return result.also {
+            addOutputAttributesToTracing(span, traceAnnotation, it)
+            span.setStatus(StatusCode.OK)
+        }
+    } catch (exception: Throwable) {
+        span.addExceptionAttributes(exception)
+        throw exception
+    } finally {
+        span.end()
+        scope.close()
+    }
+}
+
+@Deprecated("use withSpan() instead", level = DeprecationLevel.HIDDEN)
 actual suspend inline fun <T> withTraceSuspended(
     function: KFunction<*>,
     args: Array<Any?>,

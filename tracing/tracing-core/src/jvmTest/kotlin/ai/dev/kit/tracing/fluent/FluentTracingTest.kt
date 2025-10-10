@@ -60,6 +60,18 @@ internal class MyTestClass {
             return x.reversed()
         }
     }
+
+    @KotlinFlowTrace(name = "InlineOperation")
+    inline fun <T> inlineOperation(name: String, block: () -> T): Pair<String, T> =
+        name to block()
+
+    @KotlinFlowTrace(name = "InlineOperation")
+    inline fun <T> inlineOperationBlockFirst(block: () -> T, name: String): Pair<String, T> =
+        name to block()
+
+    @KotlinFlowTrace(name = "InlineOperation")
+    inline fun <T> inlineOperationNoinlineBlock(name: String, noinline block: () -> T): Pair<String, T> =
+        name to block()
 }
 
 internal class MyGenericTestClass<T> {
@@ -98,6 +110,74 @@ class FluentTracingTest() : BaseOpenTelemetryTracingTest() {
         assertEquals(1, traces.size)
         val trace = traces.firstOrNull()
         assertNotNull(trace)
+    }
+
+    @Test
+    fun `test inline function`() = runTest {
+        val input = "RandomString"
+        MyTestClass().inlineOperation("name") {
+            input.reversed()
+        }
+        val traces = analyzeSpans()
+
+        assertEquals(1, traces.size)
+        val trace = traces.firstOrNull()
+        assertNotNull(trace)
+
+        assertEquals(
+            "{\"name\":\"name\",\"block\":\"null\"}",
+            trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS)
+        )
+        assertEquals(
+            "(name, ${input.reversed()})",
+            trace.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS)
+        )
+    }
+
+    @Test
+    fun `test inline function block first`() = runTest {
+        val input = "RandomString"
+        MyTestClass().inlineOperationBlockFirst({
+            input.reversed()
+        }, "name")
+        val traces = analyzeSpans()
+
+        assertEquals(1, traces.size)
+        val trace = traces.firstOrNull()
+        assertNotNull(trace)
+
+        assertEquals(
+            "{\"block\":\"null\",\"name\":\"name\"}",
+            trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS),
+        )
+        assertEquals(
+            "(name, ${input.reversed()})",
+            trace.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS)
+        )
+    }
+
+    @Test
+    fun `test inline function with noinline block`() = runTest {
+        val input = "RandomString"
+        MyTestClass().inlineOperationNoinlineBlock("name") {
+            input.reversed()
+        }
+        val traces = analyzeSpans()
+
+        assertEquals(1, traces.size)
+        val trace = traces.firstOrNull()
+        assertNotNull(trace)
+
+        val inputs = trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS)
+        val outputs = trace.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS)
+
+        assertTrue(inputs!!.contains("\"name\":\"name\""))
+        assertTrue(inputs.contains("\"block\":\"ai.dev.kit.tracing"))
+
+        assertEquals(
+            "(name, ${input.reversed()})",
+            outputs
+        )
     }
 
     @Test
