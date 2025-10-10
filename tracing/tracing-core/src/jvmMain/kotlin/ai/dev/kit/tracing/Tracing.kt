@@ -22,16 +22,18 @@ fun setupTracing(
             )
         )
 
-    val maxNumberOfAttributes: Int = tracingConfig.maxNumberOfSpanAttributes ?:
-        System.getenv("MAX_NUMBER_OF_ATTRIBUTES")?.toIntOrNull() ?: MAX_NUMBER_OF_SPAN_ATTRIBUTES
+    val maxNumberOfSpanAttributes: Int = tracingConfig.maxNumberOfSpanAttributes ?:
+        System.getenv("MAX_NUMBER_OF_SPAN_ATTRIBUTES")?.toIntOrNull() ?: MAX_NUMBER_OF_SPAN_ATTRIBUTES
 
-    val maxAttributeValueLength: Int = tracingConfig.maxSpanAttributeValueLength ?:
-        System.getenv("MAX_ATTRIBUTE_VALUE_LENGTH")?.toIntOrNull() ?: MAX_SPAN_ATTRIBUTE_VALUE_LENGTH
+    val maxSpanAttributeValueLength: Int = tracingConfig.maxSpanAttributeValueLength ?:
+        System.getenv("MAX_SPAN_ATTRIBUTE_VALUE_LENGTH")?.toIntOrNull() ?: MAX_SPAN_ATTRIBUTE_VALUE_LENGTH
 
     val spanLimits = SpanLimits.builder()
-        .setMaxNumberOfAttributes(maxNumberOfAttributes)
-        .setMaxAttributeValueLength(maxAttributeValueLength)
+        .setMaxNumberOfAttributes(maxNumberOfSpanAttributes)
+        .setMaxAttributeValueLength(maxSpanAttributeValueLength)
         .build()
+
+    TracingManager.maxNumberOfSpanAttributes = maxNumberOfSpanAttributes
 
     val tracerProvider = SdkTracerProvider.builder()
         .setSpanLimits(spanLimits)

@@ -1,7 +1,9 @@
 package ai.dev.kit.adapters
 
+import ai.dev.kit.tracing.TracingManager
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.sdk.trace.ReadableSpan
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_SYSTEM
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
@@ -34,6 +36,8 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
     }
 
     fun registerRequest(span: Span, url: Url, requestBody: JsonObject) {
+        span.setAttribute("gen_ai.request.SpanAttributeNumber", "0 (limit ${TracingManager.maxNumberOfSpanAttributes})")
+
         getRequestBodyAttributes(span, url, requestBody)
         span.setAttribute("gen_ai.api_base", "${url.scheme}://${url.host}")
         span.setAttribute(GEN_AI_SYSTEM, genAISystem)
@@ -57,6 +61,23 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
             span.setStatus(StatusCode.ERROR)
         } else {
             span.setStatus(StatusCode.OK)
+        }
+
+        val numberOfSpanAttributes = (span as? ReadableSpan)?.attributes?.size()
+
+        numberOfSpanAttributes?.let {
+            val limit = TracingManager.maxNumberOfSpanAttributes ?: Int.MAX_VALUE
+            if (it >= limit) {
+                span.setAttribute(
+                    "gen_ai.request.SpanAttributeNumber",
+                    "Limit (${TracingManager.maxNumberOfSpanAttributes}) exceeded. Adjust TracingConfig or env"
+                )
+            } else {
+                span.setAttribute(
+                    "gen_ai.request.SpanAttributeNumber",
+                    "$it (limit ${TracingManager.maxNumberOfSpanAttributes})"
+                )
+            }
         }
     }
 

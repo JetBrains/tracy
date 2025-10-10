@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit
 object TracingManager {
     const val AI_DEVELOPMENT_KIT_TRACER = "ai-development-kit"
     private lateinit var openTelemetrySdk: OpenTelemetrySdk
+    internal var maxNumberOfSpanAttributes: Int? = null
     val tracer
         get() = openTelemetrySdk.getTracer(AI_DEVELOPMENT_KIT_TRACER)
 
