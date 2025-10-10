@@ -1,0 +1,31 @@
+plugins {
+    id("ai.dev.kit.space.publishing")
+    id("org.jetbrains.kotlin.multiplatform") version "1.9.20"
+}
+
+repositories {
+    mavenCentral()
+    gradlePluginPortal()
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
+kotlin {
+    jvm {
+        compilations.all {
+            kotlinOptions.jvmTarget = "17"
+        }
+        withJava()
+    }
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                compileOnly("org.jetbrains.kotlin:kotlin-compiler-embeddable")
+            }
+        }
+    }
+}

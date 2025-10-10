@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.kotlin.serialization) apply false
-
+    id("ai.dev.kit.trace") apply false
 }
 
 subprojects {
@@ -28,10 +28,6 @@ tasks.register("publishContentModules") {
     }.mapNotNull { subproject ->
         subproject.tasks.findByName("publish")
     }
-    val pluginPublishes = listOf(
-        gradle.includedBuild("plugin").task(":ai-dev-kit-tracing-compiler-plugin:publish"),
-        gradle.includedBuild("plugin").task(":gradle-tracing-plugin:publish")
-    )
-
-    dependsOn(publishTasks + pluginPublishes)
+    val pluginPublishTasks = gradle.includedBuild("plugin").task(":publishTracingPlugin")
+    dependsOn(publishTasks + pluginPublishTasks)
 }

@@ -8,10 +8,12 @@ import io.opentelemetry.sdk.internal.ExceptionAttributeResolver
 import io.opentelemetry.sdk.trace.data.ExceptionEventData
 import io.opentelemetry.sdk.trace.data.SpanData
 import io.opentelemetry.sdk.trace.data.StatusData
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
@@ -59,7 +61,18 @@ internal class MyTestClassWithSuspend {
         return result
     }
 
-    @KotlinFlowTrace(name = "Parent Span Non Suspend")
+    @KotlinFlowTrace(name = "Parent Span Non-Suspend")
+    suspend fun parentTestFunctionWithNonSuspendKidWithDispatcher(x: String): String {
+        delay(50)
+        return withContext(Dispatchers.IO) { childTestFunctionNonSuspendWithDispatcher(x.reversed()) }
+    }
+
+    @KotlinFlowTrace(name = "Child Span Non Suspend")
+    fun childTestFunctionNonSuspendWithDispatcher(x: String): String {
+        return x.reversed()
+    }
+
+    @KotlinFlowTrace(name = "Parent Span Non-Suspend")
     suspend fun parentTestFunctionWithNonSuspendKid(x: String): String {
         delay(50)
         return childTestFunctionNonSuspend(x.reversed())
@@ -70,7 +83,7 @@ internal class MyTestClassWithSuspend {
         return x.reversed()
     }
 
-    @KotlinFlowTrace(name = "Parent Span Non Suspend")
+    @KotlinFlowTrace(name = "Parent Span Non-Suspend")
     fun parentTestFunctionWithSuspendKid(x: String): String {
         return runBlocking { childTestFunctionSuspend(x.reversed()) }
     }
@@ -206,6 +219,28 @@ class SuspendFluentTracingTest() : BaseOpenTelemetryTracingTest() {
         MyTestClassWithSuspend().parentTestFunction("RandomString")
 
         val traces = analyzeSpans()
+        assertEquals(2, traces.size)
+        val parentTrace = traces.find { it.parentSpanId == SpanId.getInvalid() }
+        val childTrace = traces.find { it.parentSpanId != SpanId.getInvalid() }
+
+        assertNotNull(parentTrace)
+        assertNotNull(childTrace)
+
+        assertEquals(StatusData.ok(), parentTrace.status)
+        assertEquals(StatusData.ok(), childTrace.status)
+
+        assertEquals(
+            parentTrace.traceId,
+            childTrace.traceId
+        )
+    }
+
+    @Test
+    fun `test parent child trace with non suspend child with dispatcher`() = runTest {
+        MyTestClassWithSuspend().parentTestFunctionWithNonSuspendKidWithDispatcher("RandomString")
+
+        val traces = analyzeSpans()
+
         assertEquals(2, traces.size)
         val parentTrace = traces.find { it.parentSpanId == SpanId.getInvalid() }
         val childTrace = traces.find { it.parentSpanId != SpanId.getInvalid() }
