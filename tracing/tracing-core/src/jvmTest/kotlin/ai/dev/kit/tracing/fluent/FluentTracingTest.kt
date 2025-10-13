@@ -1,7 +1,7 @@
 package ai.dev.kit.tracing.fluent
 
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
-import ai.dev.kit.tracing.addTagsToCurrentTrace
+import ai.dev.kit.tracing.addLangfuseTagsToCurrentTrace
 import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.sdk.internal.ExceptionAttributeResolver
@@ -24,7 +24,7 @@ internal class MyTestClass {
 
     @KotlinFlowTrace(name = "Main Span", spanType = "mySpanType")
     fun testFunctionWithTag(paramName: Int): Int {
-        addTagsToCurrentTrace(listOf("Tag1", "Tag2"))
+        addLangfuseTagsToCurrentTrace(listOf("Tag1", "Tag2"))
         return paramName
     }
 
@@ -254,7 +254,7 @@ class FluentTracingTest() : BaseOpenTelemetryTracingTest() {
         val trace = traces.firstOrNull()
         assertNotNull(trace)
         assertEquals(
-            traces.first().getAttribute(FluentSpanAttributes.TRACE_TAGS),
+            traces.first().getAttribute(FluentSpanAttributes.LANGFUSE_TRACE_TAGS),
             "[Tag1, Tag2]"
         )
     }

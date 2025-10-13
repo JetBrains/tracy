@@ -117,7 +117,7 @@ TracingManager.flushTraces()
 
 
 * Annotate traced function with `@KotlinFlowTrace`
-* Use `addTagsToCurrentTrace` with a list of string tags as a parameter inside the annotated function to add tags to the
+* Use `addLangfuseTagsToCurrentTrace` with a list of string tags as a parameter inside the annotated function to add Langfuse tags to the
   current trace.
 
 ```kotlin
@@ -125,7 +125,7 @@ TracingManager.flushTraces()
 fun f(/*parameters*/): /*return value*/ {
     // function logic
     val tags = listOf<String>("tag1", "tag2", "tag3")
-    addTagsToCurrentTrace(tags)
+    addLangfuseTagsToCurrentTrace(tags)
     // function logic
 }
 ```
