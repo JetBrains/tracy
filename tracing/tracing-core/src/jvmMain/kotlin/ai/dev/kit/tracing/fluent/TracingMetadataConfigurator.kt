@@ -3,7 +3,7 @@ package ai.dev.kit.tracing.fluent
 import ai.dev.kit.tracing.fluent.handlers.PlatformMethod
 import ai.dev.kit.tracing.fluent.processor.Span
 import ai.dev.kit.tracing.fluent.processor.SpanBuilder
-import ai.dev.kit.tracing.fluent.processor.getSpanAttributeHandler
+import ai.dev.kit.tracing.fluent.processor.getSpanMetadataCustomizer
 
 actual fun configureTracingMetadata(
     spanBuilder: SpanBuilder,
@@ -14,7 +14,7 @@ actual fun configureTracingMetadata(
     with(spanBuilder) {
         setAttribute(
             FluentSpanAttributes.SPAN_INPUTS.key,
-            traceAnnotation.getSpanAttributeHandler().formatInputAttributes(method, args)
+            traceAnnotation.getSpanMetadataCustomizer().formatInputAttributes(method, args)
         )
         setAttribute(
             FluentSpanAttributes.SPAN_SOURCE_NAME.key, method.declaringClass.name
@@ -32,6 +32,6 @@ actual fun configureTracingMetadata(
 actual fun addOutputAttributesToTracing(span: Span, traceAnnotation: KotlinFlowTrace, result: Any?) {
     span.setAttribute(
         FluentSpanAttributes.SPAN_OUTPUTS.key,
-        traceAnnotation.getSpanAttributeHandler().formatOutputAttribute(result)
+        traceAnnotation.getSpanMetadataCustomizer().formatOutputAttribute(result)
     )
 }

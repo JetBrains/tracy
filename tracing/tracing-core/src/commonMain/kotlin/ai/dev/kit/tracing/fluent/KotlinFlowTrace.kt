@@ -20,5 +20,5 @@ import kotlin.reflect.KClass
 annotation class KotlinFlowTrace(
     val name: String = "",
     val spanType: String = SpanType.UNKNOWN,
-    val attributeHandler: KClass<out SpanMetadataCustomizer> = DefaultSpanMetadataCustomizer::class,
+    val metadataCustomizer: KClass<out SpanMetadataCustomizer> = DefaultSpanMetadataCustomizer::class,
 )

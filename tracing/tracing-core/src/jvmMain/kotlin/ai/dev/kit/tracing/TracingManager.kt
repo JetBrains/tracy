@@ -18,12 +18,14 @@ object TracingManager {
         .sdkTracerProvider
         .forceFlush()
         .join(timeoutSeconds, TimeUnit.SECONDS)
+        .isSuccess
 
 
     fun shutdownTracing(timeoutSeconds: Long = 5) = openTelemetrySdk
         .sdkTracerProvider
         .shutdown()
         .join(timeoutSeconds, TimeUnit.SECONDS)
+        .isSuccess
 
     @TestOnly
     fun setSdkForTest(testOpenTelemetrySdk: OpenTelemetrySdk) {

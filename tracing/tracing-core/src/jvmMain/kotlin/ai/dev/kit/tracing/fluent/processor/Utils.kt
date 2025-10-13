@@ -111,7 +111,7 @@ fun createSpan(
      * 2. Otherwise, the tracing system checks the annotation name.
      * 3. If blank, the method name is used.
      */
-    val spanName = traceAnnotation.getSpanAttributeHandler().resolveSpanName(method, args)
+    val spanName = traceAnnotation.getSpanMetadataCustomizer().resolveSpanName(method, args)
         ?: traceAnnotation.name.ifBlank { method.name }
     val spanBuilder = tracer.spanBuilder(spanName)
     TracingSessionProvider.currentSessionId?.let {
@@ -130,7 +130,7 @@ fun createSpan(
     return span
 }
 
-fun KotlinFlowTrace.getSpanAttributeHandler() = this.attributeHandler.objectInstance
+fun KotlinFlowTrace.getSpanMetadataCustomizer() = this.metadataCustomizer.objectInstance
     ?: error("Handler must be an object singleton")
 
 fun getOpenTelemetryContext(coroutineContext: CoroutineContext): Context {
