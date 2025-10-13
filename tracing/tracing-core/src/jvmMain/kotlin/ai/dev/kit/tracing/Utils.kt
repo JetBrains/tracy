@@ -6,7 +6,14 @@ import ai.dev.kit.tracing.fluent.processor.getOpenTelemetryContext
 import io.opentelemetry.context.Context
 import kotlin.coroutines.CoroutineContext
 
-fun addTagsToCurrentTrace(tags: List<String>, coroutineContext: CoroutineContext? = null) {
+/**
+ * Adds a list of Langfuse trace tags to the current active span within an OpenTelemetry trace.
+ *
+ * @param tags A list of tag strings to attach to the current Langfuse trace.
+ * @param coroutineContext Optional coroutine context used to resolve the OpenTelemetry context.
+ *                         If `null`, the current active context is used.
+ */
+fun addLangfuseTagsToCurrentTrace(tags: List<String>, coroutineContext: CoroutineContext? = null) {
     val otelContext = coroutineContext?.let { getOpenTelemetryContext(it) } ?: Context.current()
-    Span.fromContext(otelContext).setAttribute(FluentSpanAttributes.TRACE_TAGS.key, tags.toString())
+    Span.fromContext(otelContext).setAttribute(FluentSpanAttributes.LANGFUSE_TRACE_TAGS.key, tags.toString())
 }

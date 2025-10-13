@@ -1,7 +1,7 @@
 package ai.dev.kit.tracing.fluent
 
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
-import ai.dev.kit.tracing.addTagsToCurrentTrace
+import ai.dev.kit.tracing.addLangfuseTagsToCurrentTrace
 import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.sdk.internal.ExceptionAttributeResolver
@@ -29,7 +29,7 @@ internal class MyTestClassWithSuspend {
     @KotlinFlowTrace(name = "Main Span", spanType = "mySpanType")
     suspend fun testFunctionWithTag(paramName: Int): Int {
         delay(12)
-        addTagsToCurrentTrace(listOf("Tag1", "Tag2"), currentCoroutineContext())
+        addLangfuseTagsToCurrentTrace(listOf("Tag1", "Tag2"), currentCoroutineContext())
         return paramName
     }
 
@@ -148,7 +148,7 @@ class SuspendFluentTracingTest() : BaseOpenTelemetryTracingTest() {
         val trace = traces.firstOrNull()
         assertNotNull(trace)
         assertEquals(
-            traces.first().getAttribute(FluentSpanAttributes.TRACE_TAGS),
+            traces.first().getAttribute(FluentSpanAttributes.LANGFUSE_TRACE_TAGS),
             "[Tag1, Tag2]"
         )
     }
