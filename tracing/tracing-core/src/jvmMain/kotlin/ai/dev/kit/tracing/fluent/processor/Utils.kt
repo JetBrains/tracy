@@ -16,7 +16,7 @@ import kotlin.reflect.jvm.javaMethod
 
 inline fun <T> withSpan(
     name: String,
-    attributes: Map<String, Any?>,
+    attributes: Map<String, Any?> = emptyMap(),
     block: (Span) -> T
 ): T {
     val tracer = TracingManager.tracer
@@ -31,12 +31,9 @@ inline fun <T> withSpan(
 
     try {
         val result = block(span)
-        span.setAttribute("output", result.toString())
-
         return result
     } catch (e: Exception) {
-        span.recordException(e)
-        span.setStatus(StatusCode.ERROR, "Block $name execution failed")
+        span.addExceptionAttributes(e)
         throw e
     } finally {
         scope.close()

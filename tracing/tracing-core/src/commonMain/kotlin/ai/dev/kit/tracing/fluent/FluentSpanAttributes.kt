@@ -9,7 +9,6 @@ enum class FluentSpanAttributes(val key: String) {
     SPAN_FUNCTION_NAME("code.function.name"),
     SPAN_SOURCE_NAME("source.name"),
     SPAN_TYPE("spanType"),
-    TRACE_CREATION_INFO("traceCreationInfo"),
     LANGFUSE_TRACE_TAGS("langfuse.trace.tags");
 }
 

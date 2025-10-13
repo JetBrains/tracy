@@ -5,16 +5,15 @@ import ai.dev.kit.tracing.fluent.handlers.SpanMetadataCustomizer
 import kotlin.reflect.KClass
 
 /**
- * Annotation to trace Kotlin functions.
+ * Annotation for tracing Kotlin functions.
  *
- * This annotation can be applied to functions to automatically generate tracing spans.
+ * Applies to functions to automatically generate tracing spans.
  *
- * @property name The name of the span. If left empty, a default name will be derived from the function name.
- * @property spanType The type of the span, representing its role or context within the trace (e.g., entry point, exit)
- * @property attributeHandler A reference to a custom attribute handler that extends [SpanMetadataCustomizer].
- *                            This handler is responsible for adding specific attributes to the span.
+ * @property name The name of the span. If left empty, a default name is derived from the function name.
+ * @property spanType The type of the span, representing its role or context within the trace.
+ * @property metadataCustomizer A reference to a custom attribute handler that extends [SpanMetadataCustomizer].
+ * Defaults to [DefaultSpanMetadataCustomizer].
  */
-
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.FUNCTION)
 annotation class KotlinFlowTrace(

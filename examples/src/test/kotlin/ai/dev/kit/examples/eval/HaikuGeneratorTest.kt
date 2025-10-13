@@ -1,4 +1,4 @@
-package ai.dev.kit.examples.haiku
+package ai.dev.kit.examples.eval
 
 import ai.dev.kit.eval.providers.langfuse.LangfuseEvaluationTest
 import ai.dev.kit.eval.utils.*
@@ -26,8 +26,8 @@ class LangfuseHaikuGeneratorTest :
 }
 
 @Tag("SkipForNonLocal")
-class NoLoggingHaikuGeneratorTest :
-    NoLoggingEvaluationTest<HaikuTopic, NoGroundTruth, HaikuText, MultiScoreEvalResult>(
+class ConsoleHaikuGeneratorTest :
+    ConsoleEvaluationTest<HaikuTopic, NoGroundTruth, HaikuText, MultiScoreEvalResult>(
         numberOfRuns = 1,
     ) {
     override val testCases: List<TestCase<HaikuTopic, NoGroundTruth>> =
