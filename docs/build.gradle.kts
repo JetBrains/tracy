@@ -4,9 +4,11 @@ group = rootProject.group
 version = rootProject.version
 
 plugins {
-    alias(libs.plugins.kotlin.jvm)
+    // alias(libs.plugins.kotlin.jvm))
+    kotlin("jvm")
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.knit)
+     id("ai.kotlin.dokka")
 }
 
 kotlin {
@@ -14,15 +16,21 @@ kotlin {
 }
 
 dependencies {
-    // implementation(project(":agents:agents-test"))
     implementation(project(":tracing:tracing-core"))
     implementation(libs.opentelemetry.exporter.otlp)
     implementation(libs.opentelemetry.exporter.logging)
 }
 
+
+dokka {
+    dokkaSourceSets.configureEach {
+        suppress.set(true)
+    }
+}
 //dokka {
-//    dokkaSourceSets.configureEach {
-//        suppress.set(true)
+//    moduleName.set("Dokka MultiModule Example")
+//    dokkaPublications.html {
+//        includes.from("DocsModule.md")
 //    }
 //}
 

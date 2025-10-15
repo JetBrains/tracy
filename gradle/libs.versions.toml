@@ -15,6 +15,7 @@ opentelemetry = "1.51.0"
 opentelemetry-semconv-incubating = "1.34.0-alpha"
 logging = "3.0.5"
 logback = "1.5.13"
+dokka = "2.0.0"
 
 [libraries]
 koog = { module = "ai.koog:koog-agents", version.ref = "koog" }
@@ -36,7 +37,7 @@ okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 openai = { module = "com.openai:openai-java", version.ref = "openai" }
 gemini = { module = "com.google.genai:google-genai", version.ref = "gemini" }
 anthropic = { module = "com.anthropic:anthropic-java", version.ref = "anthropic" }
-
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 opentelemetry = { module = "io.opentelemetry:opentelemetry-api", version.ref = "opentelemetry" }
 opentelemetry-sdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "opentelemetry" }
 opentelemetry-kotlin = { module = "io.opentelemetry:opentelemetry-extension-kotlin", version.ref = "opentelemetry" }
@@ -48,9 +49,11 @@ opentelemetry-sdk-testing = { module = "io.opentelemetry:opentelemetry-sdk-testi
 
 kotlin-logging = { module = "io.github.microutils:kotlin-logging", version.ref = "logging" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+dokka-gradle-plugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 knit = { id = "org.jetbrains.kotlinx.knit", version.ref = "knit" }
+#dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }

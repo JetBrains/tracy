@@ -1,10 +1,12 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
 
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
+    // alias(libs.plugins.kotlin.multiplatform)
+    kotlin("multiplatform")
     alias(libs.plugins.kotlin.serialization)
     id("ai.dev.kit.space.publishing")
     id("ai.dev.kit.trace")
+    id("ai.kotlin.dokka")
 }
 
 kotlin {
@@ -15,7 +17,7 @@ kotlin {
     }
 
     sourceSets {
-        val commonMain by getting {
+        commonMain {
             dependencies {
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
@@ -23,7 +25,7 @@ kotlin {
             }
         }
 
-        val jvmMain by getting {
+        jvmMain {
             dependencies {
                 implementation(libs.okhttp)
                 implementation(libs.kotlin.reflect)
@@ -35,7 +37,7 @@ kotlin {
             }
         }
 
-        val jvmTest by getting {
+        jvmTest {
             dependencies {
                 implementation(libs.kotlin.test)
                 implementation(libs.junit.params)

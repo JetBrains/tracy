@@ -1,6 +1,5 @@
 plugins {
-    alias(libs.plugins.kotlin.jvm) apply false
-    alias(libs.plugins.kotlin.multiplatform) apply false
+    id("ai.kotlin.dokka")
     alias(libs.plugins.kotlin.serialization) apply false
     id("ai.dev.kit.trace") apply false
 }
@@ -31,3 +30,13 @@ tasks.register("publishContentModules") {
     val pluginPublishTasks = gradle.includedBuild("plugin").task(":publishTracingPlugin")
     dependsOn(publishTasks + pluginPublishTasks)
 }
+
+dependencies {
+    dokka(project(":tracing:tracing-anthropic"))
+    dokka(project(":tracing:tracing-openai"))
+    dokka(project(":tracing:tracing-gemini"))
+    dokka(project(":tracing:tracing-ktor"))
+    dokka(project(":tracing:tracing-test-utils"))
+    dokka(project(":tracing:tracing-core"))
+}
+

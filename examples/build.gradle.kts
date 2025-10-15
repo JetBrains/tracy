@@ -1,7 +1,8 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    alias(libs.plugins.kotlin.jvm)
+    // alias(libs.plugins.kotlin.jvm)
+    kotlin("jvm")
     id("ai.dev.kit.trace")
 }
 
