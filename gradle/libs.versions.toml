@@ -56,4 +56,3 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 knit = { id = "org.jetbrains.kotlinx.knit", version.ref = "knit" }
-#dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
