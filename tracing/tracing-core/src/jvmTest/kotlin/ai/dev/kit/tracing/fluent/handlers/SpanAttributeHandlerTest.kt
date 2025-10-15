@@ -13,10 +13,10 @@ private class TestSpanAttributeHandlerClass {
     @KotlinFlowTrace(name = "Test Name")
     fun baseAttributeHandlerWithName(param: Int): Int = param
 
-    @KotlinFlowTrace(attributeHandler = TestMetadataCustomizer::class)
+    @KotlinFlowTrace(metadataCustomizer = TestMetadataCustomizer::class)
     fun baseAttributeHandlerWithHandler(param: Int): Int = param
 
-    @KotlinFlowTrace(name = "Test Name", attributeHandler = TestMetadataCustomizer::class)
+    @KotlinFlowTrace(name = "Test Name", metadataCustomizer = TestMetadataCustomizer::class)
     fun baseAttributeHandlerWithNameAndHandler(param: Int): Int = param
 
     object TestMetadataCustomizer : SpanMetadataCustomizer {
