@@ -38,13 +38,13 @@ fun <T> patchOpenAICompatibleClient(
     val clientOptions = getFieldValue(client as Any, "clientOptions")
     val originalHttpClient = getFieldValue(clientOptions, "originalHttpClient")
 
-    val okHttpClient = if (originalHttpClient::class.simpleName == "OkHttpClient") {
-        getFieldValue(originalHttpClient, "okHttpClient")
+    val okHttpHolder = if (originalHttpClient::class.simpleName == "OkHttpClient") {
+        originalHttpClient
     } else {
-        val httpClient = getFieldValue(originalHttpClient, "httpClient")
-        getFieldValue(httpClient, "okHttpClient")
-    } as OkHttpClient
+        getFieldValue(originalHttpClient, "httpClient")
+    }
 
+    val okHttpClient = getFieldValue(okHttpHolder, "okHttpClient") as OkHttpClient
     setFieldValue(okHttpClient, "interceptors", listOf(interceptor))
 
     return client

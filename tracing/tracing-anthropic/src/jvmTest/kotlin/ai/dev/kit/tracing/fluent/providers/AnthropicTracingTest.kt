@@ -1,13 +1,12 @@
 package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
+import ai.dev.kit.getFieldValue
+import ai.dev.kit.setFieldValue
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.LITELLM_URL
 import com.anthropic.client.AnthropicClient
-import com.anthropic.client.AnthropicClientImpl
 import com.anthropic.client.okhttp.AnthropicOkHttpClient
-import com.anthropic.client.okhttp.OkHttpClient
-import com.anthropic.core.ClientOptions
 import com.anthropic.core.JsonObject
 import com.anthropic.core.JsonString
 import com.anthropic.helpers.MessageAccumulator
@@ -22,9 +21,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -67,8 +64,8 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
         // Check tool definitions in the request
         assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
         assertEquals("custom", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.type")])
-        Assertions.assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.description")]?.isNotEmpty() == true)
-        Assertions.assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.parameters")]?.isNotEmpty() == true)
+        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.description")]?.isNotEmpty() == true)
+        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.parameters")]?.isNotEmpty() == true)
 
         // assert tool use requests when LLM finished with a tool call
         if (trace.attributes[GEN_AI_RESPONSE_FINISH_REASONS]?.contains("tool_use") == true) {
@@ -82,8 +79,8 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
                 "tool_use",
                 trace.attributes[AttributeKey.stringKey("gen_ai.completion.$index.tool.call.type")]
             )
-            Assertions.assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.$index.tool.call.id")]?.isNotEmpty() == true)
-            Assertions.assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.$index.tool.arguments")]?.isNotEmpty() == true)
+            assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.$index.tool.call.id")]?.isNotEmpty() == true)
+            assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.$index.tool.arguments")]?.isNotEmpty() == true)
         }
     }
 
@@ -151,18 +148,18 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
                 // content is an array of objects (content blocks)
                 // e.g.: [{"tool_use_id":"id","type":"tool_result","content":"text"}]
                 jsonContent.jsonArray.firstOrNull()?.jsonObject["type"]?.jsonPrimitive?.content == "tool_result"
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 false
             }
             containsToolResult
         }
 
-        Assertions.assertTrue(index != null, "Expected to find a tool result in the prompt")
+        assertTrue(index != null, "Expected to find a tool result in the prompt")
 
         val content = traceWithToolCallResult.attributes[AttributeKey.stringKey("gen_ai.prompt.$index.content")]!!
         val jsonContent = Json.parseToJsonElement(content).jsonArray.firstOrNull()!!
 
-        Assertions.assertTrue(jsonContent.jsonObject["tool_use_id"]?.jsonPrimitive?.content?.isNotEmpty() == true)
+        assertTrue(jsonContent.jsonObject["tool_use_id"]?.jsonPrimitive?.content?.isNotEmpty() == true)
         assertEquals("tool_result", jsonContent.jsonObject["type"]?.jsonPrimitive?.content)
         assertEquals("Hello, my dear friend!", jsonContent.jsonObject["content"]?.jsonPrimitive?.content)
     }
@@ -232,7 +229,7 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
                 0
             }
         }
-        Assertions.assertTrue(toolResultCount == 2)
+        assertEquals(2, toolResultCount)
     }
 
     @Test
@@ -300,8 +297,8 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
             trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
 
-        Assertions.assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")]?.isNotEmpty() == true)
-        Assertions.assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.error.code")]?.isNotEmpty() == true)
+        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")]?.isNotEmpty() == true)
+        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.error.code")]?.isNotEmpty() == true)
     }
 
     @Test
@@ -309,25 +306,23 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
         val client = instrument(createAnthropicClient())
         val errorMessage = "Server is overloaded, please try again later."
 
-        val serverOverloadedInterceptor = object : Interceptor {
-            override fun intercept(chain: Interceptor.Chain): Response {
-                val response = chain.proceed(chain.request())
-                // see: https://docs.anthropic.com/en/api/errors
-                val errorBody = """
-                    {
-                        "type": "error",
-                        "error": {
-                            "type": "overloaded_error",
-                            "message": "$errorMessage"
+        val serverOverloadedInterceptor = Interceptor { chain ->
+            val response = chain.proceed(chain.request())
+            // see: https://docs.anthropic.com/en/api/errors
+            val errorBody = """
+                        {
+                            "type": "error",
+                            "error": {
+                                "type": "overloaded_error",
+                                "message": "$errorMessage"
+                            }
                         }
-                    }
-                """.trimIndent().toResponseBody("application/json".toMediaTypeOrNull())
+                    """.trimIndent().toResponseBody("application/json".toMediaTypeOrNull())
 
-                return response.newBuilder()
-                    .body(errorBody)
-                    .code(529)
-                    .build()
-            }
+            response.newBuilder()
+                .body(errorBody)
+                .code(529)
+                .build()
         }
 
         installHttpInterceptor(client, interceptor = serverOverloadedInterceptor)
@@ -385,21 +380,19 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
     }
 
     private fun installHttpInterceptor(client: AnthropicClient, interceptor: Interceptor) {
-        val clientOptionsField =
-            AnthropicClientImpl::class.java.getDeclaredField("clientOptions").apply { isAccessible = true }
-        val clientOptions = clientOptionsField.get(client)
+        val clientOptions = getFieldValue(client, "clientOptions")
+        val originalHttpClient = getFieldValue(clientOptions, "originalHttpClient")
 
-        val originalHttpClientField =
-            ClientOptions::class.java.getDeclaredField("originalHttpClient").apply { isAccessible = true }
-        val originalHttpClient = originalHttpClientField.get(clientOptions)
+        // Find the object that actually holds the "okHttpClient" field
+        val okHttpHolder = if (originalHttpClient::class.simpleName == "OkHttpClient") {
+            originalHttpClient
+        } else {
+            getFieldValue(originalHttpClient, "httpClient")
+        }
 
-        val okHttpClientField = OkHttpClient::class.java.getDeclaredField("okHttpClient").apply { isAccessible = true }
-        val okHttpClient = okHttpClientField.get(originalHttpClient) as okhttp3.OkHttpClient
+        val okHttpClient = getFieldValue(okHttpHolder, "okHttpClient") as okhttp3.OkHttpClient
+        val modifiedHttpClient = okHttpClient.newBuilder().addInterceptor(interceptor).build()
 
-        val modifiedHttpClient = okHttpClient.newBuilder()
-            .addInterceptor(interceptor)
-            .build()
-
-        okHttpClientField.set(originalHttpClient, modifiedHttpClient)
+        setFieldValue(okHttpHolder, "okHttpClient", modifiedHttpClient)
     }
 }
