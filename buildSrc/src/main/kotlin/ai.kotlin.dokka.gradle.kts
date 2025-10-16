@@ -30,5 +30,47 @@ dokka {
             url("https://kotlinlang.org/api/kotlinx.serialization/")
             packageListUrl("https://kotlinlang.org/api/kotlinx.serialization/package-list")
         }
+
+        // Open Telemetry Documentation
+        externalDocumentationLinks.register("opentelemetry-api") {
+            url("https://javadoc.io/doc/io.opentelemetry/opentelemetry-api/latest/")
+            packageListUrl("https://javadoc.io/doc/io.opentelemetry/opentelemetry-api/latest/element-list")
+        }
+
+        externalDocumentationLinks.register("opentelemetry-sdk") {
+            url("https://javadoc.io/doc/io.opentelemetry/opentelemetry-sdk/latest/")
+            packageListUrl("https://javadoc.io/doc/io.opentelemetry/opentelemetry-sdk/latest/element-list")
+        }
+
+        externalDocumentationLinks.register("opentelemetry-exporter-otlp") {
+            url("https://javadoc.io/doc/io.opentelemetry/opentelemetry-exporter-otlp/latest/")
+            packageListUrl("https://javadoc.io/doc/io.opentelemetry/opentelemetry-exporter-otlp/latest/element-list")
+        }
+
+        externalDocumentationLinks.register("opentelemetry-exporter-logging") {
+            url("https://javadoc.io/doc/io.opentelemetry/opentelemetry-exporter-logging/latest/")
+            packageListUrl("https://javadoc.io/doc/io.opentelemetry/opentelemetry-exporter-logging/latest/element-list")
+        }
+
+        externalDocumentationLinks.register("opentelemetry-sdk-testing") {
+            url("https://javadoc.io/doc/io.opentelemetry/opentelemetry-sdk-testing/latest/")
+            packageListUrl("https://javadoc.io/doc/io.opentelemetry/opentelemetry-sdk-testing/latest/element-list")
+        }
+
+        // LLM Providers Documentations
+        externalDocumentationLinks.register("openai-java") {
+            url("https://javadoc.io/doc/com.openai/openai-java/latest/")
+            packageListUrl("https://javadoc.io/doc/com.openai/openai-java/latest/element-list")
+        }
+
+        externalDocumentationLinks.register("google-genai") {
+            url("https://javadoc.io/doc/com.google.genai/google-genai/latest/")
+            packageListUrl("https://javadoc.io/doc/com.google.genai/google-genai/latest/element-list")
+        }
+
+        externalDocumentationLinks.register("com.anthropic:anthropic-java") {
+            url("https://javadoc.io/doc/com.anthropic/anthropic-java/latest/")
+            packageListUrl("https://javadoc.io/doc/com.anthropic/anthropic-java/latest/element-list")
+        }
     }
 }
