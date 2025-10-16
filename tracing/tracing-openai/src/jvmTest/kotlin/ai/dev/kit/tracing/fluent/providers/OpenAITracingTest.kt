@@ -468,28 +468,6 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
             .build()
 
         return ChatCompletionTool.ofFunction(functionTool)
-        /*
-        return ChatCompletionTool.builder()
-            .type(JsonString.of("function"))
-            .function(
-                FunctionDefinition.builder()
-                    .description("Say $word to the user")
-                    .name(word)
-                    .parameters(
-                        FunctionParameters.builder()
-                            .putAdditionalProperty("type", JsonValue.from("object"))
-                            .putAdditionalProperty(
-                                "properties",
-                                JsonValue.from(mapOf("name" to mapOf("type" to "string")))
-                            )
-                            .putAdditionalProperty("required", JsonArray.of(listOf(JsonString.of("name"))))
-                            .putAdditionalProperty("additionalProperties", JsonValue.from(false))
-                            .build()
-                    )
-                    .build()
-            )
-            .build()
-        */
     }
 
     private fun createFunctionTool(word: String): FunctionTool {
