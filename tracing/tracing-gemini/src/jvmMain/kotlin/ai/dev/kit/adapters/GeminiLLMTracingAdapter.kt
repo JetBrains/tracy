@@ -12,12 +12,62 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingAttributes.GenAiSystemIncubatingValues.GEMINI) {
+    /**
+     * Extracts `text` attribute from `parts` array if
+     * `parts` contains only a single message with a single
+     * `text` attribute.
+     *
+     * Examples:
+     * 1. `text` will be returned:
+     * ```json
+     * {
+     *     "parts": [
+     *         {
+     *             "text": "Hello! I am a large language model!"
+     *         }
+     *     ]
+     * }
+     * ```
+     * 2. `null` will be returned (i.e., clients are expected to attach an entire `parts` array into span):
+     * ```json
+     * {
+     *     "parts": [
+     *         {
+     *             "text": "Hello! I am a large language model.",
+     *             "thoughtSignature": "CvcBAR/123"
+     *         }
+     *     ]
+     * }
+     * ```
+     */
+    private fun JsonElement.singleTextMessageInParts(): String? {
+        val parts = this
+        if (parts !is JsonArray || parts.size != 1) {
+            return null
+        }
+        val item = parts.first().jsonObject
+        // only the 'text' attribute is present -> display it on Langfuse with Markdown rendering
+        if (item.keys.size == 1 && item.keys.first() == "text") {
+            return item["text"]?.jsonPrimitive?.content
+        }
+        return null
+    }
+
     override fun getRequestBodyAttributes(span: Span, url: Url, body: JsonObject) {
         // See: https://ai.google.dev/api/caching#Content
         body["contents"]?.let {
             for ((index, message) in it.jsonArray.withIndex()) {
                 span.setAttribute("gen_ai.prompt.$index.role", message.jsonObject["role"]?.jsonPrimitive?.content)
-                span.setAttribute("gen_ai.prompt.$index.content", message.jsonObject["parts"].toString())
+
+                val parts = message.jsonObject["parts"]
+                val textMessage = parts?.singleTextMessageInParts()
+
+                if (textMessage != null) {
+                    span.setAttribute("gen_ai.prompt.$index.content", textMessage)
+                }
+                else {
+                    span.setAttribute("gen_ai.prompt.$index.content", parts.toString())
+                }
             }
         }
 
@@ -86,7 +136,14 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingA
                     )
                     // response parts
                     val parts = content.jsonObject["parts"]
-                    span.setAttribute("gen_ai.completion.$index.content", parts.toString())
+                    val textMessage = parts?.singleTextMessageInParts()
+
+                    if (textMessage != null) {
+                        span.setAttribute("gen_ai.completion.$index.content", textMessage)
+                    }
+                    else {
+                        span.setAttribute("gen_ai.completion.$index.content", parts.toString())
+                    }
 
                     // collect requests for a tool call
                     if (parts is JsonArray) {
