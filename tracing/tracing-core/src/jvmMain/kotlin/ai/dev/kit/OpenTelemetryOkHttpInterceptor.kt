@@ -6,7 +6,10 @@ import ai.dev.kit.adapters.Url
 import ai.dev.kit.tracing.TracingManager
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
@@ -15,8 +18,6 @@ import okio.Buffer
 import okio.BufferedSource
 import okio.ForwardingSource
 import okio.buffer
-import kotlin.reflect.full.declaredMemberProperties
-import kotlin.reflect.jvm.isAccessible
 
 
 /**
@@ -26,46 +27,61 @@ import kotlin.reflect.jvm.isAccessible
  * with the specified interceptor.
  * Supports OpenAI-compatible (**in terms of internal class structure**) clients.
  *
- * @param Client The generic type representing the client class (e.g., Anthropic or OpenAI client interfaces).
- * @param ClientImpl The generic type representing the implementation class of the client.
- * @param ClientOptions The generic type representing the options class of the client.
- * @param ClientOkHttpClient The generic type representing the OkHttp client class used internally by the client.
  * @param client The instance of the OpenAI-compatible client to patch.
- * @param clientImplClass The class object representing the implementation type of the client.
- * @param clientOptionsClass The class object representing the options type of the client.
- * @param clientOkHttpClientClass The class object representing the OkHttp client type used internally by the client.
  * @param interceptor The interceptor to be injected into the internal HTTP client of the OpenAI-compatible client.
  * @return The patched client instance with the custom interceptor injected into its HTTP client.
  */
-fun <Client, ClientImpl, ClientOptions, ClientOkHttpClient> patchOpenAICompatibleClient(
-    client: Client,
-    clientImplClass: Class<out ClientImpl>,
-    clientOptionsClass: Class<out ClientOptions>,
-    clientOkHttpClientClass: Class<out ClientOkHttpClient>,
+fun <T> patchOpenAICompatibleClient(
+    client: T,
     interceptor: Interceptor,
-): Client {
-    val clientOptionsField = clientImplClass.getDeclaredField("clientOptions").apply { isAccessible = true }
-    val clientOptions = clientOptionsField.get(client)
-
-    val originalHttpClientField = clientOptionsClass.getDeclaredField("originalHttpClient").apply { isAccessible = true }
-    val originalHttpClient = originalHttpClientField.get(clientOptions)
-
-    val okHttpClientField = clientOkHttpClientClass.getDeclaredField("okHttpClient").apply { isAccessible = true }
+): T {
+    val clientOptions = getFieldValue(client as Any, "clientOptions")
+    val originalHttpClient = getFieldValue(clientOptions, "originalHttpClient")
 
     val okHttpClient = if (originalHttpClient::class.simpleName == "OkHttpClient") {
-        okHttpClientField.get(originalHttpClient) as OkHttpClient
+        getFieldValue(originalHttpClient, "okHttpClient")
     } else {
-        val httpClientField = originalHttpClient::class.declaredMemberProperties.first { it.name == "httpClient" }
-            .apply { isAccessible = true }
-        val httpClient = httpClientField.getter.call(originalHttpClient)
-        okHttpClientField.get(httpClient) as OkHttpClient
-    }
+        val httpClient = getFieldValue(originalHttpClient, "httpClient")
+        getFieldValue(httpClient, "okHttpClient")
+    } as OkHttpClient
 
-    val interceptorsField = OkHttpClient::class.java.getDeclaredField("interceptors").apply { isAccessible = true }
-
-    interceptorsField.set(okHttpClient, listOf(interceptor))
+    setFieldValue(okHttpClient, "interceptors", listOf(interceptor))
 
     return client
+}
+
+fun getFieldValue(instance: Any, fieldName: String): Any {
+    var cls: Class<*>? = instance.javaClass
+    while (cls != null) {
+        try {
+            val field = cls.getDeclaredField(fieldName)
+            field.isAccessible = true
+            return field.get(instance) ?: throw IllegalStateException("Field '$fieldName' is null")
+        } catch (_: NoSuchFieldException) {
+            cls = cls.superclass
+        }
+    }
+    throw NoSuchFieldException("Field '$fieldName' not found in ${instance.javaClass.name}")
+}
+
+fun setFieldValue(instance: Any, fieldName: String, value: Any?) {
+    var cls: Class<*>? = instance.javaClass
+    while (cls != null) {
+        try {
+            val field = cls.getDeclaredField(fieldName)
+            field.isAccessible = true
+
+            if (value == null && field.type.isPrimitive) {
+                throw IllegalArgumentException("Cannot set primitive field '$fieldName' to null")
+            }
+
+            field.set(instance, value)
+            return
+        } catch (_: NoSuchFieldException) {
+            cls = cls.superclass
+        }
+    }
+    throw NoSuchFieldException("Field '$fieldName' not found in ${instance.javaClass.name}")
 }
 
 

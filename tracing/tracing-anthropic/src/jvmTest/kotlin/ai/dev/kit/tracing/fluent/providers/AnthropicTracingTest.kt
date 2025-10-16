@@ -11,12 +11,7 @@ import com.anthropic.core.ClientOptions
 import com.anthropic.core.JsonObject
 import com.anthropic.core.JsonString
 import com.anthropic.helpers.MessageAccumulator
-import com.anthropic.models.messages.ContentBlockParam
-import com.anthropic.models.messages.MessageCreateParams
-import com.anthropic.models.messages.MessageParam
-import com.anthropic.models.messages.Model
-import com.anthropic.models.messages.Tool
-import com.anthropic.models.messages.ToolResultBlockParam
+import com.anthropic.models.messages.*
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_FINISH_REASONS
@@ -34,10 +29,9 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import java.time.Duration
-import kotlin.invoke
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.text.get
+
 
 @Tag("SkipForNonLocal")
 class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
