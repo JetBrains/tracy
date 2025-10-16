@@ -4,7 +4,7 @@ group = rootProject.group
 version = rootProject.version
 
 plugins {
-    // alias(libs.plugins.kotlin.jvm))
+    // alias(libs.plugins.kotlin.jvm)
     kotlin("jvm")
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.knit)
