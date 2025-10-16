@@ -234,8 +234,8 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
                 // add an answer to a tool call
                 paramsBuilder.addMessage(
                     ChatCompletionToolMessageParam.builder()
-                        .content("Hello! I'm greeting you!")
                         .toolCallId(toolCall.extractId())
+                        .content("Hello! I'm greeting you!")
                         .build()
                 )
             }
