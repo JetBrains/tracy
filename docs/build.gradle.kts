@@ -26,12 +26,6 @@ dokka {
         suppress.set(true)
     }
 }
-//dokka {
-//    moduleName.set("Dokka MultiModule Example")
-//    dokkaPublications.html {
-//        includes.from("DocsModule.md")
-//    }
-//}
 
 val knitProperties: Provider<Properties> =
     providers.fileContents(layout.projectDirectory.file("knit.properties"))
