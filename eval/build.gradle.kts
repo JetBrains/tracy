@@ -1,5 +1,4 @@
 plugins {
-    // alias(libs.plugins.kotlin.jvm)
     kotlin("jvm")
     alias(libs.plugins.kotlin.serialization)
     id("ai.dev.kit.space.publishing")
