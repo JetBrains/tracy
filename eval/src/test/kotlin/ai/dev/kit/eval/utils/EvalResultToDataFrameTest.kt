@@ -6,10 +6,10 @@ import org.junit.jupiter.api.Test
 
 
 /**
- * Test suite for the `toTable` function in the `EvalResultKt` class.
+ * Test suite for the [toTable] function in the [EvalResult] class.
  *
- * The `toTable` function converts a list of `EvalResult` into a `DataFrame<Float>`.
- * It handles both `SingleScoreEvalResult` and `MultiScoreEvalResult` objects.
+ * The [toTable] function converts a list of [EvalResult] into a `DataFrame<Float>`.
+ * It handles both [SingleScoreEvalResult] and [MultiScoreEvalResult] objects.
  */
 class EvalResultToDataFrameTest {
     @Test
@@ -90,7 +90,7 @@ class EvalResultToDataFrameTest {
     }
 
     @Test
-    fun `toTable should return null for heterogenous list of EvalResults`() {
+    fun `toTable should return null for heterogeneous list of EvalResults`() {
         val evalResults = listOf(
             SingleScoreEvalResult("accuracy", 0.8f),
             MultiScoreEvalResult(
@@ -101,6 +101,6 @@ class EvalResultToDataFrameTest {
             )
         )
         val result = evalResults.toTable()
-        assertNull(result, "Expected null for heterogenous list of EvalResults")
+        assertNull(result, "Expected null for heterogeneous list of EvalResults")
     }
 }

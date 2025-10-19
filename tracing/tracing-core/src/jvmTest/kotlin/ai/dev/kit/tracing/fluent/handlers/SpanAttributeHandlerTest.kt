@@ -23,7 +23,7 @@ private class TestSpanAttributeHandlerClass {
         override fun formatInputAttributes(method: PlatformMethod, args: Array<Any?>): String =
             DefaultSpanMetadataCustomizer.formatInputAttributes(method, args)
 
-        override fun resolveSpanName(method: PlatformMethod, args: Array<Any?>): String? =
+        override fun resolveSpanName(method: PlatformMethod, args: Array<Any?>): String =
             "Test.${method.name}"
     }
 }

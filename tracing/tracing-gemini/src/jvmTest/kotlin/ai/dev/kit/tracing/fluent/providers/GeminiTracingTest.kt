@@ -101,7 +101,10 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
 
         // assert response
         assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")])
-        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")]?.isNotEmpty() == true)
+        assertEquals(
+            trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")]?.isNotEmpty(),
+            true
+        )
     }
 
     @Test
@@ -181,7 +184,10 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
 
         // assert response
         assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")])
-        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")]?.isNotEmpty() == true)
+        assertEquals(
+            trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")]?.isNotEmpty(),
+            true
+        )
     }
 
     @Test
@@ -245,8 +251,14 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
                 ?: "").contains("tool_calls") ||
             trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")] != null
         ) {
-            assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")]?.isNotEmpty() == true)
-            assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.1.name")]?.isNotEmpty() == true)
+            assertEquals(
+                trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")]?.isNotEmpty(),
+                true
+            )
+            assertEquals(
+                trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.1.name")]?.isNotEmpty(),
+                true
+            )
         }
     }
 
@@ -274,9 +286,7 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
             LITELLM_URL,
             trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
-        assertTrue(
-            trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(model) == true
-        )
+        assertEquals(trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(model), true)
         val text = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
         assertNotNull(text)
         assertTrue(text.isNotEmpty())
@@ -355,8 +365,8 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
             trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
 
-        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")]?.isNotEmpty() == true)
-        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.error.code")]?.isNotEmpty() == true)
+        assertEquals(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")]?.isNotEmpty(), true)
+        assertEquals(trace.attributes[AttributeKey.stringKey("gen_ai.error.code")]?.isNotEmpty(), true)
     }
 
     private fun installHttpInterceptor(client: GeminiClient, interceptor: Interceptor) {

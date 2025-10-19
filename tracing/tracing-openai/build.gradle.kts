@@ -48,7 +48,6 @@ kotlin {
                 implementation(libs.junit.params)
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.opentelemetry.sdk.testing)
-                implementation(libs.opentelemetry.sdk)
                 implementation(project(":tracing:tracing-test-utils"))
             }
         }

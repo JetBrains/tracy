@@ -29,7 +29,7 @@ import org.junit.jupiter.api.*
  * @param tags A list of tags associated with each run, used for metadata. The size of this list must match `numberOfRuns`.
  * @param loggingClient An implementation of the [LoggingClient] interface
  * that handles logging of evaluation workflows or null for no logging.
- *                      Current implementations include clients: `LangfuseEvaluationClient`.
+ *  Current implementations include clients: [ai.dev.kit.eval.providers.langfuse.LangfuseEvaluationClient].
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class BaseEvaluationTest<
@@ -79,21 +79,19 @@ abstract class BaseEvaluationTest<
         TracingManager.shutdownTracing()
 
         runResults.forEachIndexed { runIndex, runResult ->
-            val (testResults, runId, runStatus) = runResult
+            val (testResults, runId, _) = runResult
             try {
-                if (runIndex < tags.size) loggingClient.applyTag(runId, tags[runIndex])
                 loggingClient.uploadResults(runId, testResults)
                 logAverageScore(runId, testResults.map { it.evalResult })
             } catch (_: Exception) {
                 runResults[runIndex].finalStatus = RunStatus.FAILED
-            } finally {
-                loggingClient.changeRunStatus(runId, runStatus)
             }
         }
     }
 
     @TestFactory
-    fun Runs() = (1..numberOfRuns).toList().mapIndexed { runNum, runResult ->
+    @Suppress("FunctionName")
+    fun Runs() = (1..numberOfRuns).toList().mapIndexed { runNum, _ ->
         val runId = runResults.getOrNull(runNum)?.runId
         DynamicContainer.dynamicContainer(
             "Run ${if (numberOfRuns > 1) runNum + 1 else ""}",

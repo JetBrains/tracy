@@ -62,8 +62,9 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
             LITELLM_URL,
             trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
-        assertTrue(
-            trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(ChatModel.GPT_4O_MINI.asString()) == true
+        assertEquals(
+            trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(ChatModel.GPT_4O_MINI.asString()),
+            true
         )
         val content = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
         assertNotNull(content)
@@ -119,8 +120,8 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
             trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
 
-        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")]?.isNotEmpty() == true)
-        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.error.code")]?.isNotEmpty() == true)
+        assertEquals(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")]?.isNotEmpty(), true)
+        assertEquals(trace.attributes[AttributeKey.stringKey("gen_ai.error.code")]?.isNotEmpty(), true)
     }
 
     @Test
@@ -170,15 +171,27 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
         assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
         assertEquals("function", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.type")])
-        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.description")]?.isNotEmpty() == true)
-        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.parameters")]?.isNotEmpty() == true)
+        assertEquals(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.description")]?.isNotEmpty(), true)
+        assertEquals(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.parameters")]?.isNotEmpty(), true)
 
         // if AI called the tool when check its props
         if (trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.finish_reason")] == "tool_calls") {
-            assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")]?.isNotEmpty() == true)
-            assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.call.id")]?.isNotEmpty() == true)
-            assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.call.type")]?.isNotEmpty() == true)
-            assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")]?.isNotEmpty() == true)
+            assertEquals(
+                trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")]?.isNotEmpty(),
+                true
+            )
+            assertEquals(
+                trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.call.id")]?.isNotEmpty(),
+                true
+            )
+            assertEquals(
+                trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.call.type")]?.isNotEmpty(),
+                true
+            )
+            assertEquals(
+                trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")]?.isNotEmpty(),
+                true
+            )
         }
     }
 
@@ -282,8 +295,14 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
         // if AI called the tool when check its props
         if (toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.finish_reason")] == "tool_calls") {
             assertEquals("tool", toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.role")])
-            assertTrue(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.content")]?.isNotEmpty() == true)
-            assertTrue(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.tool_call_id")]?.isNotEmpty() == true)
+            assertEquals(
+                toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.content")]?.isNotEmpty(),
+                true
+            )
+            assertEquals(
+                toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.tool_call_id")]?.isNotEmpty(),
+                true
+            )
         }
     }
 
@@ -388,16 +407,34 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
         assertEquals("goodbye", toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.tool.1.name")])
 
         if (toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.finish_reason")] == "tool_calls") {
-            assertTrue(toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")]?.isNotEmpty() == true)
-            assertTrue(toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.1.name")]?.isNotEmpty() == true)
+            assertEquals(
+                toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")]?.isNotEmpty(),
+                true
+            )
+            assertEquals(
+                toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.1.name")]?.isNotEmpty(),
+                true
+            )
 
             assertEquals("tool", toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.role")])
-            assertTrue(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.content")]?.isNotEmpty() == true)
-            assertTrue(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.tool_call_id")]?.isNotEmpty() == true)
+            assertEquals(
+                toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.content")]?.isNotEmpty(),
+                true
+            )
+            assertEquals(
+                toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.tool_call_id")]?.isNotEmpty(),
+                true
+            )
 
             assertEquals("tool", toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.role")])
-            assertTrue(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.content")]?.isNotEmpty() == true)
-            assertTrue(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.tool_call_id")]?.isNotEmpty() == true)
+            assertEquals(
+                toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.content")]?.isNotEmpty(),
+                true
+            )
+            assertEquals(
+                toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.tool_call_id")]?.isNotEmpty(),
+                true
+            )
         }
     }
 

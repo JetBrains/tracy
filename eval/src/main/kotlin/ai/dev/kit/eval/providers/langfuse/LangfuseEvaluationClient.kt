@@ -1,8 +1,8 @@
 package ai.dev.kit.eval.providers.langfuse
 
 import ai.dev.kit.eval.providers.dataclasses.RunStatus
+import ai.dev.kit.eval.providers.langfuse.KotlinLangfuseClient.baseUrl
 import ai.dev.kit.eval.utils.*
-import ai.dev.kit.eval.providers.langfuse.KotlinLangfuseClient.LANGFUSE_BASE_URL
 import ai.dev.kit.tracing.LangfuseConfig
 import ai.dev.kit.tracing.TracingManager
 import kotlinx.serialization.json.jsonObject
@@ -17,7 +17,7 @@ class LangfuseEvaluationClient(
 
     init {
         KotlinLangfuseClient.setupCredentials(
-            langfuseConfig.userId,
+            langfuseConfig.langfuseUrl,
             langfuseConfig.langfusePublicKey,
             langfuseConfig.langfuseSecretKey
         )
@@ -33,7 +33,7 @@ class LangfuseEvaluationClient(
     override fun createRun(experimentId: String, runName: String): String = runName
 
     override fun getRunLink(experimentId: String, runId: String): String {
-        return "$LANGFUSE_BASE_URL/project/$experimentId/sessions/${
+        return "$baseUrl/project/$experimentId/sessions/${
             URLEncoder.encode(
                 runId,
                 StandardCharsets.UTF_8.toString()
@@ -42,7 +42,7 @@ class LangfuseEvaluationClient(
     }
 
     override fun getTraceLink(experimentId: String, traceId: String): String {
-        return "$LANGFUSE_BASE_URL/project/$experimentId/traces/${
+        return "$baseUrl/project/$experimentId/traces/${
             URLEncoder.encode(
                 traceId,
                 StandardCharsets.UTF_8.toString()
@@ -83,14 +83,6 @@ class LangfuseEvaluationClient(
                 }
             }
         }
-    }
-
-    override suspend fun applyTag(runId: String, tag: RunTag) {
-        // No tags in current Langfuse support
-    }
-
-    override suspend fun changeRunStatus(runId: String, runStatus: RunStatus) {
-        // No Run status in Langfuse
     }
 
     companion object {

@@ -44,15 +44,6 @@ kotlin {
                 implementation(libs.junit.params)
             }
         }
-
-        jvmTest {
-            dependencies {
-                implementation(libs.kotlin.test)
-                implementation(libs.junit.params)
-                implementation(libs.kotlinx.coroutines.test)
-                implementation(libs.opentelemetry.sdk.testing)
-            }
-        }
     }
 }
 

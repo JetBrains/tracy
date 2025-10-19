@@ -8,7 +8,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 
-class TracingSessionProviderTest_ProjectId {
+class TracingSessionProviderTestProjectId {
     @Test
     fun `currentProjectId returns default value when not set`() {
         assertNull(TracingSessionProvider.currentProjectId)
@@ -117,7 +117,7 @@ class TracingSessionProviderTest_ProjectId {
     }
 }
 
-class TracingSessionProviderTest_SessionId {
+class TracingSessionProviderTestSessionId {
     @Test
     fun `currentSessionId returns default value when not set`() {
         assertNull(TracingSessionProvider.currentSessionId)
@@ -226,7 +226,7 @@ class TracingSessionProviderTest_SessionId {
     }
 }
 
-class TracingSessionProviderTest_UnsupportedScenarios {
+class TracingSessionProviderTestUnsupportedScenarios {
     @Test
     fun `currentSessionId is not propagated if you fork a thread explicitly`() = runTest {
         withSessionId("This won't work! :(") {

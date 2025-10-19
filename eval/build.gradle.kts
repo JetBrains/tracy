@@ -8,7 +8,6 @@ dependencies {
     implementation(libs.junit)
     implementation(libs.kotlin)
     implementation(libs.kotlin.logging)
-    implementation(libs.kotlin.test)
     implementation(libs.kotlinx.coroutines)
     implementation(libs.kotlinx.dataframe)
     implementation(libs.kotlinx.serialization.json)

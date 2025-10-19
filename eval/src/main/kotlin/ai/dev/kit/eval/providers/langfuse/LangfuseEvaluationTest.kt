@@ -15,8 +15,8 @@ import ai.dev.kit.tracing.LangfuseConfig
  * @param runNamePrefix A prefix used for naming the runs within the experiment.
  * @param numberOfRuns The number of test runs to execute during the evaluation process.
  * @param langfuseConfig Configuration object for Langfuse tracing.
- *               Includes connection details such as API keys, base URL, and export settings.
- *               See [LangfuseConfig] for more.
+ *  Includes connection details such as API keys, base URL, and export settings.
+ *  See [LangfuseConfig] for more.
  */
 abstract class LangfuseEvaluationTest<AIInputT : AIInput, GroundTruthT : GroundTruth, AIOutputT : AIOutput, EvalResultT : EvalResult>(
 //    experimentName: String = "Evaluation test",
@@ -25,7 +25,7 @@ abstract class LangfuseEvaluationTest<AIInputT : AIInput, GroundTruthT : GroundT
     langfuseConfig: LangfuseConfig = LangfuseConfig(),
 ) :
     BaseEvaluationTest<AIInputT, GroundTruthT, AIOutputT, EvalResultT>(
-        // create experiment with a given name functionality is not available yet
+        // create an experiment with a given name functionality is not available yet
         "Evaluation test",
         runNamePrefix,
         numberOfRuns,

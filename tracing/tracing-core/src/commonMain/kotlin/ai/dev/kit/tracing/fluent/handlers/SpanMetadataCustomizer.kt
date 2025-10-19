@@ -10,7 +10,7 @@ package ai.dev.kit.tracing.fluent.handlers
  *   1. If [resolveSpanName] returns a non-null value, it is used.
  *   2. Otherwise, the annotation name is used.
  *   3. If still undefined, the method name is used.
- *   See also [ai.dev.kit.tracing.fluent.processor.createSpan].
+ *   See also createSpan function.
  * - Transform input arguments into structured string representations.
  * - Convert method returns values into structured string representations.
  *

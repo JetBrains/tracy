@@ -4,13 +4,16 @@ import ai.dev.kit.tracing.LangfuseConfig
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
-import java.util.Base64
+import java.util.*
 import java.util.concurrent.TimeUnit
 
+const val LANGFUSE_BASE_URL = "https://cloud.langfuse.com"
 /**
  * Creates an OpenTelemetry span exporter that sends data to [Langfuse](https://langfuse.com/).
  *
- * @param langfuseUrl the base URL of the Langfuse instance. If not set is retrieved from `LANGFUSE_URL` environment variable. Defaults to [https://cloud.langfuse.com](https://cloud.langfuse.com).
+ * @param langfuseUrl the base URL of the Langfuse instance.
+ *   If not set is retrieved from `LANGFUSE_URL` environment variable.
+ *   Defaults to [WEAVE_BASE_URL].
  * @param langfusePublicKey if not set is retrieved from `LANGFUSE_PUBLIC_KEY` environment variable.
  * @param langfuseSecretKey if not set is retrieved from `LANGFUSE_SECRET_KEY` environment variable.
  * @param timeout OpenTelemetry SpanExporter timeout in seconds. See [io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporterBuilder.setTimeout].
@@ -25,7 +28,21 @@ fun createLangfuseExporter(
     langfuseSecretKey: String? = null,
     timeout: Long = 10,
 ): OtlpHttpSpanExporter {
-    val url = langfuseUrl ?: System.getenv()["LANGFUSE_URL"] ?: "https://cloud.langfuse.com"
+    val (url, auth) = setupLangfuseCredentials(langfuseUrl, langfusePublicKey, langfuseSecretKey)
+
+    return OtlpHttpSpanExporter.builder()
+        .setTimeout(timeout, TimeUnit.SECONDS)
+        .setEndpoint("$url/api/public/otel/v1/traces")
+        .addHeader("Authorization", "Basic $auth")
+        .build()
+}
+
+fun setupLangfuseCredentials(
+    langfuseUrl: String? = null,
+    langfusePublicKey: String? = null,
+    langfuseSecretKey: String? = null
+): Pair<String, String> {
+    val url = langfuseUrl ?: System.getenv()["LANGFUSE_URL"] ?: LANGFUSE_BASE_URL
     val publicKey = langfusePublicKey ?: System.getenv()["LANGFUSE_PUBLIC_KEY"]
     ?: throw IllegalArgumentException("LANGFUSE_PUBLIC_KEY must be provided either via argument or env var")
     val secretKey = langfuseSecretKey ?: System.getenv()["LANGFUSE_SECRET_KEY"]
@@ -34,11 +51,7 @@ fun createLangfuseExporter(
     val credentials = "$publicKey:$secretKey"
     val auth = Base64.getEncoder().encodeToString(credentials.toByteArray(Charsets.UTF_8))
 
-    return OtlpHttpSpanExporter.builder()
-        .setTimeout(timeout, TimeUnit.SECONDS)
-        .setEndpoint("$url/api/public/otel/v1/traces")
-        .addHeader("Authorization", "Basic $auth")
-        .build()
+    return url to auth
 }
 
 fun SdkTracerProviderBuilder.addLangfuseSpanProcessor(

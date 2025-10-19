@@ -102,7 +102,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         assertTrue(responseBody.isNotEmpty())
 
         // compare trace with the actual response
-        val responseJson = Json.Default.parseToJsonElement(responseBody).jsonObject
+        val responseJson = Json.parseToJsonElement(responseBody).jsonObject
 
         assertEquals(
             responseJson["id"]!!.jsonPrimitive.content,
@@ -180,7 +180,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val responseBody = response.bodyAsText()
         assertTrue(responseBody.isNotEmpty())
 
-        val responseJson = Json.Default.parseToJsonElement(responseBody).jsonObject
+        val responseJson = Json.parseToJsonElement(responseBody).jsonObject
 
         assertEquals(
             responseJson["id"]!!.jsonPrimitive.content,
@@ -259,7 +259,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
                             }
                         """.trimIndent()
                         ),
-                        status = HttpStatusCode.Companion.BadRequest,
+                        status = HttpStatusCode.BadRequest,
                         headers = headersOf(
                             HttpHeaders.ContentType,
                             ContentType.Application.Json.toString()
@@ -345,7 +345,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
                                 }
                             """.trimIndent()
                         ),
-                        status = HttpStatusCode.Companion.OK,
+                        status = HttpStatusCode.OK,
                         headers = headersOf(
                             HttpHeaders.ContentType,
                             ContentType.Application.Json.toString()
@@ -414,7 +414,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val trace = traces.firstOrNull()
         assertNotNull(trace)
 
-        val body = Json.Default.parseToJsonElement(response.bodyAsText()).jsonObject
+        val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
 
         assertEquals(StatusCode.OK, trace.status.statusCode)
         assertEquals(LITELLM_URL, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
@@ -474,7 +474,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         assertEquals(true, tracedModel?.startsWith(model))
 
         val tracedPrompt =
-            Json.Default.parseToJsonElement(trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]!!).jsonArray[0]
+            Json.parseToJsonElement(trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]!!).jsonArray[0]
                 .jsonObject["text"]?.jsonPrimitive?.content
         assertEquals(promptMessage, tracedPrompt)
 

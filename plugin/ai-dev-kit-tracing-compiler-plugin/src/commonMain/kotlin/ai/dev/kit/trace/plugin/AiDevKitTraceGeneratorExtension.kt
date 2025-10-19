@@ -42,7 +42,7 @@ class AiDevKitTraceGeneratorExtension : IrGenerationExtension {
             }
 
             override fun visitFunction(declaration: IrFunction) {
-                // Try to get this function's own @KotlinFlowTrace annotation,
+                // Try to get this function's own @KotlinFlowTrace annotation
                 // or fall back to a propagated one from an overridden function.
                 val traceAnnotation = declaration.findTraceAnnotation()
                     ?: declaration.findOverriddenAnnotationWithPropagation()
@@ -61,7 +61,7 @@ class AiDevKitTraceGeneratorExtension : IrGenerationExtension {
     }
 
     /**
-     * Recursively find the first matching @KotlinFlowTrace annotation
+     * Recursively find the first matching `@KotlinFlowTrace` annotation
      * in any overridden function in the hierarchy.
      */
     @OptIn(UnsafeDuringIrConstructionAPI::class)
@@ -79,7 +79,7 @@ class AiDevKitTraceGeneratorExtension : IrGenerationExtension {
 
 
     /**
-     * Returns the @KotlinFlowTrace annotation applied directly to this function,
+     * Returns the `@KotlinFlowTrace` annotation applied directly to this function,
      * or `null` if not present.
      */
     @OptIn(UnsafeDuringIrConstructionAPI::class)
@@ -100,7 +100,7 @@ class AiDevKitTraceGeneratorExtension : IrGenerationExtension {
     }
 
     /**
-     * Wraps the original function body in a call to [withTrace] or [withTraceSuspended],
+     * Wraps the original function body in a call to withTrace or withTraceSuspended,
      * passing the annotation, a function reference, arguments, and a lambda with the original body.
      */
     private fun processFunction(
@@ -116,7 +116,7 @@ class AiDevKitTraceGeneratorExtension : IrGenerationExtension {
             .functionN(function.valueParameters.size)
             .typeWith(function.valueParameters.map { it.type } + function.returnType)
 
-        // Reference to original function
+        // Reference to the original function
         val functionReference = builder.irFunctionReference(
             type = functionRefType,
             symbol = function.symbol

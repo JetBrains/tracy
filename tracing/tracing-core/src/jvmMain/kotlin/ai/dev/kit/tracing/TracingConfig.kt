@@ -1,6 +1,5 @@
 package ai.dev.kit.tracing
 
-import java.util.UUID
 import kotlin.Long
 
 const val MAX_NUMBER_OF_SPAN_ATTRIBUTES = 256
@@ -17,18 +16,16 @@ sealed class TracingConfig(
  * Configuration for exporting OpenTelemetry traces to [Langfuse](https://langfuse.com).
  *
  * @param langfuseUrl The base URL of the Langfuse deployment.
- *        Example: `https://cloud.langfuse.com`.
- *        Defaults to the `LANGFUSE_URL` environment variable or `https://cloud.langfuse.com`.
+ *  Example: `https://cloud.langfuse.com`.
+ *  Defaults to the `LANGFUSE_URL` environment variable or [ai.dev.kit.exporters.LANGFUSE_BASE_URL].
  * @param langfusePublicKey The Langfuse public API key.
- *        Retrieved from `LANGFUSE_PUBLIC_KEY` env variable if not provided.
+ *  Retrieved from `LANGFUSE_PUBLIC_KEY` env variable if not provided.
  * @param langfuseSecretKey The Langfuse secret API key.
- *        Retrieved from `LANGFUSE_SECRET_KEY` env variable if not provided.
- * @param userId A unique identifier for the user or session (e.g., UUID, user ID, etc.).
- *        If not provided, a random UUID will be generated as a default.
+ *  Retrieved from `LANGFUSE_SECRET_KEY` env variable if not provided.
  * @param traceToConsole If `true`, also logs traces to the console (useful for local debugging).
- *        Default: `false`.
+ *  Default: `false`.
  * @param exporterTimeout Timeout in seconds for exporting spans.
- *        Default: `10`.
+ *  Default: `10`.
  * @param maxNumberOfSpanAttributes max number of attributes per Span.
  *  Defaults to the `MAX_NUMBER_OF_SPAN_ATTRIBUTES` environment variable or [MAX_NUMBER_OF_SPAN_ATTRIBUTES] variable.
  * @param maxSpanAttributeValueLength max number of characters for attribute strings.
@@ -40,7 +37,6 @@ data class LangfuseConfig(
     val langfuseUrl: String? = null,
     val langfusePublicKey: String? = null,
     val langfuseSecretKey: String? = null,
-    val userId: String = UUID.randomUUID().toString(),
     override val traceToConsole: Boolean = false,
     override val exporterTimeout: Long = 10,
     override val maxNumberOfSpanAttributes: Int? = null,
@@ -51,17 +47,17 @@ data class LangfuseConfig(
  * Configuration for exporting OpenTelemetry traces to [W&B Weave](https://wandb.ai/site/weave).
  *
  * @param weaveOtelBaseUrl The base URL of the Weave OTLP endpoint.
- *        Defaults to the `WEAVE_URL` env variable or `https://trace.wandb.ai`.
+ *  Defaults to the `WEAVE_URL` env variable or [ai.dev.kit.exporters.WEAVE_BASE_URL].
  * @param weaveEntity The W&B entity (team/org).
- *        Retrieved from `WEAVE_ENTITY` env variable if not provided.
+ *  Retrieved from `WEAVE_ENTITY` env variable if not provided.
  * @param weaveProjectName The name of the W&B Weave project.
- *        Retrieved from `WEAVE_PROJECT_NAME` env variable if not provided.
+ *  Retrieved from `WEAVE_PROJECT_NAME` env variable if not provided.
  * @param weaveApiKey The W&B API key.
- *        Retrieved from `WEAVE_API_KEY` env variable if not provided.
+ *  Retrieved from `WEAVE_API_KEY` env variable if not provided.
  * @param traceToConsole If `true`, also logs traces to the console (useful for local debugging).
- *        Default: `false`.
+ *  Default: `false`.
  * @param exporterTimeout Timeout in seconds for exporting spans.
- *        Default: `10`.
+ *  Default: `10`.
  * @param maxNumberOfSpanAttributes max number of attributes per Span.
  *  Defaults to the `MAX_NUMBER_OF_SPAN_ATTRIBUTES` environment variable or [MAX_NUMBER_OF_SPAN_ATTRIBUTES] variable.
  * @param maxSpanAttributeValueLength max number of characters for attribute strings.
@@ -84,7 +80,7 @@ data class WeaveConfig(
  * Configuration for exporting OpenTelemetry traces to console only.
  *
  * @param traceToConsole If true, also logs traces to the console (useful for local debugging).
- *        Default: false.
+ *  Default: false.
  * @param maxNumberOfSpanAttributes max number of attributes per Span.
  *  Defaults to the `MAX_NUMBER_OF_SPAN_ATTRIBUTES` environment variable or [MAX_NUMBER_OF_SPAN_ATTRIBUTES] variable.
  * @param maxSpanAttributeValueLength max number of characters for attribute strings.

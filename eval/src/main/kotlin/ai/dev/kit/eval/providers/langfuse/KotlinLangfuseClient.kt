@@ -1,44 +1,52 @@
 package ai.dev.kit.eval.providers.langfuse
 
-import ai.dev.kit.eval.utils.getUserIDFromEnv
+import ai.dev.kit.exporters.setupLangfuseCredentials
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 
 internal object KotlinLangfuseClient {
-    internal const val LANGFUSE_BASE_URL = "https://langfuse.labs.jb.gg"
-    // Langfuse support uses Langfuse rest api
-    // docs: https://api.reference.langfuse.com/
+    private val langfuseJson = Json { ignoreUnknownKeys = true }
 
-    val client = HttpClient(CIO) {
+    private val client = HttpClient(CIO) {
         install(ContentNegotiation) {
             json()
         }
     }
 
-    internal fun setupCredentials(userId: String?, langfusePublicKey: String?, langfuseSecretKey: String?) {
-        USER_ID = userId ?: getUserIDFromEnv()
-        LANGFUSE_PUBLIC_KEY = langfusePublicKey ?: getLangfuseApiPublicKeyFromEnv()
-        LANGFUSE_SECRET_KEY = langfuseSecretKey ?: getLangfuseApiSecretKeyFromEnv()
+    internal fun setupCredentials(
+        langfuseUrl: String? = null,
+        langfusePublicKey: String? = null,
+        langfuseSecretKey: String? = null
+    ) {
+        val (url, auth) = setupLangfuseCredentials(langfuseUrl, langfusePublicKey, langfuseSecretKey)
+        baseUrl = url
+        authHeader = auth
     }
 
-    internal lateinit var USER_ID: String
-    internal lateinit var LANGFUSE_PUBLIC_KEY: String
-    internal lateinit var LANGFUSE_SECRET_KEY: String
-}
+    internal suspend fun sendRequest(
+        method: HttpMethod,
+        url: String,
+        body: JsonElement? = null
+    ): JsonObject {
+        val response = client.request(url) {
+            this.method = method
+            contentType(ContentType.Application.Json)
+            headers { append(HttpHeaders.Authorization, "Basic $authHeader") }
+            body?.let { setBody(it) }
+        }
 
-private fun getLangfuseApiPublicKeyFromEnv(): String {
-    val langfusePublicKey =
-        System.getenv("LANGFUSE_PUBLIC_KEY")
-            ?: error("LANGFUSE_PUBLIC_KEY environment variable is not set")
-    return langfusePublicKey
-}
+        return langfuseJson.parseToJsonElement(response.bodyAsText()).jsonObject
+    }
 
-private fun getLangfuseApiSecretKeyFromEnv(): String {
-    val langfuseSecretKey =
-        System.getenv("LANGFUSE_SECRET_KEY")
-            ?: error("LANGFUSE_SECRET_KEY environment variable is not set")
-
-    return langfuseSecretKey
+    internal var baseUrl: String? = null
+    private var authHeader: String? = null
 }

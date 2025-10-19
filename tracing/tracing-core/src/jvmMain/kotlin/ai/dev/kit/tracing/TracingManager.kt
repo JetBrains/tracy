@@ -1,5 +1,6 @@
 package ai.dev.kit.tracing
 
+import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import org.jetbrains.annotations.TestOnly
 import java.util.concurrent.TimeUnit
@@ -8,7 +9,7 @@ object TracingManager {
     const val AI_DEVELOPMENT_KIT_TRACER = "ai-development-kit"
     private lateinit var openTelemetrySdk: OpenTelemetrySdk
     internal var maxNumberOfSpanAttributes: Int? = null
-    val tracer
+    val tracer: Tracer
         get() = openTelemetrySdk.getTracer(AI_DEVELOPMENT_KIT_TRACER)
 
     fun setup(tracingConfig: TracingConfig) {

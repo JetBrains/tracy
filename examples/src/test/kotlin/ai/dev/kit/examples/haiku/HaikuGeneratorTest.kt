@@ -99,9 +99,9 @@ Evaluate this Haiku:
         createLiteLLMClient()
     )
 
-    val params = ChatCompletionCreateParams.Companion.builder()
+    val params = ChatCompletionCreateParams.builder()
         .addUserMessage(prompt)
-        .model(ChatModel.Companion.GPT_4O_MINI)
+        .model(ChatModel.GPT_4O_MINI)
         .temperature(1.0)
         .build()
 
@@ -132,9 +132,9 @@ Evaluate the creativity of this Haiku:
         createLiteLLMClient()
     )
 
-    val params = ChatCompletionCreateParams.Companion.builder()
+    val params = ChatCompletionCreateParams.builder()
         .addUserMessage(prompt)
-        .model(ChatModel.Companion.GPT_4O_MINI)
+        .model(ChatModel.GPT_4O_MINI)
         .temperature(1.0)
         .build()
 
@@ -169,9 +169,9 @@ Evaluate the structure of this Haiku:
         createLiteLLMClient()
     )
 
-    val params = ChatCompletionCreateParams.Companion.builder()
+    val params = ChatCompletionCreateParams.builder()
         .addUserMessage(prompt)
-        .model(ChatModel.Companion.GPT_4O_MINI)
+        .model(ChatModel.GPT_4O_MINI)
         .temperature(1.0)
         .build()
 

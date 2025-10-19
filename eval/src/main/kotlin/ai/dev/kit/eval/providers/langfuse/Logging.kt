@@ -1,38 +1,16 @@
 package ai.dev.kit.eval.providers.langfuse
 
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
+import ai.dev.kit.eval.providers.langfuse.KotlinLangfuseClient.sendRequest
 import io.ktor.http.*
-import kotlinx.serialization.json.*
-import java.util.*
-
-private val langfuseJson = Json { ignoreUnknownKeys = true }
-
-internal suspend fun langfuseRequest(
-    method: HttpMethod,
-    url: String,
-    body: JsonElement? = null
-): JsonObject {
-    val response = KotlinLangfuseClient.client.request(url) {
-        this.method = method
-        contentType(ContentType.Application.Json)
-        headers {
-            append(
-                HttpHeaders.Authorization, "Basic " + Base64.getEncoder().encodeToString(
-                    "${KotlinLangfuseClient.LANGFUSE_PUBLIC_KEY}:${KotlinLangfuseClient.LANGFUSE_SECRET_KEY}".toByteArray()
-                )
-            )
-        }
-        body?.let { setBody(it) }
-    }
-
-    return langfuseJson.parseToJsonElement(response.bodyAsText()).jsonObject
-}
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.put
 
 suspend fun getLangfuseProject(): JsonArray {
-    val response = langfuseRequest(
+    val response = sendRequest(
         method = HttpMethod.Get,
-        url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}/api/public/projects"
+        url = "${KotlinLangfuseClient.baseUrl}/api/public/projects"
     )
 
     return response["data"]?.jsonArray
@@ -62,9 +40,9 @@ suspend fun logScoreToLangfuse(
         configId?.let { put("configId", it) }
     }
 
-    langfuseRequest(
+    sendRequest(
         method = HttpMethod.Post,
-        url = "${KotlinLangfuseClient.LANGFUSE_BASE_URL}/api/public/scores",
+        url = "${KotlinLangfuseClient.baseUrl}/api/public/scores",
         body = payload
     )
 }

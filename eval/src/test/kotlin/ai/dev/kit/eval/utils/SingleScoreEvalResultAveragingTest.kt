@@ -6,11 +6,10 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 /**
- * Test suite for the `averageSingleScoreEvalResults` function.
+ * Test suite for the [averageSingleScoreEvalResults] function.
  *
- * The `averageSingleScoreEvalResults` function computes the average score from a list of
- * `SingleScoreEvalResult`. It ensures that all results have the same score name, otherwise
- * it returns `null`.
+ * The [averageSingleScoreEvalResults] function computes the average score from a list of [SingleScoreEvalResult].
+ * It ensures that all results have the same score name, otherwise it returns `null`.
  */
 class SingleScoreEvalResultAveragingTest {
     @Test

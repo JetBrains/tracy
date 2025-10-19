@@ -79,9 +79,9 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingA
         operation?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME, operation) }
 
         // extract tool calls
-        body.jsonObject["tools"]?.let {
-            if (it is JsonArray) {
-                for ((index, tool) in it.jsonArray.withIndex()) {
+        body.jsonObject["tools"]?.let { tools ->
+            if (tools is JsonArray) {
+                for ((index, tool) in tools.jsonArray.withIndex()) {
                     tool.jsonObject["functionDeclarations"]?.let {
                         for ((functionIndex, function) in it.jsonArray.withIndex()) {
                             function.jsonObject["parameters"]?.jsonObject?.let {
@@ -109,16 +109,16 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingA
         }
 
         // See: https://ai.google.dev/api/generate-content#v1beta.GenerationConfig
-        body["generationConfig"]?.let {
-            it.jsonObject["candidateCount"]?.jsonPrimitive?.intOrNull?.let {
+        body["generationConfig"]?.let { config ->
+            config.jsonObject["candidateCount"]?.jsonPrimitive?.intOrNull?.let {
                 span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_CHOICE_COUNT, it.toLong())
             }
-            it.jsonObject["maxOutputTokens"]?.jsonPrimitive?.intOrNull?.let {
+            config.jsonObject["maxOutputTokens"]?.jsonPrimitive?.intOrNull?.let {
                 span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_MAX_TOKENS, it.toLong())
             }
-            it.jsonObject["temperature"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_TEMPERATURE, it) }
-            it.jsonObject["topP"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_P, it) }
-            it.jsonObject["topK"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_K, it) }
+            config.jsonObject["temperature"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_TEMPERATURE, it) }
+            config.jsonObject["topP"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_P, it) }
+            config.jsonObject["topK"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_K, it) }
         }
     }
 
@@ -206,8 +206,8 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingA
         // turn the given attribute into snake-cased format
         val snakeCasedAttribute = attribute.replace(Regex("([a-z])([A-Z])"), "$1_$2").lowercase()
 
-        usage.jsonObject[attribute]?.let {
-            for ((index, detail) in it.jsonArray.withIndex()) {
+        usage.jsonObject[attribute]?.let { usage ->
+            for ((index, detail) in usage.jsonArray.withIndex()) {
                 detail.jsonObject["modality"]?.let {
                     span.setAttribute("gen_ai.usage.$snakeCasedAttribute.$index.modality", it.jsonPrimitive.content)
                 }

@@ -51,8 +51,8 @@ fun averageMultiScoreEvalResults(results: List<MultiScoreEvalResult>): Map<Strin
     if (results.isEmpty()) return emptyMap()
 
     val allScoreNames = results.flatMap { it.scores }.map { it.scoreName }.distinct()
-    val listOfNameToScoreMaps = results.map {
-        it.scores.associate { it.scoreName to it.score }
+    val listOfNameToScoreMaps = results.map { result ->
+        result.scores.associate { it.scoreName to it.score }
     }
     val nameToAvg = mutableMapOf<String, Double>()
     allScoreNames.forEach { name ->
@@ -75,12 +75,12 @@ fun List<EvalResult>.toTable(): DataFrame<Float>? {
             logger.warn{"Score names are inconsistent, could not convert List<SingleScoreEvalResult> to table: $scoreNames"}
             return null
         }
-        return dataFrameOf(scoreNames.first() to results.map { it.score }).cast<Float>()
+        return dataFrameOf(scoreNames.first() to results.map { it.score }).cast()
     } else if (allMultiScore()) {
         val results = map { it as MultiScoreEvalResult }
         val allScoreNames = results.flatMap { it.scores }.map { it.scoreName }.distinct()
-        val listOfNameToScoreMaps = results.map {
-            it.scores.associate { it.scoreName to it }
+        val listOfNameToScoreMaps = results.map { result ->
+            result.scores.associateBy { it.scoreName }
         }
         return allScoreNames
             .map { name ->

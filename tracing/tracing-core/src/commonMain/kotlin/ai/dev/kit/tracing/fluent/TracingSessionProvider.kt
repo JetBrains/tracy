@@ -9,11 +9,11 @@ expect object TracingSessionProvider {
     /**
      * In Langfuse, ProjectID is a hash-like string. It's currently determined by the API keys,
      * no way to change it programmatically.
-     * E.g. `https://langfuse.labs.jb.gg/project/cma2axjp2000pzf07x87d9mxi/traces`
+     * E.g. `https://langfuse.com/project/abcde123/traces`
      *
      * In W&B Weave, ProjectID is the same thing as the project name, e.g.
-     *  `https://wandb.ai/nikolai-gruzinov-test/haha`
-     * where haha is the project name
+     *  `https://wandb.ai/weave-entity/project-name`
+     * Where "project-name" is the project name
      */
     val currentProjectId: String?
 

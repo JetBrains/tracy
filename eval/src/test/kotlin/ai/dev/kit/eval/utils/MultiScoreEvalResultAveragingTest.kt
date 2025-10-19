@@ -4,9 +4,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * Tests for the `averageMultiScoreEvalResults` function.
+ * Tests for the [averageMultiScoreEvalResults] function.
  *
- * This function calculates the average scores for a list of `MultiScoreEvalResult`
+ * This function calculates the average scores for a list of [MultiScoreEvalResult]
  * objects, grouped by the score names.
  */
 class MultiScoreEvalResultAveragingTest {

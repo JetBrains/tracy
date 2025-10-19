@@ -27,9 +27,9 @@ internal class ChatCompletionsHandler : OpenAIApiHandler {
         }
 
         // See: https://platform.openai.com/docs/api-reference/chat/create
-        body["tools"]?.let {
-            if (it is JsonArray) {
-                for ((index, tool) in it.jsonArray.withIndex()) {
+        body["tools"]?.let { tools ->
+            if (tools is JsonArray) {
+                for ((index, tool) in tools.jsonArray.withIndex()) {
                     span.setAttribute("gen_ai.tool.$index.type", tool.jsonObject["type"]?.jsonPrimitive?.content)
                     tool.jsonObject["function"]?.jsonObject?.let {
                         span.setAttribute("gen_ai.tool.$index.name", it["name"]?.jsonPrimitive?.content)
