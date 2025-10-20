@@ -98,23 +98,6 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
     }
 
     @Test
-    fun test() = runTest {
-        /*
-         https://litellm.labs.jb.gg/vertex_ai/v1beta1/projects/jetbrains-grazie/locations/us-central1/publishers/google/models/gemini-2.5-flash:generateContent \
-          -H "Content-Type: application/json" \
-          -H "x-litellm-api-key: Bearer sk-tluBKBkOP8H7Sc7CaQ4rdw" \
-          -d '{
-            "contents":[{
-              "role": "user",
-              "parts":[{"text": "How are you doing today?"}]
-            }]
-          }'
-        */
-
-
-    }
-
-    @Test
     fun `test Gemini tool calling auto logging`() = runTest {
         val client = instrument(createGeminiClient())
         val toolName = "hi"
