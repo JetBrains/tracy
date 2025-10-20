@@ -12,6 +12,8 @@ import com.openai.models.FunctionDefinition
 import com.openai.models.FunctionParameters
 import com.openai.models.chat.completions.ChatCompletion
 import com.openai.models.chat.completions.ChatCompletionCreateParams
+import com.openai.models.chat.completions.ChatCompletionFunctionTool
+import com.openai.models.chat.completions.ChatCompletionMessageToolCall
 import com.openai.models.chat.completions.ChatCompletionTool
 import com.openai.models.chat.completions.ChatCompletionToolMessageParam
 import com.openai.models.responses.FunctionTool
@@ -161,6 +163,34 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
         validateToolCall()
     }
 
+    private val ChatCompletionMessageToolCall.id: String
+        get() {
+            val toolCall = this
+            val id = if (toolCall.isFunction()) {
+                toolCall.function().get().id()
+            } else if (toolCall.isCustom()) {
+                toolCall.custom().get().id()
+            } else {
+                throw IllegalStateException("Cannot extract ID of the tool call $toolCall")
+            }
+            return id
+        }
+
+    private val ChatCompletionMessageToolCall.name: String
+        get() {
+            val toolCall = this
+            val name = if (toolCall.isFunction()) {
+                toolCall.function().get().function().name()
+            }
+            else if (toolCall.isCustom()) {
+                toolCall.custom().get().custom().name()
+            }
+            else {
+                throw IllegalStateException("Cannot extract name of the tool call $toolCall")
+            }
+            return name
+        }
+
     fun validateToolCall() {
         val traces = analyzeSpans()
 
@@ -206,7 +236,7 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
                 // add an answer to a tool call
                 paramsBuilder.addMessage(
                     ChatCompletionToolMessageParam.builder()
-                        .toolCallId(toolCall.id())
+                        .toolCallId(toolCall.id)
                         .content("Hello! I'm greeting you!")
                         .build()
                 )
@@ -301,7 +331,6 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
             .model(ChatModel.GPT_4O_MINI)
             .temperature(0.0)
 
-
         client.chat().completions().create(paramsBuilder.build()).choices().stream()
             .map(ChatCompletion.Choice::message)
             .peek(paramsBuilder::addMessage)
@@ -309,8 +338,8 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
             .forEach { toolCall ->
                 paramsBuilder.addMessage(
                     ChatCompletionToolMessageParam.builder()
-                        .toolCallId(toolCall.id())
-                        .content(toolCall.function().name())
+                        .toolCallId(toolCall.id)
+                        .content(toolCall.name)
                         .build()
                 )
             }
@@ -419,7 +448,7 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
     }
 
     private fun createTool(word: String): ChatCompletionTool {
-        return ChatCompletionTool.builder()
+        val functionTool = ChatCompletionFunctionTool.builder()
             .type(JsonString.of("function"))
             .function(
                 FunctionDefinition.builder()
@@ -439,6 +468,8 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
                     .build()
             )
             .build()
+
+        return ChatCompletionTool.ofFunction(functionTool)
     }
 
     private fun createFunctionTool(word: String): FunctionTool {
