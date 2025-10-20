@@ -278,20 +278,10 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
         }
     }
 
-    private fun printEnv() {
-        val envVars = System.getenv()
-        // Print each one
-        envVars.forEach { (key, value) ->
-            println("$key = $value")
-        }
-    }
-
     @Test
     fun `test Gemini auto tracing`() = runTest {
         val model = "gemini-2.5-flash"
         val client = instrument(createGeminiClient())
-
-        printEnv()
 
         client.models.generateContent(
             model,
