@@ -171,7 +171,7 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
             } else if (toolCall.isCustom()) {
                 toolCall.custom().get().id()
             } else {
-                throw IllegalArgumentException("Cannot extract ID of the tool call $toolCall")
+                throw IllegalStateException("Cannot extract ID of the tool call $toolCall")
             }
             return id
         }
@@ -186,7 +186,7 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
                 toolCall.custom().get().custom().name()
             }
             else {
-                throw IllegalArgumentException("Cannot extract name of the tool call $toolCall")
+                throw IllegalStateException("Cannot extract name of the tool call $toolCall")
             }
             return name
         }
