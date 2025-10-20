@@ -163,31 +163,33 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
         validateToolCall()
     }
 
-    private fun ChatCompletionMessageToolCall.extractId(): String {
-        val toolCall = this
-        val id = if (toolCall.isFunction()) {
-            toolCall.function().get().id()
-        } else if (toolCall.isCustom()) {
-            toolCall.custom().get().id()
-        } else {
-            throw IllegalArgumentException("Cannot extract ID of the tool call $toolCall")
+    private val ChatCompletionMessageToolCall.id: String
+        get() {
+            val toolCall = this
+            val id = if (toolCall.isFunction()) {
+                toolCall.function().get().id()
+            } else if (toolCall.isCustom()) {
+                toolCall.custom().get().id()
+            } else {
+                throw IllegalArgumentException("Cannot extract ID of the tool call $toolCall")
+            }
+            return id
         }
-        return id
-    }
 
-    private fun ChatCompletionMessageToolCall.extractName(): String {
-        val toolCall = this
-        val name = if (toolCall.isFunction()) {
-            toolCall.function().get().function().name()
+    private val ChatCompletionMessageToolCall.name: String
+        get() {
+            val toolCall = this
+            val name = if (toolCall.isFunction()) {
+                toolCall.function().get().function().name()
+            }
+            else if (toolCall.isCustom()) {
+                toolCall.custom().get().custom().name()
+            }
+            else {
+                throw IllegalArgumentException("Cannot extract name of the tool call $toolCall")
+            }
+            return name
         }
-        else if (toolCall.isCustom()) {
-            toolCall.custom().get().custom().name()
-        }
-        else {
-            throw IllegalArgumentException("Cannot extract name of the tool call $toolCall")
-        }
-        return name
-    }
 
     fun validateToolCall() {
         val traces = analyzeSpans()
@@ -234,7 +236,7 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
                 // add an answer to a tool call
                 paramsBuilder.addMessage(
                     ChatCompletionToolMessageParam.builder()
-                        .toolCallId(toolCall.extractId())
+                        .toolCallId(toolCall.id)
                         .content("Hello! I'm greeting you!")
                         .build()
                 )
@@ -336,8 +338,8 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
             .forEach { toolCall ->
                 paramsBuilder.addMessage(
                     ChatCompletionToolMessageParam.builder()
-                        .toolCallId(toolCall.extractId())
-                        .content(toolCall.extractName())
+                        .toolCallId(toolCall.id)
+                        .content(toolCall.name)
                         .build()
                 )
             }
