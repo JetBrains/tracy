@@ -1,8 +1,10 @@
-site_name: AI Dev Kit
+site_name: AI Development Kit
 #site_url: [link-to-hosted-docs]
 nav:
   - Documentation:
       - Overview: index.md
+      - About: about.md
+      - Tracing API: tracing-api.md
       - Samples: sample.md
 #      - Key concepts: key-concepts.md
 #      - Getting started:
@@ -24,6 +26,9 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+plugins:
+  - macros
 
 theme:
   name: material
