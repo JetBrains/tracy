@@ -16,8 +16,17 @@ kotlin {
 
 dependencies {
     implementation(project(":tracing:tracing-core"))
+    implementation(project(":tracing:tracing-anthropic"))
+    implementation(project(":tracing:tracing-gemini"))
+    implementation(project(":tracing:tracing-openai"))
+    implementation(project(":tracing:tracing-ktor"))
+    implementation(project(":tracing:tracing-test-utils"))
     implementation(libs.opentelemetry.exporter.otlp)
     implementation(libs.opentelemetry.exporter.logging)
+    implementation(libs.anthropic)
+    implementation(libs.gemini)
+    implementation(libs.openai)
+    implementation(libs.okhttp)
 }
 
 
@@ -43,11 +52,6 @@ val knitDir: Provider<String> =
         }
     }
 
-//ktlint {
-//    filter {
-//        exclude { it.file.path.contains("/docs/${knitDir.get()}/") }
-//    }
-//}
 
 knit {
     rootDir = project.rootDir
@@ -55,6 +59,7 @@ knit {
         include("**/*.md")
     }
     moduleDocs = "docs/modules.md"
+    // TODO: add our site
     siteRoot = "https://docs.koog.ai/"
 }
 
