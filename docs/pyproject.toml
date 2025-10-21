@@ -7,4 +7,5 @@ dependencies = [
     "mkdocs-material==9.6.19",
     "mkdocs-redirects==1.2.2",
     "mkdocs-llmstxt==0.3.1",
+    "mkdocs-macros-plugin>=1.4.0",
 ]
