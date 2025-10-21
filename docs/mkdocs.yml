@@ -2,10 +2,10 @@ site_name: AI Development Kit
 #site_url: [link-to-hosted-docs]
 nav:
   - Documentation:
-      - Overview: index.md
-      - About: about.md
+      - Welcome to MkDocs: index.md
+      - Overview: overview.md
       - Tracing API: tracing-api.md
-      - Samples: sample.md
+      - Supported Backends: supported-backends.md
 #      - Key concepts: key-concepts.md
 #      - Getting started:
 #          - Single-run agents: single-run-agents.md
