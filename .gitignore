@@ -3,7 +3,8 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
-docs/src/main/kotlin/*.kt
+docs/src/main/kotlin/**/*.kt
+docs/src/test/kotlin/**/*.kt
 
 ### IntelliJ IDEA ###
 .idea/
