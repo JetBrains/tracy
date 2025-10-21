@@ -3,6 +3,8 @@ package ai.dev.kit.tracing.fluent.providers
 import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.LITELLM_URL
+import com.google.auth.oauth2.AccessToken
+import com.google.auth.oauth2.GoogleCredentials
 import com.google.genai.errors.GenAiIOException
 import com.google.genai.types.*
 import io.opentelemetry.api.common.AttributeKey
@@ -29,9 +31,35 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
         val location = "us-central1"
         val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
 
+        /**
+         * The Gemini SDK client requires some credentials to be passed in,
+         * even if the proxy attaches service account credentials (e.g., the LiteLLM instance at [LITELLM_URL]).
+         *
+         * This requirement is SDK-specific, as the following curl request will succeed
+         * with a single LiteLLM token passed in the headers:
+         * ```bash
+         * curl https://litellm.labs.jb.gg/vertex_ai/v1beta1/projects/jetbrains-grazie/locations/us-central1/publishers/google/models/gemini-2.5-flash:generateContent \
+         *     -H "Content-Type: application/json" \
+         *     -H "x-litellm-api-key: Bearer [sk-token]" \
+         *     -d '{
+         *         "contents":[{
+         *             "role": "user",
+         *             "parts":[{"text": "How are you doing today?"}]
+         *         }]
+         *     }'
+         * ```
+         *
+         * See: [Application Default Credentials](https://docs.cloud.google.com/docs/authentication/application-default-credentials)
+         */
+        val dummyCredentials = object : GoogleCredentials() {
+            override fun refreshAccessToken(): AccessToken = AccessToken("dummy-token", null)
+        }
+
         return GeminiClient.builder()
             .vertexAI(true)
             .project(projectId)
+            // attaches `Authorization: Bearer dummy-token` header
+            .credentials(dummyCredentials)
             .location(location)
             .httpOptions(
                 GeminiHttpOptions.builder()
@@ -80,7 +108,7 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
             model,
             "Generate polite greeting and introduce yourself. You MUST use the tool named '${toolName}' for greeting!",
             GeminiGenerateContentConfig.builder()
-                .temperature(0.8f)
+                .temperature(0.0f)
                 .tools(greetTool)
                 .build()
         )
@@ -259,7 +287,7 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
             model,
             "Generate polite greeting and introduce yourself",
             GeminiGenerateContentConfig.builder()
-                .temperature(0.8f)
+                .temperature(0.0f)
                 .build()
         )
 
@@ -300,7 +328,7 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
                 "gemini-2.5-flash",
                 "Generate polite greeting and introduce yourself",
                 GeminiGenerateContentConfig.builder()
-                    .temperature(0.8f)
+                    .temperature(0.0f)
                     .build()
             )
         } catch (_: GenAiIOException) {
@@ -336,10 +364,10 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
                 "[non-existent model name!]",
                 "Generate polite greeting and introduce yourself",
                 GeminiGenerateContentConfig.builder()
-                    .temperature(0.8f)
+                    .temperature(0.0f)
                     .build()
             )
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // suppress
         }
 
