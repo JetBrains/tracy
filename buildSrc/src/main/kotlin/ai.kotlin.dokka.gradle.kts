@@ -31,6 +31,11 @@ dokka {
             packageListUrl("https://kotlinlang.org/api/kotlinx.serialization/package-list")
         }
 
+        externalDocumentationLinks.register("okhttp3") {
+            url("https://javadoc.io/doc/com.squareup.okhttp3/okhttp/latest/")
+            packageListUrl("https://javadoc.io/doc/com.squareup.okhttp3/okhttp/latest/package-list")
+        }
+
         // Open Telemetry Documentation
         externalDocumentationLinks.register("opentelemetry-api") {
             url("https://javadoc.io/doc/io.opentelemetry/opentelemetry-api/latest/")
