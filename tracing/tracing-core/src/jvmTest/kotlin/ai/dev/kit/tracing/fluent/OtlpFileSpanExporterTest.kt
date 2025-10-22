@@ -1,15 +1,10 @@
 package ai.dev.kit.tracing.fluent
 
-import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.ConsoleOutputFormat
 import ai.dev.kit.tracing.FileTracingConfig
 import ai.dev.kit.tracing.TracingManager
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.io.path.absolutePathString
@@ -18,7 +13,7 @@ import kotlin.io.path.readText
 import kotlin.test.assertEquals
 
 
-class OtlpFileSpanExporterTest : BaseOpenTelemetryTracingTest() {
+class OtlpFileSpanExporterTest {
     @Test
     fun `test tracing into a file successfully writes span into the file`() = runTest {
         val tempFile = createTempFile()
