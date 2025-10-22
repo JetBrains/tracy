@@ -84,7 +84,7 @@ class AiDevKitTraceGeneratorExtension : IrGenerationExtension {
     }
 
     /**
-     * Wraps the original function body in a call to [withTrace] or [withTraceSuspended],
+     * Wraps the original function body in a call to `withTrace` or `withTraceSuspended`,
      * passing the annotation, a function reference, arguments, and a lambda with the original body.
      */
     @OptIn(UnsafeDuringIrConstructionAPI::class)

@@ -2,20 +2,15 @@ package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
-import ai.dev.kit.tracing.LITELLM_URL
-import ai.dev.kit.tracing.autologging.createLiteLLMClient
+import ai.dev.kit.tracing.autologging.createOpenAIClient
+import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
 import com.openai.core.JsonArray
 import com.openai.core.JsonString
 import com.openai.core.JsonValue
 import com.openai.models.ChatModel
 import com.openai.models.FunctionDefinition
 import com.openai.models.FunctionParameters
-import com.openai.models.chat.completions.ChatCompletion
-import com.openai.models.chat.completions.ChatCompletionCreateParams
-import com.openai.models.chat.completions.ChatCompletionFunctionTool
-import com.openai.models.chat.completions.ChatCompletionMessageToolCall
-import com.openai.models.chat.completions.ChatCompletionTool
-import com.openai.models.chat.completions.ChatCompletionToolMessageParam
+import com.openai.models.chat.completions.*
 import com.openai.models.responses.FunctionTool
 import com.openai.models.responses.ResponseCreateParams
 import io.opentelemetry.api.common.AttributeKey
@@ -25,15 +20,25 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import kotlin.jvm.optionals.getOrNull
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-
-@Tag("SkipForNonLocal")
+@Tag("openai")
 class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
+    /**
+     * When no value is provided, defaults to [PRODUCTION_URL].
+     */
+    val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
+
+    val llmProviderApiKey =
+        System.getenv("OPENAI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
+        ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
+
     @Test
     fun `test OpenAI chat completions auto tracing`() = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
+
         val params = ChatCompletionCreateParams.builder()
             .addUserMessage("Generate polite greeting and introduce yourself")
             .model(ChatModel.GPT_4O_MINI).temperature(1.1).build()
@@ -44,7 +49,8 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test OpenAI responses API auto tracing`() = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
+
         val params = ResponseCreateParams.builder()
             .input("Generate polite greeting and introduce yourself")
             .model(ChatModel.GPT_4O_MINI).temperature(1.1).build()
@@ -58,24 +64,25 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
         assertEquals(1, traces.size)
         val trace = traces.firstOrNull()
-        assertNotNull(trace)
 
-        assertEquals(
-            LITELLM_URL,
-            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
+        assertNotNull(trace)
+        assertTrue(
+            (llmProviderUrl ?: PRODUCTION_URL)
+                .startsWith(trace.attributes[AttributeKey.stringKey("gen_ai.api_base")].toString())
         )
-        assertEquals(
-            trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(ChatModel.GPT_4O_MINI.asString()),
-            true
-        )
+
+        val responseModel = trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]
+        assertNotNull(responseModel)
+        assertTrue(responseModel.startsWith(ChatModel.GPT_4O_MINI.asString()))
+
         val content = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
-        assertNotNull(content)
-        assertTrue(content.isNotEmpty())
+        assertFalse(content.isNullOrEmpty())
     }
 
     @Test
     fun `test OpenAI chat completions span error status when request fails`() = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
+
         val params = ChatCompletionCreateParams.builder()
             .addUserMessage("Generate polite greeting and introduce yourself")
             .model(ChatModel.GPT_4O_MINI)
@@ -94,7 +101,8 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test OpenAI responses API span error status when request fails`() = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
+
         val params = ResponseCreateParams.builder()
             .input("Generate polite greeting and introduce yourself")
             .model(ChatModel.GPT_4O_MINI)
@@ -117,18 +125,18 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
         assertNotNull(trace)
 
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
-        assertEquals(
-            LITELLM_URL,
-            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
+        assertTrue(
+            (llmProviderUrl
+                ?: PRODUCTION_URL).startsWith(trace.attributes[AttributeKey.stringKey("gen_ai.api_base")].toString())
         )
 
-        assertEquals(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")]?.isNotEmpty(), true)
-        assertEquals(trace.attributes[AttributeKey.stringKey("gen_ai.error.code")]?.isNotEmpty(), true)
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")].isNullOrEmpty())
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.error.code")].isNullOrEmpty())
     }
 
     @Test
     fun `test OpenAI chat completions tool calls auto tracing`() = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
 
         // defines: `greet(name: String)`
         val greetTool = createTool("hi")
@@ -147,7 +155,7 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test OpenAI responses API tool calls auto tracing`() = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
 
         // defines: `greet(name: String)`
         val greetTool = createFunctionTool("hi")
@@ -182,11 +190,9 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
             val toolCall = this
             val name = if (toolCall.isFunction()) {
                 toolCall.function().get().function().name()
-            }
-            else if (toolCall.isCustom()) {
+            } else if (toolCall.isCustom()) {
                 toolCall.custom().get().custom().name()
-            }
-            else {
+            } else {
                 throw IllegalStateException("Cannot extract name of the tool call $toolCall")
             }
             return name
@@ -201,33 +207,21 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
         assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
         assertEquals("function", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.type")])
-        assertEquals(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.description")]?.isNotEmpty(), true)
-        assertEquals(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.parameters")]?.isNotEmpty(), true)
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.description")].isNullOrEmpty())
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.parameters")].isNullOrEmpty())
 
         // if AI called the tool when check its props
         if (trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.finish_reason")] == "tool_calls") {
-            assertEquals(
-                trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")]?.isNotEmpty(),
-                true
-            )
-            assertEquals(
-                trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.call.id")]?.isNotEmpty(),
-                true
-            )
-            assertEquals(
-                trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.call.type")]?.isNotEmpty(),
-                true
-            )
-            assertEquals(
-                trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")]?.isNotEmpty(),
-                true
-            )
+            assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")].isNullOrEmpty())
+            assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.call.id")].isNullOrEmpty())
+            assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.call.type")].isNullOrEmpty())
+            assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")].isNullOrEmpty())
         }
     }
 
     @Test
     fun `test OpenAI chat completions response to a tool call auto tracing`() = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
 
         // defines: `greet(name: String)`
         val greetTool = createTool("hi")
@@ -263,7 +257,7 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test OpenAI responses API response to a tool call auto tracing`() = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
 
         val greetTool = createFunctionTool("hi")
 
@@ -325,20 +319,14 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
         // if AI called the tool when check its props
         if (toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.finish_reason")] == "tool_calls") {
             assertEquals("tool", toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.role")])
-            assertEquals(
-                toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.content")]?.isNotEmpty(),
-                true
-            )
-            assertEquals(
-                toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.tool_call_id")]?.isNotEmpty(),
-                true
-            )
+            assertFalse(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.content")].isNullOrEmpty())
+            assertFalse(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.tool_call_id")].isNullOrEmpty())
         }
     }
 
     @Test
     fun `test OpenAI chat completions multiple tools response to tool calls auto tracing`() = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
 
         val greetTool = createTool("hi")
         val farewellTool = createTool("goodbye")
@@ -370,7 +358,7 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test OpenAI responses API multiple tools response to tool calls auto tracing`() = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
 
         val greetTool = createFunctionTool("hi")
         val farewellTool = createFunctionTool("goodbye")
@@ -436,40 +424,23 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
         assertEquals("goodbye", toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.tool.1.name")])
 
         if (toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.finish_reason")] == "tool_calls") {
-            assertEquals(
-                toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")]?.isNotEmpty(),
-                true
-            )
-            assertEquals(
-                toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.1.name")]?.isNotEmpty(),
-                true
-            )
+            assertFalse(toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")].isNullOrEmpty())
+            assertFalse(toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.1.name")].isNullOrEmpty())
 
             assertEquals("tool", toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.role")])
-            assertEquals(
-                toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.content")]?.isNotEmpty(),
-                true
-            )
-            assertEquals(
-                toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.tool_call_id")]?.isNotEmpty(),
-                true
-            )
+            assertFalse(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.content")].isNullOrEmpty())
+            assertFalse(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.tool_call_id")].isNullOrEmpty())
 
             assertEquals("tool", toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.role")])
-            assertEquals(
-                toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.content")]?.isNotEmpty(),
-                true
-            )
-            assertEquals(
-                toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.tool_call_id")]?.isNotEmpty(),
-                true
-            )
+            assertFalse(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.content")].isNullOrEmpty())
+            assertFalse(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.tool_call_id")].isNullOrEmpty())
         }
     }
 
     @Test
     fun `test OpenAI auto tracing when instrumentation is off`() = runTest {
-        val client = createLiteLLMClient()
+        val client = createOpenAIClient(llmProviderUrl, llmProviderApiKey)
+
         val params = ChatCompletionCreateParams.builder()
             .addUserMessage("Generate polite greeting and introduce yourself")
             .model(ChatModel.GPT_4O_MINI).temperature(1.1).build()
@@ -480,8 +451,7 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
         assertEquals(0, traces.size)
         assertTrue(result.model().startsWith(ChatModel.GPT_4O_MINI.asString()))
         val content = result.choices().first().message().content().getOrNull()
-        assertNotNull(content)
-        assertTrue(content.isNotEmpty())
+        assertFalse(content.isNullOrEmpty())
     }
 
     private fun createTool(word: String): ChatCompletionTool {
@@ -528,7 +498,7 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test OpenAI responses API streaming`(): Unit = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
 
         val params = ResponseCreateParams.builder()
             .input("Generate polite greeting and introduce yourself")
@@ -550,7 +520,8 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test OpenAI chat completions streaming`(): Unit = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
+
         val params = ChatCompletionCreateParams.builder()
             .addUserMessage("Generate polite greeting and introduce yourself")
             .model(ChatModel.GPT_4O_MINI)
@@ -572,12 +543,16 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
         validateStreaming(sb.toString())
     }
 
-    fun validateStreaming(output: String){
+    fun validateStreaming(output: String) {
         val traces = analyzeSpans()
         assertEquals(1, traces.size)
         val trace = traces.first()
-        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.content.type")]?.startsWith("text/event-stream") == true)
-        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]?.isNotEmpty() == true)
+
+        val contentType = trace.attributes[AttributeKey.stringKey("gen_ai.completion.content.type")]
+        assertNotNull(contentType, "Missing gen_ai.completion.content.type attribute")
+        assertTrue(contentType.startsWith("text/event-stream"))
+
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")].isNullOrEmpty())
         assertEquals(output, trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")])
     }
 }

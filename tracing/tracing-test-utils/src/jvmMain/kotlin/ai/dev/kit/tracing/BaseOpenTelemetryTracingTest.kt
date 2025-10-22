@@ -14,7 +14,6 @@ import org.junit.jupiter.api.TestInstance
 import java.time.Duration
 import kotlin.test.AfterTest
 
-const val LITELLM_URL = "https://litellm.labs.jb.gg"
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class BaseOpenTelemetryTracingTest {

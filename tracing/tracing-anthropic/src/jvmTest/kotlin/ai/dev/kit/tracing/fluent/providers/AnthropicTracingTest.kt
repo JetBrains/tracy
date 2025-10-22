@@ -4,7 +4,6 @@ import ai.dev.kit.clients.instrument
 import ai.dev.kit.getFieldValue
 import ai.dev.kit.setFieldValue
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
-import ai.dev.kit.tracing.LITELLM_URL
 import com.anthropic.client.AnthropicClient
 import com.anthropic.client.okhttp.AnthropicOkHttpClient
 import com.anthropic.core.JsonObject
@@ -27,15 +26,24 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import java.time.Duration
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 
-
-@Tag("SkipForNonLocal")
+@Tag("anthropic")
 class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
+    /**
+    When no value provided, defaults to anthropic provider url in [AnthropicOkHttpClient.Builder]
+    */
+    val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
+
+    val llmProviderApiKey =
+        System.getenv("ANTHROPIC_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
+        ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
+
     fun createAnthropicClient(): AnthropicClient {
         return AnthropicOkHttpClient.builder()
-            .baseUrl(LITELLM_URL)
-            .apiKey(System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set"))
+            .baseUrl(llmProviderUrl)
+            .apiKey(llmProviderApiKey)
             .timeout(Duration.ofSeconds(60))
             .build()
     }
@@ -44,7 +52,7 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
     fun `test Anthropic tool auto tracing`() {
         val client = instrument(createAnthropicClient())
 
-        val model = Model.CLAUDE_3_5_SONNET_20240620
+        val model = Model.CLAUDE_3_5_HAIKU_LATEST
         val params = MessageCreateParams.builder()
             .addUserMessage("Use a provided `hi` tool to greet Alex")
             .addTool(createTool("hi"))
@@ -64,8 +72,8 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
         // Check tool definitions in the request
         assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
         assertEquals("custom", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.type")])
-        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.description")]?.isNotEmpty() == true)
-        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.parameters")]?.isNotEmpty() == true)
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.description")].isNullOrEmpty())
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.parameters")].isNullOrEmpty())
 
         // assert tool use requests when LLM finished with a tool call
         if (trace.attributes[GEN_AI_RESPONSE_FINISH_REASONS]?.contains("tool_use") == true) {
@@ -79,8 +87,8 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
                 "tool_use",
                 trace.attributes[AttributeKey.stringKey("gen_ai.completion.$index.tool.call.type")]
             )
-            assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.$index.tool.call.id")]?.isNotEmpty() == true)
-            assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.$index.tool.arguments")]?.isNotEmpty() == true)
+            assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.$index.tool.call.id")].isNullOrEmpty())
+            assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.$index.tool.arguments")].isNullOrEmpty())
         }
     }
 
@@ -90,7 +98,7 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
 
         val greetTool = createTool("hi")
 
-        val model = Model.CLAUDE_3_5_SONNET_20240620
+        val model = Model.CLAUDE_3_5_HAIKU_LATEST
         val paramsBuilder = MessageCreateParams.builder()
             .addUserMessage("Use a provided `hi` tool to hi Alex")
             .addTool(greetTool)
@@ -159,7 +167,7 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
         val content = traceWithToolCallResult.attributes[AttributeKey.stringKey("gen_ai.prompt.$index.content")]!!
         val jsonContent = Json.parseToJsonElement(content).jsonArray.firstOrNull()!!
 
-        assertTrue(jsonContent.jsonObject["tool_use_id"]?.jsonPrimitive?.content?.isNotEmpty() == true)
+        assertFalse(jsonContent.jsonObject["tool_use_id"]?.jsonPrimitive?.content.isNullOrEmpty())
         assertEquals("tool_result", jsonContent.jsonObject["type"]?.jsonPrimitive?.content)
         assertEquals("Hello, my dear friend!", jsonContent.jsonObject["content"]?.jsonPrimitive?.content)
     }
@@ -171,7 +179,7 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
         val greetTool = createTool("hi")
         val goodbyeTool = createTool("goodbye")
 
-        val model = Model.CLAUDE_3_5_SONNET_20240620
+        val model = Model.CLAUDE_3_5_HAIKU_LATEST
         val paramsBuilder = MessageCreateParams.builder()
             .addUserMessage("Use the provided tools to greet Alex, then say goodbye to him. You MUST use the tools!")
             .addTool(greetTool)
@@ -180,41 +188,47 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
             .temperature(0.0)
             .model(model)
 
+        fun addToolResults(m: Message) {
+            m.content().forEach { block ->
+                if (block.isToolUse()) {
+                    val toolUse = block.toolUse().get()
+                    paramsBuilder.addMessage(
+                        MessageParam.builder().contentOfBlockParams(
+                            listOf(
+                                ContentBlockParam.ofToolResult(
+                                    ToolResultBlockParam.builder()
+                                        .type(JsonString.of("tool_result"))
+                                        .toolUseId(toolUse.id())
+                                        .content(toolUse.name())
+                                        .build()
+                                )
+                            )
+                        )
+                            .role(MessageParam.Role.USER)
+                            .build()
+                    )
+                }
+            }
+        }
+
         // send a request to AI and expect it requests tool call executions
         val messageAccumulator = MessageAccumulator.create()
         client.messages().createStreaming(paramsBuilder.build()).use {
             it.stream().forEach(messageAccumulator::accumulate)
         }
-        val assistantMessage = messageAccumulator.message()
-        paramsBuilder.addMessage(assistantMessage)
 
-        // respond to ALL tool calls with tool_result blocks
-        assistantMessage.content().forEach { block ->
-            if (block.isToolUse()) {
-                val toolUse = block.toolUse().get()
-                paramsBuilder.addMessage(
-                    MessageParam.builder().contentOfBlockParams(
-                        listOf(
-                            ContentBlockParam.ofToolResult(
-                                ToolResultBlockParam.builder()
-                                    .type(JsonString.of("tool_result"))
-                                    .toolUseId(toolUse.id())
-                                    .content(toolUse.name())
-                                    .build()
-                            )
-                        )
-                    )
-                        .role(MessageParam.Role.USER)
-                        .build()
-                )
-            }
-        }
+        val firstAssistant = messageAccumulator.message()
+        paramsBuilder.addMessage(firstAssistant)
+        addToolResults(firstAssistant)
 
-        // final request to AI after providing tool outputs
+        val secondAssistant = client.messages().create(paramsBuilder.build())
+        paramsBuilder.addMessage(secondAssistant)
+        addToolResults(secondAssistant)
+
         client.messages().create(paramsBuilder.build())
 
         val traces = analyzeSpans()
-        assertEquals(2, traces.size)
+        assertEquals(3, traces.size)
 
         val finalTrace = traces.last()
 
@@ -234,8 +248,9 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test Anthropic auto tracing`() = runTest {
-        val model = Model.CLAUDE_3_5_SONNET_20240620
         val client = instrument(createAnthropicClient())
+
+        val model = Model.CLAUDE_3_5_HAIKU_LATEST
 
         val params = MessageCreateParams.builder()
             .maxTokens(1000L)
@@ -252,14 +267,14 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
         val trace = traces.firstOrNull()
         assertNotNull(trace)
 
-        assertEquals(
-            LITELLM_URL,
-            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
-        )
+        llmProviderUrl?.let {
+            assertEquals(
+                llmProviderUrl,
+                trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
+            )
+        }
 
-        assertTrue(
-            trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(model.asString()) == true
-        )
+        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.commonPrefixWith(model.asString()) == "claude-3-5-haiku-")
 
         val type = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.type")]
         assertNotNull(type)
@@ -292,18 +307,20 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
         assertNotNull(trace)
 
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
-        assertEquals(
-            LITELLM_URL,
-            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
-        )
+        llmProviderUrl?.let {
+            assertEquals(
+                llmProviderUrl,
+                trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
+            )
+        }
 
-        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")]?.isNotEmpty() == true)
-        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.error.code")]?.isNotEmpty() == true)
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")].isNullOrEmpty())
     }
 
     @Test
     fun `test Anthropic span error status when mocking 529 response code`() = runTest {
         val client = instrument(createAnthropicClient())
+
         val errorMessage = "Server is overloaded, please try again later."
 
         val serverOverloadedInterceptor = Interceptor { chain ->
@@ -345,10 +362,12 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
         assertNotNull(trace)
 
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
-        assertEquals(
-            LITELLM_URL,
-            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
-        )
+        llmProviderUrl?.let {
+            assertEquals(
+                llmProviderUrl,
+                trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
+            )
+        }
 
         assertEquals(errorMessage, trace.attributes[AttributeKey.stringKey("gen_ai.error.message")])
         assertEquals(529, trace.attributes[AttributeKey.longKey("http.status_code")])

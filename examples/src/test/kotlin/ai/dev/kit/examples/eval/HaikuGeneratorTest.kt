@@ -2,9 +2,9 @@ package ai.dev.kit.examples.eval
 
 import ai.dev.kit.eval.providers.langfuse.LangfuseEvaluationTest
 import ai.dev.kit.eval.utils.*
-import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.LangfuseConfig
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
+import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import org.junit.jupiter.api.Tag
@@ -12,11 +12,15 @@ import kotlin.jvm.optionals.getOrElse
 
 fun haikuTestCase(topic: String) = TestCase(name = topic, HaikuTopic(topic), NoGroundTruth)
 
+val apiToken = System.getenv("OPENAI_API_KEY")
+    ?: error("Environment variable 'OPENAI_API_KEY' is not set")
+
+@Tag("openai")
 @Tag("SkipForNonLocal")
 class LangfuseHaikuGeneratorTest :
     LangfuseEvaluationTest<HaikuTopic, NoGroundTruth, HaikuText, MultiScoreEvalResult>(
         numberOfRuns = 1,
-        langfuseConfig = LangfuseConfig(langfuseUrl = "https://langfuse.labs.jb.gg/"),
+        langfuseConfig = LangfuseConfig(),
     ) {
     override val testCases: List<TestCase<HaikuTopic, NoGroundTruth>> =
         listOf("table", "computer", "flower", "horse").map { haikuTestCase(it) }
@@ -25,6 +29,7 @@ class LangfuseHaikuGeneratorTest :
     override val evaluator: Evaluator<NoGroundTruth, HaikuText, MultiScoreEvalResult> = HaikuEvaluator()
 }
 
+@Tag("openai")
 @Tag("SkipForNonLocal")
 class ConsoleHaikuGeneratorTest :
     ConsoleEvaluationTest<HaikuTopic, NoGroundTruth, HaikuText, MultiScoreEvalResult>(
@@ -95,9 +100,7 @@ You are an AI poetry critic. Your job is to evaluate the overall quality of a Ha
 Evaluate this Haiku:
 """ + haikuText.text
 
-    val client = instrument(
-        createLiteLLMClient()
-    )
+    val client = OpenAIOkHttpClient.builder().apiKey(apiToken).build()
 
     val params = ChatCompletionCreateParams.builder()
         .addUserMessage(prompt)
@@ -128,9 +131,7 @@ You are an AI poetry critic highly focused on creativity in poetry. Your task is
 Evaluate the creativity of this Haiku:
 """ + haikuText.text
 
-    val client = instrument(
-        createLiteLLMClient()
-    )
+    val client = OpenAIOkHttpClient.builder().apiKey(apiToken).build()
 
     val params = ChatCompletionCreateParams.builder()
         .addUserMessage(prompt)
@@ -165,9 +166,8 @@ You are a Haiku poetry expert and your task is to evaluate the structural correc
 
 Evaluate the structure of this Haiku:
 """ + haikuText.text
-    val client = instrument(
-        createLiteLLMClient()
-    )
+
+    val client = OpenAIOkHttpClient.builder().apiKey(apiToken).build()
 
     val params = ChatCompletionCreateParams.builder()
         .addUserMessage(prompt)

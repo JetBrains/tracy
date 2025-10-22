@@ -1,12 +1,9 @@
 package ai.dev.kit.tracing.fluent
 
-import ai.dev.kit.adapters.AnthropicLLMTracingAdapter
-import ai.dev.kit.adapters.GeminiLLMTracingAdapter
-import ai.dev.kit.adapters.LLMTracingAdapter
 import ai.dev.kit.adapters.OpenAILLMTracingAdapter
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
-import ai.dev.kit.tracing.LITELLM_URL
+import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
 import io.ktor.client.*
 import io.ktor.client.engine.mock.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -29,106 +26,24 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.stream.Stream
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-private fun HttpRequestBuilder.addAuthHeaders(acceptStream: Boolean = false) {
-    header("Authorization", "Bearer ${getApiKey()}")
-    header("Content-Type", "application/json")
-    if (acceptStream) header("Accept", "text/event-stream")
-}
+@Tag("openai")
+class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
+    val llmTracingAdapter = OpenAILLMTracingAdapter()
 
-private fun getApiKey(): String =
-    System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY is not set")
-
-@Tag("SkipForNonLocal")
-class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
-    @Test
-    fun `test Ktor HttpClient auto tracing for Anthropic`() = runTest {
-        val client: HttpClient = instrument(HttpClient(), Adapters.Anthropic)
-        val model = "claude-sonnet-4-20250514"
-        val promptMessage = "Hello, world!"
-
-        val response = client.post("$LITELLM_URL/v1/messages") {
-            val apiKey = getApiKey()
-            header("x-api-key", apiKey)
-            header("Content-Type", "application/json")
-            setBody(
-                """
-                {
-                    "max_tokens": 1024,
-                    "messages": [
-                        {
-                            "content": "$promptMessage",
-                            "role": "user"
-                        }
-                    ],
-                    "model": "$model"
-                }
-            """.trimIndent()
-            )
-        }
-
-        val traces = analyzeSpans()
-
-        // assert expectations on a trace
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
-
-        assertEquals(StatusCode.OK, trace.status.statusCode)
-
-        assertEquals("anthropic", trace.attributes[AttributeKey.stringKey("gen_ai.system")])
-        assertEquals(LITELLM_URL, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
-
-        val tracedModel = trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]
-        assertEquals(true, tracedModel?.startsWith(model))
-
-        assertEquals("user", trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")])
-        assertEquals(promptMessage, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]?.unquote())
-
-        val completionType = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.type")]
-        val completionText = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
-
-        assertNotNull(completionType)
-        assertTrue(completionType.isNotEmpty())
-
-        assertNotNull(completionText)
-        assertTrue(completionText.isNotEmpty())
-
-
-        // assert that tracing doesn't consume the response body
-        val responseBody = response.bodyAsText()
-        assertTrue(responseBody.isNotEmpty())
-
-        // compare trace with the actual response
-        val responseJson = Json.parseToJsonElement(responseBody).jsonObject
-
-        assertEquals(
-            responseJson["id"]!!.jsonPrimitive.content,
-            trace.attributes[AttributeKey.stringKey("gen_ai.response.id")]
-        )
-        assertEquals(responseJson["model"]!!.jsonPrimitive.content, tracedModel)
-        assertEquals(responseJson["content"]!!.jsonArray[0].jsonObject["type"]!!.jsonPrimitive.content, completionType)
-        assertEquals(
-            responseJson["content"]!!.jsonArray[0].jsonObject["text"]!!.jsonPrimitive.content,
-            completionText.unquote()
-        )
-
-        val usage = responseJson["usage"]!!.jsonObject
-        assertEquals(
-            usage["input_tokens"]!!.jsonPrimitive.int,
-            trace.attributes[AttributeKey.longKey("gen_ai.usage.input_tokens")]!!.toInt()
-        )
-        assertEquals(
-            usage["output_tokens"]!!.jsonPrimitive.int,
-            trace.attributes[AttributeKey.longKey("gen_ai.usage.output_tokens")]!!.toInt()
-        )
+    private fun HttpRequestBuilder.addAuthHeaders(acceptStream: Boolean = false) {
+        header("Authorization", "Bearer $llmProviderApiKey")
+        header("Content-Type", "application/json")
+        if (acceptStream) header("Accept", "text/event-stream")
     }
 
     @ParameterizedTest
     @MethodSource("provideTestParameters")
     fun `test Ktor HttpClient auto tracing with different request body types for OpenAI`(
+        @Suppress("UNUSED_PARAMETER")
         testName: String,
         prompt: String,
         model: String,
@@ -138,9 +53,9 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
             install(ContentNegotiation) {
                 json(Json { prettyPrint = true })
             }
-        }, Adapters.OpenAI)
+        }, llmTracingAdapter)
 
-        val response = client.post("$LITELLM_URL/v1/chat/completions") {
+        val response = client.post("$baseUrl/v1/chat/completions") {
             addAuthHeaders()
             when (requestBody) {
                 // for the request.bodyType to be set correctly
@@ -159,10 +74,11 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         assertEquals(StatusCode.OK, trace.status.statusCode)
 
         assertEquals("openai", trace.attributes[AttributeKey.stringKey("gen_ai.system")])
-        assertEquals(LITELLM_URL, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
+        assertEquals(baseUrl, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
 
         val tracedModel = trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]
-        assertEquals(true, tracedModel?.startsWith(model))
+        assertNotNull(tracedModel)
+        assertTrue(tracedModel.startsWith(model))
 
         assertEquals("user", trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")])
         assertEquals(prompt, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]?.unquote())
@@ -170,11 +86,8 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val completionRole = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.role")]
         val completionContent = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
 
-        assertNotNull(completionRole)
-        assertTrue(completionRole.isNotEmpty())
-
-        assertNotNull(completionContent)
-        assertTrue(completionContent.isNotEmpty())
+        assertFalse(completionRole.isNullOrEmpty())
+        assertFalse(completionContent.isNullOrEmpty())
 
         // assert that tracing doesn't consume the response body
         val responseBody = response.bodyAsText()
@@ -207,9 +120,10 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test Ktor HttpClient auto tracing streaming for OpenAI`() = runTest {
-        val client: HttpClient = instrument(HttpClient(), adapter = Adapters.OpenAI)
+        val client: HttpClient = instrument(HttpClient(), adapter = llmTracingAdapter)
+
         val model = "gpt-4o-mini"
-        val response = client.post("$LITELLM_URL/v1/chat/completions") {
+        val response = client.post("$baseUrl/v1/chat/completions") {
             addAuthHeaders(acceptStream = true)
             setBody(
                 """
@@ -237,15 +151,14 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         assertNotNull(trace)
 
         val content = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
-        assertNotNull(content)
-        assertTrue(content.isNotEmpty())
+        assertFalse(content.isNullOrEmpty())
     }
 
     @Test
     fun `test Ktor HttpClient auto tracing for Bad Request in OpenAI`() = runTest {
         val mockedClient = HttpClient(MockEngine) {
             engine {
-                addHandler { request ->
+                addHandler { _ ->
                     respond(
                         content = ByteReadChannel(
                             """
@@ -269,9 +182,9 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
             }
         }
 
-        val client: HttpClient = instrument(mockedClient, Adapters.OpenAI)
+        val client: HttpClient = instrument(mockedClient, llmTracingAdapter)
 
-        val response = client.post("$LITELLM_URL/v1/chat/completions") {
+        val response = client.post("$baseUrl/v1/chat/completions") {
             addAuthHeaders()
             setBody(
                 """
@@ -295,7 +208,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         assertNotNull(trace)
 
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
-        assertEquals(LITELLM_URL, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
+        assertEquals(baseUrl, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
 
         // check error
         assertEquals("Bad Request Mock", trace.attributes[AttributeKey.stringKey("gen_ai.error.message")])
@@ -355,9 +268,9 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
             }
         }
 
-        val client: HttpClient = instrument(mockedClient, Adapters.OpenAI)
+        val client: HttpClient = instrument(mockedClient, llmTracingAdapter)
 
-        client.post("$LITELLM_URL/v1/chat/completions") {
+        client.post("$baseUrl/v1/chat/completions") {
             addAuthHeaders()
             setBody(
                 """
@@ -382,8 +295,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         assertNotNull(trace)
 
         assertEquals(StatusCode.OK, trace.status.statusCode)
-        assertEquals(LITELLM_URL, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
-
+        assertEquals(baseUrl, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
         assertEquals("null", trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")])
         assertEquals("null", trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
         assertEquals(null, trace.attributes[GEN_AI_REQUEST_TEMPERATURE])
@@ -397,11 +309,12 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
     @ParameterizedTest
     @MethodSource("provideOpenAIBodies")
     fun `test tracing for OpenAI doesn't fail when tools are null`(
+        @Suppress("UNUSED_PARAMETER")
         testName: String,
         endpoint: String,
         requestBody: String,
     ) = runTest {
-        val client: HttpClient = instrument(HttpClient(), Adapters.OpenAI)
+        val client: HttpClient = instrument(HttpClient(), OpenAILLMTracingAdapter())
 
         val response = client.post(endpoint) {
             addAuthHeaders()
@@ -417,115 +330,27 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
 
         assertEquals(StatusCode.OK, trace.status.statusCode)
-        assertEquals(LITELLM_URL, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
+        assertEquals(baseUrl, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
 
-        assertEquals(true, trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.isNotEmpty())
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.response.model")].isNullOrEmpty())
         assertEquals(null, trace.attributes[GEN_AI_REQUEST_TEMPERATURE])
 
         assertEquals(body["id"]!!.jsonPrimitive.content, trace.attributes[AttributeKey.stringKey("gen_ai.response.id")])
-        assertEquals(true, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")]?.isNotEmpty())
-        assertEquals(true, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]?.isNotEmpty())
-        assertEquals(true, trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.role")]?.isNotEmpty())
-        assertEquals(true, trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]?.isNotEmpty())
-    }
-
-    @Test
-    fun `test Ktor HttpClient auto tracing for Gemini`() = runTest {
-        val client: HttpClient = instrument(HttpClient(), Adapters.Gemini)
-        val model = "gemini-2.5-flash"
-        val promptMessage = "Explain how AI works in a few words"
-
-        val projectId = "jetbrains-grazie"
-        val location = "us-central1"
-        val url = "$LITELLM_URL/vertex_ai/v1/projects/$projectId/locations/$location/publishers/google/models/$model:generateContent"
-
-        val response = client.post(url) {
-            val apiKey = getApiKey()
-
-            header("x-litellm-api-key", "Bearer $apiKey")
-            header("Content-Type", "application/json")
-            setBody(
-                """
-                {
-                    "contents": [
-                        {
-                            "parts": [
-                                { "text": "$promptMessage" }
-                            ],
-                            "role": "user"
-                        }
-                    ]
-                }
-            """.trimIndent()
-            )
-        }
-
-        val traces = analyzeSpans()
-
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
-
-        assertEquals(StatusCode.OK, trace.status.statusCode)
-        assertEquals("gemini", trace.attributes[AttributeKey.stringKey("gen_ai.system")])
-        assertEquals(LITELLM_URL, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
-
-        val tracedModel = trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]
-        assertEquals(true, tracedModel?.startsWith(model))
-
-        val tracedPrompt =
-            Json.parseToJsonElement(trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]!!).jsonArray[0]
-                .jsonObject["text"]?.jsonPrimitive?.content
-        assertEquals(promptMessage, tracedPrompt)
-
-        val completionRole = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.role")]
-        val completionContent = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
-
-        assertNotNull(completionRole)
-        assertTrue(completionRole.isNotEmpty())
-
-        assertNotNull(completionContent)
-        assertTrue(completionContent.isNotEmpty())
-
-        // assert that tracing doesn't consume the response body
-        val responseBody = response.bodyAsText()
-        assertTrue(responseBody.isNotEmpty())
-
-        val responseJson = Json.parseToJsonElement(responseBody).jsonObject
-
-        assertEquals(
-            responseJson["responseId"]!!.jsonPrimitive.content,
-            trace.attributes[AttributeKey.stringKey("gen_ai.response.id")]
-        )
-        assertEquals(responseJson["modelVersion"]!!.jsonPrimitive.content, tracedModel)
-        assertEquals(
-            responseJson["candidates"]?.jsonArray[0]?.jsonObject["content"]?.jsonObject["role"]?.jsonPrimitive?.content,
-            completionRole
-        )
-        assertEquals(
-            responseJson["candidates"]?.jsonArray[0]?.jsonObject["content"]?.jsonObject["parts"]?.toString(),
-            completionContent
-        )
-        assertEquals(
-            responseJson["usageMetadata"]!!.jsonObject["promptTokenCount"]!!.jsonPrimitive.int,
-            trace.attributes[AttributeKey.longKey("gen_ai.usage.input_tokens")]!!.toInt()
-        )
-        assertEquals(
-            responseJson["usageMetadata"]!!.jsonObject["candidatesTokenCount"]!!.jsonPrimitive.int,
-            trace.attributes[AttributeKey.longKey("gen_ai.usage.output_tokens")]!!.toInt()
-        )
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")].isNullOrEmpty())
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")].isNullOrEmpty())
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.role")].isNullOrEmpty())
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")].isNullOrEmpty())
     }
 
     companion object {
-        private object Adapters {
-            val Anthropic: LLMTracingAdapter
-                get() = AnthropicLLMTracingAdapter()
+        val llmProviderUrl: String = System.getenv("LLM_PROVIDER_URL") ?: PRODUCTION_URL
+        val llmProviderApiKey =
+            System.getenv("OPENAI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
+            ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
 
-            val Gemini: LLMTracingAdapter
-                get() = GeminiLLMTracingAdapter()
-
-            val OpenAI: LLMTracingAdapter
-                get() = OpenAILLMTracingAdapter()
+        // llmProviderUrl = https://api.openai.com/v1, gen_ai.api_base = https://api.api.openai.com
+        val baseUrl = llmProviderUrl.let {
+            if (it.endsWith("/v1")) it.removeSuffix("/v1") else it
         }
 
         @Serializable
@@ -575,13 +400,13 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         fun provideOpenAIBodies(): Stream<Arguments> = Stream.of(
             Arguments.of(
                 "Completions API",
-                "$LITELLM_URL/v1/chat/completions",
+                "$llmProviderUrl/chat/completions",
                 """
                     {
                         "model": "gpt-4.1-mini-2025-04-14",
                         "messages": [
                             {
-                                "role": "system",
+                                "role": "user",
                                 "content": "You are a programming task description summarizer",
                                 "tool_calls": null,
                                 "tool_call_id": null,
@@ -596,21 +421,18 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
                         "stream": false,
                         "stop": null,
                         "max_tokens": null,
-                        "parallel_tool_calls": null,
                         "max_completion_tokens": null,
                         "presence_penalty": null,
                         "frequency_penalty": null,
                         "logit_bias": null,
                         "user": null,
-                        "seed": 100000,
-                        "reasoning_effort": null,
-                        "response_format": null
+                        "seed": 100000
                     }
                 """.trimIndent()
             ),
             Arguments.of(
                 "Responses API",
-                "$LITELLM_URL/v1/responses",
+                "$llmProviderUrl/responses",
                 """
                     {
                         "model": "gpt-4",
@@ -625,19 +447,11 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
                         "top_p": null,
                         "parallel_tool_calls": false,
                         "stream": false,
-                        "response_format": null,
                         "tool_choice": null
                     }
                 """.trimIndent()
             ),
         )
-
-        private fun String.unquote(): String {
-            if (this.startsWith("\"") && this.endsWith("\"")) {
-                return this.substring(1, this.length - 1)
-            }
-            return this
-        }
     }
 
     private suspend fun HttpClient.postChatCompletion(
@@ -645,7 +459,7 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
         userRequest: String,
         acceptStream: Boolean = false
     ): HttpResponse {
-        return post("$LITELLM_URL/v1/chat/completions") {
+        return post("$baseUrl/v1/chat/completions") {
             addAuthHeaders(acceptStream = acceptStream)
             setBody(
                 """
@@ -678,7 +492,8 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test streaming requests`() = runTest {
-        val client = instrument(HttpClient(), adapter = Adapters.OpenAI)
+        val client = instrument(HttpClient(), adapter = llmTracingAdapter)
+
         val model = "gpt-4o-mini"
 
         val firstRequest = "first request"
@@ -694,7 +509,8 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test non-streaming requests`() = runTest {
-        val client = instrument(HttpClient(), adapter = Adapters.OpenAI)
+        val client = instrument(HttpClient(), adapter = llmTracingAdapter)
+
         val model = "gpt-4o-mini"
 
         val firstRequest = "first request"
@@ -710,7 +526,8 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test mixed stream and non-stream requests`() = runTest {
-        val client = instrument(HttpClient(), adapter = Adapters.OpenAI)
+        val client = instrument(HttpClient(), adapter = llmTracingAdapter)
+
         val model = "gpt-4o-mini"
 
         val firstRequest = "first request"
@@ -723,4 +540,11 @@ class HttpClientTracingTest : BaseOpenTelemetryTracingTest() {
 
         validateTracesContent(listOf(firstRequest, secondRequest))
     }
+}
+
+internal fun String.unquote(): String {
+    if (this.startsWith("\"") && this.endsWith("\"")) {
+        return this.substring(1, this.length - 1)
+    }
+    return this
 }

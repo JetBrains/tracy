@@ -2,11 +2,11 @@ package ai.dev.kit.tracing.autologging
 
 import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
-import ai.dev.kit.tracing.LITELLM_URL
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.fluent.processor.withSpan
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
+import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
 import com.openai.models.chat.completions.ChatCompletion
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import io.opentelemetry.api.common.AttributeKey
@@ -23,14 +23,23 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-@Tag("SkipForNonLocal")
+@Tag("openai")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TracingTest : BaseOpenTelemetryTracingTest() {
+    /**
+     * When no value is provided, defaults to [PRODUCTION_URL].
+     */
+    val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
+
+    val llmProviderApiKey =
+        System.getenv("OPENAI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
+        ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
+
     internal lateinit var client: OpenAIClient
 
     @BeforeAll
     fun createClient() {
-        client = instrument(createLiteLLMClient())
+        client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
     }
 
     @AfterAll
@@ -40,7 +49,7 @@ class TracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun testChat() {
-        val model = "openai/gpt-4o-mini"
+        val model = "gpt-4o-mini"
         val systemMessage = "You are a helpful assistant!"
         val userMessage = "Tell me what model are you!"
         val temperature = 1.0
@@ -57,7 +66,7 @@ class TracingTest : BaseOpenTelemetryTracingTest() {
             assertEquals("OpenAI-generation", span.name)
             assertEquals(model, attributes[GEN_AI_REQUEST_MODEL])
             assertEquals("openai", attributes[GEN_AI_SYSTEM])
-            assertEquals("https://litellm.labs.jb.gg", attributes[AttributeKey.stringKey("gen_ai.api_base")])
+            assertTrue((llmProviderUrl ?: PRODUCTION_URL).startsWith(attributes[AttributeKey.stringKey("gen_ai.api_base")].toString()))
             assertEquals("system", attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")])
             assertEquals(systemMessage, attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
             assertEquals("user", attributes[AttributeKey.stringKey("gen_ai.prompt.1.role")])
@@ -128,7 +137,7 @@ class TracingTest : BaseOpenTelemetryTracingTest() {
 
 private fun callChat(
     client: OpenAIClient,
-    model: String = "openai/gpt-4o-mini",
+    model: String = "gpt-4o-mini",
     systemMessage: String = "You are a helpful assistant!",
     userMessage: String = "Tell me what model are you!",
     temperature: Double = 1.0
@@ -143,10 +152,10 @@ private fun callChat(
     return client.chat().completions().create(params)
 }
 
-fun createLiteLLMClient(): OpenAIClient {
+internal fun createOpenAIClient(llmProviderUrl: String?, llmProviderApiKey: String): OpenAIClient {
     return OpenAIOkHttpClient.builder()
-        .baseUrl(LITELLM_URL)
-        .apiKey(System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set"))
+        .baseUrl(llmProviderUrl)
+        .apiKey(llmProviderApiKey)
         .timeout(Duration.ofSeconds(60))
         .build()
 }

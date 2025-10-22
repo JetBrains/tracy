@@ -2,7 +2,6 @@ package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
-import ai.dev.kit.tracing.LITELLM_URL
 import com.google.auth.oauth2.AccessToken
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.genai.errors.GenAiIOException
@@ -18,38 +17,34 @@ import org.junit.jupiter.api.Test
 import java.net.SocketTimeoutException
 import java.time.Duration
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import com.google.genai.Client as GeminiClient
 import com.google.genai.types.GenerateContentConfig as GeminiGenerateContentConfig
 import com.google.genai.types.HttpOptions as GeminiHttpOptions
 
-@Tag("SkipForNonLocal")
+@Tag("gemini")
 class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
+    val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
+
+    val llmProviderApiKey =
+        System.getenv("GEMINI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
+        ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
+
     fun createGeminiClient(): GeminiClient {
+        // TODO: fix
+        if (llmProviderUrl?.startsWith("https://litellm.labs.jb.gg") != true) {
+            error("Gemini tests for now is only supported with LITELLM")
+        }
+
         val projectId = "jetbrains-grazie"
         val location = "us-central1"
-        val apiKey = System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY environment variable is not set")
 
         /**
-         * The Gemini SDK client requires some credentials to be passed in,
-         * even if the proxy attaches service account credentials (e.g., the LiteLLM instance at [LITELLM_URL]).
-         *
-         * This requirement is SDK-specific, as the following curl request will succeed
-         * with a single LiteLLM token passed in the headers:
-         * ```bash
-         * curl https://litellm.labs.jb.gg/vertex_ai/v1beta1/projects/jetbrains-grazie/locations/us-central1/publishers/google/models/gemini-2.5-flash:generateContent \
-         *     -H "Content-Type: application/json" \
-         *     -H "x-litellm-api-key: Bearer [sk-token]" \
-         *     -d '{
-         *         "contents":[{
-         *             "role": "user",
-         *             "parts":[{"text": "How are you doing today?"}]
-         *         }]
-         *     }'
-         * ```
-         *
-         * See: [Application Default Credentials](https://docs.cloud.google.com/docs/authentication/application-default-credentials)
+         * The Gemini SDK client forbids empty credentials,
+         * even if a proxy between the client and Inference attaches service account credentials
+         * (e.g., LiteLLM at with passthrough [configured](https://docs.litellm.ai/docs/pass_through/vertex_ai#how-to-use)).
          */
         val dummyCredentials = object : GoogleCredentials() {
             override fun refreshAccessToken(): AccessToken = AccessToken("dummy-token", null)
@@ -63,8 +58,8 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
             .location(location)
             .httpOptions(
                 GeminiHttpOptions.builder()
-                    .baseUrl("$LITELLM_URL/vertex_ai")
-                    .headers(mapOf("x-litellm-api-key" to "Bearer $apiKey"))
+                    .baseUrl("$llmProviderUrl/vertex_ai")
+                    .headers(mapOf("x-litellm-api-key" to "Bearer $llmProviderApiKey")) // TODO: fix?
                     .timeout(Duration.ofSeconds(60).toMillis().toInt())
                     .build()
             )
@@ -100,6 +95,7 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
     @Test
     fun `test Gemini tool calling auto logging`() = runTest {
         val client = instrument(createGeminiClient())
+
         val toolName = "hi"
         val greetTool = createTool(toolName)
 
@@ -129,15 +125,13 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
 
         // assert response
         assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")])
-        assertEquals(
-            trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")]?.isNotEmpty(),
-            true
-        )
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")].isNullOrEmpty())
     }
 
     @Test
     fun `test Gemini tool calling with tool call result`() = runTest {
         val client = instrument(createGeminiClient())
+
         val greetTool = createTool("hi")
 
         val model = "gemini-2.5-flash"
@@ -212,15 +206,13 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
 
         // assert response
         assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")])
-        assertEquals(
-            trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")]?.isNotEmpty(),
-            true
-        )
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")].isNullOrEmpty())
     }
 
     @Test
     fun `test Gemini multiple tools response to tool calls auto tracing`() = runTest {
         val client = instrument(createGeminiClient())
+
         val greetTool = createTool("hi")
         val goodbyeTool = createTool("goodbye")
 
@@ -279,21 +271,16 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
                 ?: "").contains("tool_calls") ||
             trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")] != null
         ) {
-            assertEquals(
-                trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")]?.isNotEmpty(),
-                true
-            )
-            assertEquals(
-                trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.1.name")]?.isNotEmpty(),
-                true
-            )
+            assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")].isNullOrEmpty())
+            assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.1.name")].isNullOrEmpty())
         }
     }
 
     @Test
     fun `test Gemini auto tracing`() = runTest {
-        val model = "gemini-2.5-flash"
         val client = instrument(createGeminiClient())
+
+        val model = "gemini-2.5-flash"
 
         client.models.generateContent(
             model,
@@ -311,10 +298,13 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
 
         assertEquals(StatusCode.OK, trace.status.statusCode)
         assertEquals(
-            LITELLM_URL,
+            llmProviderUrl,
             trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
-        assertEquals(trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(model), true)
+        val responseModel = trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]
+        assertNotNull(responseModel)
+        assertTrue(responseModel.startsWith(model))
+
         val text = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
         assertNotNull(text)
         assertTrue(text.isNotEmpty())
@@ -353,7 +343,7 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
 
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
         assertEquals(
-            LITELLM_URL,
+            llmProviderUrl,
             trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
 
@@ -389,12 +379,12 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
 
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
         assertEquals(
-            LITELLM_URL,
+            llmProviderUrl,
             trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
 
-        assertEquals(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")]?.isNotEmpty(), true)
-        assertEquals(trace.attributes[AttributeKey.stringKey("gen_ai.error.code")]?.isNotEmpty(), true)
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")].isNullOrEmpty())
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.error.code")].isNullOrEmpty())
     }
 
     private fun installHttpInterceptor(client: GeminiClient, interceptor: Interceptor) {
