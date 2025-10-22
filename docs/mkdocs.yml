@@ -1,5 +1,6 @@
 site_name: AI Development Kit
 #site_url: [link-to-hosted-docs]
+# TODO: add site_url, favicon, style.css (for details, see PR description: https://github.com/JetBrains/ai-dev-kit/pull/95)
 nav:
   - Documentation:
       - Welcome to MkDocs: index.md
