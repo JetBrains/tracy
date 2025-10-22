@@ -7,6 +7,7 @@ const val MAX_SPAN_ATTRIBUTE_VALUE_LENGTH = 8192
 
 sealed class TracingConfig(
     open val traceToConsole: Boolean = false,
+    open val format: ConsoleOutputFormat = ConsoleOutputFormat.PLAIN_TEXT,
     open val exporterTimeout: Long = 10,
     open val maxNumberOfSpanAttributes: Int? = null,
     open val maxSpanAttributeValueLength: Int? = null
@@ -24,6 +25,7 @@ sealed class TracingConfig(
  *  Retrieved from `LANGFUSE_SECRET_KEY` env variable if not provided.
  * @param traceToConsole If `true`, also logs traces to the console (useful for local debugging).
  *  Default: `false`.
+ * @param format the format in which to log traces to the console.
  * @param exporterTimeout Timeout in seconds for exporting spans.
  *  Default: `10`.
  * @param maxNumberOfSpanAttributes max number of attributes per Span.
@@ -38,10 +40,11 @@ data class LangfuseConfig(
     val langfusePublicKey: String? = null,
     val langfuseSecretKey: String? = null,
     override val traceToConsole: Boolean = false,
+    override val format: ConsoleOutputFormat = ConsoleOutputFormat.PLAIN_TEXT,
     override val exporterTimeout: Long = 10,
     override val maxNumberOfSpanAttributes: Int? = null,
     override val maxSpanAttributeValueLength: Int? = null
-) : TracingConfig(traceToConsole, exporterTimeout, maxNumberOfSpanAttributes, maxSpanAttributeValueLength)
+) : TracingConfig(traceToConsole, format, exporterTimeout, maxNumberOfSpanAttributes, maxSpanAttributeValueLength)
 
 /**
  * Configuration for exporting OpenTelemetry traces to [W&B Weave](https://wandb.ai/site/weave).
@@ -56,6 +59,7 @@ data class LangfuseConfig(
  *  Retrieved from `WEAVE_API_KEY` env variable if not provided.
  * @param traceToConsole If `true`, also logs traces to the console (useful for local debugging).
  *  Default: `false`.
+ * @param format the format in which to log traces to the console.
  * @param exporterTimeout Timeout in seconds for exporting spans.
  *  Default: `10`.
  * @param maxNumberOfSpanAttributes max number of attributes per Span.
@@ -71,16 +75,40 @@ data class WeaveConfig(
     val weaveProjectName: String? = null,
     val weaveApiKey: String? = null,
     override val traceToConsole: Boolean = false,
+    override val format: ConsoleOutputFormat = ConsoleOutputFormat.PLAIN_TEXT,
     override val exporterTimeout: Long = 10,
     override val maxNumberOfSpanAttributes: Int? = null,
     override val maxSpanAttributeValueLength: Int? = null
-) : TracingConfig(traceToConsole, exporterTimeout, maxNumberOfSpanAttributes, maxSpanAttributeValueLength)
+) : TracingConfig(traceToConsole, format, exporterTimeout, maxNumberOfSpanAttributes, maxSpanAttributeValueLength)
+
+/**
+ * Configuration for exporting OpenTelemetry traces to a file.
+ *
+ * @param filepath a filepath to which traces should be written (e.g., `tracing.log` or `traces.jsonl`).
+ * @param append whether to append to a file if it exists or create anew.
+ * @param traceToConsole If true, also logs traces to the console (useful for local debugging).
+ *        Default: false.
+ * @param format the format in which to log traces to the console.
+ * @param maxNumberOfSpanAttributes max number of attributes per Span.
+ *  Defaults to the `MAX_NUMBER_OF_SPAN_ATTRIBUTES` environment variable or [MAX_NUMBER_OF_SPAN_ATTRIBUTES] variable.
+ * @param maxSpanAttributeValueLength max number of characters for attribute strings.
+ *  Defaults to the `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` environment variable or [MAX_SPAN_ATTRIBUTE_VALUE_LENGTH] variable.
+ */
+data class FileTracingConfig(
+    val filepath: String,
+    val append: Boolean,
+    override val traceToConsole: Boolean = false,
+    override val format: ConsoleOutputFormat = ConsoleOutputFormat.PLAIN_TEXT,
+    override val maxNumberOfSpanAttributes: Int? = null,
+    override val maxSpanAttributeValueLength: Int? = null
+) : TracingConfig()
 
 /**
  * Configuration for exporting OpenTelemetry traces to console only.
  *
  * @param traceToConsole If true, also logs traces to the console (useful for local debugging).
  * Default: true.
+ * @param format the format in which to log traces to the console.
  * @param maxNumberOfSpanAttributes max number of attributes per Span.
  *  Defaults to the `MAX_NUMBER_OF_SPAN_ATTRIBUTES` environment variable or [MAX_NUMBER_OF_SPAN_ATTRIBUTES] variable.
  * @param maxSpanAttributeValueLength max number of characters for attribute strings.
@@ -88,10 +116,20 @@ data class WeaveConfig(
  */
 data class ConsoleConfig(
     override val traceToConsole: Boolean = true,
+    override val format: ConsoleOutputFormat = ConsoleOutputFormat.PLAIN_TEXT,
     override val maxNumberOfSpanAttributes: Int? = null,
     override val maxSpanAttributeValueLength: Int? = null
 ) : TracingConfig(
-    traceToConsole,
+    traceToConsole = traceToConsole,
+    format = format,
     maxNumberOfSpanAttributes = maxNumberOfSpanAttributes,
     maxSpanAttributeValueLength = maxSpanAttributeValueLength
 )
+
+/**
+ * The format in which to log traces in the console.
+ */
+enum class ConsoleOutputFormat {
+    PLAIN_TEXT,
+    JSON,
+}

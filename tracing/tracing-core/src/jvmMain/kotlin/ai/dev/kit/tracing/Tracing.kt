@@ -1,10 +1,12 @@
 package ai.dev.kit.tracing
 
 import ai.dev.kit.exporters.addLangfuseSpanProcessor
+import ai.dev.kit.exporters.addOtlpFileSpanProcessor
 import ai.dev.kit.exporters.addWeaveSpanProcessor
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.exporter.logging.LoggingSpanExporter
+import io.opentelemetry.exporter.logging.otlp.OtlpJsonLoggingSpanExporter
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.resources.Resource
 import io.opentelemetry.sdk.trace.SdkTracerProvider
@@ -44,9 +46,12 @@ fun setupTracing(
             when (tracingConfig) {
                 is LangfuseConfig -> addLangfuseSpanProcessor(tracingConfig)
                 is WeaveConfig -> addWeaveSpanProcessor(tracingConfig)
-                is ConsoleConfig -> {}
+                is FileTracingConfig -> addOtlpFileSpanProcessor(tracingConfig)
+                is ConsoleConfig -> { /* no-op */ }
             }
-            if (tracingConfig.traceToConsole) addLoggingSpanProcessor()
+            if (tracingConfig.traceToConsole) {
+                addLoggingSpanProcessor(tracingConfig.format)
+            }
         }
         .build()
 
@@ -61,8 +66,13 @@ fun setupTracing(
     return openTelemetry
 }
 
-private fun SdkTracerProviderBuilder.addLoggingSpanProcessor(): SdkTracerProviderBuilder {
-    val spanExporter = LoggingSpanExporter.create()
+private fun SdkTracerProviderBuilder.addLoggingSpanProcessor(
+    format: ConsoleOutputFormat
+): SdkTracerProviderBuilder {
+    val spanExporter = when (format) {
+        ConsoleOutputFormat.PLAIN_TEXT -> LoggingSpanExporter.create()
+        ConsoleOutputFormat.JSON -> OtlpJsonLoggingSpanExporter.create()
+    }
     addSpanProcessor(SimpleSpanProcessor.create(spanExporter))
     return this
 }
