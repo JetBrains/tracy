@@ -1,7 +1,5 @@
 # Documentation
 
-The setup and use of this module is the same as for [Koog](https://github.com/JetBrains/koog). Refer to this [README](https://github.com/JetBrains/koog/tree/main/docs) for in-depth directions.
-
 ## Module Structure
 
 The docs module is organized as follows:
