@@ -101,7 +101,12 @@ data class FileTracingConfig(
     override val format: ConsoleOutputFormat = ConsoleOutputFormat.PLAIN_TEXT,
     override val maxNumberOfSpanAttributes: Int? = null,
     override val maxSpanAttributeValueLength: Int? = null
-) : TracingConfig()
+) : TracingConfig(
+    traceToConsole = traceToConsole,
+    format = format,
+    maxNumberOfSpanAttributes = maxNumberOfSpanAttributes,
+    maxSpanAttributeValueLength = maxSpanAttributeValueLength,
+)
 
 /**
  * Configuration for exporting OpenTelemetry traces to console only.
