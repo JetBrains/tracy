@@ -100,12 +100,12 @@ class OtlpFileSpanExporter private constructor(
                     serializer = JsonElement.serializer(),
                     value = Json.parseToJsonElement(
                         """
-                    {
-                        "resourceSpans": [
-                            ${record.message}
-                       ]
-                    }
-                """.trimIndent()
+                            {
+                                "resourceSpans": [
+                                    ${record.message}
+                               ]
+                            }
+                        """.trimIndent()
                     )
                 )
                 return minimizedStringifiedMessage
