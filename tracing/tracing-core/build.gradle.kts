@@ -27,6 +27,10 @@ kotlin {
         jvmMain {
             dependencies {
                 implementation(libs.okhttp)
+                implementation(libs.ktor.client)
+                implementation(libs.ktor.client.cio)
+                implementation(libs.ktor.serialization.json)
+                implementation(libs.ktor.client.negotiation)
                 implementation(libs.kotlin.reflect)
                 implementation(libs.opentelemetry.sdk)
                 implementation(libs.opentelemetry.kotlin)
