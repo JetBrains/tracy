@@ -17,7 +17,8 @@ internal class ChatCompletionsHandler : OpenAIApiHandler {
             for ((index, message) in it.jsonArray.withIndex()) {
                 val role = message.jsonObject["role"]?.jsonPrimitive?.content
                 span.setAttribute("gen_ai.prompt.$index.role", role)
-                span.setAttribute("gen_ai.prompt.$index.content", message.jsonObject["content"]?.jsonPrimitive?.content)
+                // content may be of different schemas
+                attachRequestContent(span, index, message.jsonObject["content"])
 
                 // when a tool result is encountered
                 if (role?.lowercase() == "tool") {
@@ -40,6 +41,41 @@ internal class ChatCompletionsHandler : OpenAIApiHandler {
                 }
             }
         }
+    }
+
+    /**
+     * Inserts the message content depending on its type.
+     *
+     * The content can be either a normal text (i.e., a string) or
+     * an array when a media input is attached (e.g., images, audio, and files).
+     *
+     * For more details on possible content structures,
+     * see [User Message Content Description](https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages-user-message-content).
+     *
+     * Additionally, see: [OpenAI Chat Completions](https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages)
+     */
+    private fun attachRequestContent(
+        span: Span,
+        index: Int,
+        content: JsonElement?,
+    ) {
+        if (content == null) {
+            span.setAttribute("gen_ai.prompt.$index.content", null)
+            return
+        }
+
+        // See content types: https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages-user-message-content
+        val result: String = if (content is JsonPrimitive) {
+            content.jsonPrimitive.content
+        }
+        else if (content is JsonArray) {
+            // array that contains entries of either image, audio, file or normal text
+            content.jsonArray.toString()
+        }
+        else {
+            content.toString()
+        }
+        span.setAttribute("gen_ai.prompt.$index.content", result)
     }
 
     override fun handleResponseAttributes(span: Span, body: JsonObject) {
