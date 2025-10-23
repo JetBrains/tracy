@@ -16,11 +16,18 @@ import com.openai.models.responses.ResponseCreateParams
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import java.io.File
+import java.util.*
 import kotlin.jvm.optionals.getOrNull
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -34,6 +41,82 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
     val llmProviderApiKey =
         System.getenv("OPENAI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
         ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
+
+    @Test
+    fun `test parsing of image input extracts content`() = runTest {
+        // Example of image input (same structure for
+        /*
+        {
+            "messages": [{
+                "content": [
+                    { "image_url": { "url": "base64" }, "type": "image_url" },
+                    { "text": "Please describe what you see in this image.", "type": "text" }
+                ],
+                "role": "user"
+            }],
+            "model": "openai/gpt-4o"
+        }
+         */
+        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
+        val model = ChatModel.GPT_4O_MINI
+        val requestPromptMessage = "Please describe what you see in this image."
+        val imageResourcePath = "image.jpg"
+
+        // loading image as base64
+        val base64Image = run {
+            val classLoader = Thread.currentThread().contextClassLoader
+            val imageFile = classLoader.getResource(imageResourcePath)?.file?.let { File(it) }
+                ?: error("Could not find image at $imageResourcePath")
+            Base64.getEncoder().encodeToString(imageFile.readBytes())
+        }
+
+        val contentParts = listOf<ChatCompletionContentPart>(
+            ChatCompletionContentPart.ofImageUrl(
+                ChatCompletionContentPartImage.builder()
+                    .imageUrl(
+                        ChatCompletionContentPartImage.ImageUrl.builder()
+                            .url("data:image/jpeg;base64,${base64Image}")
+                            .build()
+                    )
+                    .build()
+            ),
+            ChatCompletionContentPart.ofText(
+                ChatCompletionContentPartText.builder()
+                    .text(requestPromptMessage)
+                    .build()
+            )
+        )
+
+        val params = ChatCompletionCreateParams.builder()
+            .model(model)
+            .addUserMessageOfArrayOfContentParts(contentParts)
+            .build()
+
+        // send request
+        client.chat().completions().create(params)
+
+        // expect the content of a request to be captures successfully
+        validateBasicTracing()
+
+        val trace = analyzeSpans().first()
+        val requestContent = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
+
+        assertNotNull(requestContent)
+        assertTrue(requestContent.isNotEmpty())
+
+        val json = Json.parseToJsonElement(requestContent)
+        // expect the JSON is an array with two elements
+        assertIs<kotlinx.serialization.json.JsonArray>(json)
+        assertEquals(2, json.jsonArray.size)
+
+        val image = json.jsonArray.firstOrNull { it.jsonObject["type"]!!.jsonPrimitive.content == "image_url" }
+        val text = json.jsonArray.firstOrNull { it.jsonObject["type"]!!.jsonPrimitive.content == "text" }
+
+        assertNotNull(image)
+        assertNotNull(text)
+        assertEquals(requestPromptMessage, text.jsonObject["text"]!!.jsonPrimitive.content)
+    }
+
 
     @Test
     fun `test OpenAI chat completions auto tracing`() = runTest {
