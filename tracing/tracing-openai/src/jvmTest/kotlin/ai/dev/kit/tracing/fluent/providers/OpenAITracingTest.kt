@@ -1,6 +1,8 @@
 package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
+import ai.dev.kit.exporters.RequestParams
+import ai.dev.kit.exporters.uploadMediaFile
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.autologging.createOpenAIClient
 import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
@@ -42,6 +44,31 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
         System.getenv("OPENAI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
         ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
 
+
+    @Test
+    fun testSendImg() = runTest {
+        val imageResourcePath = "image.jpg"
+
+        // loading image as base64
+        val imageData = run {
+            val classLoader = Thread.currentThread().contextClassLoader
+            val imageFile = classLoader.getResource(imageResourcePath)?.file?.let { File(it) }
+                ?: error("Could not find image at $imageResourcePath")
+            Base64.getEncoder().encodeToString(imageFile.readBytes())
+        }
+
+        val params = RequestParams(
+            traceId = "88c6d2222bdf2409358d87d4603423f6",
+            field = "input",
+            dataURL = "data:image/jpeg;base64,$imageData",
+        )
+
+        val result = uploadMediaFile(
+            params,
+            langfuseUrl = "https://langfuse.labs.jb.gg"
+        )
+    }
+
     @Test
     fun `test parsing of image input extracts content`() = runTest {
         // Example of image input (same structure for
@@ -63,7 +90,7 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
         val imageResourcePath = "image.jpg"
 
         // loading image as base64
-        val base64Image = run {
+        val imageData = run {
             val classLoader = Thread.currentThread().contextClassLoader
             val imageFile = classLoader.getResource(imageResourcePath)?.file?.let { File(it) }
                 ?: error("Could not find image at $imageResourcePath")
@@ -75,7 +102,7 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
                 ChatCompletionContentPartImage.builder()
                     .imageUrl(
                         ChatCompletionContentPartImage.ImageUrl.builder()
-                            .url("data:image/jpeg;base64,${base64Image}")
+                            .url("data:image/jpeg;base64,${imageData}")
                             .build()
                     )
                     .build()
