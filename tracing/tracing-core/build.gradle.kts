@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
@@ -6,13 +8,10 @@ plugins {
 }
 
 kotlin {
-    jvm {
-        compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-        withJava()
-    }
+    jvmToolchain(17)
 
-    js(IR) {
-        browser()
+    jvm {
+        compilerOptions.jvmTarget = JVM_17
     }
 
     sourceSets {
@@ -53,8 +52,4 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
             "-java-parameters", "-Xexpect-actual-classes"
         )
     }
-}
-
-kotlin {
-    jvmToolchain(17)
 }
