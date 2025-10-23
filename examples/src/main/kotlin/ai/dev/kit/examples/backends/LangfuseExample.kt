@@ -20,13 +20,13 @@ fun printName(name: String): String {
  * - Explicitly in code via [LangfuseConfig] constructor parameters, or
  * - Through the environment variables `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`.
  *
- * Run the example. Spans and tags will be exported to Langfuse.
+ * Run the example. Spans will be exported to Langfuse.
  *
  * @see LangfuseConfig
  */
 fun main() {
     TracingManager.setup(LangfuseConfig())
     printName("Bob")
-    println("See trace details in the console.")
+    println("See trace details in Langfuse.")
     TracingManager.flushTraces()
 }
