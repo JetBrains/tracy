@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
-
 plugins {
     id("ai.dev.kit.space.publishing")
     id("org.jetbrains.kotlin.multiplatform") version "2.0.20"
@@ -7,19 +5,14 @@ plugins {
 
 repositories {
     mavenCentral()
-    gradlePluginPortal()
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
 }
 
 kotlin {
+    jvmToolchain(17)
     jvm {
-        compilerOptions.jvmTarget = JVM_17
-        withJava()
+        compilations.all {
+            kotlinOptions.jvmTarget = "17"
+        }
     }
     sourceSets {
         val commonMain by getting {

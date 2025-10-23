@@ -7,16 +7,10 @@ plugins {
 
 repositories {
     mavenCentral()
-    gradlePluginPortal()
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
 }
 
 kotlin {
+    jvmToolchain(17)
     jvm {
         compilerOptions.jvmTarget = JVM_17
     }
