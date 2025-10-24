@@ -1,0 +1,116 @@
+name: Auto Version and Publish Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      manual_version:
+        description: 'Optional manual version (e.g., 1.0.21). If empty, patch will auto-increment.'
+        required: false
+        default: ''
+      publishing_file:
+        description: 'File with defined library version'
+        required: true
+        default: 'publishing/src/main/kotlin/SpacePublishingPlugin.kt'
+      files_to_update:
+        description: 'Files where version should be updated'
+        required: true
+        default: 'README.md CONTRIBUTING.md publishing/src/main/kotlin/SpacePublishingPlugin.kt plugin/gradle-tracing-plugin/src/main/kotlin/ai/dev/kit/trace/gradle/AiDevKitTraceGradlePlugin.kt'
+
+permissions:
+  contents: write
+
+jobs:
+  prepare-and-publish:
+    runs-on: ubuntu-latest
+
+    env:
+      SPACE_USERNAME: ${{ secrets.SPACE_USERNAME }}
+      SPACE_PASSWORD: ${{ secrets.SPACE_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get current version from Publishing
+        id: get_version
+        run: |
+          VERSION_LINE=$(grep -E 'const val VERSION *= *"' "${{ github.event.inputs.publishing_file }}")
+          VERSION=$(echo "$VERSION_LINE" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+          echo "Current version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Determine new version
+        id: determine_version
+        run: |
+          manual="${{ github.event.inputs.manual_version }}"
+          current="${{ steps.get_version.outputs.version }}"
+
+          # Validate manual version if provided
+          if [ -n "$manual" ]; then
+            if [[ ! "$manual" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Error: Manual version '$manual' is not valid. Must match X.Y.Z format."
+              exit 1
+            fi
+            new_version="$manual"
+            echo "Manual version provided: $manual"
+          # Auto-bump patch version if no manual version provided
+          else
+            IFS='.' read -r major minor patch <<< "$current"
+            new_patch=$((patch + 1))
+            new_version="$major.$minor.$new_patch"
+            echo "No manual version provided — auto-bumped to $new_version"
+          fi
+
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+
+      - name: Replace version in files
+        id: replace_with_new_version
+        run: |
+          old="${{ steps.get_version.outputs.version }}"
+          new="${{ steps.determine_version.outputs.new_version }}"
+          echo "Replacing versions from $old to $new"
+          IFS=' ' read -r -a files <<< "${{ github.event.inputs.files_to_update }}"
+          for f in "${files[@]}"; do
+            if [ -f "$f" ]; then
+              sed -i "s/$old/$new/g" "$f"
+              echo "Changing file $f"
+            else
+              echo "Warning: file $f not found, skipping."
+            fi
+          done
+
+      - name: Commit and tag
+        id: commit_and_tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Add only files that exist
+          IFS=' ' read -r -a files <<< "${{ github.event.inputs.files_to_update }}"
+          for f in "${files[@]}"; do
+            if [ -f "$f" ]; then
+              git add "$f"
+              echo "Added $f"
+            else
+              echo "Skipped missing file: $f"
+            fi
+          done
+          
+          git commit -m "chore: bump version to ${{ steps.determine_version.outputs.new_version }}"
+          git tag "v${{ steps.determine_version.outputs.new_version }}"
+          git push origin HEAD
+          git push origin "v${{ steps.determine_version.outputs.new_version }}"
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Make Gradle executable
+        run: chmod +x gradlew
+
+      - name: Publish AI Dev Kit
+        run: ./gradlew publishContentModules --stacktrace

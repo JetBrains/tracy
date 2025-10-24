@@ -8,6 +8,12 @@ import org.jetbrains.kotlin.gradle.plugin.*
 
 class AiDevKitTraceGradlePlugin : KotlinCompilerPluginSupportPlugin {
     companion object {
+        /**
+         * Version of the AI Dev Kit plugin.
+         *
+         * This value is automatically updated by the GitHub Action "Auto Version and Publish Release".
+         * Do not rename or remove `VERSION`, or the workflow will fail.
+         */
         const val VERSION = "0.0.21"
         const val PATCH_GROUP_BOUNDARY = 20
     }

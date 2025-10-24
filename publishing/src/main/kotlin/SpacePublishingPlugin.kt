@@ -7,6 +7,12 @@ import org.gradle.api.tasks.bundling.Jar
 
 class SpacePublishingPlugin : Plugin<Project> {
     companion object {
+        /**
+         * Version of the AI Dev Kit plugin.
+         *
+         * This value is automatically updated by the GitHub Action "Auto Version and Publish Release".
+         * Do not rename or remove `VERSION`, or the workflow will fail.
+         */
         private const val VERSION = "0.0.21"
         private const val PROJECT_PREFIX = "ai-dev-kit-"
     }
