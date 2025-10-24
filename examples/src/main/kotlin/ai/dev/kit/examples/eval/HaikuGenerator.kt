@@ -1,4 +1,4 @@
-package ai.dev.kit.examples.haiku
+package ai.dev.kit.examples.eval
 
 import ai.dev.kit.clients.instrument
 import ai.dev.kit.eval.utils.AIInput

@@ -80,14 +80,14 @@ data class WeaveConfig(
  * Configuration for exporting OpenTelemetry traces to console only.
  *
  * @param traceToConsole If true, also logs traces to the console (useful for local debugging).
- *  Default: false.
+ * Default: true.
  * @param maxNumberOfSpanAttributes max number of attributes per Span.
  *  Defaults to the `MAX_NUMBER_OF_SPAN_ATTRIBUTES` environment variable or [MAX_NUMBER_OF_SPAN_ATTRIBUTES] variable.
  * @param maxSpanAttributeValueLength max number of characters for attribute strings.
  *  Defaults to the `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` environment variable or [MAX_SPAN_ATTRIBUTE_VALUE_LENGTH] variable.
  */
-data class NoLoggingConfig(
-    override val traceToConsole: Boolean = false,
+data class ConsoleConfig(
+    override val traceToConsole: Boolean = true,
     override val maxNumberOfSpanAttributes: Int? = null,
     override val maxSpanAttributeValueLength: Int? = null
 ) : TracingConfig(

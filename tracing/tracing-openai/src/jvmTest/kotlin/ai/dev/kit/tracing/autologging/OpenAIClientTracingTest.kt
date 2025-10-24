@@ -99,7 +99,7 @@ class TracingTest : BaseOpenTelemetryTracingTest() {
     fun testWithSpan() {
         val customAttributeName = "testAttribute"
 
-        val result = withSpan("callChat", emptyMap()) {
+        val result = withSpan("callChat") {
             it.setAttribute(customAttributeName, "testValue")
 
             callChat(client)

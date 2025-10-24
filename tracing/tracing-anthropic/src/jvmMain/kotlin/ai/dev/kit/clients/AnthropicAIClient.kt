@@ -17,5 +17,5 @@ fun instrument(client: AnthropicClient): AnthropicClient {
  *
  * For API errors, see: [Docs](https://docs.anthropic.com/en/api/errors)
  */
-private class OpenTelemetryAnthropicLogger :
+class OpenTelemetryAnthropicLogger :
     OpenTelemetryOkHttpInterceptor("Anthropic-generation", adapter = AnthropicLLMTracingAdapter())

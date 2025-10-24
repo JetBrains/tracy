@@ -1,0 +1,64 @@
+package ai.dev.kit.examples.clients
+
+import ai.dev.kit.adapters.OpenAILLMTracingAdapter
+import ai.dev.kit.adapters.GeminiLLMTracingAdapter
+import ai.dev.kit.adapters.AnthropicLLMTracingAdapter
+import ai.dev.kit.instrument
+import ai.dev.kit.tracing.ConsoleConfig
+import ai.dev.kit.tracing.TracingManager
+import io.ktor.client.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+
+/**
+ * Example of integrating a Ktor [HttpClient] with tracing for OpenAI API requests.
+ *
+ * This example demonstrates how to:
+ * - Initialize tracing using [TracingManager] with [ConsoleConfig].
+ * - Instrument a Ktor [HttpClient] using [OpenAILLMTracingAdapter] to automatically capture trace data.
+ * - Perform an OpenAI API request with trace data automatically captured.
+ * - Call [TracingManager.flushTraces] before exiting to ensure all trace data is exported.
+ *
+ * To run this example:
+ * * Set the `OPENAI_API_KEY` environment variable to your OpenAI API key.
+ *
+ * Run the example. Span will appear in the console output.
+ *
+ * Note: The AI Dev Kit provides multiple provider-specific tracing adapters,
+ * including [OpenAILLMTracingAdapter], [GeminiLLMTracingAdapter], and [AnthropicLLMTracingAdapter].
+ * Choose the adapter that matches the provider your client uses.
+ */
+suspend fun main() {
+    TracingManager.setup(ConsoleConfig())
+    val apiToken = System.getenv("OPENAI_API_KEY") ?: error("Environment variable 'OPENAI_API_KEY' is not set")
+    val client = HttpClient {
+        install(ContentNegotiation) {
+            json(Json { prettyPrint = true })
+        }
+    }
+    val instrumentedClient = instrument(client, OpenAILLMTracingAdapter())
+    val requestBody = buildJsonObject {
+        put("model", JsonPrimitive("gpt-4o-mini"))
+        put("messages", buildJsonArray {
+            add(buildJsonObject {
+                put("role", JsonPrimitive("user"))
+                put("content", JsonPrimitive("Generate polite greeting and introduce yourself"))
+            })
+        })
+        put("temperature", JsonPrimitive(1.0))
+    }
+    val response = instrumentedClient.post("https://api.openai.com/v1/chat/completions") {
+        header(HttpHeaders.Authorization, "Bearer $apiToken")
+        contentType(ContentType.Application.Json)
+        setBody(requestBody)
+    }
+    println("Result: ${response.bodyAsText()}\nSee trace details in the console.")
+    TracingManager.flushTraces()
+}

@@ -8,12 +8,13 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 
 const val LANGFUSE_BASE_URL = "https://cloud.langfuse.com"
+
 /**
  * Creates an OpenTelemetry span exporter that sends data to [Langfuse](https://langfuse.com/).
  *
  * @param langfuseUrl the base URL of the Langfuse instance.
  *   If not set is retrieved from `LANGFUSE_URL` environment variable.
- *   Defaults to [WEAVE_BASE_URL].
+ *   Defaults to [LANGFUSE_BASE_URL].
  * @param langfusePublicKey if not set is retrieved from `LANGFUSE_PUBLIC_KEY` environment variable.
  * @param langfuseSecretKey if not set is retrieved from `LANGFUSE_SECRET_KEY` environment variable.
  * @param timeout OpenTelemetry SpanExporter timeout in seconds. See [io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporterBuilder.setTimeout].

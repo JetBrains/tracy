@@ -21,7 +21,7 @@ package ai.dev.kit.eval.utils
  *
  * @param numberOfRuns The number of test runs to execute during the evaluation process. Default is 1.
  */
-abstract class NoLoggingEvaluationTest<AIInputT : AIInput, GroundTruthT : GroundTruth, AIOutputT : AIOutput, EvalResultT : EvalResult>(
+abstract class ConsoleEvaluationTest<AIInputT : AIInput, GroundTruthT : GroundTruth, AIOutputT : AIOutput, EvalResultT : EvalResult>(
     numberOfRuns: Int = 1,
 ) :
     BaseEvaluationTest<AIInputT, GroundTruthT, AIOutputT, EvalResultT>(

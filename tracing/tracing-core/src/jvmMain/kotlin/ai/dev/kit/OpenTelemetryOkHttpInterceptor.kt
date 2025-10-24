@@ -19,6 +19,8 @@ import okio.BufferedSource
 import okio.ForwardingSource
 import okio.buffer
 
+fun instrument(client: OkHttpClient, interceptor: OpenTelemetryOkHttpInterceptor): OkHttpClient =
+    client.newBuilder().addInterceptor(interceptor).build()
 
 /**
  * Patches the OpenAI-compatible client by injecting a custom interceptor into its internal HTTP client.
