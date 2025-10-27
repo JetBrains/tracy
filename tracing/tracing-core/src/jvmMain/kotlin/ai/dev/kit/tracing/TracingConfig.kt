@@ -66,7 +66,7 @@ data class LangfuseConfig(
  * @see <a href="https://weave-docs.wandb.ai/guides/tracking/otel/">Weave OpenTelemetry Docs</a>
  */
 
-// 10
+// 11
 
 data class WeaveConfig(
     val weaveOtelBaseUrl: String? = null,
