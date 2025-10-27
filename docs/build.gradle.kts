@@ -59,8 +59,8 @@ knit {
         include("**/*.md")
     }
     moduleDocs = "docs/modules.md"
-    // TODO: add our site
-    siteRoot = "https://docs.koog.ai/"
+    // TODO: add our site link
+    siteRoot = "TODO: add site link!"
 }
 
 tasks.register<Delete>("knitClean") {
