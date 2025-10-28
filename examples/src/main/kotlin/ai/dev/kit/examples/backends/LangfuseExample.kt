@@ -2,6 +2,7 @@ package ai.dev.kit.examples.backends
 
 import ai.dev.kit.tracing.LangfuseConfig
 import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 
 @KotlinFlowTrace(name = "SimpleExample")
@@ -25,7 +26,7 @@ fun printName(name: String): String {
  * @see LangfuseConfig
  */
 fun main() {
-    TracingManager.setup(LangfuseConfig())
+    TracingManager.setSdk(configureOpenTelemetrySdk(LangfuseConfig()))
     printName("Bob")
     println("See trace details in Langfuse.")
     TracingManager.flushTraces()

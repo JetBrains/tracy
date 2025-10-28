@@ -2,6 +2,7 @@ package ai.dev.kit.examples
 
 import ai.dev.kit.tracing.ConsoleConfig
 import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 
 @KotlinFlowTrace(name = "SimpleExample")
@@ -22,7 +23,7 @@ private fun printName(name: String): String {
  * representing the execution of the [printName] function.
  */
 fun main() {
-    TracingManager.setup(ConsoleConfig())
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleConfig()))
     printName("Bob")
     println("See trace details in the console.")
     TracingManager.flushTraces()

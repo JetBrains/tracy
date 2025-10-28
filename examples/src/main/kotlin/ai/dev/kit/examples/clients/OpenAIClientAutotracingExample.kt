@@ -3,6 +3,7 @@ package ai.dev.kit.examples.clients
 import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.ConsoleConfig
 import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.ChatModel
@@ -23,7 +24,7 @@ import com.openai.models.chat.completions.ChatCompletionCreateParams
  * Run the example. Request and response spans will appear in the console output.
  */
 fun main() {
-    TracingManager.setup(ConsoleConfig())
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleConfig()))
     val apiToken = System.getenv("OPENAI_API_KEY")
         ?: error("Environment variable 'OPENAI_API_KEY' is not set")
     val client = OpenAIOkHttpClient.builder().apiKey(apiToken).build()

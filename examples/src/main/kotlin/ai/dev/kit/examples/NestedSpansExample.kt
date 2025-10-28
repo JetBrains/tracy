@@ -2,6 +2,7 @@ package ai.dev.kit.examples
 
 import ai.dev.kit.tracing.ConsoleConfig
 import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 
 @KotlinFlowTrace(name = "ChildOperation")
@@ -32,7 +33,7 @@ fun parentOperation(): String {
  * - A child span named **ChildOperation**, nested inside the parent.
  */
 fun main() {
-    TracingManager.setup(ConsoleConfig())
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleConfig()))
     parentOperation()
     println("See trace details in the console.")
     TracingManager.flushTraces()

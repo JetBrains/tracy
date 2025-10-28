@@ -2,6 +2,7 @@ package ai.dev.kit.examples
 
 import ai.dev.kit.tracing.ConsoleConfig
 import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import ai.dev.kit.tracing.fluent.handlers.PlatformMethod
 import ai.dev.kit.tracing.fluent.handlers.SpanMetadataCustomizer
@@ -51,7 +52,7 @@ object ExampleWithMetadataCustomizer : SpanMetadataCustomizer {
  *
  */
 fun main() {
-    TracingManager.setup(ConsoleConfig())
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleConfig()))
     greetUser("Alice")
     println("See trace details in the console.")
     TracingManager.flushTraces()

@@ -3,6 +3,7 @@ package ai.dev.kit.examples
 import ai.dev.kit.tracing.LangfuseConfig
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.addLangfuseTagsToCurrentTrace
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 
 @KotlinFlowTrace(name = "GreetUserTrace")
@@ -34,7 +35,7 @@ fun greetUser(name: String, isPremium: Boolean): String {
  * @see addLangfuseTagsToCurrentTrace
  */
 fun main() {
-    TracingManager.setup(LangfuseConfig())
+    TracingManager.setSdk(configureOpenTelemetrySdk(LangfuseConfig()))
     greetUser("Alice", isPremium = true)
     greetUser("Bob", isPremium = false)
     println("See trace details with tags in the console.")

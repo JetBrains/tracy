@@ -2,8 +2,8 @@ package ai.dev.kit.tracing
 
 import kotlin.Long
 
-const val MAX_NUMBER_OF_SPAN_ATTRIBUTES = 256
-const val MAX_SPAN_ATTRIBUTE_VALUE_LENGTH = 8192
+const val DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES = 256
+const val DEFAULT_SPAN_ATTRIBUTE_VALUE_LENGTH = 8192
 
 sealed class TracingConfig(
     open val traceToConsole: Boolean = false,
@@ -27,9 +27,9 @@ sealed class TracingConfig(
  * @param exporterTimeout Timeout in seconds for exporting spans.
  *  Default: `10`.
  * @param maxNumberOfSpanAttributes max number of attributes per Span.
- *  Defaults to the `MAX_NUMBER_OF_SPAN_ATTRIBUTES` environment variable or [MAX_NUMBER_OF_SPAN_ATTRIBUTES] variable.
+ *  Defaults to the `MAX_NUMBER_OF_SPAN_ATTRIBUTES` environment variable or [DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES] variable.
  * @param maxSpanAttributeValueLength max number of characters for attribute strings.
- *  Defaults to the `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` environment variable or [MAX_SPAN_ATTRIBUTE_VALUE_LENGTH]variable.
+ *  Defaults to the `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` environment variable or [DEFAULT_SPAN_ATTRIBUTE_VALUE_LENGTH] variable.
  *
  * @see <a href="https://langfuse.com/docs/opentelemetry/get-started">Langfuse OpenTelemetry Docs</a>
  */
@@ -59,9 +59,9 @@ data class LangfuseConfig(
  * @param exporterTimeout Timeout in seconds for exporting spans.
  *  Default: `10`.
  * @param maxNumberOfSpanAttributes max number of attributes per Span.
- *  Defaults to the `MAX_NUMBER_OF_SPAN_ATTRIBUTES` environment variable or [MAX_NUMBER_OF_SPAN_ATTRIBUTES] variable.
+ *  Defaults to the `MAX_NUMBER_OF_SPAN_ATTRIBUTES` environment variable or [DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES] variable.
  * @param maxSpanAttributeValueLength max number of characters for attribute strings.
- *  Defaults to the `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` environment variable or [MAX_SPAN_ATTRIBUTE_VALUE_LENGTH] variable.
+ *  Defaults to the `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` environment variable or [DEFAULT_SPAN_ATTRIBUTE_VALUE_LENGTH] variable.
  *
  * @see <a href="https://weave-docs.wandb.ai/guides/tracking/otel/">Weave OpenTelemetry Docs</a>
  */
@@ -111,9 +111,9 @@ data class FileConfig(
  * @param traceToConsole If true, also logs traces to the console (useful for local debugging).
  * Default: true.
  * @param maxNumberOfSpanAttributes max number of attributes per Span.
- *  Defaults to the `MAX_NUMBER_OF_SPAN_ATTRIBUTES` environment variable or [MAX_NUMBER_OF_SPAN_ATTRIBUTES] variable.
+ *  Defaults to the `MAX_NUMBER_OF_SPAN_ATTRIBUTES` environment variable or [DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES] variable.
  * @param maxSpanAttributeValueLength max number of characters for attribute strings.
- *  Defaults to the `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` environment variable or [MAX_SPAN_ATTRIBUTE_VALUE_LENGTH] variable.
+ *  Defaults to the `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` environment variable or [DEFAULT_SPAN_ATTRIBUTE_VALUE_LENGTH] variable.
  */
 data class ConsoleConfig(
     val format: OutputFormat = OutputFormat.PLAIN_TEXT,

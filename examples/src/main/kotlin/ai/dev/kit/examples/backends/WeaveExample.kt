@@ -2,6 +2,7 @@ package ai.dev.kit.examples.backends
 
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.WeaveConfig
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
 
 /**
  * Example of exporting tracing data to [W&B Weave](https://wandb.ai/site/weave) using [WeaveConfig].
@@ -19,7 +20,7 @@ import ai.dev.kit.tracing.WeaveConfig
  */
 
 fun main() {
-    TracingManager.setup(WeaveConfig())
+    TracingManager.setSdk(configureOpenTelemetrySdk(WeaveConfig()))
     printName("Bob")
     println("See trace details in the console.")
     TracingManager.flushTraces()

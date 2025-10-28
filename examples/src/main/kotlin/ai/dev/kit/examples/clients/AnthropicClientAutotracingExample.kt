@@ -3,6 +3,7 @@ package ai.dev.kit.examples.clients
 import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.ConsoleConfig
 import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import com.anthropic.client.AnthropicClient
 import com.anthropic.client.okhttp.AnthropicOkHttpClient
 import com.anthropic.models.messages.MessageCreateParams
@@ -23,7 +24,7 @@ import com.anthropic.models.messages.Model
  * Run the example. Span will appear in the console output.
  */
 fun main() {
-    TracingManager.setup(ConsoleConfig())
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleConfig()))
     val apiToken = System.getenv("ANTHROPIC_API_KEY")
         ?: error("Environment variable 'ANTHROPIC_API_KEY' is not set")
     val anthropicClient = AnthropicOkHttpClient.builder().apiKey(apiToken).build()

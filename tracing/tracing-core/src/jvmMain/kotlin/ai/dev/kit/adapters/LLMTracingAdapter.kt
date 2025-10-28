@@ -1,5 +1,6 @@
 package ai.dev.kit.adapters
 
+import ai.dev.kit.tracing.DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES
 import ai.dev.kit.tracing.TracingManager
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
@@ -33,11 +34,13 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
     companion object {
         private const val REQUIRED_TYPE = "application"
         private const val REQUIRED_SUBTYPE = "json"
+
+        private const val ATTRIBUTES_NUMBER_ATTRIBUTE_KEY = "gen_ai.request.SpanAttributeNumber"
     }
 
     fun registerRequest(span: Span, url: Url, requestBody: JsonObject): Unit = runCatching {
+        span.setAttribute(ATTRIBUTES_NUMBER_ATTRIBUTE_KEY, "0 (limit ${getMaxNumberOfSpanAttributes()})")
         getRequestBodyAttributes(span, url, requestBody)
-        span.setAttribute("gen_ai.request.SpanAttributeNumber", "0 (limit ${TracingManager.maxNumberOfSpanAttributes})")
         span.setAttribute("gen_ai.api_base", "${url.scheme}://${url.host}")
         span.setAttribute(GEN_AI_SYSTEM, genAISystem)
         return@runCatching
@@ -70,15 +73,14 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
             val numberOfSpanAttributes = (span as? ReadableSpan)?.attributes?.size()
 
             numberOfSpanAttributes?.let {
-                val limit = TracingManager.maxNumberOfSpanAttributes ?: Int.MAX_VALUE
+                val limit = getMaxNumberOfSpanAttributes()
                 if (it >= limit) {
                     span.setAttribute(
-                        "gen_ai.request.SpanAttributeNumber",
-                        "Limit (${TracingManager.maxNumberOfSpanAttributes}) exceeded. Adjust TracingConfig or env"
+                        ATTRIBUTES_NUMBER_ATTRIBUTE_KEY, "Limit ($limit) exceeded. Adjust TracingConfig or env"
                     )
                 } else {
                     span.setAttribute(
-                        "gen_ai.request.SpanAttributeNumber", "$it (limit ${TracingManager.maxNumberOfSpanAttributes})"
+                        ATTRIBUTES_NUMBER_ATTRIBUTE_KEY, "$it (limit $limit)"
                     )
                 }
             }
@@ -87,6 +89,11 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
             span.setStatus(StatusCode.ERROR)
             span.recordException(exception)
         }
+
+    private fun getMaxNumberOfSpanAttributes() =
+        TracingManager.openTelemetrySdk?.sdkTracerProvider?.spanLimits?.maxNumberOfAttributes
+            ?: DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES
+
 
     protected open fun getResultErrorBodyAttributes(span: Span, body: JsonObject) {
         body["error"]?.jsonObject?.let { error ->

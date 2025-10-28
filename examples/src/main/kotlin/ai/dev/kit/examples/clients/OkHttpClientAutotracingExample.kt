@@ -6,6 +6,7 @@ import ai.dev.kit.clients.OpenTelemetryOpenAILogger
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.ConsoleConfig
 import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
@@ -34,7 +35,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * Choose the adapter that matches the provider your client uses.
  */
 fun main() {
-    TracingManager.setup(ConsoleConfig())
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleConfig()))
     val apiToken = System.getenv("OPENAI_API_KEY")
         ?: error("Environment variable 'OPENAI_API_KEY' is not set")
     val requestBodyJson = buildJsonObject {

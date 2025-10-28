@@ -2,6 +2,7 @@ package ai.dev.kit.examples
 
 import ai.dev.kit.tracing.ConsoleConfig
 import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import ai.dev.kit.tracing.fluent.FluentSpanAttributes
 import ai.dev.kit.tracing.fluent.processor.withSpan
 
@@ -27,7 +28,7 @@ fun handleUserLogin(username: String, password: String) =
  * - Two child spans named **HandleUserLogin**, each corresponding to a user authentication attempt.
  */
 fun main() {
-    TracingManager.setup(ConsoleConfig())
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleConfig()))
     withSpan("LoginAttempt") {
         handleUserLogin("alice", "secret123")
         handleUserLogin("bob", "wrongpass")

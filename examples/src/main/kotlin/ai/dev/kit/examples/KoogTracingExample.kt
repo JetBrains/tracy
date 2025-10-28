@@ -2,6 +2,7 @@ package ai.dev.kit.examples
 
 import ai.dev.kit.tracing.ConsoleConfig
 import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import ai.dev.kit.tracing.fluent.SpanType
 import ai.koog.agents.core.agent.AIAgent
@@ -48,7 +49,7 @@ object SortTools : ToolSet {
  * View trace spans in the console, including both the **Sort integers** tool span and the nested **Parse comma-separated list** span.
  */
 suspend fun main() {
-    TracingManager.setup(ConsoleConfig())
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleConfig()))
     val apiToken = System.getenv("OPENAI_API_KEY")
         ?: error("Environment variable 'OPENAI_API_KEY' is not set")
     val agent = AIAgent(

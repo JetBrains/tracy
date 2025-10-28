@@ -1,10 +1,10 @@
 package ai.dev.kit.eval.providers.langfuse
 
-import ai.dev.kit.eval.providers.dataclasses.RunStatus
 import ai.dev.kit.eval.providers.langfuse.KotlinLangfuseClient.baseUrl
 import ai.dev.kit.eval.utils.*
 import ai.dev.kit.tracing.LangfuseConfig
 import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.net.URLEncoder
@@ -21,7 +21,7 @@ class LangfuseEvaluationClient(
             langfuseConfig.langfusePublicKey,
             langfuseConfig.langfuseSecretKey
         )
-        TracingManager.setup(langfuseConfig)
+        TracingManager.setSdk(configureOpenTelemetrySdk(langfuseConfig))
     }
 
     override suspend fun getOrCreateExperiment(experimentName: String): String? {

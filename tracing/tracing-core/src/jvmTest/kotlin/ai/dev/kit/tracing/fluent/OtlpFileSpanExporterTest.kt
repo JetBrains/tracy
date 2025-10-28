@@ -3,6 +3,7 @@ package ai.dev.kit.tracing.fluent
 import ai.dev.kit.tracing.OutputFormat
 import ai.dev.kit.tracing.FileConfig
 import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.*
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -51,7 +52,7 @@ class OtlpFileSpanExporterTest {
     }
 
     private fun createSampleSpan(spanName: String, config: FileConfig) {
-        TracingManager.setup(config)
+        TracingManager.setSdk(configureOpenTelemetrySdk(config))
         val tracer = TracingManager.tracer
         val span = tracer.spanBuilder(spanName).startSpan()
 
@@ -59,8 +60,7 @@ class OtlpFileSpanExporterTest {
             span.makeCurrent().use {
                 span.setAttribute("key1", "value1")
             }
-        }
-        finally {
+        } finally {
             span.end()
         }
         TracingManager.flushTraces(10)

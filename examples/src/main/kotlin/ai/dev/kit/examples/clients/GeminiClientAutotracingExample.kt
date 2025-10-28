@@ -3,6 +3,7 @@ package ai.dev.kit.examples.clients
 import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.ConsoleConfig
 import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import com.google.genai.Client
 import com.google.genai.types.GenerateContentConfig
 
@@ -21,7 +22,7 @@ import com.google.genai.types.GenerateContentConfig
  * Run the example. Span will appear in the console output.
  */
 fun main() {
-    TracingManager.setup(ConsoleConfig())
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleConfig()))
     val apiToken = System.getenv("GEMINI_API_KEY")
         ?: error("Environment variable 'GEMINI_API_KEY' is not set")
     val geminiClient = Client.builder().apiKey(apiToken).build()

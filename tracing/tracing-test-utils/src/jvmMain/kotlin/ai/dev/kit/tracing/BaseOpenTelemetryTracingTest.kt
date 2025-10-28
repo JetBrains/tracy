@@ -22,7 +22,7 @@ abstract class BaseOpenTelemetryTracingTest {
     @BeforeAll
     fun setupTelemetry() {
         val testTracing = initOpenTelemetry()
-        TracingManager.setSdkForTest(testTracing.openTelemetrySdk)
+        TracingManager.setSdk(testTracing.openTelemetrySdk)
         spanExporter = testTracing.spanExporter
     }
 

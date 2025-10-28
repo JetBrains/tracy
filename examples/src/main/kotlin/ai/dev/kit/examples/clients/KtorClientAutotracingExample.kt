@@ -6,6 +6,7 @@ import ai.dev.kit.adapters.AnthropicLLMTracingAdapter
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.ConsoleConfig
 import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
@@ -36,7 +37,7 @@ import kotlinx.serialization.json.buildJsonObject
  * Choose the adapter that matches the provider your client uses.
  */
 suspend fun main() {
-    TracingManager.setup(ConsoleConfig())
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleConfig()))
     val apiToken = System.getenv("OPENAI_API_KEY") ?: error("Environment variable 'OPENAI_API_KEY' is not set")
     val client = HttpClient {
         install(ContentNegotiation) {

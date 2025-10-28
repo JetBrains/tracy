@@ -126,9 +126,9 @@ class OtlpFileSpanExporter private constructor(
 }
 
 fun SdkTracerProviderBuilder.addOtlpFileSpanProcessor(
-    config: FileConfig,
+    fileConfig: FileConfig,
 ): SdkTracerProviderBuilder {
-    val spanExporter = OtlpFileSpanExporter.create(config)
+    val spanExporter = OtlpFileSpanExporter.create(fileConfig)
     addSpanProcessor(
         BatchSpanProcessor.builder(spanExporter)
             .setScheduleDelay(3, TimeUnit.SECONDS)
