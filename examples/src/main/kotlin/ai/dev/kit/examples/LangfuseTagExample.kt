@@ -1,6 +1,6 @@
 package ai.dev.kit.examples
 
-import ai.dev.kit.tracing.LangfuseConfig
+import ai.dev.kit.exporters.http.LangfuseExporterConfig
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.addLangfuseTagsToCurrentTrace
 import ai.dev.kit.tracing.configureOpenTelemetrySdk
@@ -18,24 +18,24 @@ fun greetUser(name: String, isPremium: Boolean): String {
 }
 
 /**
- * Demonstrates how to use [LangfuseConfig] with [KotlinFlowTrace]
+ * Demonstrates how to use [LangfuseExporterConfig] with [KotlinFlowTrace]
  * to export traces to [Langfuse](https://langfuse.com) and enrich them with custom tags.
  *
  * This example shows how:
- * - [LangfuseConfig] initializes the tracing backend for Langfuse.
+ * - [LangfuseExporterConfig] initializes the tracing backend for Langfuse.
  * - [addLangfuseTagsToCurrentTrace] dynamically attaches user-related tags to the span.
  *
  * To run this example provide your Langfuse credentials either:
- * - Explicitly in code via [LangfuseConfig] constructor parameters, or
+ * - Explicitly in code via [LangfuseExporterConfig] constructor parameters, or
  * - Through the environment variables `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`.
  *
  * Run the example. Spans and tags will be exported to Langfuse.
  *
- * @see LangfuseConfig
+ * @see LangfuseExporterConfig
  * @see addLangfuseTagsToCurrentTrace
  */
 fun main() {
-    TracingManager.setSdk(configureOpenTelemetrySdk(LangfuseConfig()))
+    TracingManager.setSdk(configureOpenTelemetrySdk(LangfuseExporterConfig()))
     greetUser("Alice", isPremium = true)
     greetUser("Bob", isPremium = false)
     println("See trace details with tags in the console.")

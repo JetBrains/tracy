@@ -1,4 +1,4 @@
-package ai.dev.kit.exporters
+package ai.dev.kit.adapters.media
 
 import ai.dev.kit.common.DataUrl
 import io.opentelemetry.api.common.AttributeKey
@@ -79,9 +79,12 @@ fun setDataUrlAttributes(
     if (!dataUrl.base64) {
         val str = dataUrl.asString()
         val trimmed = if (str.length < WARNING_URL_LENGTH_LIMIT) str
-                      else str.substring(0, WARNING_URL_LENGTH_LIMIT) + "..."
-        return Result.failure(IllegalArgumentException(
-            "Expect base64 encoding for the data url, received '$trimmed'"))
+        else str.substring(0, WARNING_URL_LENGTH_LIMIT) + "..."
+        return Result.failure(
+            IllegalArgumentException(
+                "Expect base64 encoding for the data url, received '$trimmed'"
+            )
+        )
     }
 
     val keys = UploadableMediaContentAttributeKeys.forIndex(index)

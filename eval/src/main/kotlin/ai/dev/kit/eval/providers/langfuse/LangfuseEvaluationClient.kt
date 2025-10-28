@@ -2,7 +2,7 @@ package ai.dev.kit.eval.providers.langfuse
 
 import ai.dev.kit.eval.providers.langfuse.KotlinLangfuseClient.baseUrl
 import ai.dev.kit.eval.utils.*
-import ai.dev.kit.tracing.LangfuseConfig
+import ai.dev.kit.exporters.http.LangfuseExporterConfig
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import kotlinx.serialization.json.jsonObject
@@ -11,17 +11,13 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 class LangfuseEvaluationClient(
-    langfuseConfig: LangfuseConfig
+    langfuseExporterConfig: LangfuseExporterConfig
 ) : LoggingClient {
     override val clientName: String = "Langfuse"
 
     init {
-        KotlinLangfuseClient.setupCredentials(
-            langfuseConfig.langfuseUrl,
-            langfuseConfig.langfusePublicKey,
-            langfuseConfig.langfuseSecretKey
-        )
-        TracingManager.setSdk(configureOpenTelemetrySdk(langfuseConfig))
+        KotlinLangfuseClient.setupCredentials(langfuseExporterConfig)
+        TracingManager.setSdk(configureOpenTelemetrySdk(langfuseExporterConfig))
     }
 
     override suspend fun getOrCreateExperiment(experimentName: String): String? {

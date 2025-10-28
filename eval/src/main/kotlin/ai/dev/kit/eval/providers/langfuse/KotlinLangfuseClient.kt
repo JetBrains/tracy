@@ -1,6 +1,6 @@
 package ai.dev.kit.eval.providers.langfuse
 
-import ai.dev.kit.exporters.setupLangfuseCredentials
+import ai.dev.kit.exporters.http.LangfuseExporterConfig
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -14,7 +14,9 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 
 internal object KotlinLangfuseClient {
+    internal var baseUrl: String? = null
     private val langfuseJson = Json { ignoreUnknownKeys = true }
+    private var authHeader: String? = null
 
     private val client = HttpClient(CIO) {
         install(ContentNegotiation) {
@@ -22,14 +24,9 @@ internal object KotlinLangfuseClient {
         }
     }
 
-    internal fun setupCredentials(
-        langfuseUrl: String? = null,
-        langfusePublicKey: String? = null,
-        langfuseSecretKey: String? = null
-    ) {
-        val (url, auth) = setupLangfuseCredentials(langfuseUrl, langfusePublicKey, langfuseSecretKey)
-        baseUrl = url
-        authHeader = auth
+    internal fun setupCredentials(langfuseExporterConfig: LangfuseExporterConfig) {
+        baseUrl = langfuseExporterConfig.resolvedBaseUrl
+        authHeader = langfuseExporterConfig.basicAuthHeader()
     }
 
     internal suspend fun sendRequest(
@@ -46,7 +43,4 @@ internal object KotlinLangfuseClient {
 
         return langfuseJson.parseToJsonElement(response.bodyAsText()).jsonObject
     }
-
-    internal var baseUrl: String? = null
-    private var authHeader: String? = null
 }

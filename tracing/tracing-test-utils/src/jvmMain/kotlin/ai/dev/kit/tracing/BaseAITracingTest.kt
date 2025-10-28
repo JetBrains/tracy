@@ -1,6 +1,6 @@
 package ai.dev.kit.tracing
 
-import ai.dev.kit.exporters.UploadableMediaContentAttributeKeys
+import ai.dev.kit.adapters.media.UploadableMediaContentAttributeKeys
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.sdk.trace.data.SpanData
 import org.junit.jupiter.api.TestInstance
@@ -49,6 +49,7 @@ abstract class BaseAITracingTest : BaseOpenTelemetryTracingTest() {
                         assertEquals(values.data, span.attributes[keys.data], failMessage)
                     }
                 }
+
                 is MediaContentAttributeValues.Url -> {
                     assertEquals(values.type.type, span.attributes[keys.type], failMessage)
                     assertEquals(values.field, span.attributes[keys.field], failMessage)
@@ -65,10 +66,12 @@ abstract class BaseAITracingTest : BaseOpenTelemetryTracingTest() {
      */
     protected fun provideImagesForUpload(): Stream<Arguments> {
         return Stream.of(
-            Arguments.of(MediaSource.File(
-                filepath = "./image.jpg",
-                contentType = "image/jpeg",
-            )),
+            Arguments.of(
+                MediaSource.File(
+                    filepath = "./image.jpg",
+                    contentType = "image/jpeg",
+                )
+            ),
             Arguments.of(MediaSource.Link(CAT_IMAGE_URL))
         )
     }
@@ -78,16 +81,19 @@ abstract class BaseAITracingTest : BaseOpenTelemetryTracingTest() {
      */
     protected fun provideFilesForUpload(): Stream<Arguments> {
         return Stream.of(
-            Arguments.of(MediaSource.File(
-                filepath = "./sample.pdf",
-                contentType = "application/pdf",
-            )),
+            Arguments.of(
+                MediaSource.File(
+                    filepath = "./sample.pdf",
+                    contentType = "application/pdf",
+                )
+            ),
             Arguments.of(MediaSource.Link(SAMPLE_PDF_FILE_URL))
         )
     }
 
     companion object {
-        protected const val CAT_IMAGE_URL = "https://images.pexels.com/photos/104827/cat-pet-animal-domestic-104827.jpeg"
+        protected const val CAT_IMAGE_URL =
+            "https://images.pexels.com/photos/104827/cat-pet-animal-domestic-104827.jpeg"
         protected const val SAMPLE_PDF_FILE_URL = "https://pdfobject.com/pdf/sample.pdf"
     }
 }

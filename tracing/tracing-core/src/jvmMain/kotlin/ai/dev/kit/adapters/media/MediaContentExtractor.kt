@@ -1,6 +1,5 @@
 package ai.dev.kit.adapters.media
 
-import ai.dev.kit.exporters.UploadableMediaContentAttributeKeys
 import io.ktor.http.ContentType
 import io.opentelemetry.api.trace.Span
 
@@ -10,8 +9,8 @@ import io.opentelemetry.api.trace.Span
  * and attaches it to the span under certain keys described by [UploadableMediaContentAttributeKeys].
  *
  * @see UploadableMediaContentAttributeKeys
- * @see ai.dev.kit.exporters.setUrlAttributes
- * @see ai.dev.kit.exporters.setDataUrlAttributes
+ * @see setUrlAttributes
+ * @see setDataUrlAttributes
  */
 interface MediaContentExtractor {
     fun setUploadableContentAttributes(

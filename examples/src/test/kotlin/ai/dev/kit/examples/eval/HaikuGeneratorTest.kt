@@ -2,7 +2,7 @@ package ai.dev.kit.examples.eval
 
 import ai.dev.kit.eval.providers.langfuse.LangfuseEvaluationTest
 import ai.dev.kit.eval.utils.*
-import ai.dev.kit.tracing.LangfuseConfig
+import ai.dev.kit.exporters.http.LangfuseExporterConfig
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.ChatModel
@@ -20,7 +20,7 @@ private val apiToken = System.getenv("OPENAI_API_KEY")
 class LangfuseHaikuGeneratorTest :
     LangfuseEvaluationTest<HaikuTopic, NoGroundTruth, HaikuText, MultiScoreEvalResult>(
         numberOfRuns = 1,
-        langfuseConfig = LangfuseConfig(),
+        langfuseConfig = LangfuseExporterConfig(),
     ) {
     override val testCases: List<TestCase<HaikuTopic, NoGroundTruth>> =
         listOf("table", "computer", "flower", "horse").map { haikuTestCase(it) }

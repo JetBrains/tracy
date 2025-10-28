@@ -1,7 +1,7 @@
 package ai.dev.kit.examples.clients
 
 import ai.dev.kit.clients.instrument
-import ai.dev.kit.tracing.ConsoleConfig
+import ai.dev.kit.exporters.ConsoleExporterConfig
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import com.google.genai.Client
@@ -11,7 +11,7 @@ import com.google.genai.types.GenerateContentConfig
  * Example of integrating the Google Gemini API [Client] client with tracing.
  *
  * This example demonstrates how to:
- * - Initialize tracing using [TracingManager] with [ConsoleConfig].
+ * - Initialize tracing using [TracingManager] with [ConsoleExporterConfig].
  * - Instrument the Gemini client using [instrument] to automatically capture trace data.
  * - Perform a Gemini API request with trace data automatically captured.
  * - Call [TracingManager.flushTraces] before exiting to ensure all trace data is exported.
@@ -22,9 +22,8 @@ import com.google.genai.types.GenerateContentConfig
  * Run the example. Span will appear in the console output.
  */
 fun main() {
-    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleConfig()))
-    val apiToken = System.getenv("GEMINI_API_KEY")
-        ?: error("Environment variable 'GEMINI_API_KEY' is not set")
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
+    val apiToken = System.getenv("GEMINI_API_KEY") ?: error("Environment variable 'GEMINI_API_KEY' is not set")
     val geminiClient = Client.builder().apiKey(apiToken).build()
     val instrumentedClient = instrument(geminiClient)
     val result = instrumentedClient.models.generateContent(

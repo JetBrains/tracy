@@ -1,7 +1,7 @@
 package ai.dev.kit.examples.clients
 
 import ai.dev.kit.clients.instrument
-import ai.dev.kit.tracing.ConsoleConfig
+import ai.dev.kit.exporters.ConsoleExporterConfig
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import com.anthropic.client.AnthropicClient
@@ -13,7 +13,7 @@ import com.anthropic.models.messages.Model
  * Example of integrating the Anthropic API client [AnthropicClient] with tracing.
  *
  * This example demonstrates how to:
- * - Initialize tracing using [TracingManager] with [ConsoleConfig].
+ * - Initialize tracing using [TracingManager] with [ConsoleExporterConfig].
  * - Instrument the Anthropic client using [instrument] to automatically capture trace data.
  * - Perform an Anthropic API request with trace data automatically captured.
  * - Call [TracingManager.flushTraces] before exiting to ensure all trace data is exported.
@@ -24,9 +24,8 @@ import com.anthropic.models.messages.Model
  * Run the example. Span will appear in the console output.
  */
 fun main() {
-    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleConfig()))
-    val apiToken = System.getenv("ANTHROPIC_API_KEY")
-        ?: error("Environment variable 'ANTHROPIC_API_KEY' is not set")
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
+    val apiToken = System.getenv("ANTHROPIC_API_KEY") ?: error("Environment variable 'ANTHROPIC_API_KEY' is not set")
     val anthropicClient = AnthropicOkHttpClient.builder().apiKey(apiToken).build()
     val instrumentedClient = instrument(anthropicClient)
     val params = MessageCreateParams.builder()

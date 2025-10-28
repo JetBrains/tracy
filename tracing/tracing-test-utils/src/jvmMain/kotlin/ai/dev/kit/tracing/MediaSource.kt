@@ -1,7 +1,7 @@
 package ai.dev.kit.tracing
 
+import ai.dev.kit.adapters.media.SupportedMediaContentTypes
 import ai.dev.kit.common.DataUrl
-import ai.dev.kit.exporters.SupportedMediaContentTypes
 import io.ktor.http.Headers
 import java.io.File
 import java.util.Base64
@@ -11,6 +11,7 @@ sealed class MediaSource {
         val filepath: String,
         val contentType: String,
     ) : MediaSource()
+
     data class Link(val url: String) : MediaSource()
 }
 
@@ -36,6 +37,7 @@ fun MediaSource.toMediaContentAttributeValues(field: String): MediaContentAttrib
             contentType = media.contentType,
             data = loadFileAsBase64Encoded(media.filepath)
         )
+
         is MediaSource.Link -> MediaContentAttributeValues.Url(
             field = field,
             url = media.url,

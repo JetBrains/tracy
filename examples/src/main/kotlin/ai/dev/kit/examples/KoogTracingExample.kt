@@ -1,6 +1,6 @@
 package ai.dev.kit.examples
 
-import ai.dev.kit.tracing.ConsoleConfig
+import ai.dev.kit.exporters.ConsoleExporterConfig
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
@@ -38,7 +38,7 @@ object SortTools : ToolSet {
  * Example of integrating a [Koog](https://github.com/koog-ai/koog) [AIAgent] with tracing using [KotlinFlowTrace].
  *
  * This example demonstrates how to:
- * - Initialize tracing using [TracingManager] with [ConsoleConfig].
+ * - Initialize tracing using [TracingManager] with [ConsoleExporterConfig].
  * - Annotate Koog [ToolSet] functions with [KotlinFlowTrace] to automatically generate spans for tool calls.
  * - Run an [AIAgent] that discovers and executes annotated tools, capturing detailed trace data for both tool and helper functions.
  *
@@ -49,9 +49,8 @@ object SortTools : ToolSet {
  * View trace spans in the console, including both the **Sort integers** tool span and the nested **Parse comma-separated list** span.
  */
 suspend fun main() {
-    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleConfig()))
-    val apiToken = System.getenv("OPENAI_API_KEY")
-        ?: error("Environment variable 'OPENAI_API_KEY' is not set")
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
+    val apiToken = System.getenv("OPENAI_API_KEY") ?: error("Environment variable 'OPENAI_API_KEY' is not set")
     val agent = AIAgent(
         promptExecutor = simpleOpenAIExecutor(apiToken = apiToken),
         llmModel = OpenAIModels.Chat.GPT4o,

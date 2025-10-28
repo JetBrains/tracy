@@ -1,8 +1,9 @@
 package ai.dev.kit.examples
 
-import ai.dev.kit.tracing.FileConfig
-import ai.dev.kit.tracing.OutputFormat
+import ai.dev.kit.exporters.FileExporterConfig
+import ai.dev.kit.exporters.OutputFormat
 import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.createTempFile
@@ -18,7 +19,7 @@ private fun printName(name: String): String {
  * Demonstrates basic function tracing using the AI Dev Kit.
  *
  * This example shows how:
- * - Initializing tracing with [TracingManager] and [FileConfig].
+ * - Initializing tracing with [TracingManager] and [FileExporterConfig].
  * - Annotating a function with [KotlinFlowTrace] to generate spans automatically.
  * - Call [TracingManager.flushTraces] before exiting to ensure all trace data is exported.
  *
@@ -27,13 +28,12 @@ private fun printName(name: String): String {
  */
 fun main() {
     val tempFile = createTempFile()
-    val config = FileConfig(
+    val config = FileExporterConfig(
         filepath = tempFile.absolutePathString(),
         append = false,
         format = OutputFormat.JSON,
     )
-
-    TracingManager.setup(config)
+    TracingManager.setSdk(configureOpenTelemetrySdk(config))
     printName("Bob")
     println("See trace details read from the file in the console.")
     TracingManager.flushTraces()

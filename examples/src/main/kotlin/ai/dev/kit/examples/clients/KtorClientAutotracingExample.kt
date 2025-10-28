@@ -1,10 +1,10 @@
 package ai.dev.kit.examples.clients
 
-import ai.dev.kit.adapters.OpenAILLMTracingAdapter
-import ai.dev.kit.adapters.GeminiLLMTracingAdapter
 import ai.dev.kit.adapters.AnthropicLLMTracingAdapter
+import ai.dev.kit.adapters.GeminiLLMTracingAdapter
+import ai.dev.kit.adapters.OpenAILLMTracingAdapter
+import ai.dev.kit.exporters.ConsoleExporterConfig
 import ai.dev.kit.instrument
-import ai.dev.kit.tracing.ConsoleConfig
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import io.ktor.client.*
@@ -22,7 +22,7 @@ import kotlinx.serialization.json.buildJsonObject
  * Example of integrating a Ktor [HttpClient] with tracing for OpenAI API requests.
  *
  * This example demonstrates how to:
- * - Initialize tracing using [TracingManager] with [ConsoleConfig].
+ * - Initialize tracing using [TracingManager] with [ConsoleExporterConfig].
  * - Instrument a Ktor [HttpClient] using [OpenAILLMTracingAdapter] to automatically capture trace data.
  * - Perform an OpenAI API request with trace data automatically captured.
  * - Call [TracingManager.flushTraces] before exiting to ensure all trace data is exported.
@@ -37,7 +37,7 @@ import kotlinx.serialization.json.buildJsonObject
  * Choose the adapter that matches the provider your client uses.
  */
 suspend fun main() {
-    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleConfig()))
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     val apiToken = System.getenv("OPENAI_API_KEY") ?: error("Environment variable 'OPENAI_API_KEY' is not set")
     val client = HttpClient {
         install(ContentNegotiation) {

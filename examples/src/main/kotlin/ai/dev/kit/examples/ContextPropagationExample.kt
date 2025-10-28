@@ -1,7 +1,8 @@
 package ai.dev.kit.examples
 
-import ai.dev.kit.tracing.ConsoleConfig
+import ai.dev.kit.exporters.ConsoleExporterConfig
 import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import ai.dev.kit.tracing.fluent.processor.currentSpanContext
 import ai.dev.kit.tracing.fluent.processor.currentSpanContextElement
@@ -80,7 +81,7 @@ suspend fun handleRequestInNewThread(requestId: String) {
  * [runBlocking] and raw threads.
  */
 fun main() {
-    TracingManager.setup(ConsoleConfig())
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     runBlocking {
         handleRequestInCoroutine("REQ-101")
         handleRequestWithContext("REQ-202")

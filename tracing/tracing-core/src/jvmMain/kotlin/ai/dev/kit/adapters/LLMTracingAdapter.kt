@@ -1,6 +1,6 @@
 package ai.dev.kit.adapters
 
-import ai.dev.kit.tracing.DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES
+import ai.dev.kit.exporters.BaseExporterConfig.Companion.DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES
 import ai.dev.kit.http.protocol.*
 import ai.dev.kit.tracing.TracingManager
 import io.ktor.http.*

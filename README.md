@@ -219,7 +219,7 @@ Below is a minimal OpenAI example. For others, check the examples directory:
 
 ```kotlin
 // Initialize tracing and export spans to the console
-TracingManager.setup(ConsoleConfig())
+TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
 val instrumentedClient: OpenAIClient = instrument(fromEnv())
 val request = ChatCompletionCreateParams.builder()
     .addUserMessage("Generate a polite greeting and introduce yourself.")
@@ -260,7 +260,7 @@ fun greetUser(name: String): String {
 }
 
 fun main() {
-    TracingManager.setup(ConsoleConfig())
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     greetUser("Alice")
     TracingManager.flushTraces()
 }
@@ -286,8 +286,8 @@ inherit tracing behavior automatically, even if the annotation is not explicitly
 This approach ensures consistent and reusable tracing across an entire inheritance chain without code duplication.
 
 Refer to the [
-`TracingPropagationExample.kt`](examples/src/main/kotlin/ai/dev/kit/examples/TracingPropagationExample.kt)
-for a complete example.
+`TracingPropagationExample.kt`](examples/src/main/kotlin/ai/dev/kit/examples/TracingPropagationExample.kt) for a
+complete example.
 
 #### Customizing Tracing Behavior
 
@@ -312,8 +312,8 @@ See an example implementation in [
 You can enrich your traces with contextual metadata by adding **custom tags**.  
 Tags help categorize and filter traces based on your business logic. For example, by user type, feature, or
 environment. Use the [
-`addLangfuseTagsToCurrentTrace`](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/Utils.kt)
-function to attach tags dynamically within any traced function.  
+`addLangfuseTagsToCurrentTrace`](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/Utils.kt) function to attach
+tags dynamically within any traced function.  
 These tags appear in Langfuse or other tracing tools, making it easier to group and analyze trace data.
 
 An example demonstrating how to provide custom tags can be found in
@@ -340,28 +340,31 @@ Currently supported backends include:
 - **[Langfuse](https://langfuse.com/)**
 - **[Weave](https://wandb.ai/site/weave)**
 
-You can initialize tracing with any supported backend by providing the corresponding configuration object when calling
-`TracingManager.setup(...)`.
+Create an SDK by providing the desired configuration, then initialize tracing with `TracingManager.setSdk(sdk)`
 
 ```kotlin
 // Langfuse
-TracingManager.setup(LangfuseConfig())
+val sdk = configureOpenTelemetrySdk(LangfuseExporterConfig())
 
 // Weave
-TracingManager.setup(WeaveConfig())
+val sdk = configureOpenTelemetrySdk(WeaveExporterConfig())
 
 // Console-Only
-TracingManager.setup(ConsoleConfig())
+val sdk = configureOpenTelemetrySdk(ConsoleExporterConfig())
 
 // File (plain text and JSON formats supported)
-TracingManager.setup(FileConfig(
-  filepath = myFile.absolutePathString(),
-  append = true,
-  format = OutputFormat.JSON, // default is `OutputFormat.PLAIN_TEXT`
-))
+val sdk = configureOpenTelemetrySdk(
+    FileExporterConfig(
+        filepath = myFile.absolutePathString(),
+        append = true,
+        format = OutputFormat.JSON, // default is `OutputFormat.PLAIN_TEXT`
+    )
+)
 ```
 
-#### [Langfuse Configuration](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/TracingConfig.kt)
+Once the SDK is configured, initialize tracing with `TracingManager.setSdk(sdk)`.
+
+#### [Langfuse Configuration](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/exporters/http/LangfuseExporterConfig.kt)
 
 | Property                      | Environment Variable              | Required | Default Value                                              |
 |-------------------------------|-----------------------------------|----------|------------------------------------------------------------|
@@ -375,7 +378,7 @@ TracingManager.setup(FileConfig(
 
 [Langfuse Setup Example](examples/src/main/kotlin/ai/dev/kit/examples/backends/LangfuseExample.kt)
 
-#### [Weave Configuration](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/TracingConfig.kt)
+#### [Weave Configuration](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/exporters/http/WeaveExporterConfig.kt)
 
 | Property                      | Environment Variable              | Required | Default Value                                      |
 |-------------------------------|-----------------------------------|----------|----------------------------------------------------|
@@ -390,16 +393,15 @@ TracingManager.setup(FileConfig(
 
 [Weave Setup Example](examples/src/main/kotlin/ai/dev/kit/examples/backends/WeaveExample.kt)
 
-#### [Console Configuration](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/TracingConfig.kt)
+#### [Console Configuration](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/exporters/ConsoleExporterConfig.kt)
 
 Configuration for exporting OpenTelemetry traces to console
 only. [Console Setup Example](examples/src/main/kotlin/ai/dev/kit/examples/TracingExample.kt)
 
-#### [File Configuration](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/TracingConfig.kt)
+#### [File Configuration](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/exporters/FileExporterConfig.kt)
 
 Configuration for exporting OpenTelemetry traces to a file in either JSON or plain text format.
 [File Setup Example](examples/src/main/kotlin/ai/dev/kit/examples/FileTracingExample.kt)
-
 
 ### Project Structure
 
@@ -428,7 +430,8 @@ However, some concurrency models such as `runBlocking` and raw threads create ne
 **manual propagation** of the OpenTelemetry context.
 
 - **`runBlocking` inside suspend functions:**  
-  Use [`currentSpanContextElement(...)`](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/Utils.kt)
+  Use [
+  `currentSpanContextElement(...)`](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/fluent/processor/Utils.kt)
   to ensure child spans remain linked to their parent.  
   Without it, spans become detached and appear as separate traces.
 

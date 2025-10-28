@@ -2,9 +2,6 @@ package ai.dev.kit.adapters.media
 
 import ai.dev.kit.common.DataUrl
 import ai.dev.kit.common.parseDataUrl
-import ai.dev.kit.exporters.UploadableMediaContentAttributeKeys
-import ai.dev.kit.exporters.setDataUrlAttributes
-import ai.dev.kit.exporters.setUrlAttributes
 import io.ktor.http.headers
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.sdk.trace.ReadableSpan
@@ -46,6 +43,7 @@ class MediaContentExtractorImpl : MediaContentExtractor {
                     )
                     setDataUrlAttributes(span, field, index, dataUrl)
                 }
+
                 is Resource.DataUrl -> {
                     val dataUrl = resource.dataUrl.parseDataUrl()
                     if (dataUrl != null) {
@@ -54,6 +52,7 @@ class MediaContentExtractorImpl : MediaContentExtractor {
                         logger.warn { "Invalid data url, received: ${resource.dataUrl}" }
                     }
                 }
+
                 is Resource.Url -> {
                     setUrlAttributes(span, field, index, resource.url)
                 }

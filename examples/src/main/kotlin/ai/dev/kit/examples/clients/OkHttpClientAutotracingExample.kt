@@ -3,8 +3,8 @@ package ai.dev.kit.examples.clients
 import ai.dev.kit.clients.OpenTelemetryAnthropicLogger
 import ai.dev.kit.clients.OpenTelemetryGeminiLogger
 import ai.dev.kit.clients.OpenTelemetryOpenAILogger
+import ai.dev.kit.exporters.ConsoleExporterConfig
 import ai.dev.kit.instrument
-import ai.dev.kit.tracing.ConsoleConfig
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import kotlinx.serialization.json.Json
@@ -20,7 +20,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * Example of integrating a OkHttp Client [OkHttpClient] with tracing for OpenAI API requests.
  *
  * This example demonstrates how to:
- * - Initialize tracing using [TracingManager] with [ConsoleConfig].
+ * - Initialize tracing using [TracingManager] with [ConsoleExporterConfig].
  * - Instrument a [OkHttpClient] using [OpenTelemetryOpenAILogger] to automatically capture trace data.
  * - Perform an OpenAI API request with trace data automatically captured.
  * - Call [TracingManager.flushTraces] before exiting to ensure all trace data is exported.
@@ -35,9 +35,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * Choose the adapter that matches the provider your client uses.
  */
 fun main() {
-    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleConfig()))
-    val apiToken = System.getenv("OPENAI_API_KEY")
-        ?: error("Environment variable 'OPENAI_API_KEY' is not set")
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
+    val apiToken = System.getenv("OPENAI_API_KEY") ?: error("Environment variable 'OPENAI_API_KEY' is not set")
     val requestBodyJson = buildJsonObject {
         put("model", JsonPrimitive("gpt-4o-mini"))
         put("messages", buildJsonArray {

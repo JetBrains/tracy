@@ -1,6 +1,6 @@
 package ai.dev.kit.examples
 
-import ai.dev.kit.tracing.ConsoleConfig
+import ai.dev.kit.exporters.ConsoleExporterConfig
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
@@ -38,7 +38,7 @@ class PremiumOrderProcessor : DefaultOrderProcessor() {
  * is annotated with [KotlinFlowTrace].
  */
 suspend fun main() {
-    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleConfig()))
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     PremiumOrderProcessor().processOrder(101)
     DefaultOrderProcessor().processOrder(202)
     println("See trace details in the console.")

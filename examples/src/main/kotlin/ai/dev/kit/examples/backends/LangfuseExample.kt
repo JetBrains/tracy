@@ -1,6 +1,6 @@
 package ai.dev.kit.examples.backends
 
-import ai.dev.kit.tracing.LangfuseConfig
+import ai.dev.kit.exporters.http.LangfuseExporterConfig
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
@@ -12,21 +12,21 @@ fun printName(name: String): String {
 }
 
 /**
- * Demonstrates how to use [LangfuseConfig] with [KotlinFlowTrace] to export traces to [Langfuse](https://langfuse.com).
+ * Demonstrates how to use [LangfuseExporterConfig] with [KotlinFlowTrace] to export traces to [Langfuse](https://langfuse.com).
  *
  * This example shows how:
- * - [LangfuseConfig] initializes the tracing backend for Langfuse.
+ * - [LangfuseExporterConfig] initializes the tracing backend for Langfuse.
  *
  * To run this example provide your Langfuse credentials either:
- * - Explicitly in code via [LangfuseConfig] constructor parameters, or
+ * - Explicitly in code via [LangfuseExporterConfig] constructor parameters, or
  * - Through the environment variables `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`.
  *
  * Run the example. Spans will be exported to Langfuse.
  *
- * @see LangfuseConfig
+ * @see LangfuseExporterConfig
  */
 fun main() {
-    TracingManager.setSdk(configureOpenTelemetrySdk(LangfuseConfig()))
+    TracingManager.setSdk(configureOpenTelemetrySdk(LangfuseExporterConfig()))
     printName("Bob")
     println("See trace details in Langfuse.")
     TracingManager.flushTraces()

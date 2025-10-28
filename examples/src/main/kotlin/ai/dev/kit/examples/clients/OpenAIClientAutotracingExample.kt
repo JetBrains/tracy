@@ -1,7 +1,7 @@
 package ai.dev.kit.examples.clients
 
 import ai.dev.kit.clients.instrument
-import ai.dev.kit.tracing.ConsoleConfig
+import ai.dev.kit.exporters.ConsoleExporterConfig
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import com.openai.client.OpenAIClient
@@ -13,7 +13,7 @@ import com.openai.models.chat.completions.ChatCompletionCreateParams
  * Example of integrating the OpenAI API [OpenAIClient] client with tracing.
  *
  * This example demonstrates how to:
- * - Initialize tracing using [TracingManager] with [ConsoleConfig].
+ * - Initialize tracing using [TracingManager] with [ConsoleExporterConfig].
  * - Instrument the OpenAI client using [instrument] to automatically capture trace data.
  * - Execute an OpenAI API call with tracing information automatically collected.
  * - Call [TracingManager.flushTraces] before exiting to ensure all trace data is exported.
@@ -24,16 +24,12 @@ import com.openai.models.chat.completions.ChatCompletionCreateParams
  * Run the example. Request and response spans will appear in the console output.
  */
 fun main() {
-    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleConfig()))
-    val apiToken = System.getenv("OPENAI_API_KEY")
-        ?: error("Environment variable 'OPENAI_API_KEY' is not set")
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
+    val apiToken = System.getenv("OPENAI_API_KEY") ?: error("Environment variable 'OPENAI_API_KEY' is not set")
     val client = OpenAIOkHttpClient.builder().apiKey(apiToken).build()
     val instrumentedClient = instrument(client)
-    val request = ChatCompletionCreateParams.builder()
-        .addUserMessage("Generate polite greeting and introduce yourself")
-        .model(ChatModel.GPT_4O_MINI)
-        .temperature(0.0)
-        .build()
+    val request = ChatCompletionCreateParams.builder().addUserMessage("Generate polite greeting and introduce yourself")
+        .model(ChatModel.GPT_4O_MINI).temperature(0.0).build()
     val response = instrumentedClient.chat().completions().create(request)
     val content = response.choices().first().message().content().get()
     println("Result: $content\nSee trace details in the console.")

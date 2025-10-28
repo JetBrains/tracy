@@ -1,7 +1,7 @@
 package ai.dev.kit.eval.providers.langfuse
 
 import ai.dev.kit.eval.utils.*
-import ai.dev.kit.tracing.LangfuseConfig
+import ai.dev.kit.exporters.http.LangfuseExporterConfig
 
 /**
  * A base abstract class for conducting evaluation tests on AI functionality.
@@ -16,13 +16,13 @@ import ai.dev.kit.tracing.LangfuseConfig
  * @param numberOfRuns The number of test runs to execute during the evaluation process.
  * @param langfuseConfig Configuration object for Langfuse tracing.
  *  Includes connection details such as API keys, base URL, and export settings.
- *  See [LangfuseConfig] for more.
+ *  See [LangfuseExporterConfig] for more.
  */
 abstract class LangfuseEvaluationTest<AIInputT : AIInput, GroundTruthT : GroundTruth, AIOutputT : AIOutput, EvalResultT : EvalResult>(
 //    experimentName: String = "Evaluation test",
     runNamePrefix: String = createRandomRunNameAdjectiveNounNumber(),
     numberOfRuns: Int = 1,
-    langfuseConfig: LangfuseConfig = LangfuseConfig(),
+    langfuseConfig: LangfuseExporterConfig = LangfuseExporterConfig(),
 ) :
     BaseEvaluationTest<AIInputT, GroundTruthT, AIOutputT, EvalResultT>(
         // create an experiment with a given name functionality is not available yet

@@ -1,24 +1,37 @@
 package ai.dev.kit.exporters
 
-import ai.dev.kit.tracing.OutputFormat
-import ai.dev.kit.tracing.FileConfig
 import io.opentelemetry.exporter.logging.LoggingSpanExporter
 import io.opentelemetry.exporter.logging.otlp.OtlpJsonLoggingSpanExporter
 import io.opentelemetry.sdk.common.CompletableResultCode
-import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder
 import io.opentelemetry.sdk.trace.data.SpanData
-import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
 import io.opentelemetry.sdk.trace.export.SpanExporter
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
-import java.util.concurrent.TimeUnit
-import java.util.logging.FileHandler
-import java.util.logging.Formatter
-import java.util.logging.Level
-import java.util.logging.LogRecord
-import java.util.logging.Logger
-import java.util.logging.SimpleFormatter
+import java.util.logging.*
 
+/**
+ * Configuration for exporting OpenTelemetry traces to a file.
+ *
+ * @param filepath The file path where traces should be written (e.g., `tracing.log` or `traces.jsonl`).
+ * @param append Whether to append to the file if it exists, or create a new file.
+ * @param format The format in which to log traces to the file or console.
+ * @param traceToConsole If true, also logs spans to the console for debugging.
+ *        Default: false.
+ *
+ * @see [BaseExporterConfig] for configuration of maximum span attributes,
+ * maximum attribute value length, and optional console logging.
+ * @see [OtlpFileSpanExporter]
+ */
+class FileExporterConfig(
+    val filepath: String,
+    val append: Boolean,
+    val format: OutputFormat = OutputFormat.PLAIN_TEXT,
+    traceToConsole: Boolean = false,
+    maxNumberOfSpanAttributes: Int? = null,
+    maxSpanAttributeValueLength: Int? = null
+) : BaseExporterConfig(traceToConsole, maxNumberOfSpanAttributes, maxSpanAttributeValueLength) {
+    override fun createSpanExporter(): SpanExporter = OtlpFileSpanExporter.create(this)
+}
 
 /**
  * Extracts traces into the configured file in either JSON or plain text formats.
@@ -39,7 +52,7 @@ class OtlpFileSpanExporter private constructor(
          * Creates a configured OpenTelemetry span exporter instance
          * of [OtlpFileSpanExporter] that writes traces to a file.
          */
-        internal fun create(config: FileConfig): OtlpFileSpanExporter {
+        internal fun create(config: FileExporterConfig): OtlpFileSpanExporter {
             val exporter = when (config.format) {
                 OutputFormat.PLAIN_TEXT -> LoggingSpanExporter.create()
                 OutputFormat.JSON -> OtlpJsonLoggingSpanExporter.create()
@@ -60,15 +73,14 @@ class OtlpFileSpanExporter private constructor(
             val loggerField = cls.getDeclaredField("logger")
             loggerField.isAccessible = true
 
-            return loggerField.get(exporter) as? Logger
-                ?: throw IllegalStateException("Field 'logger' is null")
+            return loggerField.get(exporter) as? Logger ?: throw IllegalStateException("Field 'logger' is null")
         }
 
         /**
          * Re-configures the provided [Logger] instance to output
-         * traces into a file according to the configuration [FileConfig].
+         * traces into a file according to the configuration [FileExporterConfig].
          */
-        private fun reconfigureLogger(logger: Logger, config: FileConfig) {
+        private fun reconfigureLogger(logger: Logger, config: FileExporterConfig) {
             logger.setUseParentHandlers(false)
             val fileHandler = FileHandler(config.filepath, config.append)
 
@@ -77,7 +89,7 @@ class OtlpFileSpanExporter private constructor(
                 OutputFormat.JSON -> JsonSpanFormatter()
             }
 
-            fileHandler.setLevel(Level.INFO)
+            fileHandler.level = Level.INFO
             logger.setLevel(Level.INFO)
 
             logger.addHandler(fileHandler)
@@ -96,8 +108,7 @@ class OtlpFileSpanExporter private constructor(
 
             override fun format(record: LogRecord): String {
                 val minimizedStringifiedMessage = minifiedJson.encodeToString(
-                    serializer = JsonElement.serializer(),
-                    value = Json.parseToJsonElement(
+                    serializer = JsonElement.serializer(), value = Json.parseToJsonElement(
                         """
                             {
                                 "resourceSpans": [
@@ -123,16 +134,4 @@ class OtlpFileSpanExporter private constructor(
     override fun shutdown(): CompletableResultCode? {
         return delegate.shutdown()
     }
-}
-
-fun SdkTracerProviderBuilder.addOtlpFileSpanProcessor(
-    fileConfig: FileConfig,
-): SdkTracerProviderBuilder {
-    val spanExporter = OtlpFileSpanExporter.create(fileConfig)
-    addSpanProcessor(
-        BatchSpanProcessor.builder(spanExporter)
-            .setScheduleDelay(3, TimeUnit.SECONDS)
-            .build()
-    )
-    return this
 }
