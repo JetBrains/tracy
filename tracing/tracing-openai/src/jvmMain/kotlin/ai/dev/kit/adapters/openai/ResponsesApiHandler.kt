@@ -1,6 +1,7 @@
 package ai.dev.kit.adapters.openai
 
 import ai.dev.kit.adapters.Url
+import ai.dev.kit.adapters.openai.media.OpenAIMediaContentExtractor
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
@@ -8,7 +9,9 @@ import kotlinx.serialization.json.*
 /**
  * Handler for OpenAI Responses API
  */
-internal class ResponsesApiHandler : OpenAIApiHandler {
+internal class ResponsesApiHandler(
+    private val extractor: OpenAIMediaContentExtractor
+) : OpenAIApiHandler {
 
     override fun handleRequestAttributes(span: Span, url: Url, body: JsonObject) {
         OpenAIApiUtils.setCommonRequestAttributes(span, body)
@@ -102,6 +105,7 @@ internal class ResponsesApiHandler : OpenAIApiHandler {
     fun processAttributeTypes(span: Span, events: JsonArray, indexOfFirstAttribute: Int, type: String) {
         var index = indexOfFirstAttribute
         for (output in events.jsonArray) {
+            // See: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input
             when (output.jsonObject["type"]?.jsonPrimitive?.content) {
                 "function_call", "function_call_output" -> {
                     // "type" attribute is not rendered on Langfuse
@@ -140,6 +144,8 @@ internal class ResponsesApiHandler : OpenAIApiHandler {
                             textContent?.get("annotations")?.let {
                                 span.setAttribute("gen_ai.$type.$index.annotations", it.toString())
                             }
+
+                            //
                         }
                     } else {
                         span.setAttribute("gen_ai.$type.$index.content", output.jsonObject["content"].toString())

@@ -4,8 +4,9 @@ import ai.dev.kit.adapters.openai.ChatCompletionsHandler
 import ai.dev.kit.adapters.openai.OpenAIApiHandler
 import ai.dev.kit.adapters.openai.OpenAIApiUtils
 import ai.dev.kit.adapters.openai.ResponsesApiHandler
+import ai.dev.kit.adapters.openai.media.ChatCompletionsMediaContentExtractor
+import ai.dev.kit.adapters.openai.media.ResponsesMediaContentExtractor
 import io.opentelemetry.api.trace.Span
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_SYSTEM
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
@@ -28,8 +29,12 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
     override fun getRequestBodyAttributes(span: Span, url: Url, body: JsonObject) {
         if (handler == null) {
             handler = when (detectApiType(body)) {
-                OpenAIApiType.CHAT_COMPLETIONS -> ChatCompletionsHandler()
-                OpenAIApiType.RESPONSES_API -> ResponsesApiHandler()
+                OpenAIApiType.CHAT_COMPLETIONS -> ChatCompletionsHandler(
+                    extractor = ChatCompletionsMediaContentExtractor()
+                )
+                OpenAIApiType.RESPONSES_API -> ResponsesApiHandler(
+                    extractor = ResponsesMediaContentExtractor()
+                )
             }
         }
 
