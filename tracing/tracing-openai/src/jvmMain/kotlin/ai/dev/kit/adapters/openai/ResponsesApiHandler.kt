@@ -103,7 +103,9 @@ internal class ResponsesApiHandler(
     }
 
     fun processAttributeTypes(span: Span, events: JsonArray, indexOfFirstAttribute: Int, type: String) {
+        var mediaAttachmentStartIndex = 0
         var index = indexOfFirstAttribute
+
         for (output in events.jsonArray) {
             // See: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input
             when (output.jsonObject["type"]?.jsonPrimitive?.content) {
@@ -131,24 +133,29 @@ internal class ResponsesApiHandler(
                         span.setAttribute("gen_ai.$type.$index.role", it)
                     }
 
-                    if (output.jsonObject["content"] is JsonArray) {
-                        output.jsonObject["content"]?.jsonArray?.let { contentArray ->
-                            val textContent = contentArray.firstOrNull {
-                                it.jsonObject["type"]?.jsonPrimitive?.content == "output_text"
-                            }?.jsonObject
+                    val content = output.jsonObject["content"]
+                    if (content is JsonArray) {
+                        // set attributes with media attachments info into the span
+                        mediaAttachmentStartIndex = extractor.setUploadableContentAttributes(
+                            span,
+                            field = "input",
+                            content = content.jsonArray,
+                            startWithIndex = mediaAttachmentStartIndex,
+                        )
 
-                            textContent?.get("text")?.jsonPrimitive?.content?.let {
-                                span.setAttribute("gen_ai.$type.$index.content", it)
-                            }
+                        val textContent = content.firstOrNull {
+                            it.jsonObject["type"]?.jsonPrimitive?.content == "output_text"
+                        }?.jsonObject
 
-                            textContent?.get("annotations")?.let {
-                                span.setAttribute("gen_ai.$type.$index.annotations", it.toString())
-                            }
+                        textContent?.get("text")?.jsonPrimitive?.content?.let {
+                            span.setAttribute("gen_ai.$type.$index.content", it)
+                        }
 
-                            //
+                        textContent?.get("annotations")?.let {
+                            span.setAttribute("gen_ai.$type.$index.annotations", it.toString())
                         }
                     } else {
-                        span.setAttribute("gen_ai.$type.$index.content", output.jsonObject["content"].toString())
+                        span.setAttribute("gen_ai.$type.$index.content", content.toString())
                     }
 
                     output.jsonObject["status"]?.jsonPrimitive?.content?.let {

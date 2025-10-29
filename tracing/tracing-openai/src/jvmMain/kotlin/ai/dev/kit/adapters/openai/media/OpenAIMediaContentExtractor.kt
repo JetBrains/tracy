@@ -51,8 +51,9 @@ internal abstract class OpenAIMediaContentExtractor(
         span: Span,
         field: String,
         content: JsonArray,
-    ) {
-        var index = 0
+        startWithIndex: Int,
+    ): Int {
+        var index = startWithIndex
         for (item in content) {
             val type = item.jsonObject["type"]?.jsonPrimitive?.content
                 ?: continue
@@ -66,25 +67,12 @@ internal abstract class OpenAIMediaContentExtractor(
             }
             ++index
         }
+        return index
     }
 
-    protected abstract fun setImageUrlAttributes(
-        span: Span, field: String, index: Int, contentItem: JsonObject)
-
-    protected abstract fun setAudioInputAttributes(
-        span: Span, field: String, index: Int, contentItem: JsonObject)
-
-    protected abstract fun setFileInputAttributes(
-        span: Span, field: String, index: Int, contentItem: JsonObject)
-}
-
-
-internal class ChatCompletionsMediaContentExtractor : OpenAIMediaContentExtractor(
-    tags = SupportedContentTypeTags.ChatCompletions,
-) {
-    override fun setImageUrlAttributes(
+    protected fun setImageUrlAttributes(
         span: Span, field: String, index: Int, contentItem: JsonObject) {
-        val url = contentItem["image_url"]?.jsonObject["url"]?.jsonPrimitive?.content ?: return
+        val url = extractImageUrl(contentItem) ?: return
 
         if (url.isValidUrl()) {
             setUrlAttributes(span, field, index, url)
@@ -99,6 +87,19 @@ internal class ChatCompletionsMediaContentExtractor : OpenAIMediaContentExtracto
         }
     }
 
+    protected abstract fun extractImageUrl(contentItem: JsonObject): String?
+
+    protected abstract fun setAudioInputAttributes(
+        span: Span, field: String, index: Int, contentItem: JsonObject)
+
+    protected abstract fun setFileInputAttributes(
+        span: Span, field: String, index: Int, contentItem: JsonObject)
+}
+
+
+internal class ChatCompletionsMediaContentExtractor : OpenAIMediaContentExtractor(
+    tags = SupportedContentTypeTags.ChatCompletions,
+) {
     override fun setAudioInputAttributes(
         span: Span, field: String, index: Int, contentItem: JsonObject) {
         // data is base64-encoded
@@ -132,36 +133,33 @@ internal class ChatCompletionsMediaContentExtractor : OpenAIMediaContentExtracto
         val dataUrl = fileData.parseDataUrl() ?: return
         setDataUrlAttributes(span, field, index, dataUrl)
     }
+
+    override fun extractImageUrl(contentItem: JsonObject): String? {
+        return contentItem["image_url"]?.jsonObject["url"]?.jsonPrimitive?.content
+    }
 }
 
 internal class ResponsesMediaContentExtractor : OpenAIMediaContentExtractor(
     tags = SupportedContentTypeTags.ResponsesApi
 ) {
-    override fun setImageUrlAttributes(
-        span: Span,
-        field: String,
-        index: Int,
-        contentItem: JsonObject
-    ) {
-        TODO("Not yet implemented")
-    }
-
     override fun setAudioInputAttributes(
-        span: Span,
-        field: String,
-        index: Int,
-        contentItem: JsonObject
-    ) {
-        TODO("Not yet implemented")
+        span: Span, field: String, index: Int, contentItem: JsonObject) {
+        // no-op for responses API
     }
 
     override fun setFileInputAttributes(
-        span: Span,
-        field: String,
-        index: Int,
-        contentItem: JsonObject
-    ) {
-        TODO("Not yet implemented")
+        span: Span, field: String, index: Int, contentItem: JsonObject) {
+        val url = contentItem["file_url"]?.jsonPrimitive?.content ?: return
+
+        if (url.isValidUrl()) {
+            setUrlAttributes(span, field, index, url)
+        }
+        else {
+            logger.warn { "File url is not invalid. Received: $url" }
+        }
     }
 
+    override fun extractImageUrl(contentItem: JsonObject): String? {
+        return contentItem["image_url"]?.jsonPrimitive?.content
+    }
 }

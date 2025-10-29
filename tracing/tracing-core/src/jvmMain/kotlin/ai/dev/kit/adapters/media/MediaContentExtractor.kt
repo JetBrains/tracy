@@ -8,5 +8,6 @@ abstract class MediaContentExtractor {
         span: Span,
         field: String,
         content: JsonArray,
-    )
+        startWithIndex: Int = 0,
+    ): Int
 }
