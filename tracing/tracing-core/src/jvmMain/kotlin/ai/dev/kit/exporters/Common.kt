@@ -16,32 +16,32 @@ enum class SupportedMediaContentTypes(val type: String) {
  * Attribute IDs for uploadable media contents.
  */
 object UploadableMediaContentAttributeKeys {
-    private const val UPLOADABLE_MEDIA_CONTENT_ATTRIBUTE_NAME_PREFIX =
+    private const val KEY_NAME_PREFIX =
         "custom.uploadableMediaContent"
 
     fun type(index: Int): AttributeKey<String> {
         return AttributeKey.stringKey(
-            "$UPLOADABLE_MEDIA_CONTENT_ATTRIBUTE_NAME_PREFIX.$index.type")
+            "$KEY_NAME_PREFIX.$index.type")
     }
 
     fun url(index: Int): AttributeKey<String> {
         return AttributeKey.stringKey(
-            "$UPLOADABLE_MEDIA_CONTENT_ATTRIBUTE_NAME_PREFIX.$index.url")
+            "$KEY_NAME_PREFIX.$index.url")
     }
 
     fun contentType(index: Int): AttributeKey<String> {
         return AttributeKey.stringKey(
-            "$UPLOADABLE_MEDIA_CONTENT_ATTRIBUTE_NAME_PREFIX.$index.contentType")
+            "$KEY_NAME_PREFIX.$index.contentType")
     }
 
     fun data(index: Int): AttributeKey<String> {
         return AttributeKey.stringKey(
-            "$UPLOADABLE_MEDIA_CONTENT_ATTRIBUTE_NAME_PREFIX.$index.data")
+            "$KEY_NAME_PREFIX.$index.data")
     }
 
     fun field(index: Int): AttributeKey<String> {
         return AttributeKey.stringKey(
-            "$UPLOADABLE_MEDIA_CONTENT_ATTRIBUTE_NAME_PREFIX.$index.field")
+            "$KEY_NAME_PREFIX.$index.field")
     }
 }
 
