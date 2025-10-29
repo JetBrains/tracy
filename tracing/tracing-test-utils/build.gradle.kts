@@ -37,6 +37,7 @@ kotlin {
                 implementation(libs.kotlin.test)
                 implementation(libs.junit)
                 implementation(libs.junit.params)
+                implementation(libs.kotlinx.coroutines)
             }
         }
     }

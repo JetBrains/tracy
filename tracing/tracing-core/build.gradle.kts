@@ -37,6 +37,8 @@ kotlin {
                 implementation(libs.opentelemetry.exporter.otlp)
                 implementation(libs.opentelemetry.exporter.logging)
                 implementation(libs.opentelemetry.semconv.incubating)
+                implementation(libs.kotlinx.coroutines)
+                implementation(libs.kotlin.logging)
             }
         }
 
