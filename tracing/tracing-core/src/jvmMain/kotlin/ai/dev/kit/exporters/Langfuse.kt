@@ -1,24 +1,26 @@
 package ai.dev.kit.exporters
 
+import ai.dev.kit.common.Result
 import ai.dev.kit.tracing.LangfuseConfig
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.request.get
-import io.ktor.client.request.header
-import io.ktor.client.request.patch
-import io.ktor.client.request.post
-import io.ktor.client.request.put
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.contentType
-import io.ktor.serialization.kotlinx.json.json
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
+import io.opentelemetry.context.Context
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter
+import io.opentelemetry.sdk.trace.ReadWriteSpan
+import io.opentelemetry.sdk.trace.ReadableSpan
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder
+import io.opentelemetry.sdk.trace.SpanProcessor
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import mu.KotlinLogging
 import java.security.MessageDigest
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
@@ -26,16 +28,6 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.time.ExperimentalTime
-import io.ktor.http.isSuccess
-import io.opentelemetry.context.Context
-import io.opentelemetry.sdk.trace.ReadWriteSpan
-import io.opentelemetry.sdk.trace.ReadableSpan
-import io.opentelemetry.sdk.trace.SpanProcessor
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import ai.dev.kit.common.Result
-import ai.dev.kit.common.parseDataUrl
-import io.ktor.client.statement.bodyAsBytes
 
 
 const val LANGFUSE_BASE_URL = "https://cloud.langfuse.com"
@@ -89,8 +81,6 @@ fun setupLangfuseCredentials(
 fun SdkTracerProviderBuilder.addLangfuseSpanProcessor(
     langfuseConfig: LangfuseConfig,
 ): SdkTracerProviderBuilder {
-    println("addLangfuseSpanProcessor printed!")
-
     val otlpGrpcSpanExporter = createLangfuseExporter(
         langfuseUrl = langfuseConfig.langfuseUrl,
         langfusePublicKey = langfuseConfig.langfusePublicKey,
@@ -98,61 +88,31 @@ fun SdkTracerProviderBuilder.addLangfuseSpanProcessor(
         timeout = langfuseConfig.exporterTimeout
     )
 
+    val contentUploadingSpanProcessor = MediaContentUploadingSpanProcessor(
+        scope = CoroutineScope(Dispatchers.IO))
+
     val langfuseExportingSpanProcessor = BatchSpanProcessor
         .builder(otlpGrpcSpanExporter)
         .setScheduleDelay(3, TimeUnit.SECONDS)
         .build()
 
-    /*val trackingSpanProcessor = object : SpanProcessor {
-        override fun onStart(
-            parentContext: Context,
-            span: ReadWriteSpan
-        ) {
-            println("START: traceId: ${span.spanContext.traceId} spanId: ${span.spanContext.spanId}")
-            println("START: Span attributes: ${span.attributes}")
-        }
-
-        override fun isStartRequired(): Boolean = true
-
-        override fun onEnd(span: ReadableSpan) {
-            println("END: traceId: ${span.spanContext.traceId} spanId: ${span.spanContext.spanId}")
-            println("END: Span attributes: ${span.attributes}")
-        }
-
-        override fun isEndRequired(): Boolean = true
-    }*/
-
     addSpanProcessor(
         SpanProcessor.composite(
-            // trackingSpanProcessor,
+            contentUploadingSpanProcessor,
             langfuseExportingSpanProcessor,
         )
     )
 
-    /*
-    addSpanProcessor(
-        BatchSpanProcessor.builder(otlpGrpcSpanExporter)
-            //.setExportUnsampledSpans()
-            .setScheduleDelay(3, TimeUnit.SECONDS)
-            .build()
-    )
-    */
-
-    // TODO: addSpanProcessor()?
     return this
 }
 
 
-// TODO: remove all `!!`
+class MediaContentUploadingSpanProcessor(
+    private val scope: CoroutineScope) : SpanProcessor {
+    companion object {
+        private val logger = KotlinLogging.logger {}
+    }
 
-class MediaContentUploadingProcessor(
-    // TODO: add field into upload attributes as well!
-    private val field: String,
-    private val scope: CoroutineScope,
-    private val langfuseUrl: String? = null,
-    private val langfusePublicKey: String? = null,
-    private val langfuseSecretKey: String? = null,
-) : SpanProcessor {
     // used to request media files by URLs
     private val client = HttpClient {
         install(ContentNegotiation) {
@@ -160,43 +120,43 @@ class MediaContentUploadingProcessor(
         }
     }
 
-    init {
-        if (field !in listOf("input", "output", "metadata")) {
-            // TODO: error(..)
-        }
-    }
+    override fun onStart(parentContext: Context, span: ReadWriteSpan) {}
 
-    override fun onStart(
-        parentContext: Context,
-        span: ReadWriteSpan
-    ) {
-        println("START: traceId: ${span.spanContext.traceId} spanId: ${span.spanContext.spanId}")
-    }
-
-    override fun isStartRequired(): Boolean = true
+    override fun isStartRequired(): Boolean = false
 
     override fun onEnd(span: ReadableSpan) {
         println("END: traceId: ${span.spanContext.traceId} spanId: ${span.spanContext.spanId}")
+        val traceId = span.spanContext.traceId
 
         var index = 0
         while (span.attributes.get(UploadableMediaContentAttributeKeys.type(index)) != null) {
             val type = span.attributes.get(UploadableMediaContentAttributeKeys.type(index))
-            val traceId = span.spanContext.traceId
-            println("TYPE: $type")
+            val field = span.attributes.get(UploadableMediaContentAttributeKeys.field(index))
+                ?: error("Field attribute not found for media item at index $index")
 
             when (type) {
                 SupportedMediaContentTypes.URL.type -> {
                     val url = span.attributes.get(UploadableMediaContentAttributeKeys.url(index))
                         ?: error("URL attribute not found for media item at index $index")
-
-                    println("EXTRACTED HERE URL: $url")
-
-                    scope.launch { uploadMediaFromUrl(traceId, url) }
+                    scope.launch { uploadMediaFromUrl(traceId, field, url) }
                 }
                 SupportedMediaContentTypes.BASE64.type -> {
-                    val contentType = span.attributes.get(UploadableMediaContentAttributeKeys.contentType(index))!!
-                    val data = span.attributes.get(UploadableMediaContentAttributeKeys.data(index))!!
-                    scope.launch { uploadBase64Media(traceId, contentType, data) }
+                    val contentType = span.attributes.get(
+                        UploadableMediaContentAttributeKeys.contentType(index))
+                        ?: error("Content type attribute not found for media item at index $index")
+                    val data = span.attributes.get(UploadableMediaContentAttributeKeys.data(index))
+                        ?: error("Data attribute not found for media item at index $index")
+
+                    scope.launch {
+                        uploadMediaFileToLangfuse(
+                            params = MediaUploadParams(
+                                traceId = traceId,
+                                field = field,
+                                contentType = contentType,
+                                data = data,
+                            )
+                        )
+                    }
                 }
                 else -> error("Unsupported media content type $type")
             }
@@ -206,49 +166,30 @@ class MediaContentUploadingProcessor(
 
     override fun isEndRequired(): Boolean = true
 
-    private suspend fun uploadMediaFromUrl(traceId: String, url: String) {
-        println("extracted URL: $url")
+    private suspend fun uploadMediaFromUrl(
+        traceId: String,
+        field: String,
+        url: String,
+    ) {
         val response = client.get(url)
-        println("123 response: ${response.status}")
         val contentType = response.headers[HttpHeaders.ContentType]
         val data = Base64.getEncoder().encodeToString(response.bodyAsBytes())
 
-        println("RESULTING DATA AFTER DOWNLOAD VIA URL:")
-        println("""
-            contentType: $contentType
-            data: ${data.substring(0, data.length.coerceAtMost(100))}
-        """.trimIndent())
+        if (contentType == null) {
+            logger.warn { "Missing content type of media file at $url for trace $traceId" }
+            return
+        }
 
-        uploadBase64Media(traceId, contentType ?: "media/png", data)
-    }
-
-    private suspend fun uploadBase64Media(
-        traceId: String,
-        contentType: String,
-        data: String,
-    ) {
-        println("Extracted content type: $contentType")
-        println("Trying to upload data for $traceId")
-
-        val result = uploadMediaFileToLangfuse(
+        uploadMediaFileToLangfuse(
             params = MediaUploadParams(
                 traceId = traceId,
                 field = field,
-                dataURL = "data:$contentType;base64,$data"
+                contentType = contentType,
+                data = data,
             )
         )
-        if (result.isSuccess()) {
-            println("RESULT value: ${result.value}")
-        }
-        else {
-            println("RESULT error: ${result.error}")
-        }
     }
 }
-
-
-
-
 
 @OptIn(ExperimentalTime::class)
 suspend fun uploadMediaFileToLangfuse(
@@ -264,25 +205,11 @@ suspend fun uploadMediaFileToLangfuse(
         }
     }
 
-    // data URL format: `data:[<mediatype>][;base64],<data>`
-    val dataUrl = params.dataURL.parseDataUrl()
-
-    val contentType = params.dataURL.let {
-        val mediaTypeStartIndex = it.indexOf(":") + 1
-        val mediaTypeEndIndex = minOf(it.indexOf(","), it.indexOf(";")) + 1
-        ContentType.parse(
-            it.substring(mediaTypeStartIndex, mediaTypeEndIndex)
-        )
-    }
-    val decodedBytes = params.dataURL.let {
-        val dataStartIndex = it.indexOf(",") + 1
-        Base64.getDecoder().decode(
-            it.substring(dataStartIndex)
-        )
-    }
-    val sha256Hash = Base64.getEncoder().encodeToString(
-        MessageDigest.getInstance("SHA-256").digest(decodedBytes)
-    )
+    // ensure that media type is valid
+    val contentType = ContentType.parse(params.contentType)
+    val decodedBytes = Base64.getDecoder().decode(params.data)
+    val sha256Hash = Base64.getEncoder()
+        .encodeToString(MessageDigest.getInstance("SHA-256").digest(decodedBytes))
 
     // request upload URL from Langfuse
     /**
@@ -305,19 +232,16 @@ suspend fun uploadMediaFileToLangfuse(
         setBody(request)
     }
 
-    println("response of api/public/media: ${response.status}")
-
     if (!response.status.isSuccess()) {
         return Result.Error(
             "Failed to request an upload url and media id from the endpoint $url/api/public/media", response.status.value)
     }
 
-    println("BODY: ${response.bodyAsText()}")
     val uploadResource = response.body<PresignedUploadURL>()
 
     // put the image to the upload URL
     if (uploadResource.uploadUrl != null) {
-        // If there is no uploadUrl, file was already uploaded
+        // If there is no uploadUrl, the file was already uploaded
         val uploadResponse = client.put(uploadResource.uploadUrl) {
             // the content type of the media being uploaded
             contentType(contentType)
@@ -340,7 +264,8 @@ suspend fun uploadMediaFileToLangfuse(
                 uploadedAt = ZonedDateTime.now(ZoneOffset.UTC)
                     .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
                 uploadHttpStatus = uploadResponse.status.value,
-                uploadHttpError = "TODO",
+                uploadHttpError = if(!uploadResponse.status.isSuccess())
+                    uploadResponse.status.description else null,
             )
             setBody(request)
         }
@@ -362,10 +287,7 @@ suspend fun uploadMediaFileToLangfuse(
         return Result.Error("Failed to retrieve a media file with id ${uploadResource.mediaId}", mediaDataResponse.status.value)
     }
 
-    // println("mediaDataResponse: ${mediaDataResponse.bodyAsText()}")
-    return Result.Success(
-        mediaDataResponse.body<MediaUploadResponse>()
-    )
+    return Result.Success(mediaDataResponse.body<MediaUploadResponse>())
 }
 
 
@@ -381,7 +303,6 @@ data class MediaUploadResponse(
 )
 
 // TODO: descriptions
-// TODO: update params to create with content type and data to be split
 data class MediaUploadParams(
     val traceId: String,
     val observationId: String? = null,
@@ -391,7 +312,11 @@ data class MediaUploadParams(
      * See at [Langfuse API Reference](https://api.reference.langfuse.com/#tag/media/post/api/public/media.body.field).
      */
     val field: String,
-    val dataURL: String,
+    val contentType: String,
+    /**
+     * media file's data **encoded in the base64 format**
+     */
+    val data: String,
 )
 
 /**
