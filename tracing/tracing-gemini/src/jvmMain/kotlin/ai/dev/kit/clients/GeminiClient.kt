@@ -24,7 +24,12 @@ private fun patchClient(client: GeminiClient, interceptor: Interceptor): GeminiC
     val httpClient = httpClientField.get(apiClient)
 
     val interceptorsField = OkHttpClient::class.java.getDeclaredField("interceptors").apply { isAccessible = true }
-    interceptorsField.set(httpClient, listOf(interceptor))
+
+    try {
+        interceptorsField.set(httpClient, listOf(interceptor))
+    } catch (e: IllegalArgumentException) {
+        throw IllegalStateException("Unsupported Gemini client version. Instrumentation is supported for java-genai version 1.8.0 or higher.", e)
+    }
 
     return client
 }
