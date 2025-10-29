@@ -1,8 +1,6 @@
 package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
-import ai.dev.kit.exporters.RequestParams
-import ai.dev.kit.exporters.uploadMediaFile
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.autologging.createOpenAIClient
 import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
@@ -24,8 +22,12 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import java.io.File
 import java.util.*
+import java.util.stream.Stream
 import kotlin.jvm.optionals.getOrNull
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -44,7 +46,35 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
         System.getenv("OPENAI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
         ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
 
+    companion object {
+        sealed class ImageSource {
+            data class File(
+                val filepath: String,
+                val contentType: String,
+            ) : ImageSource()
+            data class Link(val url: String) : ImageSource()
+        }
+    }
 
+    fun provideImagesForUpload(): Stream<Arguments> {
+        return Stream.of(
+            Arguments.of(ImageSource.File(
+                filepath = "./image.jpg",
+                contentType = "image/jpeg",
+            )),
+            Arguments.of(ImageSource.Link(
+                "https://images.pexels.com/photos/104827/cat-pet-animal-domestic-104827.jpeg"))
+        )
+    }
+
+    private fun loadFileAsBase64Encoded(filepath: String): String {
+        val classLoader = Thread.currentThread().contextClassLoader
+        val file = classLoader.getResource(filepath)?.file?.let { File(it) }
+            ?: error("Could not find audio file at $filepath")
+        return Base64.getEncoder().encodeToString(file.readBytes())
+    }
+
+    /*
     @Test
     fun testSendImg() = runTest {
         val imageResourcePath = "image.jpg"
@@ -57,59 +87,117 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
             Base64.getEncoder().encodeToString(imageFile.readBytes())
         }
 
-        val params = RequestParams(
-            traceId = "88c6d2222bdf2409358d87d4603423f6",
+        val params = MediaUploadParams(
+            traceId = "3012f66a6e53834f3c50ad1161d8fc0d",
             field = "input",
-            dataURL = "data:image/jpeg;base64,$imageData",
+            contentType = "image/jpeg",
+            data = imageData,
         )
 
-        val result = uploadMediaFile(
-            params,
-            langfuseUrl = "https://langfuse.labs.jb.gg"
+        val result = uploadMediaFileToLangfuse(params)
+        assertIs<Result.Success<MediaUploadResponse>>(result)
+    }
+    */
+
+    @Test
+    fun `test audio file is extracted and uploaded on Langfuse`() = runTest {
+        val filepath = "lofi.wav"
+        val model = ChatModel.GPT_4O_AUDIO_PREVIEW
+        val prompt = "Tell me what is in the audio file"
+
+        // base64-encoded audio data
+        val audioData = loadFileAsBase64Encoded(filepath)
+        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
+
+        val contentParts = listOf<ChatCompletionContentPart>(
+            ChatCompletionContentPart.ofInputAudio(
+                ChatCompletionContentPartInputAudio.builder()
+                    .inputAudio(
+                        ChatCompletionContentPartInputAudio.InputAudio.builder()
+                            .format(ChatCompletionContentPartInputAudio.InputAudio.Format.WAV)
+                            .data(audioData)
+                            .build()
+                    )
+                    .build(),
+            ),
+            ChatCompletionContentPart.ofText(
+                ChatCompletionContentPartText.builder()
+                    .text(prompt)
+                    .build()
+            )
         )
+
+        val params = ChatCompletionCreateParams.builder()
+            .model(model)
+            .addUserMessageOfArrayOfContentParts(contentParts)
+            .build()
+
+        client.chat().completions().create(params)
     }
 
     @Test
-    fun `test parsing of image input extracts content`() = runTest {
-        // Example of image input (same structure for
-        /*
-        {
-            "messages": [{
-                "content": [
-                    { "image_url": { "url": "base64" }, "type": "image_url" },
-                    { "text": "Please describe what you see in this image.", "type": "text" }
-                ],
-                "role": "user"
-            }],
-            "model": "openai/gpt-4o"
-        }
-         */
-        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
-        val model = ChatModel.GPT_4O_MINI
-        val requestPromptMessage = "Please describe what you see in this image."
-        val imageResourcePath = "image.jpg"
+    fun `test PDF file is extracted and uploaded on Langfuse`() = runTest {
+        val model = ChatModel.GPT_4O
+        val prompt = "Please describe what you see in the PDF file."
+        val filepath = "sample.pdf"
 
-        // loading image as base64
-        val imageData = run {
-            val classLoader = Thread.currentThread().contextClassLoader
-            val imageFile = classLoader.getResource(imageResourcePath)?.file?.let { File(it) }
-                ?: error("Could not find image at $imageResourcePath")
-            Base64.getEncoder().encodeToString(imageFile.readBytes())
-        }
+        val fileData = loadFileAsBase64Encoded(filepath)
+        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
 
         val contentParts = listOf<ChatCompletionContentPart>(
-            ChatCompletionContentPart.ofImageUrl(
-                ChatCompletionContentPartImage.builder()
-                    .imageUrl(
-                        ChatCompletionContentPartImage.ImageUrl.builder()
-                            .url("data:image/jpeg;base64,${imageData}")
+            ChatCompletionContentPart.ofFile(
+                ChatCompletionContentPart.File.builder()
+                    .file(
+                        ChatCompletionContentPart.File.FileObject.builder()
+                            .fileData("data:application/pdf;base64,$fileData")
                             .build()
                     )
                     .build()
             ),
             ChatCompletionContentPart.ofText(
                 ChatCompletionContentPartText.builder()
-                    .text(requestPromptMessage)
+                    .text(prompt)
+                    .build()
+            )
+        )
+
+        val params = ChatCompletionCreateParams.builder()
+            .model(model)
+            .addUserMessageOfArrayOfContentParts(contentParts)
+            .build()
+
+        val res = client.chat().completions().create(params)
+        println(res)
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideImagesForUpload")
+    fun `test image is extracted and uploaded on Langfuse`(image: ImageSource) = runTest {
+        val model = ChatModel.GPT_4O
+        val prompt = "Please describe what you see in this image."
+
+        val url = when (image) {
+            is ImageSource.File -> {
+                // loading image as base64
+                val imageData = loadFileAsBase64Encoded(image.filepath)
+                "data:${image.contentType};base64,${imageData}"
+            }
+            is ImageSource.Link -> image.url
+        }
+
+        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
+
+        val contentParts = listOf<ChatCompletionContentPart>(
+            ChatCompletionContentPart.ofImageUrl(
+                ChatCompletionContentPartImage.builder()
+                    .imageUrl(
+                        ChatCompletionContentPartImage.ImageUrl.builder().url(url).build()
+                    )
+                    .build()
+            ),
+            ChatCompletionContentPart.ofText(
+                ChatCompletionContentPartText.builder()
+                    .text(prompt)
                     .build()
             )
         )
@@ -141,9 +229,8 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
         assertNotNull(image)
         assertNotNull(text)
-        assertEquals(requestPromptMessage, text.jsonObject["text"]!!.jsonPrimitive.content)
+        assertEquals(prompt, text.jsonObject["text"]!!.jsonPrimitive.content)
     }
-
 
     @Test
     fun `test OpenAI chat completions auto tracing`() = runTest {
