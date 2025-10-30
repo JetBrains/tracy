@@ -50,186 +50,6 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
     */
 
     @Test
-    fun `test audio file is extracted and uploaded on Langfuse`() = runTest {
-        val filepath = "lofi.wav"
-        val model = ChatModel.GPT_4O_AUDIO_PREVIEW
-        val prompt = "Tell me what is in the audio file"
-
-        // base64-encoded audio data
-        val audioData = loadFileAsBase64Encoded(filepath)
-        val client = instrument(createLiteLLMClient())
-
-        val contentParts = listOf<ChatCompletionContentPart>(
-            ChatCompletionContentPart.ofInputAudio(
-                ChatCompletionContentPartInputAudio.builder()
-                    .inputAudio(
-                        ChatCompletionContentPartInputAudio.InputAudio.builder()
-                            .format(ChatCompletionContentPartInputAudio.InputAudio.Format.WAV)
-                            .data(audioData)
-                            .build()
-                    )
-                    .build(),
-            ),
-            ChatCompletionContentPart.ofText(
-                ChatCompletionContentPartText.builder()
-                    .text(prompt)
-                    .build()
-            )
-        )
-
-        val params = ChatCompletionCreateParams.builder()
-            .model(model)
-            .addUserMessageOfArrayOfContentParts(contentParts)
-            .build()
-
-        client.chat().completions().create(params)
-    }
-
-    @Test
-    fun `test PDF file is extracted and uploaded on Langfuse`() = runTest {
-        val model = ChatModel.GPT_4O
-        val prompt = "Please describe what you see in the PDF file."
-        val media = MediaSource.File(
-            filepath = "sample.pdf",
-            contentType = "application/pdf",
-        )
-
-        val client = instrument(createLiteLLMClient())
-
-        val contentParts = listOf<ChatCompletionContentPart>(
-            ChatCompletionContentPart.ofFile(
-                ChatCompletionContentPart.File.builder()
-                    .file(
-                        ChatCompletionContentPart.File.FileObject.builder()
-                            .fileData(media.toDataUrl())
-                            .build()
-                    )
-                    .build()
-            ),
-            ChatCompletionContentPart.ofText(
-                ChatCompletionContentPartText.builder()
-                    .text(prompt)
-                    .build()
-            )
-        )
-
-        val params = ChatCompletionCreateParams.builder()
-            .model(model)
-            .addUserMessageOfArrayOfContentParts(contentParts)
-            .build()
-
-        val res = client.chat().completions().create(params)
-        println(res)
-    }
-
-    @ParameterizedTest
-    @MethodSource("provideImagesForUpload")
-    fun `test image is extracted and uploaded on Langfuse`(image: MediaSource) = runTest {
-        val model = ChatModel.GPT_4O
-        val prompt = "Please describe what you see in this image."
-
-        val url = when (image) {
-            is MediaSource.File -> image.toDataUrl()
-            is MediaSource.Link -> image.url
-        }
-
-        val client = instrument(createLiteLLMClient())
-
-        val contentParts = listOf<ChatCompletionContentPart>(
-            ChatCompletionContentPart.ofImageUrl(
-                ChatCompletionContentPartImage.builder()
-                    .imageUrl(
-                        ChatCompletionContentPartImage.ImageUrl.builder()
-                            .url(url)
-                            .build()
-                    )
-                    .build()
-            ),
-            ChatCompletionContentPart.ofText(
-                ChatCompletionContentPartText.builder()
-                    .text(prompt)
-                    .build()
-            )
-        )
-
-        val params = ChatCompletionCreateParams.builder()
-            .model(model)
-            .addUserMessageOfArrayOfContentParts(contentParts)
-            .build()
-
-        // send request
-        client.chat().completions().create(params)
-
-        // expect the content of a request to be captures successfully
-        validateBasicTracing()
-
-        // TODO: check for media upload attributes & move into a method to use in other test cases
-        val trace = analyzeSpans().first()
-        val requestContent = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
-
-        assertNotNull(requestContent)
-        assertTrue(requestContent.isNotEmpty())
-
-        val json = Json.parseToJsonElement(requestContent)
-        // expect the JSON is an array with two elements
-        assertIs<kotlinx.serialization.json.JsonArray>(json)
-        assertEquals(2, json.jsonArray.size)
-
-        val image = json.jsonArray.firstOrNull { it.jsonObject["type"]!!.jsonPrimitive.content == "image_url" }
-        val text = json.jsonArray.firstOrNull { it.jsonObject["type"]!!.jsonPrimitive.content == "text" }
-
-        assertNotNull(image)
-        assertNotNull(text)
-        assertEquals(prompt, text.jsonObject["text"]!!.jsonPrimitive.content)
-    }
-
-    private fun partText(prompt: String) = ChatCompletionContentPart.ofText(
-        ChatCompletionContentPartText.builder()
-            .text(prompt)
-            .build()
-    )
-
-    private fun partImage(media: MediaSource): ChatCompletionContentPart {
-        val url = when (media) {
-            is MediaSource.File -> media.toDataUrl()
-            is MediaSource.Link -> media.url
-        }
-        return ChatCompletionContentPart.ofImageUrl(
-            ChatCompletionContentPartImage.builder()
-                .imageUrl(
-                    ChatCompletionContentPartImage.ImageUrl.builder()
-                        .url(url)
-                        .build()
-                )
-                .build()
-        )
-    }
-
-    private fun partFile(media: MediaSource.File) = ChatCompletionContentPart.ofFile(
-        ChatCompletionContentPart.File.builder()
-            .file(
-                ChatCompletionContentPart.File.FileObject.builder()
-                    .fileData(media.toDataUrl())
-                    .build()
-            )
-            .build()
-    )
-
-    /**
-     * @param audioData base64-encoded data of an audio file (Note: **NOT** a data URL)
-     */
-    private fun partAudio(audioData: String) = ChatCompletionContentPart.ofInputAudio(
-        ChatCompletionContentPartInputAudio.builder()
-            .inputAudio(
-                ChatCompletionContentPartInputAudio.InputAudio.builder()
-                    .format(ChatCompletionContentPartInputAudio.InputAudio.Format.WAV)
-                    .data(audioData)
-                    .build()
-            )
-            .build(),
-    )
-
-    @Test
     fun `test OpenAI chat completions auto tracing`() = runTest {
         val client = instrument(createLiteLLMClient())
         val params = ChatCompletionCreateParams.builder()
@@ -386,4 +206,137 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
         validateStreaming(sb.toString())
     }
+
+    @Test
+    fun `test audio file is extracted and uploaded on Langfuse`() = runTest {
+        val filepath = "lofi.wav"
+        val model = ChatModel.GPT_4O_AUDIO_PREVIEW
+        val prompt = "Tell me what is in the audio file"
+
+        // base64-encoded audio data
+        val audioData = loadFileAsBase64Encoded(filepath)
+        val client = instrument(createLiteLLMClient())
+
+        val params = ChatCompletionCreateParams.builder()
+            .model(model)
+            .addUserMessageOfArrayOfContentParts(listOf(
+                partAudio(audioData),
+                partText(prompt),
+            ))
+            .build()
+
+        client.chat().completions().create(params)
+    }
+
+    @Test
+    fun `test PDF file is extracted and uploaded on Langfuse`() = runTest {
+        val model = ChatModel.GPT_4O
+        val prompt = "Please describe what you see in the PDF file."
+        val media = MediaSource.File(
+            filepath = "sample.pdf",
+            contentType = "application/pdf",
+        )
+
+        val client = instrument(createLiteLLMClient())
+
+        val params = ChatCompletionCreateParams.builder()
+            .model(model)
+            .addUserMessageOfArrayOfContentParts(listOf(
+                partFile(media),
+                partText(prompt),
+            ))
+            .build()
+
+        val res = client.chat().completions().create(params)
+        println(res)
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideImagesForUpload")
+    fun `test image is extracted and uploaded on Langfuse`(image: MediaSource) = runTest {
+        val model = ChatModel.GPT_4O
+        val prompt = "Please describe what you see in this image."
+
+        val client = instrument(createLiteLLMClient())
+
+        val params = ChatCompletionCreateParams.builder()
+            .model(model)
+            .addUserMessageOfArrayOfContentParts(listOf(
+                partImage(image),
+                partText(prompt),
+            ))
+            .build()
+
+        // send request
+        client.chat().completions().create(params)
+
+        // expect the content of a request to be captures successfully
+        validateBasicTracing()
+
+        // TODO: check for media upload attributes & move into a method to use in other test cases
+        val trace = analyzeSpans().first()
+        val requestContent = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
+
+        assertNotNull(requestContent)
+        assertTrue(requestContent.isNotEmpty())
+
+        val json = Json.parseToJsonElement(requestContent)
+        // expect the JSON is an array with two elements
+        assertIs<kotlinx.serialization.json.JsonArray>(json)
+        assertEquals(2, json.jsonArray.size)
+
+        val image = json.jsonArray.firstOrNull { it.jsonObject["type"]!!.jsonPrimitive.content == "image_url" }
+        val text = json.jsonArray.firstOrNull { it.jsonObject["type"]!!.jsonPrimitive.content == "text" }
+
+        assertNotNull(image)
+        assertNotNull(text)
+        assertEquals(prompt, text.jsonObject["text"]!!.jsonPrimitive.content)
+    }
+
+
+    private fun partText(prompt: String) = ChatCompletionContentPart.ofText(
+        ChatCompletionContentPartText.builder()
+            .text(prompt)
+            .build()
+    )
+
+    private fun partImage(media: MediaSource): ChatCompletionContentPart {
+        val url = when (media) {
+            is MediaSource.File -> media.toDataUrl()
+            is MediaSource.Link -> media.url
+        }
+        return ChatCompletionContentPart.ofImageUrl(
+            ChatCompletionContentPartImage.builder()
+                .imageUrl(
+                    ChatCompletionContentPartImage.ImageUrl.builder()
+                        .url(url)
+                        .build()
+                )
+                .build()
+        )
+    }
+
+    private fun partFile(media: MediaSource.File) = ChatCompletionContentPart.ofFile(
+        ChatCompletionContentPart.File.builder()
+            .file(
+                ChatCompletionContentPart.File.FileObject.builder()
+                    .fileData(media.toDataUrl())
+                    .build()
+            )
+            .build()
+    )
+
+    /**
+     * @param audioData base64-encoded data of an audio file (Note: **NOT** a data URL)
+     */
+    private fun partAudio(audioData: String) = ChatCompletionContentPart.ofInputAudio(
+        ChatCompletionContentPartInputAudio.builder()
+            .inputAudio(
+                ChatCompletionContentPartInputAudio.InputAudio.builder()
+                    .format(ChatCompletionContentPartInputAudio.InputAudio.Format.WAV)
+                    .data(audioData)
+                    .build()
+            )
+            .build(),
+    )
 }
