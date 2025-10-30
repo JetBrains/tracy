@@ -53,9 +53,14 @@ internal abstract class OpenAIMediaContentExtractor(
         content: JsonArray,
     ) {
         var index = 0
+        val supportedTypes = listOf(tags.image, tags.audio, tags.file)
+
         for (item in content) {
             val type = item.jsonObject["type"]?.jsonPrimitive?.content
-                ?: continue
+            if (type == null || type !in supportedTypes) {
+                continue
+            }
+
             when (type) {
                 tags.image ->
                     setImageUrlAttributes(span, field, index, item.jsonObject)
@@ -147,13 +152,22 @@ internal class ResponsesMediaContentExtractor : OpenAIMediaContentExtractor(
 
     override fun setFileInputAttributes(
         span: Span, field: String, index: Int, contentItem: JsonObject) {
-        val url = contentItem["file_url"]?.jsonPrimitive?.content ?: return
 
-        if (url.isValidUrl()) {
-            setUrlAttributes(span, field, index, url)
+        if ("file_url" in contentItem) {
+            val url = contentItem["file_url"]?.jsonPrimitive?.content ?: return
+            if (url.isValidUrl()) {
+                setUrlAttributes(span, field, index, url)
+            }
+            else {
+                logger.warn { "File url is not invalid. Received: $url" }
+            }
+        }
+        else if ("file_data" in contentItem) {
+            val dataUrl = contentItem["file_data"]?.jsonPrimitive?.content?.parseDataUrl() ?: return
+            setDataUrlAttributes(span, field, index, dataUrl)
         }
         else {
-            logger.warn { "File url is not invalid. Received: $url" }
+            logger.warn { "Unknown content item structure for file input at index $index" }
         }
     }
 
