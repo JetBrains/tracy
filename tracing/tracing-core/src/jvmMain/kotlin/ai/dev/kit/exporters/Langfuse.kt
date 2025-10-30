@@ -108,7 +108,8 @@ fun SdkTracerProviderBuilder.addLangfuseSpanProcessor(
 
 
 class MediaContentUploadingSpanProcessor(
-    private val scope: CoroutineScope) : SpanProcessor {
+    private val scope: CoroutineScope
+) : SpanProcessor {
     companion object {
         private val logger = KotlinLogging.logger {}
     }
@@ -129,22 +130,23 @@ class MediaContentUploadingSpanProcessor(
         val traceId = span.spanContext.traceId
 
         var index = 0
-        while (span.attributes.get(UploadableMediaContentAttributeKeys.type(index)) != null) {
-            val type = span.attributes.get(UploadableMediaContentAttributeKeys.type(index))
-            val field = span.attributes.get(UploadableMediaContentAttributeKeys.field(index))
+        while (span.attributes.get(UploadableMediaContentAttributeKeys.forIndex(index).type) != null) {
+            val keys = UploadableMediaContentAttributeKeys.forIndex(index)
+
+            val type = span.attributes.get(keys.type)
+            val field = span.attributes.get(keys.field)
                 ?: error("Field attribute not found for media item at index $index")
 
             when (type) {
                 SupportedMediaContentTypes.URL.type -> {
-                    val url = span.attributes.get(UploadableMediaContentAttributeKeys.url(index))
+                    val url = span.attributes.get(keys.url)
                         ?: error("URL attribute not found for media item at index $index")
                     scope.launch { uploadMediaFromUrl(traceId, field, url) }
                 }
                 SupportedMediaContentTypes.BASE64.type -> {
-                    val contentType = span.attributes.get(
-                        UploadableMediaContentAttributeKeys.contentType(index))
+                    val contentType = span.attributes.get(keys.contentType)
                         ?: error("Content type attribute not found for media item at index $index")
-                    val data = span.attributes.get(UploadableMediaContentAttributeKeys.data(index))
+                    val data = span.attributes.get(keys.data)
                         ?: error("Data attribute not found for media item at index $index")
 
                     scope.launch {
@@ -160,6 +162,7 @@ class MediaContentUploadingSpanProcessor(
                 }
                 else -> error("Unsupported media content type $type")
             }
+
             ++index
         }
     }
@@ -180,7 +183,8 @@ class MediaContentUploadingSpanProcessor(
             return
         }
 
-        uploadMediaFileToLangfuse(
+        println("Image downloaded for trace $traceId from $url")
+        val res = uploadMediaFileToLangfuse(
             params = MediaUploadParams(
                 traceId = traceId,
                 field = field,
@@ -188,6 +192,7 @@ class MediaContentUploadingSpanProcessor(
                 data = data,
             )
         )
+        println(res)
     }
 }
 
@@ -211,6 +216,8 @@ suspend fun uploadMediaFileToLangfuse(
     val sha256Hash = Base64.getEncoder()
         .encodeToString(MessageDigest.getInstance("SHA-256").digest(decodedBytes))
 
+    println("sha: $sha256Hash")
+
     // request upload URL from Langfuse
     /**
      * Get upload URL and media ID.
@@ -231,6 +238,8 @@ suspend fun uploadMediaFileToLangfuse(
         )
         setBody(request)
     }
+
+    println("public/media: $response")
 
     if (!response.status.isSuccess()) {
         return Result.Error(

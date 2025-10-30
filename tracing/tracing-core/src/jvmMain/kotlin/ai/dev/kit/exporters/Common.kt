@@ -15,33 +15,26 @@ enum class SupportedMediaContentTypes(val type: String) {
 /**
  * Attribute IDs for uploadable media contents.
  */
-object UploadableMediaContentAttributeKeys {
-    private const val KEY_NAME_PREFIX = "custom.uploadableMediaContent"
-
-    fun type(index: Int): AttributeKey<String> {
-        return AttributeKey.stringKey(
-            "$KEY_NAME_PREFIX.$index.type")
+class UploadableMediaContentAttributeKeys private constructor(private val index: Int) {
+    companion object {
+        private const val KEY_NAME_PREFIX = "custom.uploadableMediaContent"
+        fun forIndex(index: Int) = UploadableMediaContentAttributeKeys(index)
     }
 
-    fun url(index: Int): AttributeKey<String> {
-        return AttributeKey.stringKey(
-            "$KEY_NAME_PREFIX.$index.url")
-    }
+    val type: AttributeKey<String>
+        get() = AttributeKey.stringKey("$KEY_NAME_PREFIX.$index.type")
 
-    fun contentType(index: Int): AttributeKey<String> {
-        return AttributeKey.stringKey(
-            "$KEY_NAME_PREFIX.$index.contentType")
-    }
+    val url: AttributeKey<String>
+        get() = AttributeKey.stringKey("$KEY_NAME_PREFIX.$index.url")
 
-    fun data(index: Int): AttributeKey<String> {
-        return AttributeKey.stringKey(
-            "$KEY_NAME_PREFIX.$index.data")
-    }
+    val contentType: AttributeKey<String>
+        get() = AttributeKey.stringKey("$KEY_NAME_PREFIX.$index.contentType")
 
-    fun field(index: Int): AttributeKey<String> {
-        return AttributeKey.stringKey(
-            "$KEY_NAME_PREFIX.$index.field")
-    }
+    val data: AttributeKey<String>
+        get() = AttributeKey.stringKey("$KEY_NAME_PREFIX.$index.data")
+
+    val field: AttributeKey<String>
+        get() = AttributeKey.stringKey("$KEY_NAME_PREFIX.$index.field")
 }
 
 private const val WARNING_URL_LENGTH_LIMIT = 200
@@ -62,14 +55,11 @@ fun setUrlAttributes(
     if (!url.isValidUrl()) {
         return Result.Error("Expected a valid URL, received: $url")
     }
+    val keys = UploadableMediaContentAttributeKeys.forIndex(index)
 
-    val typeKey = UploadableMediaContentAttributeKeys.type(index)
-    val fieldKey = UploadableMediaContentAttributeKeys.field(index)
-    val urlKey = UploadableMediaContentAttributeKeys.url(index)
-
-    span.setAttribute(typeKey, SupportedMediaContentTypes.URL.type)
-    span.setAttribute(fieldKey, field)
-    span.setAttribute(urlKey, url)
+    span.setAttribute(keys.type, SupportedMediaContentTypes.URL.type)
+    span.setAttribute(keys.field, field)
+    span.setAttribute(keys.url, url)
 
     return Result.Success(Unit)
 }
@@ -94,15 +84,12 @@ fun setDataUrlAttributes(
         return Result.Error("Expect base64 encoding for the data url, received '$trimmed'")
     }
 
-    val typeKey = UploadableMediaContentAttributeKeys.type(index)
-    val fieldKey = UploadableMediaContentAttributeKeys.field(index)
-    val contentTypeKey = UploadableMediaContentAttributeKeys.contentType(index)
-    val dataKey = UploadableMediaContentAttributeKeys.data(index)
+    val keys = UploadableMediaContentAttributeKeys.forIndex(index)
 
-    span.setAttribute(typeKey, SupportedMediaContentTypes.BASE64.type)
-    span.setAttribute(fieldKey, field)
-    span.setAttribute(contentTypeKey, dataUrl.mediaType)
-    span.setAttribute(dataKey, dataUrl.data)
+    span.setAttribute(keys.type, SupportedMediaContentTypes.BASE64.type)
+    span.setAttribute(keys.field, field)
+    span.setAttribute(keys.contentType, dataUrl.mediaType)
+    span.setAttribute(keys.data, dataUrl.data)
 
     return Result.Success(Unit)
 }
