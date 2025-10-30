@@ -29,7 +29,6 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.time.ExperimentalTime
 
-
 const val LANGFUSE_BASE_URL = "https://cloud.langfuse.com"
 
 /**
@@ -106,7 +105,15 @@ fun SdkTracerProviderBuilder.addLangfuseSpanProcessor(
     return this
 }
 
-
+/**
+ * Extracts attributes of media content attached to the span
+ * and uploads it to Langfuse linking to the given trace.
+ *
+ * Allows viewing of media content on Langfuse UI.
+ *
+ * @see UploadableMediaContentAttributeKeys
+ * @see uploadMediaFileToLangfuse
+ */
 class MediaContentUploadingSpanProcessor(
     private val scope: CoroutineScope
 ) : SpanProcessor {
@@ -193,6 +200,11 @@ class MediaContentUploadingSpanProcessor(
     }
 }
 
+/**
+ * Uploads media content to Langfuse and links it to the given trace
+ *
+ * @see MediaUploadParams
+ */
 @OptIn(ExperimentalTime::class)
 suspend fun uploadMediaFileToLangfuse(
     params: MediaUploadParams,
@@ -276,7 +288,8 @@ suspend fun uploadMediaFileToLangfuse(
         }
     }
 
-    // retrieve the media data from Langfuse
+    // retrieving the media data from Langfuse,
+    // see details here: https://api.reference.langfuse.com/#tag/media/get/api/public/media/{mediaId}
     val mediaDataResponse = client.get("$url/api/public/media/${uploadResource.mediaId}") {
         header(HttpHeaders.Authorization, "Basic $auth")
     }
@@ -288,8 +301,11 @@ suspend fun uploadMediaFileToLangfuse(
     return Result.Success(mediaDataResponse.body<MediaUploadResponse>())
 }
 
-
-
+/**
+ * Information about the media content uploaded to Langfuse.
+ *
+ * @see uploadMediaFileToLangfuse
+ */
 @Serializable
 data class MediaUploadResponse(
     val mediaId: String,
@@ -300,7 +316,11 @@ data class MediaUploadResponse(
     val uploadedAt: String,
 )
 
-// TODO: descriptions
+/**
+ * Parameters needed to upload media content to Langfuse.
+ *
+ * @see uploadMediaFileToLangfuse
+ */
 data class MediaUploadParams(
     val traceId: String,
     val observationId: String? = null,
@@ -315,7 +335,17 @@ data class MediaUploadParams(
      * media file's data **encoded in the base64 format**
      */
     val data: String,
-)
+) {
+    companion object {
+        private val supportedFields = listOf("input", "output", "metadata")
+    }
+
+    init {
+        if (field !in supportedFields) {
+            error("Wrong field value: $field, supported fields: ${supportedFields.joinToString()}")
+        }
+    }
+}
 
 /**
  * See the schema definition [here](https://api.reference.langfuse.com/#tag/media/post/api/public/media).
@@ -350,12 +380,14 @@ private data class PresignedUploadURL(
     val mediaId: String,
 )
 
-
+/**
+ * The request schema of the `api/public/media/{mediaId}` endpoint.
+ *
+ * See details [here](https://api.reference.langfuse.com/#tag/media/patch/api/public/media/{mediaId}).
+ */
 @Serializable
 private data class MediaUploadDetailsRequest(
     val uploadedAt: String,
     val uploadHttpStatus: Int,
     val uploadHttpError: String? = null,
 )
-
-

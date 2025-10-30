@@ -2,7 +2,6 @@ package ai.dev.kit.common
 
 import java.net.URL
 
-// TODO: test it
 /**
  * Parses a data URL extracting media type, headers, and data.
  *
@@ -65,6 +64,11 @@ fun String.parseDataUrl(): DataUrl? {
     )
 }
 
+/**
+ * Parts of the data URL.
+ *
+ * See details [here](https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/data#syntax).
+ */
 data class DataUrl(
     val mediaType: String,
     val headers: Map<String, String>,
@@ -89,7 +93,7 @@ fun String.isValidUrl(): Boolean {
     return try {
         URL(this)
         true
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         false
     }
 }

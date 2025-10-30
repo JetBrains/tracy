@@ -1,8 +1,7 @@
 package ai.dev.kit.common
 
 /**
- * Describes the result of an arbitrary operation,
- * either an operation's result or an error.
+ * Describes the result of an arbitrary operation, either an operation's result or an error.
  */
 sealed class Result<out T> {
     data class Success<T>(val data: T) : Result<T>()

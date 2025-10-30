@@ -91,6 +91,9 @@ internal class ResponsesApiHandler(
         }
     }
 
+    /**
+     * @param field must be one of: 'input', 'output' or 'metadata' (see [ai.dev.kit.exporters.MediaUploadParams.field])
+     */
     private fun attachMediaContentAttributes(span: Span, field: String, inputs: JsonArray) {
         // set attributes with media attachments info into the span
         for (input in inputs) {

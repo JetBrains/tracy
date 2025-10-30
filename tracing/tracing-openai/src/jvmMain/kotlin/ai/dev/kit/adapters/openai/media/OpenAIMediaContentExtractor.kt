@@ -13,17 +13,29 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mu.KotlinLogging
 
+/**
+ * Types of media content supported by OpenAI.
+ *
+ * @see ChatCompletions
+ * @see ResponsesApi
+ */
 internal sealed class SupportedContentTypeTags(
     val image: String,
     val audio: String?,
     val file: String,
 ) {
+    /**
+     * See details: [Responses API Docs](https://platform.openai.com/docs/api-reference/responses/create#responses_create-input-input_item_list-input_message-content)
+     */
     object ChatCompletions : SupportedContentTypeTags(
         image = "image_url",
         audio = "input_audio",
         file = "file",
     )
 
+    /**
+     * See details: [Chat Completions API Docs](https://platform.openai.com/docs/api-reference/chat/create)
+     */
     object ResponsesApi : SupportedContentTypeTags(
         image = "input_image",
         audio = null,
@@ -31,6 +43,13 @@ internal sealed class SupportedContentTypeTags(
     )
 }
 
+/**
+ * OpenAI-oriented extract of media content
+ *
+ * @see ChatCompletionsMediaContentExtractor
+ * @see ResponsesMediaContentExtractor
+ * @see MediaContentExtractor
+ */
 internal abstract class OpenAIMediaContentExtractor(
     private val tags: SupportedContentTypeTags
 ) : MediaContentExtractor() {
@@ -99,7 +118,11 @@ internal abstract class OpenAIMediaContentExtractor(
         span: Span, field: String, index: Int, contentItem: JsonObject)
 }
 
-
+/**
+ * Implementation of media content extractor for Chat Completions API.
+ *
+ * See details: [Chat Completions API](https://platform.openai.com/docs/api-reference/chat/create)
+ */
 internal class ChatCompletionsMediaContentExtractor : OpenAIMediaContentExtractor(
     tags = SupportedContentTypeTags.ChatCompletions,
 ) {
@@ -142,6 +165,11 @@ internal class ChatCompletionsMediaContentExtractor : OpenAIMediaContentExtracto
     }
 }
 
+/**
+ * Implementation of media content extractor for Responses API.
+ *
+ * See details: [Responses API](https://platform.openai.com/docs/api-reference/responses/create)
+ */
 internal class ResponsesMediaContentExtractor : OpenAIMediaContentExtractor(
     tags = SupportedContentTypeTags.ResponsesApi
 ) {
