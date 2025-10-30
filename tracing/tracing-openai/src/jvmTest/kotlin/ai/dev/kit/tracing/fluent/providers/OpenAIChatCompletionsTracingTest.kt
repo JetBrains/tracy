@@ -209,18 +209,16 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test audio file is extracted and uploaded on Langfuse`() = runTest {
-        val filepath = "lofi.wav"
         val model = ChatModel.GPT_4O_AUDIO_PREVIEW
         val prompt = "Tell me what is in the audio file"
+        val filepath = "lofi.wav"
 
-        // base64-encoded audio data
-        val audioData = loadFileAsBase64Encoded(filepath)
         val client = instrument(createLiteLLMClient())
 
         val params = ChatCompletionCreateParams.builder()
             .model(model)
             .addUserMessageOfArrayOfContentParts(listOf(
-                partAudio(audioData),
+                partAudio(filepath),
                 partText(prompt),
             ))
             .build()
@@ -293,6 +291,57 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
         assertEquals(prompt, text.jsonObject["text"]!!.jsonPrimitive.content)
     }
 
+    @Test
+    fun `test two images sent simultaneously are both uploaded on Langfuse`() = runTest {
+        val model = ChatModel.GPT_4O
+        val prompt = "Please describe what you see in both images."
+
+        val client = instrument(createLiteLLMClient())
+
+        val images = listOf(
+            MediaSource.File(filepath = "image.jpg", contentType = "image/jpeg"),
+            MediaSource.Link(CAT_IMAGE_URL),
+        )
+
+        // insert both images and the prompt
+        val parts: List<ChatCompletionContentPart> = images.map { partImage(it) } + partText(prompt)
+
+        val params = ChatCompletionCreateParams.builder()
+            .model(model)
+            .addUserMessageOfArrayOfContentParts(parts)
+            .build()
+
+        // send request
+        client.chat().completions().create(params)
+
+        // expect the content of a request to be captures successfully
+        validateBasicTracing()
+        Thread.sleep(3000)
+    }
+
+    @Test
+    fun `test several media types sent simultaneously are uploaded on Langfuse`() = runTest {
+        val model = ChatModel.GPT_4O
+        val prompt = "Please describe every media item attached"
+
+        val client = instrument(createLiteLLMClient())
+
+        val image = partImage(MediaSource.File("image.jpg", "image/jpeg"))
+        val file = partFile(MediaSource.File("sample.pdf", "application/pdf"))
+        val text = partText(prompt)
+
+        val params = ChatCompletionCreateParams.builder()
+            .model(model)
+            .addUserMessageOfArrayOfContentParts(listOf(image, file, text))
+            .build()
+
+        // send request
+        client.chat().completions().create(params)
+
+        // expect the content of a request to be captures successfully
+        validateBasicTracing()
+        Thread.sleep(3000)
+    }
 
     private fun partText(prompt: String) = ChatCompletionContentPart.ofText(
         ChatCompletionContentPartText.builder()
@@ -326,17 +375,24 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
             .build()
     )
 
-    /**
-     * @param audioData base64-encoded data of an audio file (Note: **NOT** a data URL)
-     */
-    private fun partAudio(audioData: String) = ChatCompletionContentPart.ofInputAudio(
-        ChatCompletionContentPartInputAudio.builder()
-            .inputAudio(
-                ChatCompletionContentPartInputAudio.InputAudio.builder()
-                    .format(ChatCompletionContentPartInputAudio.InputAudio.Format.WAV)
-                    .data(audioData)
-                    .build()
-            )
-            .build(),
-    )
+    private fun partAudio(filepath: String): ChatCompletionContentPart {
+        val audioData = loadFileAsBase64Encoded(filepath)
+        val ext = filepath.substringAfterLast(".")
+        val format = when (ext) {
+            "wav" -> ChatCompletionContentPartInputAudio.InputAudio.Format.WAV
+            "mp3" -> ChatCompletionContentPartInputAudio.InputAudio.Format.MP3
+            else -> error("Unsupported file format $ext at $filepath")
+        }
+
+        return ChatCompletionContentPart.ofInputAudio(
+            ChatCompletionContentPartInputAudio.builder()
+                .inputAudio(
+                    ChatCompletionContentPartInputAudio.InputAudio.builder()
+                        .format(format)
+                        .data(audioData)
+                        .build()
+                )
+                .build(),
+        )
+    }
 }

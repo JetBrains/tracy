@@ -5,12 +5,7 @@ import ai.dev.kit.tracing.autologging.createLiteLLMClient
 import ai.dev.kit.tracing.fluent.providers.BaseOpenAITracingTest.Companion.MediaSource
 import com.openai.core.JsonValue
 import com.openai.models.ChatModel
-import com.openai.models.responses.ResponseCreateParams
-import com.openai.models.responses.ResponseInputContent
-import com.openai.models.responses.ResponseInputFile
-import com.openai.models.responses.ResponseInputImage
-import com.openai.models.responses.ResponseInputItem
-import com.openai.models.responses.ResponseInputText
+import com.openai.models.responses.*
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -242,7 +237,6 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
 
         Thread.sleep(3000)
     }
-
 
     private fun inputWith(vararg content: ResponseInputContent) = ResponseCreateParams.Input
         .ofResponse(listOf(

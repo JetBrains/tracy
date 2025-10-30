@@ -220,8 +220,7 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
                 filepath = "./image.jpg",
                 contentType = "image/jpeg",
             )),
-            Arguments.of(MediaSource.Link(
-                "https://images.pexels.com/photos/104827/cat-pet-animal-domestic-104827.jpeg"))
+            Arguments.of(MediaSource.Link(CAT_IMAGE_URL))
         )
     }
 
@@ -241,10 +240,15 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
     }
 
     protected fun loadFileAsBase64Encoded(filepath: String): String {
+        val file = loadFile(filepath)
+        return Base64.getEncoder().encodeToString(file.readBytes())
+    }
+
+    protected fun loadFile(filepath: String): File {
         val classLoader = Thread.currentThread().contextClassLoader
         val file = classLoader.getResource(filepath)?.file?.let { File(it) }
             ?: error("Could not find audio file at $filepath")
-        return Base64.getEncoder().encodeToString(file.readBytes())
+        return file
     }
 
     protected val ChatCompletionMessageToolCall.id: String
@@ -276,6 +280,8 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
         }
 
     companion object {
+        protected const val CAT_IMAGE_URL = "https://images.pexels.com/photos/104827/cat-pet-animal-domestic-104827.jpeg"
+
         sealed class MediaSource {
             data class File(
                 val filepath: String,
