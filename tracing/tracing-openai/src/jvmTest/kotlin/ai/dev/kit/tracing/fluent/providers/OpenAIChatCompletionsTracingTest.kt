@@ -2,6 +2,7 @@ package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.autologging.createLiteLLMClient
+import ai.dev.kit.tracing.fluent.providers.BaseOpenAITracingTest.Companion.MediaSource
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.*
 import io.opentelemetry.api.common.AttributeKey
@@ -13,11 +14,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import java.io.File
-import java.util.*
-import java.util.stream.Stream
 import kotlin.jvm.optionals.getOrNull
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -92,9 +89,11 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
     fun `test PDF file is extracted and uploaded on Langfuse`() = runTest {
         val model = ChatModel.GPT_4O
         val prompt = "Please describe what you see in the PDF file."
-        val filepath = "sample.pdf"
+        val media = MediaSource.File(
+            filepath = "sample.pdf",
+            contentType = "application/pdf",
+        )
 
-        val fileData = loadFileAsBase64Encoded(filepath)
         val client = instrument(createLiteLLMClient())
 
         val contentParts = listOf<ChatCompletionContentPart>(
@@ -102,7 +101,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
                 ChatCompletionContentPart.File.builder()
                     .file(
                         ChatCompletionContentPart.File.FileObject.builder()
-                            .fileData("data:application/pdf;base64,$fileData")
+                            .fileData(media.toDataUrl())
                             .build()
                     )
                     .build()
@@ -125,17 +124,13 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
     @ParameterizedTest
     @MethodSource("provideImagesForUpload")
-    fun `test image is extracted and uploaded on Langfuse`(image: ImageSource) = runTest {
+    fun `test image is extracted and uploaded on Langfuse`(image: MediaSource) = runTest {
         val model = ChatModel.GPT_4O
         val prompt = "Please describe what you see in this image."
 
         val url = when (image) {
-            is ImageSource.File -> {
-                // loading image as base64
-                val imageData = loadFileAsBase64Encoded(image.filepath)
-                "data:${image.contentType};base64,${imageData}"
-            }
-            is ImageSource.Link -> image.url
+            is MediaSource.File -> image.toDataUrl()
+            is MediaSource.Link -> image.url
         }
 
         val client = instrument(createLiteLLMClient())
@@ -144,7 +139,9 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
             ChatCompletionContentPart.ofImageUrl(
                 ChatCompletionContentPartImage.builder()
                     .imageUrl(
-                        ChatCompletionContentPartImage.ImageUrl.builder().url(url).build()
+                        ChatCompletionContentPartImage.ImageUrl.builder()
+                            .url(url)
+                            .build()
                     )
                     .build()
             ),
@@ -166,6 +163,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
         // expect the content of a request to be captures successfully
         validateBasicTracing()
 
+        // TODO: check for media upload attributes & move into a method to use in other test cases
         val trace = analyzeSpans().first()
         val requestContent = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
 
@@ -184,6 +182,52 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
         assertNotNull(text)
         assertEquals(prompt, text.jsonObject["text"]!!.jsonPrimitive.content)
     }
+
+    private fun partText(prompt: String) = ChatCompletionContentPart.ofText(
+        ChatCompletionContentPartText.builder()
+            .text(prompt)
+            .build()
+    )
+
+    private fun partImage(media: MediaSource): ChatCompletionContentPart {
+        val url = when (media) {
+            is MediaSource.File -> media.toDataUrl()
+            is MediaSource.Link -> media.url
+        }
+        return ChatCompletionContentPart.ofImageUrl(
+            ChatCompletionContentPartImage.builder()
+                .imageUrl(
+                    ChatCompletionContentPartImage.ImageUrl.builder()
+                        .url(url)
+                        .build()
+                )
+                .build()
+        )
+    }
+
+    private fun partFile(media: MediaSource.File) = ChatCompletionContentPart.ofFile(
+        ChatCompletionContentPart.File.builder()
+            .file(
+                ChatCompletionContentPart.File.FileObject.builder()
+                    .fileData(media.toDataUrl())
+                    .build()
+            )
+            .build()
+    )
+
+    /**
+     * @param audioData base64-encoded data of an audio file (Note: **NOT** a data URL)
+     */
+    private fun partAudio(audioData: String) = ChatCompletionContentPart.ofInputAudio(
+        ChatCompletionContentPartInputAudio.builder()
+            .inputAudio(
+                ChatCompletionContentPartInputAudio.InputAudio.builder()
+                    .format(ChatCompletionContentPartInputAudio.InputAudio.Format.WAV)
+                    .data(audioData)
+                    .build()
+            )
+            .build(),
+    )
 
     @Test
     fun `test OpenAI chat completions auto tracing`() = runTest {
@@ -341,33 +385,5 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
         }
 
         validateStreaming(sb.toString())
-    }
-
-    companion object {
-        sealed class ImageSource {
-            data class File(
-                val filepath: String,
-                val contentType: String,
-            ) : ImageSource()
-            data class Link(val url: String) : ImageSource()
-        }
-    }
-
-    fun provideImagesForUpload(): Stream<Arguments> {
-        return Stream.of(
-            Arguments.of(ImageSource.File(
-                filepath = "./image.jpg",
-                contentType = "image/jpeg",
-            )),
-            Arguments.of(ImageSource.Link(
-                "https://images.pexels.com/photos/104827/cat-pet-animal-domestic-104827.jpeg"))
-        )
-    }
-
-    private fun loadFileAsBase64Encoded(filepath: String): String {
-        val classLoader = Thread.currentThread().contextClassLoader
-        val file = classLoader.getResource(filepath)?.file?.let { File(it) }
-            ?: error("Could not find audio file at $filepath")
-        return Base64.getEncoder().encodeToString(file.readBytes())
     }
 }

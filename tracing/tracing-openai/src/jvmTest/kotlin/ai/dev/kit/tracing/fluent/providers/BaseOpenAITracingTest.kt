@@ -15,6 +15,10 @@ import com.openai.models.responses.FunctionTool
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.params.provider.Arguments
+import java.io.File
+import java.util.Base64
+import java.util.stream.Stream
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -210,6 +214,39 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
         assertEquals(output, trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")])
     }
 
+    protected fun provideImagesForUpload(): Stream<Arguments> {
+        return Stream.of(
+            Arguments.of(MediaSource.File(
+                filepath = "./image.jpg",
+                contentType = "image/jpeg",
+            )),
+            Arguments.of(MediaSource.Link(
+                "https://images.pexels.com/photos/104827/cat-pet-animal-domestic-104827.jpeg"))
+        )
+    }
+
+    protected fun provideFilesForUpload(): Stream<Arguments> {
+        return Stream.of(
+            Arguments.of(MediaSource.File(
+                filepath = "./sample.pdf",
+                contentType = "application/pdf",
+            )),
+            Arguments.of(MediaSource.Link("https://pdfobject.com/pdf/sample.pdf"))
+        )
+    }
+
+    protected fun MediaSource.File.toDataUrl(): String {
+        val encodedData = loadFileAsBase64Encoded(this.filepath)
+        return "data:$contentType;base64,${encodedData}"
+    }
+
+    protected fun loadFileAsBase64Encoded(filepath: String): String {
+        val classLoader = Thread.currentThread().contextClassLoader
+        val file = classLoader.getResource(filepath)?.file?.let { File(it) }
+            ?: error("Could not find audio file at $filepath")
+        return Base64.getEncoder().encodeToString(file.readBytes())
+    }
+
     protected val ChatCompletionMessageToolCall.id: String
         get() {
             val toolCall = this
@@ -237,4 +274,14 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
             }
             return name
         }
+
+    companion object {
+        sealed class MediaSource {
+            data class File(
+                val filepath: String,
+                val contentType: String,
+            ) : MediaSource()
+            data class Link(val url: String) : MediaSource()
+        }
+    }
 }

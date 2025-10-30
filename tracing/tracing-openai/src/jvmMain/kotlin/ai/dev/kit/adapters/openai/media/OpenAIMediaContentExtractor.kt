@@ -51,9 +51,8 @@ internal abstract class OpenAIMediaContentExtractor(
         span: Span,
         field: String,
         content: JsonArray,
-        startWithIndex: Int,
-    ): Int {
-        var index = startWithIndex
+    ) {
+        var index = 0
         for (item in content) {
             val type = item.jsonObject["type"]?.jsonPrimitive?.content
                 ?: continue
@@ -67,7 +66,6 @@ internal abstract class OpenAIMediaContentExtractor(
             }
             ++index
         }
-        return index
     }
 
     protected fun setImageUrlAttributes(

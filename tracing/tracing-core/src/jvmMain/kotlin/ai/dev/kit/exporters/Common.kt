@@ -16,8 +16,7 @@ enum class SupportedMediaContentTypes(val type: String) {
  * Attribute IDs for uploadable media contents.
  */
 object UploadableMediaContentAttributeKeys {
-    private const val KEY_NAME_PREFIX =
-        "custom.uploadableMediaContent"
+    private const val KEY_NAME_PREFIX = "custom.uploadableMediaContent"
 
     fun type(index: Int): AttributeKey<String> {
         return AttributeKey.stringKey(

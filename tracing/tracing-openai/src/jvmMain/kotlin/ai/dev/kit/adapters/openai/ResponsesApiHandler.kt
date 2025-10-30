@@ -62,6 +62,7 @@ internal class ResponsesApiHandler(
         body["input"]?.let { inputs ->
             if (inputs is JsonArray) {
                 processAttributeTypes(span, inputs, promptIndex, "prompt")
+                attachMediaContentAttributes(span, field = "input", inputs)
             } else {
                 span.setAttribute("gen_ai.prompt.0.role", "user")
                 span.setAttribute("gen_ai.prompt.0.content", inputs.toString())
@@ -86,6 +87,16 @@ internal class ResponsesApiHandler(
                         span.setAttribute("gen_ai.tool.$index.strict", it.jsonPrimitive.boolean.toString())
                     }
                 }
+            }
+        }
+    }
+
+    private fun attachMediaContentAttributes(span: Span, field: String, inputs: JsonArray) {
+        // set attributes with media attachments info into the span
+        for (input in inputs) {
+            val content = input.jsonObject["content"]
+            if (content is JsonArray) {
+                extractor.setUploadableContentAttributes(span, field, content)
             }
         }
     }
@@ -135,14 +146,6 @@ internal class ResponsesApiHandler(
 
                     val content = output.jsonObject["content"]
                     if (content is JsonArray) {
-                        // set attributes with media attachments info into the span
-                        mediaAttachmentStartIndex = extractor.setUploadableContentAttributes(
-                            span,
-                            field = "input",
-                            content = content.jsonArray,
-                            startWithIndex = mediaAttachmentStartIndex,
-                        )
-
                         val textContent = content.firstOrNull {
                             it.jsonObject["type"]?.jsonPrimitive?.content == "output_text"
                         }?.jsonObject

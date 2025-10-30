@@ -2,12 +2,20 @@ package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.autologging.createLiteLLMClient
+import ai.dev.kit.tracing.fluent.providers.BaseOpenAITracingTest.Companion.MediaSource
 import com.openai.core.JsonValue
 import com.openai.models.ChatModel
 import com.openai.models.responses.ResponseCreateParams
+import com.openai.models.responses.ResponseInputContent
+import com.openai.models.responses.ResponseInputFile
+import com.openai.models.responses.ResponseInputImage
+import com.openai.models.responses.ResponseInputItem
+import com.openai.models.responses.ResponseInputText
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 
 
 @Tag("SkipForNonLocal")
@@ -185,5 +193,98 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
             }
 
         validateStreaming(sb.toString())
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideFilesForUpload")
+    fun `test PDF file is extracted and uploaded on Langfuse`(file: MediaSource) = runTest {
+        val model = ChatModel.GPT_4O_MINI
+        val prompt = "Describe what you see in the file"
+
+        val client = instrument(createLiteLLMClient())
+        val params = ResponseCreateParams.builder()
+            .input(
+                inputWith(
+                    inputFile(file),
+                    inputText(prompt),
+                )
+            )
+            .model(model)
+            .temperature(0.0)
+            .build()
+
+        val response = client.responses().create(params)
+        println(response)
+
+        Thread.sleep(3000)
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideImagesForUpload")
+    fun `test image is extracted and uploaded on Langfuse`(image: MediaSource) = runTest {
+        val model = ChatModel.GPT_4O_MINI
+        val prompt = "Describe what you see in the image."
+
+        val client = instrument(createLiteLLMClient())
+        val params = ResponseCreateParams.builder()
+            .input(
+                inputWith(
+                    inputImage(image),
+                    inputText(prompt),
+                )
+            )
+            .model(model)
+            .temperature(0.0)
+            .build()
+
+        val response = client.responses().create(params)
+        println(response)
+
+        Thread.sleep(3000)
+    }
+
+
+    private fun inputWith(vararg content: ResponseInputContent) = ResponseCreateParams.Input
+        .ofResponse(listOf(
+            ResponseInputItem.ofMessage(
+                ResponseInputItem.Message.builder()
+                    .content(content.toList())
+                    .role(ResponseInputItem.Message.Role.USER)
+                    .type(ResponseInputItem.Message.Type.MESSAGE)
+                    .build()
+            )
+        ))
+
+    private fun inputText(prompt: String) = ResponseInputContent.ofInputText(
+        ResponseInputText.builder()
+            .text(prompt)
+            .build()
+    )
+
+    private fun inputImage(media: MediaSource): ResponseInputContent {
+        val url = when (media) {
+            is MediaSource.File -> media.toDataUrl()
+            is MediaSource.Link -> media.url
+        }
+        return ResponseInputContent.ofInputImage(
+            ResponseInputImage.builder()
+                .imageUrl(url)
+                .detail(ResponseInputImage.Detail.AUTO)
+                .build()
+        )
+    }
+
+    private fun inputFile(media: MediaSource): ResponseInputContent {
+        val file = ResponseInputFile.builder().let {
+            when (media) {
+                is MediaSource.File -> {
+                    it.fileData(media.toDataUrl())
+                    it.filename(media.filepath.substringAfterLast('/'))
+                }
+                is MediaSource.Link -> it.fileUrl(media.url)
+            }
+        }.build()
+
+        return ResponseInputContent.ofInputFile(file)
     }
 }
