@@ -159,7 +159,7 @@ internal class ResponsesMediaContentExtractor : OpenAIMediaContentExtractor(
                 setUrlAttributes(span, field, index, url)
             }
             else {
-                logger.warn { "File url is not invalid. Received: $url" }
+                logger.warn { "File url is invalid. Received: $url" }
             }
         }
         else if ("file_data" in contentItem) {
