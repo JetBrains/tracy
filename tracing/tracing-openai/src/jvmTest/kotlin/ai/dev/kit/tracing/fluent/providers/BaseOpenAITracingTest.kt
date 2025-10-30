@@ -1,5 +1,7 @@
 package ai.dev.kit.tracing.fluent.providers
 
+import ai.dev.kit.exporters.SupportedMediaContentTypes
+import ai.dev.kit.exporters.UploadableMediaContentAttributeKeys
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.LITELLM_URL
 import com.openai.core.JsonArray
@@ -14,6 +16,7 @@ import com.openai.models.chat.completions.ChatCompletionTool
 import com.openai.models.responses.FunctionTool
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.sdk.trace.data.SpanData
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.provider.Arguments
 import java.io.File
@@ -25,7 +28,7 @@ import kotlin.test.assertTrue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
-    protected fun validateBasicTracing() {
+    protected fun validateBasicTracing(model: ChatModel) {
         val traces = analyzeSpans()
 
         assertEquals(1, traces.size)
@@ -37,7 +40,7 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
             trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
         assertEquals(
-            trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(ChatModel.GPT_4O_MINI.asString()),
+            trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(model.asString()),
             true
         )
         val content = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
@@ -251,6 +254,48 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
         return file
     }
 
+    protected fun verifyMediaContentUploadAttributes(
+        span: SpanData,
+        expected: List<MediaContentAttributeValues>
+    ) {
+        for ((index, values) in expected.withIndex()) {
+            val keys = UploadableMediaContentAttributeKeys.forIndex(index)
+
+            when (values) {
+                is MediaContentAttributeValues.Data -> {
+                    assertEquals(values.type, span.attributes[keys.type])
+                    assertEquals(values.field, span.attributes[keys.field])
+                    assertEquals(values.contentType, span.attributes[keys.contentType])
+                    assertEquals(values.data, span.attributes[keys.data])
+                }
+                is MediaContentAttributeValues.Url -> {
+                    assertEquals(values.type, span.attributes[keys.type])
+                    assertEquals(values.field, span.attributes[keys.field])
+                    assertEquals(values.url, span.attributes[keys.url])
+                }
+            }
+        }
+    }
+
+    protected fun MediaSource.toMediaContentAttributeValues(
+        field: String
+    ): MediaContentAttributeValues {
+        val media = this
+        return when (media) {
+            is MediaSource.File -> MediaContentAttributeValues.Data(
+                type = SupportedMediaContentTypes.BASE64.type,
+                field = field,
+                contentType = media.contentType,
+                data = loadFileAsBase64Encoded(media.filepath)
+            )
+            is MediaSource.Link -> MediaContentAttributeValues.Url(
+                type = SupportedMediaContentTypes.URL.type,
+                field = field,
+                url = media.url,
+            )
+        }
+    }
+
     protected val ChatCompletionMessageToolCall.id: String
         get() {
             val toolCall = this
@@ -289,6 +334,21 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
                 val contentType: String,
             ) : MediaSource()
             data class Link(val url: String) : MediaSource()
+        }
+
+        sealed class MediaContentAttributeValues {
+            data class Url(
+                val type: String,
+                val field: String,
+                val url: String
+            ) : MediaContentAttributeValues()
+
+            data class Data(
+                val type: String,
+                val field: String,
+                val contentType: String,
+                val data: String,
+            ) : MediaContentAttributeValues()
         }
     }
 }

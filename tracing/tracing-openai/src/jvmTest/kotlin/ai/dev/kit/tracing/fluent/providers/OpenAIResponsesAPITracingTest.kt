@@ -17,13 +17,14 @@ import org.junit.jupiter.params.provider.MethodSource
 class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
     @Test
     fun `test OpenAI responses API auto tracing`() = runTest {
+        val model = ChatModel.GPT_4O_MINI
         val client = instrument(createLiteLLMClient())
         val params = ResponseCreateParams.builder()
             .input("Generate polite greeting and introduce yourself")
-            .model(ChatModel.GPT_4O_MINI).temperature(1.1).build()
+            .model(model).temperature(1.1).build()
         client.responses().create(params)
 
-        validateBasicTracing()
+        validateBasicTracing(model)
     }
 
     @Test
@@ -208,10 +209,13 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
             .temperature(0.0)
             .build()
 
-        val response = client.responses().create(params)
-        println(response)
+        client.responses().create(params)
 
-        Thread.sleep(3000)
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            image.toMediaContentAttributeValues(field = "input"),
+        ))
     }
 
     @ParameterizedTest
@@ -232,10 +236,13 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
             .temperature(0.0)
             .build()
 
-        val response = client.responses().create(params)
-        println(response)
+        client.responses().create(params)
 
-        Thread.sleep(3000)
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            file.toMediaContentAttributeValues(field = "input"),
+        ))
     }
 
     @Test
@@ -259,10 +266,14 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
             .temperature(0.0)
             .build()
 
-        val response = client.responses().create(params)
-        println(response)
+        client.responses().create(params)
 
-        Thread.sleep(3000)
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            fileImage.toMediaContentAttributeValues(field = "input"),
+            urlImage.toMediaContentAttributeValues(field = "input"),
+        ))
     }
 
     @Test
@@ -278,9 +289,9 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
         val params = ResponseCreateParams.builder()
             .input(
                 inputWith(
+                    inputImage(image),
                     inputFile(localFile),
                     inputFile(remoteFile),
-                    inputImage(image),
                     inputText(prompt),
                 )
             )
@@ -288,9 +299,15 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
             .temperature(0.0)
             .build()
 
-        val response = client.responses().create(params)
-        println(response)
-        Thread.sleep(5000)
+        client.responses().create(params)
+
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
+
+        val media = listOf(image, localFile, remoteFile)
+        verifyMediaContentUploadAttributes(trace, expected = media.map {
+            it.toMediaContentAttributeValues(field = "input")
+        })
     }
 
     private fun inputWith(vararg content: ResponseInputContent) = ResponseCreateParams.Input
