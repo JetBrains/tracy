@@ -207,48 +207,6 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
         validateStreaming(sb.toString())
     }
 
-    @Test
-    fun `test audio file is extracted and uploaded on Langfuse`() = runTest {
-        val model = ChatModel.GPT_4O_AUDIO_PREVIEW
-        val prompt = "Tell me what is in the audio file"
-        val filepath = "lofi.wav"
-
-        val client = instrument(createLiteLLMClient())
-
-        val params = ChatCompletionCreateParams.builder()
-            .model(model)
-            .addUserMessageOfArrayOfContentParts(listOf(
-                partAudio(filepath),
-                partText(prompt),
-            ))
-            .build()
-
-        client.chat().completions().create(params)
-    }
-
-    @Test
-    fun `test PDF file is extracted and uploaded on Langfuse`() = runTest {
-        val model = ChatModel.GPT_4O
-        val prompt = "Please describe what you see in the PDF file."
-        val media = MediaSource.File(
-            filepath = "sample.pdf",
-            contentType = "application/pdf",
-        )
-
-        val client = instrument(createLiteLLMClient())
-
-        val params = ChatCompletionCreateParams.builder()
-            .model(model)
-            .addUserMessageOfArrayOfContentParts(listOf(
-                partFile(media),
-                partText(prompt),
-            ))
-            .build()
-
-        val res = client.chat().completions().create(params)
-        println(res)
-    }
-
     @ParameterizedTest
     @MethodSource("provideImagesForUpload")
     fun `test image is extracted and uploaded on Langfuse`(image: MediaSource) = runTest {
@@ -289,6 +247,48 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
         assertNotNull(image)
         assertNotNull(text)
         assertEquals(prompt, text.jsonObject["text"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun `test audio file is extracted and uploaded on Langfuse`() = runTest {
+        val model = ChatModel.GPT_4O_AUDIO_PREVIEW
+        val prompt = "Tell me what is in the audio file"
+        val filepath = "lofi.wav"
+
+        val client = instrument(createLiteLLMClient())
+
+        val params = ChatCompletionCreateParams.builder()
+            .model(model)
+            .addUserMessageOfArrayOfContentParts(listOf(
+                partAudio(filepath),
+                partText(prompt),
+            ))
+            .build()
+
+        client.chat().completions().create(params)
+    }
+
+    @Test
+    fun `test PDF file is extracted and uploaded on Langfuse`() = runTest {
+        val model = ChatModel.GPT_4O
+        val prompt = "Please describe what you see in the PDF file."
+        val media = MediaSource.File(
+            filepath = "sample.pdf",
+            contentType = "application/pdf",
+        )
+
+        val client = instrument(createLiteLLMClient())
+
+        val params = ChatCompletionCreateParams.builder()
+            .model(model)
+            .addUserMessageOfArrayOfContentParts(listOf(
+                partFile(media),
+                partText(prompt),
+            ))
+            .build()
+
+        val res = client.chat().completions().create(params)
+        println(res)
     }
 
     @Test

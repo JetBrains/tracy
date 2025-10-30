@@ -191,6 +191,30 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
     }
 
     @ParameterizedTest
+    @MethodSource("provideImagesForUpload")
+    fun `test image is extracted and uploaded on Langfuse`(image: MediaSource) = runTest {
+        val model = ChatModel.GPT_4O_MINI
+        val prompt = "Describe what you see in the image."
+
+        val client = instrument(createLiteLLMClient())
+        val params = ResponseCreateParams.builder()
+            .input(
+                inputWith(
+                    inputImage(image),
+                    inputText(prompt),
+                )
+            )
+            .model(model)
+            .temperature(0.0)
+            .build()
+
+        val response = client.responses().create(params)
+        println(response)
+
+        Thread.sleep(3000)
+    }
+
+    @ParameterizedTest
     @MethodSource("provideFilesForUpload")
     fun `test PDF file is extracted and uploaded on Langfuse`(file: MediaSource) = runTest {
         val model = ChatModel.GPT_4O_MINI
@@ -214,17 +238,20 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
         Thread.sleep(3000)
     }
 
-    @ParameterizedTest
-    @MethodSource("provideImagesForUpload")
-    fun `test image is extracted and uploaded on Langfuse`(image: MediaSource) = runTest {
+    @Test
+    fun `test two images sent simultaneously are both uploaded on Langfuse`() = runTest {
         val model = ChatModel.GPT_4O_MINI
-        val prompt = "Describe what you see in the image."
+        val prompt = "Describe what you see in both images"
+
+        val fileImage = MediaSource.File("image.jpg", "image/jpeg")
+        val urlImage = MediaSource.Link(CAT_IMAGE_URL)
 
         val client = instrument(createLiteLLMClient())
         val params = ResponseCreateParams.builder()
             .input(
                 inputWith(
-                    inputImage(image),
+                    inputImage(fileImage),
+                    inputImage(urlImage),
                     inputText(prompt),
                 )
             )
@@ -236,6 +263,34 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
         println(response)
 
         Thread.sleep(3000)
+    }
+
+    @Test
+    fun `test several media types sent simultaneously are uploaded on Langfuse`() = runTest {
+        val model = ChatModel.GPT_4O
+        val prompt = "Describe what you see in the media files attached"
+
+        val image = MediaSource.File("image.jpg", "image/jpeg")
+        val localFile = MediaSource.File("sample.pdf", "application/pdf")
+        val remoteFile = MediaSource.Link(SAMPLE_PDF_FILE_URL)
+
+        val client = instrument(createLiteLLMClient())
+        val params = ResponseCreateParams.builder()
+            .input(
+                inputWith(
+                    inputFile(localFile),
+                    inputFile(remoteFile),
+                    inputImage(image),
+                    inputText(prompt),
+                )
+            )
+            .model(model)
+            .temperature(0.0)
+            .build()
+
+        val response = client.responses().create(params)
+        println(response)
+        Thread.sleep(5000)
     }
 
     private fun inputWith(vararg content: ResponseInputContent) = ResponseCreateParams.Input

@@ -230,7 +230,7 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
                 filepath = "./sample.pdf",
                 contentType = "application/pdf",
             )),
-            Arguments.of(MediaSource.Link("https://pdfobject.com/pdf/sample.pdf"))
+            Arguments.of(MediaSource.Link(SAMPLE_PDF_FILE_URL))
         )
     }
 
@@ -247,7 +247,7 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
     protected fun loadFile(filepath: String): File {
         val classLoader = Thread.currentThread().contextClassLoader
         val file = classLoader.getResource(filepath)?.file?.let { File(it) }
-            ?: error("Could not find audio file at $filepath")
+            ?: error("Could not find file at $filepath")
         return file
     }
 
@@ -281,6 +281,7 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
     companion object {
         protected const val CAT_IMAGE_URL = "https://images.pexels.com/photos/104827/cat-pet-animal-domestic-104827.jpeg"
+        protected const val SAMPLE_PDF_FILE_URL = "https://pdfobject.com/pdf/sample.pdf"
 
         sealed class MediaSource {
             data class File(
