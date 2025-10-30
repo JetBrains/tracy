@@ -126,7 +126,6 @@ class MediaContentUploadingSpanProcessor(
     override fun isStartRequired(): Boolean = false
 
     override fun onEnd(span: ReadableSpan) {
-        println("END: traceId: ${span.spanContext.traceId} spanId: ${span.spanContext.spanId}")
         val traceId = span.spanContext.traceId
 
         var index = 0
@@ -183,8 +182,7 @@ class MediaContentUploadingSpanProcessor(
             return
         }
 
-        println("Image downloaded for trace $traceId from $url")
-        val res = uploadMediaFileToLangfuse(
+        uploadMediaFileToLangfuse(
             params = MediaUploadParams(
                 traceId = traceId,
                 field = field,
@@ -192,7 +190,6 @@ class MediaContentUploadingSpanProcessor(
                 data = data,
             )
         )
-        println(res)
     }
 }
 
@@ -216,8 +213,6 @@ suspend fun uploadMediaFileToLangfuse(
     val sha256Hash = Base64.getEncoder()
         .encodeToString(MessageDigest.getInstance("SHA-256").digest(decodedBytes))
 
-    println("sha: $sha256Hash")
-
     // request upload URL from Langfuse
     /**
      * Get upload URL and media ID.
@@ -238,8 +233,6 @@ suspend fun uploadMediaFileToLangfuse(
         )
         setBody(request)
     }
-
-    println("public/media: $response")
 
     if (!response.status.isSuccess()) {
         return Result.Error(
@@ -262,8 +255,6 @@ suspend fun uploadMediaFileToLangfuse(
             return Result.Error("Failed to upload a media file", uploadResponse.status.value)
         }
 
-        println("UPLOAD RESPONSE (status code ${uploadResponse.status}): ${uploadResponse.bodyAsText()}")
-
         // update upload status
         val patchResponse = client.patch("$url/api/public/media/${uploadResource.mediaId}") {
             contentType(ContentType.Application.Json)
@@ -283,8 +274,6 @@ suspend fun uploadMediaFileToLangfuse(
             return Result.Error(
                 "Failed to patch a media file with id ${uploadResource.mediaId}", patchResponse.status.value)
         }
-
-        println("patchResponse: ${patchResponse.bodyAsText()}")
     }
 
     // retrieve the media data from Langfuse

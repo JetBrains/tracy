@@ -114,7 +114,6 @@ internal class ResponsesApiHandler(
     }
 
     fun processAttributeTypes(span: Span, events: JsonArray, indexOfFirstAttribute: Int, type: String) {
-        var mediaAttachmentStartIndex = 0
         var index = indexOfFirstAttribute
 
         for (output in events.jsonArray) {

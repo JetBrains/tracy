@@ -85,8 +85,6 @@ internal class ChatCompletionsHandler(
     }
 
     override fun handleResponseAttributes(span: Span, body: JsonObject) {
-        println("RESPONSE BODY: $body")
-
         body["choices"]?.let {
             for ((index, choice) in it.jsonArray.withIndex()) {
                 val index = choice.jsonObject["index"]?.jsonPrimitive?.intOrNull ?: index
