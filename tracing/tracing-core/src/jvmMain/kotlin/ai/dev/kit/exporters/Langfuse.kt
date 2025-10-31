@@ -272,7 +272,7 @@ internal suspend fun uploadMediaFileToLangfuse(
                 uploadedAt = ZonedDateTime.now(ZoneOffset.UTC)
                     .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
                 uploadHttpStatus = uploadResponse.status.value,
-                uploadHttpError = if(!uploadResponse.status.isSuccess())
+                uploadHttpError = if (!uploadResponse.status.isSuccess())
                     uploadResponse.status.description else null,
             )
             setBody(request)
