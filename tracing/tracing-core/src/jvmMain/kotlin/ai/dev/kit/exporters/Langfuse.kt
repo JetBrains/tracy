@@ -118,12 +118,12 @@ class MediaContentUploadingSpanProcessor(
 ) : SpanProcessor {
     companion object {
         private val logger = KotlinLogging.logger {}
-    }
 
-    // used to request media files by URLs
-    private val client = HttpClient {
-        install(ContentNegotiation) {
-            json()
+        // used to request media files by URLs
+        private val client = HttpClient {
+            install(ContentNegotiation) {
+                json()
+            }
         }
     }
 
@@ -161,7 +161,8 @@ class MediaContentUploadingSpanProcessor(
                                 field = field,
                                 contentType = contentType,
                                 data = data,
-                            )
+                            ),
+                            client = client,
                         )
                     }
                 }
@@ -194,7 +195,8 @@ class MediaContentUploadingSpanProcessor(
                 field = field,
                 contentType = contentType,
                 data = data,
-            )
+            ),
+            client = client,
         )
     }
 }
@@ -204,18 +206,14 @@ class MediaContentUploadingSpanProcessor(
  *
  * @see MediaUploadParams
  */
-suspend fun uploadMediaFileToLangfuse(
+internal suspend fun uploadMediaFileToLangfuse(
     params: MediaUploadParams,
+    client: HttpClient,
     langfuseUrl: String? = null,
     langfusePublicKey: String? = null,
     langfuseSecretKey: String? = null,
 ): Result<MediaUploadResponse> {
     val (url, auth) = setupLangfuseCredentials(langfuseUrl, langfusePublicKey, langfuseSecretKey)
-    val client = HttpClient {
-        install(ContentNegotiation) {
-            json()
-        }
-    }
 
     // ensure that media type is valid
     val contentType = ContentType.parse(params.contentType)
