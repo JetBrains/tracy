@@ -27,7 +27,6 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.time.ExperimentalTime
 
 const val LANGFUSE_BASE_URL = "https://cloud.langfuse.com"
 
@@ -205,7 +204,6 @@ class MediaContentUploadingSpanProcessor(
  *
  * @see MediaUploadParams
  */
-@OptIn(ExperimentalTime::class)
 suspend fun uploadMediaFileToLangfuse(
     params: MediaUploadParams,
     langfuseUrl: String? = null,
