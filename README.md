@@ -1,401 +1,476 @@
-## 🛠️ General Information
+# AI Dev Kit
 
-The AI Development Kit is a toolkit
-designed to streamline and speed up the development of AI-powered features at JetBrains.
-It tackles critical pain points across both research and product development workflows —
-especially within the Kotlin and IntelliJ ecosystem.
+The **AI Development Kit** helps you **trace, monitor, and evaluate AI-powered features** directly from your
+Kotlin or Java projects.
 
-## 💡 Motivation
+It provides a **unified API** to capture structured traces. Fully compatible with observability
+platforms like **Langfuse** and **Weights & Biases (W&B)**.
 
-* **Slow Prototyping**: Lack of internal APIs for experimentation delays research and prototyping.
-* **Quality Gaps**: No consistent or systematic evaluation pipeline leads to risk of low-quality results.
-* **Fragmented Tooling**: There’s no unified, Kotlin-native tooling for tracing, evaluation, and collaboration like what
-  Python has.
+**Standards:**  
+This library implements
+the [OpenTelemetry Generative AI Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/)
+for span attributes and event naming, ensuring your traces remain compatible with any
+OpenTelemetry-compliant backend.
 
-## 🎯 Goals of the AI Development Kit
+You can use it to:
 
-* **Unify Evaluation Practice**  
-  Establish a consistent, test-driven, and criteria-based evaluation process across all development stages from early
-  research to production deployment.
-* **Bridge Python and JVM Tooling**  
-  Integrate powerful Python-based evaluation tools into the Kotlin ecosystem.
-* **Promote Collaboration**  
-  Enables seamless collaboration between developers, QA engineers,
-  and researchers through shared datasets, trace tracking,
-  and unified tooling.
-* **Support Agentic AI Development**  
-  Provides robust infrastructure for agent-based workflows, including prompt engineering, traceable evaluations, and
-  role-specific testing support.
+- Trace AI clients to capture messages, cost, token usage, and execution time.
+  See [Client Auto Tracing](#client-auto-tracing)
+- Trace any function to record inputs, outputs, and execution duration.
+  See [Annotation-Based Tracing](#annotation-based-tracing)
+- Create and manage spans manually. See [Manual Tracing](#manual-tracing)
+- Export traces to supported backends. See [Supported Tracing Backends](#tracing-backends)
 
-## ⭐ Key features
+## Installation
 
-* 🔍 Kotlin-native tracing via `@KotlinFlowTrace` and compiler plugin.
-* 🔌 Integration with `Langfuse` and `Weights & Biases`.
-* 📊 Evaluation framework with test cases and evaluation criteria.
-* 🤖 Internal `OpenAI` compatible gateway with `LiteLLM` support. For a more detailed description, refer to
-  the [article](https://youtrack.jetbrains.com/articles/JBAI-A-659/LiteLLM-Internal-LLM-Gateway-for-Research-and-Experimentation)
+### Gradle (Kotlin DSL)
 
-## 📚 How to use Tracing?
+1. Add dependencies to the `build.gradle.kts` file:
+    ```kotlin
+    plugins {
+        id("ai.dev.kit.trace") version "0.0.21"
+    }
+    
+    dependencies {
+        implementation("com.jetbrains:ai-dev-kit-tracing-core:0.0.21")
+        // Clients Auto Tracing
+        implementation("com.jetbrains:ai-dev-kit-tracing-anthropic:0.0.21")
+        implementation("com.jetbrains:ai-dev-kit-tracing-gemini:0.0.21")
+        implementation("com.jetbrains:ai-dev-kit-tracing-ktor:0.0.21")
+        implementation("com.jetbrains:ai-dev-kit-tracing-openai:0.0.21")
+    }
+    ```
+2. Make sure that you have `maven("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")` in
+   both your plugin management and project repositories sections.
 
-You can find the latest versions of
-`ai-dev-kit` [here](https://jetbrains.team/p/ai-development-kit/packages/maven/ai-development-kit).
+   #### `build.gradle.kts`
+    ```kotlin
+    repositories {
+        maven("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")
+    }
+    ```
+   #### `settings.gradle.kts`
+    ```kotlin
+    pluginManagement {
+        repositories {
+            gradlePluginPortal()
+            maven("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")
+        }
+    }
+    ```
 
-#### 1. Add Maven Repository
+---
 
-In your `build.gradle.kts`, add the following Maven repository:
+### Gradle (Groovy)
+
+1. Add dependencies to the `build.gradle.kts` file:
+    ```groovy
+    plugins {
+        id 'ai.dev.kit.trace' version '0.0.21'
+    }
+    
+    dependencies {
+        implementation 'com.jetbrains:ai-dev-kit-tracing-core:0.0.21'
+        // Clients Auto Tracing
+        implementation 'com.jetbrains:ai-dev-kit-tracing-anthropic:0.0.21'
+        implementation 'com.jetbrains:ai-dev-kit-tracing-gemini:0.0.21'
+        implementation 'com.jetbrains:ai-dev-kit-tracing-ktor:0.0.21'
+        implementation 'com.jetbrains:ai-dev-kit-tracing-openai:0.0.21'
+    }
+    ```
+2. Make sure that you have `maven("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")` in
+   both your plugin management and project repositories sections.
+
+   #### `build.gradle`
+    ```groovy
+    repositories {
+        maven {
+            url "https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit"
+        }
+    }
+    ```
+   #### `settings.gradle.kts`
+    ```groovy
+    pluginManagement {
+        repositories {
+            gradlePluginPortal()
+            maven {
+                url "https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit"
+            }
+        }
+    }
+    ```
+
+---
+
+### Maven
+
+1. Add dependencies to the `pom.xml` file:
+    ```xml
+    
+    <plugins>
+        <plugin>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-maven-plugin</artifactId>
+            <configuration>
+                <jvmTarget>19</jvmTarget>
+            </configuration>
+            <version>${kotlin.version}</version>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>compile</goal>
+                    </goals>
+                </execution>
+            </executions>
+    
+            <dependencies>
+                <dependency>
+                    <groupId>com.jetbrains</groupId>
+                    <!--Use the Kotlin version matching your setup (e.g., 2.0.0 or 2.0.20).
+                    Keep the same major and minor numbers but adjust the patch version
+                    to the nearest supported value - either 0 or 20.
+                    Examples:
+                    - 2.1.19 -> 2.1.0
+                    - 2.1.23 -> 2.1.20 -->
+                    <artifactId>ai-dev-kit-tracing-compiler-plugin-2.1.0-jvm</artifactId>
+                    <version>0.0.21</version>
+                  </dependency>
+              </dependencies>
+          </plugin>
+      </plugins>
+    
+    <dependencies>
+        <dependency>
+          <groupId>com.jetbrains</groupId>
+          <artifactId>ai-dev-kit-tracing-core-jvm</artifactId>
+          <version>0.0.21</version>
+        </dependency>
+          <!-- Clients Auto Tracing -->
+        <dependency>
+            <groupId>com.jetbrains</groupId>
+            <artifactId>ai-dev-kit-tracing-anthropic-jvm</artifactId>
+            <version>0.0.21</version>
+        </dependency>
+        <dependency>
+            <groupId>com.jetbrains</groupId>
+            <artifactId>ai-dev-kit-tracing-gemini-jvm</artifactId>
+            <version>0.0.21</version>
+        </dependency>
+        <dependency>
+            <groupId>com.jetbrains</groupId>
+            <artifactId>ai-dev-kit-tracing-ktor-jvm</artifactId>
+            <version>0.0.21</version>
+        </dependency>
+        <dependency>
+            <groupId>com.jetbrains</groupId>
+            <artifactId>ai-dev-kit-tracing-openai-jvm</artifactId>
+            <version>0.0.21</version>
+        </dependency>
+    </dependencies>
+      ```
+2. Make sure that you have `https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit` in
+   both your plugin repositories and project repositories sections.
+    ```xml
+    <repositories>
+        <repository>
+            <id>ai-dev-kit</id>
+            <url>https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit</url>
+        </repository>
+    </repositories>
+    
+    <pluginRepositories>
+        <pluginRepository>
+            <id>ai-dev-kit-plugins</id>
+            <url>https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit</url>
+        </pluginRepository>
+    </pluginRepositories>
+    ```
+
+## Requirements
+
+Compatible with Kotlin **1.9.0 through 2.2.20** and Java **17+**.
+
+Supports integration with:
+
+- OpenAI SDK `1.*–4.*`
+- Anthropic SDK `1.*–2.*`
+- Gemini SDK `1.8.*–1.24.*` (earlier versions unsupported)
+
+## Usage
+
+> [!TIP]
+> See the [`examples`](examples/src/main/kotlin/ai/dev/kit/examples) directory for complete and
+> runnable examples!
+
+The AI Development Kit provides tracing integrations for multiple clients—not only `OpenAI`, but also `Gemini`,
+`Anthropic`,
+`Ktor`, and `OkHttp`.
+All clients can be instrumented in a similar way using the `instrument(...)` function.
+
+### Client Auto Tracing
+
+Below is a minimal OpenAI example. For others, check the examples directory:
+
+* [Anthropic Client Auto Tracing Example](examples/src/main/kotlin/ai/dev/kit/examples/clients/AnthropicClientAutotracingExample.kt)
+* [Ktor Client Auto Tracing Example](examples/src/main/kotlin/ai/dev/kit/examples/clients/KtorClientAutotracingExample.kt)
+* [OkHttp Auto Tracing Example](examples/src/main/kotlin/ai/dev/kit/examples/clients/OkHttpClientAutotracingExample.kt)
+* [Gemini Client Auto Tracing Example](examples/src/main/kotlin/ai/dev/kit/examples/clients/GeminiClientAutotracingExample.kt)
 
 ```kotlin
-maven {
-    url = uri("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")
-}
-```
-
-#### 2. Set Up `libs.versions.toml`
-
-Configure your libs.versions.toml file with the appropriate versions:
-
-```toml
-[versions]
-ai-dev-kit-plugin = "VERSION"
-ai-dev-kit = "VERSION"
-
-[libraries]
-ai-dev-kit-tracing = { module = "com.jetbrains:ai-dev-kit-tracing", version.ref = "ai-dev-kit" }
-
-# You can choose from multiple tracing providers:
-# - Langfuse (used in the example below)
-# - Weights & Biases (W&B)
-ai-dev-kit-tracking-langfuse = { module = "com.jetbrains:ai-dev-kit-tracking-langfuse", version.ref = "ai-dev-kit" }
-# ai-dev-kit-tracking-wandb = { module = "com.jetbrains:ai-dev-kit-tracking-wandb", version.ref = "ai-dev-kit" }
-
-[plugins]
-ai-dev-kit = { id = "ai.dev.kit.trace", version.ref = "ai-dev-kit-plugin" }
-```
-
-Replace `VERSION` with the latest version from the JetBrains repository.
-
-#### 3. Add Dependencies
-
-In your module's `build.gradle.kts`, add the required dependencies:
-
-```kotlin
-dependencies {
-    implementation(libs.ai.dev.kit.tracing)
-    implementation(libs.ai.dev.kit.tracking.langfuse)
-}
-```
-
-#### 4. Enable Tracing with `@KotlinFlowTrace`
-
-* Make sure to apply the `ai-dev-kit` plugin in your `build.gradle.kts`:
-
-```kotlin
-plugins {
-    alias(libs.plugins.ai.dev.kit)
-}
-```
-
-* Set up tracing using a tracking provider.
-  The example below uses Langfuse,
-  but you can replace it with other supported platforms
-  (Weights & Biases Weave) by making the corresponding changes in your setup:
-
-```kotlin
-// You can pass keys explicitly to config or leave them null to load from environment variables.
-val langfuseConfig = LangfuseConfig(...)
-TracingManager.setup(langfuseConfig)
-// Your code with tracing
+// Initialize tracing and export spans to the console
+TracingManager.setup(ConsoleConfig())
+val instrumentedClient: OpenAIClient = instrument(fromEnv())
+val request = ChatCompletionCreateParams.builder()
+    .addUserMessage("Generate a polite greeting and introduce yourself.")
+    .model(ChatModel.GPT_4O_MINI)
+    .temperature(0.0)
+    .build()
+val response = instrumentedClient.chat().completions().create(request)
+println("OpenAI response: ${response.choices().first().message().content().get()}")
+// Ensure all trace data is exported
 TracingManager.flushTraces()
 ```
 
-⚠️ Important:
+> This example uses simple console tracing for a demonstration.
+> For information about other tracing backends, see [Tracing Backends](#tracing-backends)
 
-1. You **must** set up tracing by calling `TracingManager.setup` before using any annotated methods. If tracing is not
-   initialized, the tracking provider will not be defined, and traces will not be recorded.
-2. Ensure that you call `TracingManager.flushTraces()` after all tracing operations to flush any pending traces. Without
-   this, traces may not be exported if the application terminates too quickly.
+Full
+example: [OpenAI Client Auto Tracing Example](examples/src/main/kotlin/ai/dev/kit/examples/clients/OpenAIClientAutotracingExample.kt)
 
+### Annotation-Based Tracing
 
-* Annotate traced function with `@KotlinFlowTrace`
-* Use `addLangfuseTagsToCurrentTrace` with a list of string tags as a parameter inside the annotated function to add Langfuse tags to the
-  current trace.
+You can trace regular functions (not only client calls) using the [
+`@KotlinFlowTrace`](tracing/tracing-core/src/commonMain/kotlin/ai/dev/kit/tracing/fluent/KotlinFlowTrace.kt)
+annotation.  
+Make sure to apply the `ai.dev.kit.trace` plugin in your build.  
+The Kotlin compiler plugin automatically instruments annotated functions, capturing execution details such as start and
+end time, duration, inputs, and outputs.
+
+> ⚠️ Annotation-based tracing is supported **only in Kotlin**.  
+> For Java, use [Manual Tracing](#manual-tracing) instead.
+
+#### Quick Start
 
 ```kotlin
-@KotlinFlowTrace
-fun f(/*parameters*/): /*return value*/ {
-    // function logic
-    val tags = listOf<String>("tag1", "tag2", "tag3")
-    addLangfuseTagsToCurrentTrace(tags)
-    // function logic
+@KotlinFlowTrace(name = "GreetUser")
+fun greetUser(name: String): String {
+    println("Hello, $name!")
+    return "Greeting sent to $name"
+}
+
+fun main() {
+    TracingManager.setup(ConsoleConfig())
+    greetUser("Alice")
+    TracingManager.flushTraces()
 }
 ```
 
-* Propagating Traces to Overridden Functions
+#### Hierarchical Tracing
 
-Tracing automatically applies to **all overrides of a base class or interface method**.  
-You don’t need to set any extra flags—this is the default behavior.
+Nested calls between annotated functions are traced automatically.  
+When one traced function invokes another, a **hierarchical trace structure** is created the outer call is recorded as a
+parent span and the inner call as its child span.  
+This structure provides a clear visual representation of call relationships and execution flow.
+
+See the [`NestedSpansExample.kt`](examples/src/main/kotlin/ai/dev/kit/examples/NestedSpansExample.kt) for a
+demonstration of hierarchical tracing.
+
+#### Tracing in Inherited Classes and Interfaces
+
+Tracing annotation is automatically propagated through interfaces and class hierarchies.  
+If a method in an interface or superclass is annotated with [
+`@KotlinFlowTrace`](tracing/tracing-core/src/commonMain/kotlin/ai/dev/kit/tracing/fluent/KotlinFlowTrace.kt), all
+overriding or implementing methods
+inherit tracing behavior automatically, even if the annotation is not explicitly declared again.  
+This approach ensures consistent and reusable tracing across an entire inheritance chain without code duplication.
+
+Refer to the [
+`TracingPropagationExample.kt`](examples/src/main/kotlin/ai/dev/kit/examples/TracingPropagationExample.kt)
+for a complete example.
+
+#### Customizing Tracing Behavior
+
+The tracing system offers flexible customization through the [
+`SpanMetadataCustomizer`](tracing/tracing-core/src/commonMain/kotlin/ai/dev/kit/tracing/fluent/handlers/SpanMetadataCustomizer.kt)
+interface.
+To use it, you must implement the interface as a Kotlin `object` and link it to a traced function via the [
+`@KotlinFlowTrace`](tracing/tracing-core/src/commonMain/kotlin/ai/dev/kit/tracing/fluent/KotlinFlowTrace.kt) annotation.
+This ensures that the metadata customizer is a singleton and can be efficiently reused at runtime.
+With a custom `SpanMetadataCustomizer`, you can define:
+
+- How input parameters are serialized.
+- How output results are serialized.
+- How span names are dynamically generated based on runtime data.
+  This provides fine-grained control over how tracing information is represented.
+
+See an example implementation in [
+`MetadataCustomizerExample.kt`](examples/src/main/kotlin/ai/dev/kit/examples/MetadataCustomizerExample.kt).
+
+#### Adding Custom Tags
+
+You can enrich your traces with contextual metadata by adding **custom tags**.  
+Tags help categorize and filter traces based on your business logic. For example, by user type, feature, or
+environment. Use the [
+`addLangfuseTagsToCurrentTrace`](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/Utils.kt)
+function to attach tags dynamically within any traced function.  
+These tags appear in Langfuse or other tracing tools, making it easier to group and analyze trace data.
+
+An example demonstrating how to provide custom tags can be found in
+[`LangfuseTagExample.kt`](examples/src/main/kotlin/ai/dev/kit/examples/LangfuseTagExample.kt)
+
+### Manual Tracing
+
+In addition to annotation-based tracing, you can manually create and manage spans wherever you need them in your code.  
+This approach gives you full control over what is traced and what metadata is recorded.
+Use the `withSpan` function to define a traceable block of code.  
+It automatically creates and closes a span around the specified code section, allowing you to attach structured metadata
+such as inputs, outputs, or custom attributes.
+Manual tracing is especially useful in **Java** projects where annotation-based tracing is not available.
+
+An example demonstrating manual tracing can be found in [
+`ManualTracingExample.kt`](examples/src/main/kotlin/ai/dev/kit/examples/ManualTracingExample.kt).
+
+### Tracing Backends
+
+The AI Development Kit provides integrations with multiple tracing backends, allowing you to choose the one that best
+fits your workflow.
+Currently supported backends include:
+
+- **[Langfuse](https://langfuse.com/)**
+- **[Weave](https://wandb.ai/site/weave)**
+
+You can initialize tracing with any supported backend by providing the corresponding configuration object when calling
+`TracingManager.setup(...)`.
 
 ```kotlin
-open class BaseService {
-    @KotlinFlowTrace
-    open fun process(input: String): String {
-        return "Base: $input"
-    }
-}
+// Langfuse
+TracingManager.setup(LangfuseConfig())
 
-class DerivedService : BaseService() {
-    // Even without explicitly annotating this method,
-    // tracing will be applied because it overrides a traced function.
-    override fun process(input: String): String {
-        return "Derived: $input"
-    }
-}
+// Weave
+TracingManager.setup(WeaveConfig())
+
+// Console-Only
+TracingManager.setup(ConsoleConfig())
 ```
 
-⚠️ If you define a `Derived` class in another module, remember to apply the plugin there.
+#### [Langfuse Configuration](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/TracingConfig.kt)
 
-#### 5. Specify the Project (Experiment) and Session (Run) to upload the traces to
+| Property                      | Environment Variable              | Required | Default Value                                              |
+|-------------------------------|-----------------------------------|----------|------------------------------------------------------------|
+| `langfuseUrl`                 | `LANGFUSE_URL`                    | false    | [`https://cloud.langfuse.com`](https://cloud.langfuse.com) |
+| `langfusePublicKey`           | `LANGFUSE_PUBLIC_KEY`             | true     | -                                                          |
+| `langfuseSecretKey`           | `LANGFUSE_SECRET_KEY`             | true     | -                                                          |
+| `traceToConsole`              | `TRACE_TO_CONSOLE`                | false    | `false`                                                    |
+| `exporterTimeout`             | `EXPORTER_TIMEOUT`                | false    | `10`                                                       |
+| `maxNumberOfSpanAttributes`   | `MAX_NUMBER_OF_SPAN_ATTRIBUTES`   | false    | `256`                                                      |
+| `maxSpanAttributeValueLength` | `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` | false    | `8192`                                                     |
 
-To group several traces into [sessions on Langfuse](https://langfuse.com/docs/tracing-features/sessions), wrap your code
-with `withSessionId` (or its non-suspend version, `withSessionIdBlocking`):
+[Langfuse Setup Example](examples/src/main/kotlin/ai/dev/kit/examples/backends/LangfuseExample.kt)
 
-```kotlin
-withSessionId("my-session-name") {
-    // your traced code
-}
+#### [Weave Configuration](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/TracingConfig.kt)
+
+| Property                      | Environment Variable              | Required | Default Value                                      |
+|-------------------------------|-----------------------------------|----------|----------------------------------------------------|
+| `weaveOtelBaseUrl`            | `WEAVE_URL`                       | false    | [`https://trace.wandb.ai`](https://trace.wandb.ai) |
+| `weaveEntity`                 | `WEAVE_ENTITY`                    | true     | -                                                  |
+| `weaveProjectName`            | `WEAVE_PROJECT_NAME`              | true     | -                                                  |
+| `weaveApiKey`                 | `WEAVE_API_KEY`                   | true     | -                                                  |
+| `traceToConsole`              | `TRACE_TO_CONSOLE`                | false    | `false`                                            |
+| `exporterTimeout`             | `EXPORTER_TIMEOUT`                | false    | `10`                                               |
+| `maxNumberOfSpanAttributes`   | `MAX_NUMBER_OF_SPAN_ATTRIBUTES`   | false    | `256`                                              |
+| `maxSpanAttributeValueLength` | `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` | false    | `8192`                                             |
+
+[Weave Setup Example](examples/src/main/kotlin/ai/dev/kit/examples/backends/WeaveExample.kt)
+
+#### [Console Configuration](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/TracingConfig.kt)
+
+Configuration for exporting OpenTelemetry traces to console
+only. [Console Setup Example](examples/src/main/kotlin/ai/dev/kit/examples/TracingExample.kt)
+
+### Project Structure
+
+- **[`plugin`](plugin)** — contains the Kotlin compiler plugins for annotation-based fluent tracing.  
+  It includes multiple Kotlin Compiler Plugin (KCP) implementations for different Kotlin versions.  
+  The [`gradle-tracing-plugin`](plugin/gradle-tracing-plugin) module automatically selects the appropriate KCP version
+  for your Kotlin compiler and applies it to your Gradle project.
+- **[`publishing`](publishing)** — provides a Gradle plugin used for modules that need to be published.  
+  It defines the `ai-dev-kit` version and includes Kotlin DSL logic for publishing artifacts to Space Maven
+  repositories.
+- **[`examples`](examples)** — contains runnable examples demonstrating how to use various `ai-dev-kit` features.
+  capabilities.
+- **[`tracing`](tracing)**
+    - **[`tracing-core`](tracing/tracing-core)** — the foundational module providing tracing abstractions, annotations,
+      and OpenTelemetry integration. Manual tracing. Tracing integration for `OkHttp` client
+    - **[`tracing-openai`](tracing/tracing-openai)** — tracing integration for the `OpenAI` client.
+    - **[`tracing-gemini`](tracing/tracing-gemini)** — tracing integration for the `Gemini` client.
+    - **[`tracing-anthropic`](tracing/tracing-anthropic)** — tracing integration for the `Anthropic` client.
+    - **[`tracing-test-utils`](tracing/tracing-test-utils)** — shared utilities for testing tracing functionality across
+      modules.
+
+### Limitations
+
+Context propagation works automatically in structured coroutines (e.g., `withContext`, `launch`).
+However, some concurrency models such as `runBlocking` and raw threads create new execution boundaries and require
+**manual propagation** of the OpenTelemetry context.
+
+- **`runBlocking` inside suspend functions:**  
+  Use [`currentSpanContextElement(...)`](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/Utils.kt)
+  to ensure child spans remain linked to their parent.  
+  Without it, spans become detached and appear as separate traces.
+
+  ```kotlin
+  @KotlinFlowTrace
+  suspend fun handleRequestInCoroutine(requestId: String) {
+      println("Running on thread: ${Thread.currentThread().name}")
+
+      // runBlocking without context propagation would detach the trace
+      runBlocking(currentSpanContextElement(currentCoroutineContext())) {
+          println("Running inside nested coroutine on thread: ${Thread.currentThread().name}")
+          processUserRequest(requestId)
+      }
+  }
+  ```
+- **Custom threads (via `thread { ... }`):**  
+  Threads do **not inherit** the OpenTelemetry context automatically.  
+  Capture and propagate it manually:
+  ```kotlin
+  val context = currentSpanContext(currentCoroutineContext())
+  thread {
+      context.makeCurrent().use { processUserRequest("REQ-303") }
+  }
+  ```
+
+- **Local functions:**
+  Avoid using `@KotlinFlowTrace` on local (nested) functions.
+  This is a known Kotlin limitation: references to local functions do not correctly implement the KCallable
+  interface. For more details, see the related issue: [KT-64873](https://youtrack.jetbrains.com/issue/KT-64873).
+
+See the [`ContextPropagationExample.kt`](examples/src/main/kotlin/ai/dev/kit/examples/ContextPropagationExample.kt) for
+a complete example.
+
+### Versioning
+
+The AI Dev Kit follows semantic versioning:
+
+```
+<major>.<minor>.<patch>
 ```
 
-If a session with this name doesn't exist yet, it'll be created automatically.
-The Langfuse project is determined by your API keys.
+* `<major>`: stays 0 until the library exits beta.
+* `<minor>`: increases for public releases (first public release: 0.1.0).
+* `<patch>`: used for internal development iterations and fixes.
 
-With W&B Weave, there is no such thing as sessions or runs, but you can group your traces together into a project by
-wrapping your code in `withProjectId` (or its non-suspend version, `withProjectIdBlocking`).
+## Contributing
 
-```kotlin
-withProjectId("my-project-name") {
-    // your traced code
-}
-```
+Read the [Contributing Guidelines](CONTRIBUTING.md).
 
-If a project with this name does not exist yet, it will be created automatically.
+## Code of Conduct
 
-```kotlin
-val experimentId = TODO("Implement a nice handle for requesting an experiment ID from the server")
-val runId = TODO("Implement a nice handle for getting a run ID from the server")
-withProjectIdBlocking(experimentId) {
-    withSessionIdBlocking(runId) {
-        // your traced code
-    }
-}
-```
-
-⚠️ Beware that explicitly spawning a new `thread { ... }` or `runBlocking { ... }` will break the automagical
-propagation of session and project
-IDs ([JBAI-14126](https://youtrack.jetbrains.com/issue/JBAI-14126/Tracing-does-not-work-out-of-the-box-with-multi-threaded-code))
-
-## 📚 How to use Evaluation?
-
-The `ai-dev-kit-eval` module provides a lightweight, extensible set of APIs for evaluating AI features and models.
-It helps you define test cases, run generators, compute scores, and optionally log results to external tracking systems.
-
-### ⭐ Key Features
-
-- Test APIs for AI evaluation
-    - Define inputs, expected ground truth, and produce outputs via a Generator
-    - Evaluate outputs with pluggable Evaluator implementations (single or multi-score)
-    - Run multiple times to measure stability and aggregate scores
-
-- BaseEvaluationTest
-    - Orchestrates runs over your dataset of TestCase entries
-    - Emits per-datapoint spans and run-level metadata (when tracing is enabled via ai-dev-kit-tracing)
-    - Aggregates and logs scores at the end of each run
-
-- NoLoggingEvaluationTest
-    - Fully local/in-memory evaluation (no external logging)
-    - Ideal for quick iteration in CI or local development
-
-- LangfuseEvaluationTest
-    - Logging to Langfuse
-    - Ready-to-use provider is available in
-      the [Langfuse module](ai-dev-kit-tracking-providers/ai-dev-kit-tracking-langfuse)
-
-### 🚀 Getting Started
-
-- Extend LangfuseEvaluationTest or NoLoggingEvaluationTest and implement the required hooks from your test class
-- Provide a list of TestCase items, a Generator, and an Evaluator
-
-For a detailed implementation guide, refer to the [Evaluation README](ai-dev-kit-eval/README.md) and two examples:
-
-1. `HaikuGeneratorTest`: simple eval for LLM-written haikus that use LLM-as-a-Judge as a
-   metric, [code in this repo](https://github.com/JetBrains/ai-dev-kit/blob/main/ai-dev-kit-example/src/test/kotlin/ai/dev/kit/example/haiku/HaikuGeneratorTest.kt)
-2. `FindMiniAgentTest`: a simple eval for the file search
-   agent [in the code engine repo](https://github.com/JetBrains/code-engine/pull/578/files#diff-701529c49dd319c5a627afaf6eb23ea130b44cfd6dce43d2051999a961afa6f6)
-
-## 🏗️ Project Structure
-
-#### 📦 Core Modules
-
-- **ai-dev-kit-tracing**: Core tracing functionality with OpenTelemetry tracing support. Written in Kotlin
-  Multiplatform (KMP). For a more details, refer to the [README.md](ai-dev-kit-tracing/README.md)
-- **ai-dev-kit-eval**: Evaluation framework for AI models, supporting criteria-based testing and quality metrics.
-- **ai-dev-kit-plugin** For a more detailed how-to, refer to the [README.md](ai-dev-kit-plugin/README.md) file in that
-  submodule:
-    - **trace-plugin**: Kotlin compiler plugin for tracing. Written in Kotlin Multiplatform (KMP).
-    - **trace-gradle**: Gradle plugin
-
-#### 📊 Tracking
-
-- **ai-dev-kit-tracking-providers**: Integration modules for various tracking platforms, such as:
-
-| Tracking Platform                                    | Tracing Support | Evaluation Support | Setup Guide                                                                            |
-|------------------------------------------------------|-----------------|--------------------|----------------------------------------------------------------------------------------|
-| **[Weights & Biases](https://docs.wandb.ai/)**       | ✅               | ❌                  | [Weights & Biases docs](https://docs.wandb.ai/)                                        |
-| **[Langfuse](https://github.com/langfuse/langfuse)** | ✅               | ✅                  | [Setup Langfuse](ai-dev-kit-tracking-providers/ai-dev-kit-tracking-langfuse/README.md) |
-
-#### 🛠️ Development Tools
-
-- **ai-dev-kit-test-base**: Common test utilities and base classes for testing tracing capabilities
-- **ai-dev-kit-example**: Example implementations and usage demonstrations
-
-### 📦 How to publish `ai-dev-kit`
-
-* Change a version [here](publishing-logic/src/main/kotlin/SpacePublishingPlugin.kt)
-  and [here](plugin/gradle-tracing-plugin/src/main/kotlin/ai/dev/kit/trace/gradle/AiDevKitTraceGradlePlugin.kt)
-* When a pull request is created, a comment is automatically added with instructions for running the publishing build.
-* To publish locally, you need to provide `SPACE_USERNAME` and `SPACE_PASSWORD` `.env` variables with write access
-  to the `ai-dev-kit` [repository](https://jetbrains.team/p/ai-development-kit/packages/maven/ai-development-kit).
-  Then run the following command
-
-```bash
-./gradlew publishContentModules
-```
-
-When a pull request is created, a comment is automatically added with instructions for running the publishing build.
-
-### 🧪 Running Tests
-
-The AI Development Kit uses test tags to manage which tests are executed in different environments.
-Tests or test classes tagged with `SkipForNonLocal` are designed to run only in local environments.
-When the `aiDevKitLocalTests` system property is set to `false` (the default is `true`), these tests are excluded from
-execution.
-This ensures that tests tagged with `SkipForNonLocal` do not run on TeamCity or other non-local environments.
-
-# Langfuse Integration Setup Guide
-
-This guide explains how to configure and use `ai-dev-kit` with the internally hosted **Langfuse** instance for tracing
-and evaluation.
-
----
-
-## 🔐 VPN Access
-
-Before accessing the Langfuse instance, ensure you are connected to the internal VPN.
-
-If you do not yet have VPN access, follow the official guide here:  
-👉 [JetBrains VPN Setup Guide](https://youtrack.jetbrains.com/articles/ITKB-A-5/VPN)
-
----
-
-## 🌐 Log in to Langfuse
-
-Once connected to the VPN, open the internal Langfuse instance:  
-👉 [https://langfuse.labs.jb.gg/](https://langfuse.labs.jb.gg/)
-
-Sign up or log in using your credentials.
-
----
-
-## 🏗️ Create a Project
-
-After logging in:
-
-1. Create a new **organization** (or select an existing one).
-2. Within that organization, create a new **project**.
-
----
-
-## 🔑 Generate API Keys
-
-1. Navigate to your project.
-2. Go to **Project Settings** → **API Keys**.
-
-Or open it directly by replacing `{your_project_id}` in the URL:  
-👉 https://langfuse.labs.jb.gg/project/{your_project_id}/settings/api-keys
-
-3. Click **"New Key"** to generate a pair of API keys.
-
-> ⚠️ **Important:** The **secret key** is visible **only once** — make sure to store it securely!
-
----
-
-## ⚙️ Configure `ai-dev-kit`
-
-You can configure Langfuse integration either through environment variables or directly in code.
-
-### Option 1: Environment Variables
-
-Set the following environment variables in your shell, `.env` file, or CI:
-
-```env
-LANGFUSE_PUBLIC_KEY=your_public_key
-LANGFUSE_SECRET_KEY=your_secret_key
-```
-
-### Option 2: Programmatic Setup
-
-a. Setup Langfuse Tracing Manually
-
-```kotlin
-TracingManager.setup(
-    LangfuseConfig(
-        langfuseUrl = "https://langfuse.labs.jb.gg/",
-        langfusePublicKey = "...",
-        langfuseSecretKey = "..."
-    )
-)
-)
-```
-
-b. Use in Evaluation Tests
-
-```kotlin
-class MyTest : LangfuseEvaluationTest<..., ..., ..., ...>(
-    numberOfRuns = ...,
-    langfuseConfig = LangfuseConfig(...)
-) {
-    // Your test logic here
-}
-```
-
----
-
-## 🧪 Verifying the Setup
-
-Run the app or tests that include tracing or evaluation logic.
-Go to your project in Langfuse.
-
-1. Navigate to your project.
-2. Go to **Home**.
-
-👉 https://langfuse.labs.jb.gg/project/{your_project_id}
-
-You should see new traces appear in the **Tracing/Traces** tab:
-
-👉 https://langfuse.labs.jb.gg/project/{your_project_id}/traces,
-
-runs in **Tracing/Sessions** tab:
-
-👉 https://langfuse.labs.jb.gg/project/{your_project_id}/sessions,
-
-and metrics in **Tracing/Scores** tab:
-
-👉 https://langfuse.labs.jb.gg/project/{your_project_id}/scores,
-
----
-For additional info refer to [Langfuse docs](https://langfuse.com/docs).
+This project and the corresponding community are governed by
+the [JetBrains Open Source and Community Code of Conduct](https://github.com/jetbrains#code-of-conduct). Please make
+sure you read it.
 
 ## License
 
-This project is licensed under the Apache License 2.0 — see the [LICENSE](LICENSE) file for details.
-
-
+AI Dev Kit is licensed under the [Apache 2.0 License](LICENSE).

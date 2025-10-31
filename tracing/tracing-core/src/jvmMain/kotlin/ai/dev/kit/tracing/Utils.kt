@@ -2,8 +2,7 @@ package ai.dev.kit.tracing
 
 import ai.dev.kit.tracing.fluent.FluentSpanAttributes
 import ai.dev.kit.tracing.fluent.processor.Span
-import ai.dev.kit.tracing.fluent.processor.getOpenTelemetryContext
-import io.opentelemetry.context.Context
+import ai.dev.kit.tracing.fluent.processor.currentSpanContext
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -14,6 +13,6 @@ import kotlin.coroutines.CoroutineContext
  *                         If `null`, the current active context is used.
  */
 fun addLangfuseTagsToCurrentTrace(tags: List<String>, coroutineContext: CoroutineContext? = null) {
-    val otelContext = coroutineContext?.let { getOpenTelemetryContext(it) } ?: Context.current()
+    val otelContext = currentSpanContext(coroutineContext)
     Span.fromContext(otelContext).setAttribute(FluentSpanAttributes.LANGFUSE_TRACE_TAGS.key, tags.toString())
 }

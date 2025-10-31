@@ -14,6 +14,22 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KFunction
 import kotlin.reflect.jvm.javaMethod
 
+/**
+ * Returns the active OpenTelemetry [Context] from the given [CoroutineContext].
+ * Falls back to [Context.current] when no trace is attached or context is root.
+ */
+fun currentSpanContext(coroutineContext: CoroutineContext? = null): Context {
+    val ctx = coroutineContext?.getOpenTelemetryContext() ?: return Context.current()
+    return if (ctx == Context.root()) Context.current() else ctx
+}
+
+/**
+ * Wraps the current OpenTelemetry [Context] as a coroutine [CoroutineContext].
+ * Use this to preserve trace context across coroutines.
+ */
+fun currentSpanContextElement(coroutineContext: CoroutineContext? = null) =
+    currentSpanContext(coroutineContext).asContextElement()
+
 inline fun <T> withSpan(
     name: String,
     attributes: Map<String, Any?> = emptyMap(),
@@ -75,7 +91,7 @@ actual suspend inline fun <T> withTraceSuspended(
 ): T {
     val method = function.javaMethod ?: throw IllegalArgumentException("Function must be a Java method")
     val span = createSpan(
-        traceAnnotation, method, args, getOpenTelemetryContext(currentCoroutineContext())
+        traceAnnotation, method, args, currentSpanContext(currentCoroutineContext())
     )
     try {
         val result = withContext(span.asContextElement()) {
@@ -129,12 +145,6 @@ fun createSpan(
 
 fun KotlinFlowTrace.getSpanMetadataCustomizer() = this.metadataCustomizer.objectInstance
     ?: error("Handler must be an object singleton")
-
-fun getOpenTelemetryContext(coroutineContext: CoroutineContext): Context {
-    return coroutineContext.getOpenTelemetryContext().let {
-        if (it == Context.root()) Context.current() else it
-    }
-}
 
 fun Span.addExceptionAttributes(exception: Throwable) {
     this.recordException(exception)
