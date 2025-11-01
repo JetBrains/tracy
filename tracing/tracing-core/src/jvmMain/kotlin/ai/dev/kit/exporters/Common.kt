@@ -44,7 +44,7 @@ private const val WARNING_URL_LENGTH_LIMIT = 200
  *
  *
  * @see UploadableMediaContentAttributeKeys
- * @return error as a string if the given [url] is not invalid, otherwise `Unit`
+ * @return error as a string if the given [url] is invalid, otherwise `Unit`
  */
 fun setUrlAttributes(
     span: Span,

@@ -255,7 +255,6 @@ internal suspend fun uploadMediaFileToLangfuse(
         val uploadResponse = client.put(uploadResource.uploadUrl) {
             // the content type of the media being uploaded
             contentType(contentType)
-            // header("x-amz-checksum-sha256", sha256Hash)
             setBody(decodedBytes)
         }
 
