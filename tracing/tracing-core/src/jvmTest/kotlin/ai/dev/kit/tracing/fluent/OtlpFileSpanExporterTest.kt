@@ -1,7 +1,7 @@
 package ai.dev.kit.tracing.fluent
 
 import ai.dev.kit.tracing.ConsoleOutputFormat
-import ai.dev.kit.tracing.FileTracingConfig
+import ai.dev.kit.tracing.FileConfig
 import ai.dev.kit.tracing.TracingManager
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.*
@@ -21,7 +21,7 @@ class OtlpFileSpanExporterTest {
 
         createSampleSpan(
             spanName,
-            config = FileTracingConfig(
+            config = FileConfig(
                 filepath = tempFile.absolutePathString(),
                 append = false,
                 format = ConsoleOutputFormat.JSON,
@@ -50,7 +50,7 @@ class OtlpFileSpanExporterTest {
         assertEquals("value1", attr["value"]!!.jsonObject["stringValue"]!!.jsonPrimitive.content)
     }
 
-    private fun createSampleSpan(spanName: String, config: FileTracingConfig) {
+    private fun createSampleSpan(spanName: String, config: FileConfig) {
         TracingManager.setup(config)
         val tracer = TracingManager.tracer
         val span = tracer.spanBuilder(spanName).startSpan()

@@ -94,7 +94,7 @@ data class WeaveConfig(
  * @param maxSpanAttributeValueLength max number of characters for attribute strings.
  *  Defaults to the `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` environment variable or [MAX_SPAN_ATTRIBUTE_VALUE_LENGTH] variable.
  */
-data class FileTracingConfig(
+data class FileConfig(
     val filepath: String,
     val append: Boolean,
     override val traceToConsole: Boolean = false,

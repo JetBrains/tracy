@@ -46,7 +46,7 @@ fun setupTracing(
             when (tracingConfig) {
                 is LangfuseConfig -> addLangfuseSpanProcessor(tracingConfig)
                 is WeaveConfig -> addWeaveSpanProcessor(tracingConfig)
-                is FileTracingConfig -> addOtlpFileSpanProcessor(tracingConfig)
+                is FileConfig -> addOtlpFileSpanProcessor(tracingConfig)
                 is ConsoleConfig -> { /* no-op */ }
             }
             if (tracingConfig.traceToConsole) {
