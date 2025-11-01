@@ -40,8 +40,8 @@ class OtlpFileSpanExporter private constructor(
          * Creates a configured OpenTelemetry span exporter instance
          * of [OtlpFileSpanExporter] that writes traces to a file.
          */
-        internal fun create(config: FileTracingConfig): SpanExporter {
-            val exporter = when(config.format) {
+        internal fun create(config: FileTracingConfig): OtlpFileSpanExporter {
+            val exporter = when (config.format) {
                 ConsoleOutputFormat.PLAIN_TEXT -> LoggingSpanExporter.create()
                 ConsoleOutputFormat.JSON -> OtlpJsonLoggingSpanExporter.create()
             }
@@ -49,7 +49,7 @@ class OtlpFileSpanExporter private constructor(
             val logger = getExporterLogger(exporter)
             reconfigureLogger(logger, config)
 
-            return exporter
+            return OtlpFileSpanExporter(exporter)
         }
 
         /**
@@ -73,7 +73,7 @@ class OtlpFileSpanExporter private constructor(
             logger.setUseParentHandlers(false)
             val fileHandler = FileHandler(config.filepath, config.append)
 
-            fileHandler.formatter = when(config.format) {
+            fileHandler.formatter = when (config.format) {
                 ConsoleOutputFormat.PLAIN_TEXT -> SimpleFormatter()
                 ConsoleOutputFormat.JSON -> JsonSpanFormatter()
             }
