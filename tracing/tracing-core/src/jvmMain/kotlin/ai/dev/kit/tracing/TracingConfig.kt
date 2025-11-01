@@ -99,11 +99,13 @@ data class FileTracingConfig(
     val append: Boolean,
     override val traceToConsole: Boolean = false,
     override val format: ConsoleOutputFormat = ConsoleOutputFormat.PLAIN_TEXT,
+    override val exporterTimeout: Long = 10,
     override val maxNumberOfSpanAttributes: Int? = null,
     override val maxSpanAttributeValueLength: Int? = null
 ) : TracingConfig(
     traceToConsole = traceToConsole,
     format = format,
+    exporterTimeout = exporterTimeout,
     maxNumberOfSpanAttributes = maxNumberOfSpanAttributes,
     maxSpanAttributeValueLength = maxSpanAttributeValueLength,
 )
@@ -122,11 +124,13 @@ data class FileTracingConfig(
 data class ConsoleConfig(
     override val traceToConsole: Boolean = true,
     override val format: ConsoleOutputFormat = ConsoleOutputFormat.PLAIN_TEXT,
+    override val exporterTimeout: Long = 10,
     override val maxNumberOfSpanAttributes: Int? = null,
     override val maxSpanAttributeValueLength: Int? = null
 ) : TracingConfig(
     traceToConsole = traceToConsole,
     format = format,
+    exporterTimeout = exporterTimeout,
     maxNumberOfSpanAttributes = maxNumberOfSpanAttributes,
     maxSpanAttributeValueLength = maxSpanAttributeValueLength
 )
