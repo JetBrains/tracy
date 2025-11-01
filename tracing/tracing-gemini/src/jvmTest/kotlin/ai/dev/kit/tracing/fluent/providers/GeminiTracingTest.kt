@@ -93,6 +93,23 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
     }
 
     @Test
+    fun `test nested instrumentation calls don't cause duplicative tracing`() = runTest {
+        val client = instrument(instrument(instrument(createGeminiClient())))
+
+        val model = "gemini-2.5-flash"
+        client.models.generateContent(
+            model,
+            "Say hi!",
+            GeminiGenerateContentConfig.builder()
+                .temperature(0.0f)
+                .build()
+        )
+
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+    }
+
+    @Test
     fun `test Gemini tool calling auto logging`() = runTest {
         val client = instrument(createGeminiClient())
 

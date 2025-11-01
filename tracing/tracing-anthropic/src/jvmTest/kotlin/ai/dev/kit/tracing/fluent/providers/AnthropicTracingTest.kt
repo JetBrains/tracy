@@ -49,6 +49,23 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
     }
 
     @Test
+    fun `test nested instrumentation calls don't cause duplicative tracing`() {
+        val client = instrument(instrument(instrument(createAnthropicClient())))
+
+        val params = MessageCreateParams.builder()
+            .addUserMessage("Say hi!")
+            .maxTokens(1000L)
+            .temperature(0.0)
+            .model(Model.CLAUDE_3_7_SONNET_20250219)
+            .build()
+
+        client.messages().create(params)
+
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+    }
+
+    @Test
     fun `test Anthropic tool auto tracing`() {
         val client = instrument(createAnthropicClient())
 

@@ -51,6 +51,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
     fun setup(config: HttpClientConfig<*>) {
         val tracer = TracingManager.tracer
 
+        // duplicate plugins are ignored by the API implementation
         config.install(createClientPlugin("NetworkParamsPlugin") {
             onRequest { request, _ ->
                 val span = tracer.spanBuilder("http-client-span").startSpan()

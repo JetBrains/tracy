@@ -19,8 +19,11 @@ import okio.BufferedSource
 import okio.ForwardingSource
 import okio.buffer
 
-fun instrument(client: OkHttpClient, interceptor: OpenTelemetryOkHttpInterceptor): OkHttpClient =
-    client.newBuilder().addInterceptor(interceptor).build()
+fun instrument(client: OkHttpClient, interceptor: OpenTelemetryOkHttpInterceptor): OkHttpClient {
+    val clientBuilder = client.newBuilder()
+    patchInterceptorsInplace(clientBuilder.interceptors(), interceptor)
+    return clientBuilder.build()
+}
 
 /**
  * Patches the OpenAI-compatible client by injecting a custom interceptor into its internal HTTP client.
@@ -47,7 +50,10 @@ fun <T> patchOpenAICompatibleClient(
     }
 
     val okHttpClient = getFieldValue(okHttpHolder, "okHttpClient") as OkHttpClient
-    setFieldValue(okHttpClient, "interceptors", listOf(interceptor))
+
+    // add a given interceptor if the current list of interceptors doesn't contain it already
+    val updatedInterceptors = patchInterceptors(okHttpClient.interceptors, interceptor)
+    setFieldValue(okHttpClient, "interceptors", updatedInterceptors)
 
     return client
 }
