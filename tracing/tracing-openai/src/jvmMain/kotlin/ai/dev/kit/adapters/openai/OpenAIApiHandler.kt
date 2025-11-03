@@ -3,8 +3,13 @@ package ai.dev.kit.adapters.openai
 import ai.dev.kit.adapters.Url
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
@@ -38,3 +43,10 @@ internal object OpenAIApiUtils {
         body["model"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
     }
 }
+
+internal val JsonElement.asString: String
+    get() = when (this) {
+        is JsonArray -> this.jsonArray.toString()
+        is JsonObject -> this.jsonObject.toString()
+        is JsonPrimitive -> this.jsonPrimitive.content
+    }

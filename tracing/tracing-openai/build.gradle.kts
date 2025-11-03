@@ -47,6 +47,10 @@ kotlin {
                 implementation(libs.ktor.client.cio)
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.opentelemetry.sdk.testing)
+                implementation(libs.ktor.client.cio)
+                implementation(libs.ktor.client.negotiation)
+                implementation(libs.ktor.client)
+                implementation(libs.ktor.serialization.json)
                 implementation(project(":tracing:tracing-test-utils"))
             }
         }

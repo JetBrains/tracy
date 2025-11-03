@@ -1,6 +1,7 @@
 package ai.dev.kit.adapters
 
 import ai.dev.kit.adapters.openai.ChatCompletionsHandler
+import ai.dev.kit.adapters.openai.ImagesGenerationsHandler
 import ai.dev.kit.adapters.openai.OpenAIApiHandler
 import ai.dev.kit.adapters.openai.OpenAIApiUtils
 import ai.dev.kit.adapters.openai.ResponsesApiHandler
@@ -16,11 +17,13 @@ import kotlinx.serialization.json.jsonPrimitive
 /**
  * Detects which OpenAI API is being used based on the request / response structure
  */
-private enum class OpenAIApiType {
+private enum class OpenAIApiType(val route: String) {
     // See: https://platform.openai.com/docs/api-reference/completions
-    CHAT_COMPLETIONS,
+    CHAT_COMPLETIONS("completions"),
     // See: https://platform.openai.com/docs/api-reference/responses
-    RESPONSES_API,
+    RESPONSES_API("responses"),
+    // See: https://platform.openai.com/docs/api-reference/images/create
+    IMAGES_GENERATIONS("images/generations"),
 }
 
 class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.OPENAI) {
@@ -28,16 +31,16 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
 
     override fun getRequestBodyAttributes(span: Span, url: Url, body: JsonObject) {
         if (handler == null) {
-            handler = when (detectApiType(body)) {
+            handler = when (detectApiType(url)) {
                 OpenAIApiType.CHAT_COMPLETIONS -> ChatCompletionsHandler(
                     extractor = ChatCompletionsMediaContentExtractor()
                 )
                 OpenAIApiType.RESPONSES_API -> ResponsesApiHandler(
                     extractor = ResponsesMediaContentExtractor()
                 )
+                OpenAIApiType.IMAGES_GENERATIONS -> ImagesGenerationsHandler()
             }
         }
-
         handler?.handleRequestAttributes(span, url, body)
     }
 
@@ -55,13 +58,12 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
     }
 }
 
-private fun detectApiType(
-    requestBody: JsonObject?
-): OpenAIApiType {
-    requestBody?.let { body ->
-        if (body.containsKey("messages")) return OpenAIApiType.CHAT_COMPLETIONS
-        if (body.containsKey("input")) return OpenAIApiType.RESPONSES_API
+private fun detectApiType(url: Url): OpenAIApiType {
+    val route = url.pathSegments.joinToString(separator = "/")
+    return when {
+        route.endsWith(OpenAIApiType.CHAT_COMPLETIONS.route) -> OpenAIApiType.CHAT_COMPLETIONS
+        route.endsWith(OpenAIApiType.RESPONSES_API.route) -> OpenAIApiType.RESPONSES_API
+        route.endsWith(OpenAIApiType.IMAGES_GENERATIONS.route) -> OpenAIApiType.IMAGES_GENERATIONS
+        else -> throw IllegalArgumentException("Unknown API type with route '$route'")
     }
-
-    return OpenAIApiType.CHAT_COMPLETIONS
 }
