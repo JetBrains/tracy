@@ -13,8 +13,8 @@ import kotlinx.serialization.json.JsonArray
  * @see ai.dev.kit.exporters.setUrlAttributes
  * @see ai.dev.kit.exporters.setDataUrlAttributes
  */
-abstract class MediaContentExtractor {
-    abstract fun setUploadableContentAttributes(
+interface MediaContentExtractor {
+    fun setUploadableContentAttributes(
         span: Span,
         field: String,
         content: JsonArray,

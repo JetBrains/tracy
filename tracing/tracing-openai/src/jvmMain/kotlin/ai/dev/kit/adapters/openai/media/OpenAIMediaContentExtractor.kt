@@ -52,7 +52,7 @@ internal sealed class SupportedContentTypeTags(
  */
 internal abstract class OpenAIMediaContentExtractor(
     private val tags: SupportedContentTypeTags
-) : MediaContentExtractor() {
+) : MediaContentExtractor {
     protected val logger = KotlinLogging.logger {}
 
     /**
