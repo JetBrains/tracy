@@ -1,7 +1,6 @@
 package ai.dev.kit
 
 import okhttp3.Interceptor
-import kotlin.let
 
 /**
  * Appends a given [interceptor] into a copy of [interceptors]
