@@ -1,6 +1,8 @@
 package ai.dev.kit.common
 
+import io.ktor.http.ContentType
 import java.net.URL
+import java.nio.charset.StandardCharsets
 
 /**
  * Parses a data URL extracting media type, headers, and data.
@@ -31,17 +33,17 @@ fun String.parseDataUrl(): DataUrl? {
 
     // Default media type if not specified
     val mediaType = if (mediaTypeRaw.isEmpty()) {
-        "text/plain"
+        ContentType.Text.Plain
     } else {
-        mediaTypeRaw
+        ContentType.parse(mediaTypeRaw)
     }
 
     // parse headers/attributes (e.g., ;charset=UTF-8)
     val headers = mutableMapOf<String, String>()
 
     // add default charset for text/plain if not specified
-    if (mediaType == "text/plain" && !attributesRaw.contains("charset=")) {
-        headers["charset"] = "US-ASCII"
+    if (mediaType == ContentType.Text.Plain && !attributesRaw.contains("charset=")) {
+        headers["charset"] = StandardCharsets.US_ASCII.name()
     }
 
     if (attributesRaw.isNotEmpty()) {
@@ -57,7 +59,7 @@ fun String.parseDataUrl(): DataUrl? {
     val isBase64 = base64Marker.isNotEmpty()
 
     return DataUrl(
-        mediaType = mediaType,
+        mediaType = mediaType.toString(),
         headers = headers,
         base64 = isBase64,
         data = data
