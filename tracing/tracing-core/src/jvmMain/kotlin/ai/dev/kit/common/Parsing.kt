@@ -17,12 +17,12 @@ fun String.parseDataUrl(): DataUrl? {
     }
 
     // Pattern: data:[<media-type>][;<attribute>=<value>]*[;base64],<data>
-    val regex = Regex(
+    val dataUrlRegex = Regex(
         "^data:([^,;]*)((?:;[^,;=]+=[^,;]+)*)(;base64)?,(.*)$",
         RegexOption.DOT_MATCHES_ALL
     )
 
-    val matchResult = regex.matchEntire(url) ?: return null
+    val matchResult = dataUrlRegex.matchEntire(url) ?: return null
 
     val mediaTypeRaw = matchResult.groupValues[1].trim()
     val attributesRaw = matchResult.groupValues[2]
