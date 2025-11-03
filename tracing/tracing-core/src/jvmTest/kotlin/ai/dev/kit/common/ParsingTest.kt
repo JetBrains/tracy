@@ -1,12 +1,9 @@
 package ai.dev.kit.common
 
-import io.ktor.http.ContentType
 import org.junit.jupiter.api.Test
-import java.net.URL
-import java.nio.charset.StandardCharsets
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ParsingTest {
