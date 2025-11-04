@@ -113,17 +113,15 @@ fun SdkTracerProviderBuilder.addLangfuseSpanProcessor(
  * @see uploadMediaFileToLangfuse
  */
 class MediaContentUploadingSpanProcessor(
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val client: HttpClient = HttpClient {
+        install(ContentNegotiation) {
+            json()
+        }
+    }
 ) : SpanProcessor {
     companion object {
         private val logger = KotlinLogging.logger {}
-
-        // used to request media files by URLs
-        private val client = HttpClient {
-            install(ContentNegotiation) {
-                json()
-            }
-        }
     }
 
     override fun onStart(parentContext: Context, span: ReadWriteSpan) {}
@@ -173,6 +171,16 @@ class MediaContentUploadingSpanProcessor(
     }
 
     override fun isEndRequired(): Boolean = true
+
+    override fun shutdown(): io.opentelemetry.sdk.common.CompletableResultCode {
+        return io.opentelemetry.sdk.common.CompletableResultCode.ofSuccess().also {
+            client.close()
+        }
+    }
+
+    override fun close() {
+        client.close()
+    }
 
     private suspend fun uploadMediaFromUrl(
         traceId: String,
