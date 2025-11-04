@@ -12,7 +12,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 
 
-@Tag("SkipForNonLocal")
+@Tag("openai")
 class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
     @Test
     fun `test OpenAI responses API auto tracing`() = runTest {

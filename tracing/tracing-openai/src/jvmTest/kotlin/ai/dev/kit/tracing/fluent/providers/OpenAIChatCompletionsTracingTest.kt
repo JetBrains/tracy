@@ -17,7 +17,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 
-@Tag("SkipForNonLocal")
+@Tag("openai")
 class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
     @Test
     fun `test OpenAI chat completions auto tracing`() = runTest {
