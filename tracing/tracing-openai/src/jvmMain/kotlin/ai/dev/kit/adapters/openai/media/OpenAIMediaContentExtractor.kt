@@ -26,7 +26,7 @@ internal sealed class SupportedContentTypeTags(
     val file: String,
 ) {
     /**
-     * See details: [Responses API Docs](https://platform.openai.com/docs/api-reference/responses/create#responses_create-input-input_item_list-input_message-content)
+     * See details: [Chat Completions API Docs](https://platform.openai.com/docs/api-reference/chat/create)
      */
     object ChatCompletions : SupportedContentTypeTags(
         image = "image_url",
@@ -35,7 +35,7 @@ internal sealed class SupportedContentTypeTags(
     )
 
     /**
-     * See details: [Chat Completions API Docs](https://platform.openai.com/docs/api-reference/chat/create)
+     * See details: [Responses API Docs](https://platform.openai.com/docs/api-reference/responses/create#responses_create-input-input_item_list-input_message-content)
      */
     object ResponsesApi : SupportedContentTypeTags(
         image = "input_image",
