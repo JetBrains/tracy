@@ -3,7 +3,9 @@ package ai.dev.kit.tracing.fluent.providers
 import ai.dev.kit.exporters.SupportedMediaContentTypes
 import ai.dev.kit.exporters.UploadableMediaContentAttributeKeys
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
-import ai.dev.kit.tracing.LITELLM_URL
+import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
+import ai.dev.kit.tracing.autologging.createOpenAIClient
+import com.openai.client.OpenAIClient
 import com.openai.core.JsonArray
 import com.openai.core.JsonString
 import com.openai.core.JsonValue
@@ -23,29 +25,43 @@ import java.io.File
 import java.util.Base64
 import java.util.stream.Stream
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
+    /**
+     * When no value is provided, defaults to [PRODUCTION_URL].
+     */
+    protected val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
+
+    protected val llmProviderApiKey =
+        System.getenv("OPENAI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
+        ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
+
+    protected fun createOpenAIClient(): OpenAIClient {
+        return createOpenAIClient(llmProviderUrl, llmProviderApiKey)
+    }
+
     protected fun validateBasicTracing(model: ChatModel) {
         val traces = analyzeSpans()
 
         assertEquals(1, traces.size)
         val trace = traces.firstOrNull()
-        assertNotNull(trace)
 
-        assertEquals(
-            LITELLM_URL,
-            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
+        assertNotNull(trace)
+        assertTrue(
+            (llmProviderUrl ?: PRODUCTION_URL)
+                .startsWith(trace.attributes[AttributeKey.stringKey("gen_ai.api_base")].toString())
         )
-        assertEquals(
-            trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.startsWith(model.asString()),
-            true
-        )
+
+        val responseModel = trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]
+        assertNotNull(responseModel)
+        assertTrue(responseModel.startsWith(model.asString()))
+
         val content = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
-        assertNotNull(content)
-        assertTrue(content.isNotEmpty())
+        assertFalse(content.isNullOrEmpty())
     }
 
     protected fun validateErrorStatus() {
@@ -54,13 +70,13 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
         assertNotNull(trace)
 
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
-        assertEquals(
-            LITELLM_URL,
-            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
+        assertTrue(
+            (llmProviderUrl
+                ?: PRODUCTION_URL).startsWith(trace.attributes[AttributeKey.stringKey("gen_ai.api_base")].toString())
         )
 
-        assertEquals(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")]?.isNotEmpty(), true)
-        assertEquals(trace.attributes[AttributeKey.stringKey("gen_ai.error.code")]?.isNotEmpty(), true)
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")].isNullOrEmpty())
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.error.code")].isNullOrEmpty())
     }
 
     protected fun validateToolCall() {
@@ -72,27 +88,15 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
         assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
         assertEquals("function", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.type")])
-        assertEquals(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.description")]?.isNotEmpty(), true)
-        assertEquals(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.parameters")]?.isNotEmpty(), true)
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.description")].isNullOrEmpty())
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.parameters")].isNullOrEmpty())
 
         // if AI called the tool when check its props
         if (trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.finish_reason")] == "tool_calls") {
-            assertEquals(
-                trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")]?.isNotEmpty(),
-                true
-            )
-            assertEquals(
-                trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.call.id")]?.isNotEmpty(),
-                true
-            )
-            assertEquals(
-                trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.call.type")]?.isNotEmpty(),
-                true
-            )
-            assertEquals(
-                trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")]?.isNotEmpty(),
-                true
-            )
+            assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")].isNullOrEmpty())
+            assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.call.id")].isNullOrEmpty())
+            assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.call.type")].isNullOrEmpty())
+            assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")].isNullOrEmpty())
         }
     }
 
@@ -113,14 +117,8 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
         // if AI called the tool when check its props
         if (toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.finish_reason")] == "tool_calls") {
             assertEquals("tool", toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.role")])
-            assertEquals(
-                toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.content")]?.isNotEmpty(),
-                true
-            )
-            assertEquals(
-                toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.tool_call_id")]?.isNotEmpty(),
-                true
-            )
+            assertFalse(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.content")].isNullOrEmpty())
+            assertFalse(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.tool_call_id")].isNullOrEmpty())
         }
     }
 
@@ -135,34 +133,16 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
         assertEquals("goodbye", toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.tool.1.name")])
 
         if (toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.finish_reason")] == "tool_calls") {
-            assertEquals(
-                toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")]?.isNotEmpty(),
-                true
-            )
-            assertEquals(
-                toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.1.name")]?.isNotEmpty(),
-                true
-            )
+            assertFalse(toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")].isNullOrEmpty())
+            assertFalse(toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.1.name")].isNullOrEmpty())
 
             assertEquals("tool", toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.role")])
-            assertEquals(
-                toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.content")]?.isNotEmpty(),
-                true
-            )
-            assertEquals(
-                toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.tool_call_id")]?.isNotEmpty(),
-                true
-            )
+            assertFalse(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.content")].isNullOrEmpty())
+            assertFalse(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.tool_call_id")].isNullOrEmpty())
 
             assertEquals("tool", toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.role")])
-            assertEquals(
-                toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.content")]?.isNotEmpty(),
-                true
-            )
-            assertEquals(
-                toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.tool_call_id")]?.isNotEmpty(),
-                true
-            )
+            assertFalse(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.content")].isNullOrEmpty())
+            assertFalse(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.3.tool_call_id")].isNullOrEmpty())
         }
     }
 
@@ -212,8 +192,12 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
         val traces = analyzeSpans()
         assertEquals(1, traces.size)
         val trace = traces.first()
-        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.content.type")]?.startsWith("text/event-stream") == true)
-        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]?.isNotEmpty() == true)
+
+        val contentType = trace.attributes[AttributeKey.stringKey("gen_ai.completion.content.type")]
+        assertNotNull(contentType, "Missing gen_ai.completion.content.type attribute")
+        assertTrue(contentType.startsWith("text/event-stream"))
+
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")].isNullOrEmpty())
         assertEquals(output, trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")])
     }
 

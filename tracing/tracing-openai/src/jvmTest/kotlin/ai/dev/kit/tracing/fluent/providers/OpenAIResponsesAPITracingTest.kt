@@ -1,7 +1,6 @@
 package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
-import ai.dev.kit.tracing.autologging.createLiteLLMClient
 import ai.dev.kit.tracing.fluent.providers.BaseOpenAITracingTest.Companion.MediaSource
 import com.openai.core.JsonValue
 import com.openai.models.ChatModel
@@ -18,7 +17,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
     @Test
     fun `test OpenAI responses API auto tracing`() = runTest {
         val model = ChatModel.GPT_4O_MINI
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
         val params = ResponseCreateParams.builder()
             .input("Generate polite greeting and introduce yourself")
             .model(model).temperature(1.1).build()
@@ -29,7 +28,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI responses API span error status when request fails`() = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
         val params = ResponseCreateParams.builder()
             .input("Generate polite greeting and introduce yourself")
             .model(ChatModel.GPT_4O_MINI)
@@ -48,7 +47,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI responses API tool calls auto tracing`() = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
 
         // defines: `greet(name: String)`
         val greetTool = createFunctionTool("hi")
@@ -67,7 +66,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI responses API response to a tool call auto tracing`() = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
 
         val greetTool = createFunctionTool("hi")
 
@@ -114,7 +113,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI responses API multiple tools response to tool calls auto tracing`() = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
 
         val greetTool = createFunctionTool("hi")
         val farewellTool = createFunctionTool("goodbye")
@@ -171,7 +170,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI responses API streaming`(): Unit = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
 
         val params = ResponseCreateParams.builder()
             .input("Generate polite greeting and introduce yourself")
@@ -197,7 +196,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
         val model = ChatModel.GPT_4O_MINI
         val prompt = "Describe what you see in the image."
 
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
         val params = ResponseCreateParams.builder()
             .input(
                 inputWith(
@@ -224,7 +223,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
         val model = ChatModel.GPT_4O_MINI
         val prompt = "Describe what you see in the file"
 
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
         val params = ResponseCreateParams.builder()
             .input(
                 inputWith(
@@ -253,7 +252,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
         val fileImage = MediaSource.File("image.jpg", "image/jpeg")
         val urlImage = MediaSource.Link(CAT_IMAGE_URL)
 
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
         val params = ResponseCreateParams.builder()
             .input(
                 inputWith(
@@ -285,7 +284,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
         val localFile = MediaSource.File("sample.pdf", "application/pdf")
         val remoteFile = MediaSource.Link(SAMPLE_PDF_FILE_URL)
 
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
         val params = ResponseCreateParams.builder()
             .input(
                 inputWith(

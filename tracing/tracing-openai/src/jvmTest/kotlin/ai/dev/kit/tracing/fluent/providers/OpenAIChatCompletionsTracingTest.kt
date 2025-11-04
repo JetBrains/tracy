@@ -1,15 +1,16 @@
 package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
-import ai.dev.kit.tracing.autologging.createLiteLLMClient
 import ai.dev.kit.tracing.fluent.providers.BaseOpenAITracingTest.Companion.MediaSource
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.*
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import java.util.concurrent.TimeUnit
 import kotlin.jvm.optionals.getOrNull
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -21,7 +22,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
     @Test
     fun `test OpenAI chat completions auto tracing`() = runTest {
         val model = ChatModel.GPT_4O_MINI
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
 
         val params = ChatCompletionCreateParams.builder()
             .addUserMessage("Generate polite greeting and introduce yourself")
@@ -33,7 +34,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI chat completions span error status when request fails`() = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
         val params = ChatCompletionCreateParams.builder()
             .addUserMessage("Generate polite greeting and introduce yourself")
             .model(ChatModel.GPT_4O_MINI)
@@ -52,7 +53,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI chat completions tool calls auto tracing`() = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
 
         // defines: `greet(name: String)`
         val greetTool = createTool("hi")
@@ -71,7 +72,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI chat completions response to a tool call auto tracing`() = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
 
         // defines: `greet(name: String)`
         val greetTool = createTool("hi")
@@ -107,7 +108,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI chat completions multiple tools response to tool calls auto tracing`() = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
 
         val greetTool = createTool("hi")
         val farewellTool = createTool("goodbye")
@@ -139,7 +140,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI auto tracing when instrumentation is off`() = runTest {
-        val client = createLiteLLMClient()
+        val client = createOpenAIClient()
         val params = ChatCompletionCreateParams.builder()
             .addUserMessage("Generate polite greeting and introduce yourself")
             .model(ChatModel.GPT_4O_MINI).temperature(1.1).build()
@@ -156,7 +157,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI chat completions streaming`(): Unit = runTest {
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
         val params = ChatCompletionCreateParams.builder()
             .addUserMessage("Generate polite greeting and introduce yourself")
             .model(ChatModel.GPT_4O_MINI)
@@ -184,7 +185,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
         val model = ChatModel.GPT_4O
         val prompt = "Please describe what you see in this image."
 
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
 
         val params = ChatCompletionCreateParams.builder()
             .model(model)
@@ -211,7 +212,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
         val prompt = "Tell me what is in the audio file"
         val filepath = "lofi.wav"
 
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
 
         val params = ChatCompletionCreateParams.builder()
             .model(model)
@@ -241,7 +242,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
             contentType = "application/pdf",
         )
 
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
 
         val params = ChatCompletionCreateParams.builder()
             .model(model)
@@ -265,7 +266,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
         val model = ChatModel.GPT_4O
         val prompt = "Please describe what you see in both images."
 
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
 
         val images = listOf(
             MediaSource.File(filepath = "image.jpg", contentType = "image/jpeg"),
@@ -291,11 +292,12 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
     }
 
     @Test
+    @Timeout(value = 3, unit = TimeUnit.MINUTES)
     fun `test several media types sent simultaneously are uploaded on Langfuse`() = runTest {
         val model = ChatModel.GPT_4O
         val prompt = "Please describe every media item attached"
 
-        val client = instrument(createLiteLLMClient())
+        val client = instrument(createOpenAIClient())
 
         val image = MediaSource.File("image.jpg", "image/jpeg")
         val file = MediaSource.File("sample.pdf", "application/pdf")
