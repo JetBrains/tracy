@@ -15,8 +15,10 @@ import io.opentelemetry.sdk.trace.ReadableSpan
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder
 import io.opentelemetry.sdk.trace.SpanProcessor
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import mu.KotlinLogging
@@ -85,8 +87,13 @@ fun SdkTracerProviderBuilder.addLangfuseSpanProcessor(
         timeout = langfuseConfig.exporterTimeout
     )
 
+    val uploadExceptionHandler = CoroutineExceptionHandler { _, exception ->
+        val logger = KotlinLogging.logger {}
+        logger.error(exception) { "Failed to upload media content to Langfuse" }
+    }
+    
     val contentUploadingSpanProcessor = MediaContentUploadingSpanProcessor(
-        scope = CoroutineScope(Dispatchers.IO))
+        scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + uploadExceptionHandler))
 
     val langfuseExportingSpanProcessor = BatchSpanProcessor
         .builder(otlpGrpcSpanExporter)
