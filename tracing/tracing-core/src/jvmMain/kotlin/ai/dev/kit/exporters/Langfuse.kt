@@ -165,7 +165,7 @@ class MediaContentUploadingSpanProcessor(
                         )
                     }
                 }
-                else -> error("Unsupported media content type $type")
+                else -> error("Unsupported media content type '$type'")
             }
 
             ++index
