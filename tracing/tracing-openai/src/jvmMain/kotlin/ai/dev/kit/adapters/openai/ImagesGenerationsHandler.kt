@@ -51,7 +51,8 @@ class ImagesGenerationsHandler : OpenAIApiHandler {
                     val url = image["url"]?.jsonPrimitive
                     // TODO: attach for media upload
                 }
-                span.setAttribute("gen_ai.completion.$index.content", image.asString)
+                // TODO: when `b64_json`/`revised_prompt` are null, should they be attached still? (rn, they are)
+                 span.setAttribute("gen_ai.completion.$index.content", image.asString)
             }
         }
 

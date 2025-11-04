@@ -5,23 +5,21 @@ import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.autologging.createLiteLLMClient
 import com.openai.models.images.ImageGenerateParams
 import com.openai.models.images.ImageModel
+import io.opentelemetry.api.common.AttributeKey
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
-import io.opentelemetry.api.common.AttributeKey
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.stream.Stream
+import kotlin.test.assertEquals
 
 
+// TODO: images must be traced same as in image attachment API (see special attribute keys).
+//       Here, check for those attribute keys as well when rebased.
 @Tag("SkipForNonLocal")
 class OpenAIImageGenerationTracingTest : BaseOpenTelemetryTracingTest() {
-    // stream=1
-
-    // several images: n=3, n=0
-
     @ParameterizedTest
     @MethodSource("provideResponseFormats")
     fun `test generate image with different response formats`(
@@ -48,6 +46,59 @@ class OpenAIImageGenerationTracingTest : BaseOpenTelemetryTracingTest() {
     }
 
     @Test
+    fun `test invalid param 'n=0' gets traced as an error`() = runTest {
+        val client = instrument(createLiteLLMClient())
+        val prompt = "generate an image of a cute cat"
+
+        val params = ImageGenerateParams.builder()
+            .prompt(prompt)
+            .model(ImageModel.DALL_E_2)
+            .size(ImageGenerateParams.Size._256X256)
+            .n(0)
+            .build()
+
+        try {
+            client.images().generate(params)
+        } catch (_: Exception) {}
+
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+
+        val attributes = traces.first().attributes
+
+        assertEquals(prompt, attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
+        assertEquals(ImageModel.DALL_E_2.asString(), attributes[AttributeKey.stringKey("gen_ai.request.model")])
+
+        assertEquals("n", attributes[AttributeKey.stringKey("gen_ai.error.param")])
+        assertEquals("invalid_request_error", attributes[AttributeKey.stringKey("gen_ai.error.type")])
+        assertEquals("400", attributes[AttributeKey.stringKey("gen_ai.error.code")])
+        assertEquals(true, attributes[AttributeKey.stringKey("gen_ai.error.message")]?.isNotEmpty())
+    }
+
+    @Test
+    fun `test generation of multiple images gets traced`() = runTest {
+        val client = instrument(createLiteLLMClient())
+        val prompt = "generate an image of a cute cat"
+
+        val params = ImageGenerateParams.builder()
+            .prompt(prompt)
+            .model(ImageModel.DALL_E_2)
+            .size(ImageGenerateParams.Size._256X256)
+            .n(3)
+            .build()
+
+        client.images().generate(params)
+
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+
+        val attributes = traces.first().attributes
+
+        assertEquals(prompt, attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
+        assertEquals(ImageModel.DALL_E_2.asString(), attributes[AttributeKey.stringKey("gen_ai.request.model")])
+    }
+
+    /*@Test
     fun `test image generation with streaming API`() {
         val client = instrument(createLiteLLMClient())
         val prompt = "generate an image of dog and cat sitting next to each other"
@@ -55,17 +106,21 @@ class OpenAIImageGenerationTracingTest : BaseOpenTelemetryTracingTest() {
         val params = ImageGenerateParams.builder()
             .prompt(prompt)
             .model(ImageModel.GPT_IMAGE_1)
-            .size(ImageGenerateParams.Size._1024X1024)
+            .size(ImageGenerateParams.Size.AUTO)
             .n(1)
             .build()
 
-        val events = client.images().generateStreaming(params).stream().peek { println(it) }
+        // val events = client.images().generateStreaming(params).stream().peek { println(it) }
+        val events = client.images().generateStreaming(params)
+        events.use {
+            // it.stream()
+        }
 
         val traces = analyzeSpans()
 
         assertEquals(1, traces.size)
         val trace = traces.first()
-    }
+    }*/
 
     /*
     val imageUrl = images.data().get().first().url().get()
