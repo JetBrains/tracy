@@ -49,8 +49,6 @@ kotlin {
                 implementation(libs.junit.params)
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(project(":tracing:tracing-test-utils"))
-                implementation(libs.opentelemetry.exporter.logging)
-                implementation(libs.opentelemetry.exporter.logging.otlp)
             }
         }
     }
