@@ -26,6 +26,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 const val LANGFUSE_BASE_URL = "https://cloud.langfuse.com"
 
@@ -120,6 +121,8 @@ class MediaContentUploadingSpanProcessor(
         }
     }
 ) : SpanProcessor {
+    private val isClosed = AtomicBoolean(false)
+
     companion object {
         private val logger = KotlinLogging.logger {}
     }
@@ -173,13 +176,18 @@ class MediaContentUploadingSpanProcessor(
     override fun isEndRequired(): Boolean = true
 
     override fun shutdown(): io.opentelemetry.sdk.common.CompletableResultCode {
-        return io.opentelemetry.sdk.common.CompletableResultCode.ofSuccess().also {
-            client.close()
-        }
+        closeClient()
+        return io.opentelemetry.sdk.common.CompletableResultCode.ofSuccess()
     }
 
     override fun close() {
-        client.close()
+        closeClient()
+    }
+
+    private fun closeClient() {
+        if (isClosed.compareAndSet(false, true)) {
+            client.close()
+        }
     }
 
     private suspend fun uploadMediaFromUrl(
