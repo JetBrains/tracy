@@ -72,25 +72,21 @@ internal abstract class OpenAIMediaContentExtractor(
         field: String,
         content: JsonArray,
     ) {
-        var index = 0
         val supportedTypes = listOf(tags.image, tags.audio, tags.file)
 
-        for (item in content) {
-            val type = item.jsonObject["type"]?.jsonPrimitive?.content
-            if (type == null || type !in supportedTypes) {
-                continue
+        content.asSequence()
+            .map { it.jsonObject }
+            .mapNotNull { obj ->
+                val type = obj["type"]?.jsonPrimitive?.content
+                if (type != null && type in supportedTypes) type to obj else null
             }
-
-            when (type) {
-                tags.image ->
-                    setImageUrlAttributes(span, field, index, item.jsonObject)
-                tags.audio ->
-                    setAudioInputAttributes(span, field, index, item.jsonObject)
-                tags.file ->
-                    setFileInputAttributes(span, field, index, item.jsonObject)
+            .forEachIndexed { index, (type, obj) ->
+                when (type) {
+                    tags.image -> setImageUrlAttributes(span, field, index, obj)
+                    tags.audio -> setAudioInputAttributes(span, field, index, obj)
+                    tags.file -> setFileInputAttributes(span, field, index, obj)
+                }
             }
-            ++index
-        }
     }
 
     protected fun setImageUrlAttributes(
