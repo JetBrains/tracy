@@ -218,9 +218,6 @@ class ParsingTest {
             ),
         )
 
-        val h1 = headers {  }
-        val h2 = headers {  }
-
         testCases.forEach { testCase ->
             val result = testCase.input.parseDataUrl()
             assertEquals(testCase.expected, result, "Failed for input: ${testCase.input}")
