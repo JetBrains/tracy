@@ -3,7 +3,6 @@ package ai.dev.kit.exporters
 import ai.dev.kit.common.DataUrl
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.Span
-import ai.dev.kit.common.Result
 import ai.dev.kit.common.isValidUrl
 
 
@@ -53,7 +52,7 @@ fun setUrlAttributes(
     url: String,
 ): Result<Unit> {
     if (!url.isValidUrl()) {
-        return Result.Error("Expected a valid URL, received: $url")
+        return Result.failure(IllegalArgumentException("Expected a valid URL, received: $url"))
     }
     val keys = UploadableMediaContentAttributeKeys.forIndex(index)
 
@@ -61,7 +60,7 @@ fun setUrlAttributes(
     span.setAttribute(keys.field, field)
     span.setAttribute(keys.url, url)
 
-    return Result.Success(Unit)
+    return Result.success(Unit)
 }
 
 /**
@@ -81,7 +80,8 @@ fun setDataUrlAttributes(
         val str = dataUrl.asString()
         val trimmed = if (str.length < WARNING_URL_LENGTH_LIMIT) str
                       else str.substring(0, WARNING_URL_LENGTH_LIMIT) + "..."
-        return Result.Error("Expect base64 encoding for the data url, received '$trimmed'")
+        return Result.failure(IllegalArgumentException(
+            "Expect base64 encoding for the data url, received '$trimmed'"))
     }
 
     val keys = UploadableMediaContentAttributeKeys.forIndex(index)
@@ -91,5 +91,5 @@ fun setDataUrlAttributes(
     span.setAttribute(keys.contentType, dataUrl.mediaType)
     span.setAttribute(keys.data, dataUrl.data)
 
-    return Result.Success(Unit)
+    return Result.success(Unit)
 }

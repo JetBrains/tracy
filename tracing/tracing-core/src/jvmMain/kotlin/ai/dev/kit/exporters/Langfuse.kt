@@ -1,6 +1,5 @@
 package ai.dev.kit.exporters
 
-import ai.dev.kit.common.Result
 import ai.dev.kit.tracing.LangfuseConfig
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -34,10 +33,10 @@ const val LANGFUSE_BASE_URL = "https://cloud.langfuse.com"
  * Creates an OpenTelemetry span exporter that sends data to [Langfuse](https://langfuse.com/).
  *
  * @param langfuseUrl the base URL of the Langfuse instance.
- *   If not set is retrieved from `LANGFUSE_URL` environment variable.
+ *   If not set, it is retrieved from `LANGFUSE_URL` environment variable.
  *   Defaults to [LANGFUSE_BASE_URL].
- * @param langfusePublicKey if not set is retrieved from `LANGFUSE_PUBLIC_KEY` environment variable.
- * @param langfuseSecretKey if not set is retrieved from `LANGFUSE_SECRET_KEY` environment variable.
+ * @param langfusePublicKey if not set, it is retrieved from `LANGFUSE_PUBLIC_KEY` environment variable.
+ * @param langfuseSecretKey if not set, it is retrieved from `LANGFUSE_SECRET_KEY` environment variable.
  * @param timeout OpenTelemetry SpanExporter timeout in seconds. See [io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporterBuilder.setTimeout].
  *
  * @see <a href="https://langfuse.com/docs/get-started#create-new-project-in-langfuse">How to create a new project in Langfuse</a>
@@ -201,12 +200,14 @@ class MediaContentUploadingSpanProcessor(
     }
 }
 
+private class RequestFailedException(message: String) : RuntimeException(message)
+
 /**
  * Uploads media content to Langfuse and links it to the given trace
  *
  * @see MediaUploadParams
  */
-internal suspend fun uploadMediaFileToLangfuse(
+private suspend fun uploadMediaFileToLangfuse(
     params: MediaUploadParams,
     client: HttpClient,
     langfuseUrl: String? = null,
@@ -243,8 +244,8 @@ internal suspend fun uploadMediaFileToLangfuse(
     }
 
     if (!response.status.isSuccess()) {
-        return Result.Error(
-            "Failed to request an upload url and media id from the endpoint $url/api/public/media", response.status.value)
+        return Result.failure(RequestFailedException(
+            "Failed to request an upload url and media id from the endpoint $url/api/public/media, response code ${response.status.value}"))
     }
 
     val uploadResource = response.body<PresignedUploadURL>()
@@ -259,7 +260,8 @@ internal suspend fun uploadMediaFileToLangfuse(
         }
 
         if (!uploadResponse.status.isSuccess()) {
-            return Result.Error("Failed to upload a media file", uploadResponse.status.value)
+            return Result.failure(RequestFailedException(
+                "Failed to upload a media file, response code ${uploadResponse.status.value}"))
         }
 
         // update upload status
@@ -278,8 +280,8 @@ internal suspend fun uploadMediaFileToLangfuse(
         }
 
         if (!patchResponse.status.isSuccess()) {
-            return Result.Error(
-                "Failed to patch a media file with id ${uploadResource.mediaId}", patchResponse.status.value)
+            return Result.failure(RequestFailedException(
+                "Failed to patch a media file with id ${uploadResource.mediaId}, response code ${patchResponse.status.value}"))
         }
     }
 
@@ -290,10 +292,11 @@ internal suspend fun uploadMediaFileToLangfuse(
     }
 
     if (!mediaDataResponse.status.isSuccess()) {
-        return Result.Error("Failed to retrieve a media file with id ${uploadResource.mediaId}", mediaDataResponse.status.value)
+        return Result.failure(RequestFailedException(
+            "Failed to retrieve a media file with id ${uploadResource.mediaId}, response code ${mediaDataResponse.status.value}"))
     }
 
-    return Result.Success(mediaDataResponse.body<MediaUploadResponse>())
+    return Result.success(mediaDataResponse.body<MediaUploadResponse>())
 }
 
 /**
