@@ -1,6 +1,6 @@
 package ai.dev.kit.exporters
 
-import ai.dev.kit.tracing.ConsoleOutputFormat
+import ai.dev.kit.tracing.OutputFormat
 import ai.dev.kit.tracing.FileConfig
 import io.opentelemetry.exporter.logging.LoggingSpanExporter
 import io.opentelemetry.exporter.logging.otlp.OtlpJsonLoggingSpanExporter
@@ -41,8 +41,8 @@ class OtlpFileSpanExporter private constructor(
          */
         internal fun create(config: FileConfig): OtlpFileSpanExporter {
             val exporter = when (config.format) {
-                ConsoleOutputFormat.PLAIN_TEXT -> LoggingSpanExporter.create()
-                ConsoleOutputFormat.JSON -> OtlpJsonLoggingSpanExporter.create()
+                OutputFormat.PLAIN_TEXT -> LoggingSpanExporter.create()
+                OutputFormat.JSON -> OtlpJsonLoggingSpanExporter.create()
             }
             // patch logger to output into a file
             val logger = getExporterLogger(exporter)
@@ -73,8 +73,8 @@ class OtlpFileSpanExporter private constructor(
             val fileHandler = FileHandler(config.filepath, config.append)
 
             fileHandler.formatter = when (config.format) {
-                ConsoleOutputFormat.PLAIN_TEXT -> SimpleFormatter()
-                ConsoleOutputFormat.JSON -> JsonSpanFormatter()
+                OutputFormat.PLAIN_TEXT -> SimpleFormatter()
+                OutputFormat.JSON -> JsonSpanFormatter()
             }
 
             fileHandler.setLevel(Level.INFO)

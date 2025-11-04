@@ -47,10 +47,11 @@ fun setupTracing(
                 is LangfuseConfig -> addLangfuseSpanProcessor(tracingConfig)
                 is WeaveConfig -> addWeaveSpanProcessor(tracingConfig)
                 is FileConfig -> addOtlpFileSpanProcessor(tracingConfig)
-                is ConsoleConfig -> { /* no-op */ }
+                is ConsoleConfig -> addConsoleSpanProcessor(tracingConfig)
             }
-            if (tracingConfig.traceToConsole) {
-                addLoggingSpanProcessor(tracingConfig.format)
+            // don't add a logging span processor when already exporting to CLI
+            if (tracingConfig.traceToConsole && tracingConfig !is ConsoleConfig) {
+                addLoggingSpanProcessor()
             }
         }
         .build()
@@ -66,13 +67,19 @@ fun setupTracing(
     return openTelemetry
 }
 
-private fun SdkTracerProviderBuilder.addLoggingSpanProcessor(
-    format: ConsoleOutputFormat
+private fun SdkTracerProviderBuilder.addConsoleSpanProcessor(
+    tracingConfig: ConsoleConfig,
 ): SdkTracerProviderBuilder {
-    val spanExporter = when (format) {
-        ConsoleOutputFormat.PLAIN_TEXT -> LoggingSpanExporter.create()
-        ConsoleOutputFormat.JSON -> OtlpJsonLoggingSpanExporter.create()
+    val spanExporter = when (tracingConfig.format) {
+        OutputFormat.PLAIN_TEXT -> LoggingSpanExporter.create()
+        OutputFormat.JSON -> OtlpJsonLoggingSpanExporter.create()
     }
     addSpanProcessor(SimpleSpanProcessor.create(spanExporter))
+    return this
+}
+
+private fun SdkTracerProviderBuilder.addLoggingSpanProcessor(): SdkTracerProviderBuilder {
+    val exporter = LoggingSpanExporter.create()
+    addSpanProcessor(SimpleSpanProcessor.create(exporter))
     return this
 }

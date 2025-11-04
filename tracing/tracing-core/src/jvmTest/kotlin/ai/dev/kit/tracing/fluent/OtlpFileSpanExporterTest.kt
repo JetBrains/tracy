@@ -1,6 +1,6 @@
 package ai.dev.kit.tracing.fluent
 
-import ai.dev.kit.tracing.ConsoleOutputFormat
+import ai.dev.kit.tracing.OutputFormat
 import ai.dev.kit.tracing.FileConfig
 import ai.dev.kit.tracing.TracingManager
 import kotlinx.coroutines.test.runTest
@@ -24,7 +24,7 @@ class OtlpFileSpanExporterTest {
             config = FileConfig(
                 filepath = tempFile.absolutePathString(),
                 append = false,
-                format = ConsoleOutputFormat.JSON,
+                format = OutputFormat.JSON,
             )
         )
 
