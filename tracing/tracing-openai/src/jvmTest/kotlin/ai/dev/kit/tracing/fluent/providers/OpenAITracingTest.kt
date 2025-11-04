@@ -37,7 +37,9 @@ class OpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test nested instrumentation calls don't cause duplicative tracing`() = runTest {
-        val client = instrument(instrument(instrument(createLiteLLMClient())))
+        val client = instrument(instrument(instrument(
+            createOpenAIClient(llmProviderUrl, llmProviderApiKey)
+        )))
 
         val params = ChatCompletionCreateParams.builder()
             .addUserMessage("Generate polite greeting and introduce yourself")

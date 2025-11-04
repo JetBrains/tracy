@@ -1,5 +1,7 @@
 package ai.dev.kit.tracing.fluent
 
+import ai.dev.kit.adapters.AnthropicLLMTracingAdapter
+import ai.dev.kit.adapters.LLMTracingAdapter
 import ai.dev.kit.adapters.OpenAILLMTracingAdapter
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
@@ -32,29 +34,28 @@ import kotlin.test.assertTrue
 
 @Tag("openai")
 class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
-    val llmTracingAdapter = OpenAILLMTracingAdapter()
-
     private fun HttpRequestBuilder.addAuthHeaders(acceptStream: Boolean = false) {
         header("Authorization", "Bearer $llmProviderApiKey")
         header("Content-Type", "application/json")
         if (acceptStream) header("Accept", "text/event-stream")
     }
 
-    private fun getApiKey(): String =
-        System.getenv("LITELLM_API_KEY") ?: error("LITELLM_API_KEY is not set")
-
     @Test
     fun `test nested instrumentation calls don't cause duplicative tracing`() = runTest {
+        val adapter = Adapters.Anthropic
+
         val client: HttpClient = instrument(
-            instrument(instrument(HttpClient(), llmTracingAdapter), llmTracingAdapter),
-            llmTracingAdapter,
+            instrument(
+                instrument(HttpClient(), adapter),
+                adapter,
+            ),
+            adapter,
         )
         val model = "claude-sonnet-4-20250514"
         val promptMessage = "Say: 'Hello, world!'"
 
         client.post("$baseUrl/v1/messages") {
-            val apiKey = getApiKey()
-            header("x-api-key", apiKey)
+            header("x-api-key", llmProviderApiKey)
             header("Content-Type", "application/json")
             setBody(
                 """
@@ -78,13 +79,12 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test Ktor HttpClient auto tracing for Anthropic`() = runTest {
-        val client: HttpClient = instrument(HttpClient(), llmTracingAdapter)
+        val client: HttpClient = instrument(HttpClient(), Adapters.Anthropic)
         val model = "claude-sonnet-4-20250514"
         val promptMessage = "Hello, world!"
 
         val response = client.post("$baseUrl/v1/messages") {
-            val apiKey = getApiKey()
-            header("x-api-key", apiKey)
+            header("x-api-key", llmProviderApiKey)
             header("Content-Type", "application/json")
             setBody(
                 """
@@ -115,6 +115,7 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
         assertEquals(baseUrl, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
 
         val tracedModel = trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]
+        println("tracedModel: $tracedModel")
         assertEquals(true, tracedModel?.startsWith(model))
 
         assertEquals("user", trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")])
@@ -172,7 +173,7 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
             install(ContentNegotiation) {
                 json(Json { prettyPrint = true })
             }
-        }, llmTracingAdapter)
+        }, Adapters.OpenAI)
 
         val response = client.post("$baseUrl/v1/chat/completions") {
             addAuthHeaders()
@@ -239,7 +240,7 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test Ktor HttpClient auto tracing streaming for OpenAI`() = runTest {
-        val client: HttpClient = instrument(HttpClient(), adapter = llmTracingAdapter)
+        val client: HttpClient = instrument(HttpClient(), adapter = Adapters.OpenAI)
 
         val model = "gpt-4o-mini"
         val response = client.post("$baseUrl/v1/chat/completions") {
@@ -301,7 +302,7 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
             }
         }
 
-        val client: HttpClient = instrument(mockedClient, llmTracingAdapter)
+        val client: HttpClient = instrument(mockedClient, Adapters.OpenAI)
 
         val response = client.post("$baseUrl/v1/chat/completions") {
             addAuthHeaders()
@@ -387,7 +388,7 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
             }
         }
 
-        val client: HttpClient = instrument(mockedClient, llmTracingAdapter)
+        val client: HttpClient = instrument(mockedClient, Adapters.OpenAI)
 
         client.post("$baseUrl/v1/chat/completions") {
             addAuthHeaders()
@@ -470,6 +471,13 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
         // llmProviderUrl = https://api.openai.com/v1, gen_ai.api_base = https://api.api.openai.com
         val baseUrl = llmProviderUrl.let {
             if (it.endsWith("/v1")) it.removeSuffix("/v1") else it
+        }
+
+        object Adapters {
+            val OpenAI: LLMTracingAdapter
+                get() = OpenAILLMTracingAdapter()
+            val Anthropic: LLMTracingAdapter
+                get() = AnthropicLLMTracingAdapter()
         }
 
         @Serializable
@@ -611,7 +619,7 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test streaming requests`() = runTest {
-        val client = instrument(HttpClient(), adapter = llmTracingAdapter)
+        val client = instrument(HttpClient(), adapter = Adapters.OpenAI)
 
         val model = "gpt-4o-mini"
 
@@ -628,7 +636,7 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test non-streaming requests`() = runTest {
-        val client = instrument(HttpClient(), adapter = llmTracingAdapter)
+        val client = instrument(HttpClient(), adapter = Adapters.OpenAI)
 
         val model = "gpt-4o-mini"
 
@@ -645,7 +653,7 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test mixed stream and non-stream requests`() = runTest {
-        val client = instrument(HttpClient(), adapter = llmTracingAdapter)
+        val client = instrument(HttpClient(), adapter = Adapters.OpenAI)
 
         val model = "gpt-4o-mini"
 
