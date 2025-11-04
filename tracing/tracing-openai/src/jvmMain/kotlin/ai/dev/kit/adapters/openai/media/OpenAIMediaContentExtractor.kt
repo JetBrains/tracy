@@ -12,6 +12,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mu.KotlinLogging
+import io.ktor.http.Headers
 
 /**
  * Types of media content supported by OpenAI.
@@ -137,7 +138,7 @@ internal class ChatCompletionsMediaContentExtractor : OpenAIMediaContentExtracto
 
         val dataUrl = DataUrl(
             mediaType = contentType,
-            headers = emptyMap(),
+            headers = Headers.Empty,
             base64 = true,
             data = data,
         )
