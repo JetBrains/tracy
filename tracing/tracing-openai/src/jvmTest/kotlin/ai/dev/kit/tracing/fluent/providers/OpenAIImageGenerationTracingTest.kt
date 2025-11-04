@@ -3,6 +3,7 @@ package ai.dev.kit.tracing.fluent.providers
 import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.autologging.createLiteLLMClient
+import com.openai.models.images.ImageEditParams
 import com.openai.models.images.ImageGenerateParams
 import com.openai.models.images.ImageModel
 import io.opentelemetry.api.common.AttributeKey
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import java.io.InputStream
 import java.util.stream.Stream
 import kotlin.test.assertEquals
 
@@ -20,6 +22,34 @@ import kotlin.test.assertEquals
 //       Here, check for those attribute keys as well when rebased.
 @Tag("SkipForNonLocal")
 class OpenAIImageGenerationTracingTest : BaseOpenTelemetryTracingTest() {
+    private fun readFile(filepath: String): InputStream {
+        return javaClass.classLoader
+            .getResourceAsStream(filepath)
+            ?: error("File not found")
+    }
+
+    @Test
+    fun `test edit image API tracing`() = runTest {
+        val client = instrument(createLiteLLMClient())
+
+        val image = readFile("image.png")
+        val prompt = "Add a 2nd cat to the image."
+
+        val params = ImageEditParams.builder()
+            .prompt(prompt)
+            .image(ImageEditParams.Image.ofInputStreams(listOf(image)))
+            .model(ImageModel.DALL_E_2)
+            .build()
+
+        client.images().edit(params)
+
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+        val trace = traces.first()
+
+        assertEquals(prompt, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
+    }
+
     @ParameterizedTest
     @MethodSource("provideResponseFormats")
     fun `test generate image with different response formats`(
