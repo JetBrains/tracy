@@ -16,6 +16,7 @@ opentelemetry-semconv-incubating = "1.34.0-alpha"
 logging = "3.0.5"
 logback = "1.5.13"
 dokka = "2.0.0"
+apache-mime4j = "0.8.13"
 
 [libraries]
 koog = { module = "ai.koog:koog-agents", version.ref = "koog" }
@@ -45,12 +46,12 @@ opentelemetry-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporte
 opentelemetry-exporter-logging = { module = "io.opentelemetry:opentelemetry-exporter-logging", version.ref = "opentelemetry" }
 opentelemetry-exporter-logging-otlp = { module = "io.opentelemetry:opentelemetry-exporter-logging-otlp", version.ref = "opentelemetry" }
 opentelemetry-semconv-incubating = { module = "io.opentelemetry.semconv:opentelemetry-semconv-incubating", version.ref = "opentelemetry-semconv-incubating" }
-
 opentelemetry-sdk-testing = { module = "io.opentelemetry:opentelemetry-sdk-testing", version.ref = "opentelemetry" }
-
 kotlin-logging = { module = "io.github.microutils:kotlin-logging", version.ref = "logging" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 dokka-gradle-plugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
+apache-mime4j-core = { module = "org.apache.james:apache-mime4j-core", version.ref = "apache-mime4j" }
+apache-mime4j = { module = "org.apache.james:apache-mime4j", version.ref = "apache-mime4j" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

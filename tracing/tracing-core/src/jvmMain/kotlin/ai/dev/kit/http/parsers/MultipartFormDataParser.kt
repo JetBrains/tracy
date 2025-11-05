@@ -1,0 +1,116 @@
+package ai.dev.kit.http.parsers
+
+import okhttp3.MediaType
+import okio.Buffer
+import org.apache.james.mime4j.parser.AbstractContentHandler
+import org.apache.james.mime4j.parser.MimeStreamParser
+import org.apache.james.mime4j.stream.BodyDescriptor
+import org.apache.james.mime4j.stream.Field
+import org.apache.james.mime4j.stream.MimeConfig
+import io.ktor.http.ContentType
+import java.io.ByteArrayInputStream
+import java.io.InputStream
+import java.io.SequenceInputStream
+
+/**
+ * Parses a multipart/form-data HTTP request body.
+ */
+class MultipartFormDataParser {
+    /**
+     * Parses a multipart/form-data HTTP request body from the given content type and buffer.
+     * This method extracts the MIME-formatted parts from the provided buffer,
+     * expecting the given [mediaType] to be of multipart/form-data.
+     *
+     * @param mediaType The media type of the input data, used to properly parse the content.
+     * @param buffer A buffer containing the multipart/form-data content to be parsed.
+     * @throws IllegalArgumentException if the provided content type is not multipart/form-data.
+     */
+    fun parse(mediaType: MediaType, buffer: Buffer): FormData {
+        checkContentType(mediaType)
+
+        val parser = MimeStreamParser(MimeConfig.DEFAULT)
+        val handler = MultipartContentHandler()
+        parser.setContentHandler(handler)
+
+        // use headless parsing since we don't have full MIME headers
+        // we need to prepend the Content-Type header for the parser
+        val headerPrefix = "Content-Type: $mediaType\r\n\r\n"
+
+        val combinedStream = SequenceInputStream(
+            ByteArrayInputStream(headerPrefix.toByteArray()),
+            buffer.inputStream()
+        )
+
+        parser.parse(combinedStream)
+
+        return FormData(handler.parts)
+    }
+
+    companion object {
+        private fun checkContentType(mediaType: MediaType) {
+            val contentType = "${mediaType.type}/${mediaType.subtype}"
+
+            if (!ContentType.MultiPart.FormData.match(contentType)) {
+                throw IllegalArgumentException("Content type must be ${ContentType.MultiPart.FormData}, got $mediaType.")
+            }
+        }
+    }
+}
+
+data class FormPart(
+    val name: String?,
+    val filename: String? = null,
+    val content: ByteArray,
+    val contentType: ContentType? = null
+)
+
+data class FormData(val parts: List<FormPart>)
+
+
+private class MultipartContentHandler : AbstractContentHandler() {
+    val parts = mutableListOf<FormPart>()
+    private var currentPartName: String? = null
+    private var currentFilename: String? = null
+    private var currentContentType: ContentType? = null
+
+    override fun field(field: Field) {
+        val fieldName = field.name.lowercase()
+
+        when (fieldName) {
+            "content-disposition" -> {
+                // parse: `form-data; name="fieldname"; filename="file.txt"`
+                // for HTTP requests, no other values for this header allowed
+                // see: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Disposition
+                val value = field.body
+                val nameMatch = Regex("""name="([^"]+)"""").find(value)
+                val filenameMatch = Regex("""filename="([^"]+)"""").find(value)
+
+                currentPartName = nameMatch?.groupValues?.get(1)
+                currentFilename = filenameMatch?.groupValues?.get(1)
+            }
+            "content-type" -> {
+                currentContentType = ContentType.parse(field.body)
+            }
+        }
+    }
+
+    override fun body(bd: BodyDescriptor, inputStream: InputStream) {
+        val content = inputStream.readBytes()
+        println("bd: $bd")
+        println("mediaType: ${bd.mimeType}")
+
+        parts.add(
+            FormPart(
+                name = currentPartName,
+                filename = currentFilename,
+                content = content,
+                contentType = currentContentType
+            )
+        )
+
+        // Reset for next part
+        currentPartName = null
+        currentFilename = null
+        currentContentType = null
+    }
+}
