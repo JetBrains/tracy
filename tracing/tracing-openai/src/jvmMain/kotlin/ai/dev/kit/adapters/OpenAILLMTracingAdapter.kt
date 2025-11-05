@@ -24,6 +24,7 @@ private enum class OpenAIApiType(val route: String) {
     RESPONSES_API("responses"),
     // See: https://platform.openai.com/docs/api-reference/images/create
     IMAGES_GENERATIONS("images/generations"),
+    IMAGES_EDITS("images/edits"),
 }
 
 class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.OPENAI) {
@@ -39,6 +40,7 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
                     extractor = ResponsesMediaContentExtractor()
                 )
                 OpenAIApiType.IMAGES_GENERATIONS -> ImagesGenerationsHandler()
+                OpenAIApiType.IMAGES_EDITS -> ImagesEditsHandler()
             }
         }
         handler?.handleRequestAttributes(span, request)
@@ -65,6 +67,7 @@ private fun detectApiType(url: Url): OpenAIApiType {
         route.endsWith(OpenAIApiType.CHAT_COMPLETIONS.route) -> OpenAIApiType.CHAT_COMPLETIONS
         route.endsWith(OpenAIApiType.RESPONSES_API.route) -> OpenAIApiType.RESPONSES_API
         route.endsWith(OpenAIApiType.IMAGES_GENERATIONS.route) -> OpenAIApiType.IMAGES_GENERATIONS
+        route.endsWith(OpenAIApiType.IMAGES_EDITS.route) -> OpenAIApiType.IMAGES_EDITS
         else -> throw IllegalArgumentException("Unknown API type with route '$route'")
     }
 }
