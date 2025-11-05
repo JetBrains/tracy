@@ -154,7 +154,14 @@ class MediaContentUploadingSpanProcessor(
                 SupportedMediaContentTypes.URL.type -> {
                     val url = span.attributes.get(keys.url)
                         ?: error("URL attribute not found for media item at index $index")
-                    scope.launch { uploadMediaFromUrl(traceId, field, url) }
+                    scope.launch {
+                        try {
+                            uploadMediaFromUrl(traceId, field, url)
+                            logger.debug { "Successfully uploaded media from URL for trace $traceId, field $field" }
+                        } catch (e: Exception) {
+                            logger.error(e) { "Failed to upload media from URL for trace $traceId, field $field, url $url" }
+                        }
+                    }
                 }
                 SupportedMediaContentTypes.BASE64.type -> {
                     val contentType = span.attributes.get(keys.contentType)
@@ -163,15 +170,27 @@ class MediaContentUploadingSpanProcessor(
                         ?: error("Data attribute not found for media item at index $index")
 
                     scope.launch {
-                        uploadMediaFileToLangfuse(
-                            params = MediaUploadParams(
-                                traceId = traceId,
-                                field = field,
-                                contentType = contentType,
-                                data = data,
-                            ),
-                            client = client,
-                        )
+                        try {
+                            val result = uploadMediaFileToLangfuse(
+                                params = MediaUploadParams(
+                                    traceId = traceId,
+                                    field = field,
+                                    contentType = contentType,
+                                    data = data,
+                                ),
+                                client = client,
+                            )
+                            result.fold(
+                                onSuccess = { response ->
+                                    logger.debug { "Successfully uploaded media file to Langfuse: mediaId=${response.mediaId}, trace=$traceId, field=$field" }
+                                },
+                                onFailure = { error ->
+                                    logger.error(error) { "Failed to upload media file to Langfuse for trace $traceId, field $field" }
+                                }
+                            )
+                        } catch (e: Exception) {
+                            logger.error(e) { "Unexpected error uploading media file to Langfuse for trace $traceId, field $field" }
+                        }
                     }
                 }
                 else -> error("Unsupported media content type '$type'")
