@@ -1,8 +1,11 @@
 package ai.dev.kit
 
-import ai.dev.kit.adapters.ContentType
+import  ai.dev.kit.http.protocol.Url
 import ai.dev.kit.adapters.LLMTracingAdapter
-import ai.dev.kit.adapters.Url
+import ai.dev.kit.http.protocol.Request
+import ai.dev.kit.http.protocol.RequestBody
+import ai.dev.kit.http.protocol.Response
+import ai.dev.kit.http.protocol.ResponseBody
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.fluent.processor.Span
 import io.ktor.client.*
@@ -28,6 +31,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.serializer
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
+import org.slf4j.LoggerFactory
 
 
 /**
@@ -72,15 +76,17 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                         JsonObject(emptyMap())
                     }
 
-                    request.attributes.put(isStreamingRequestKey, adapter.isStreamingRequest(body))
-
-                    adapter.registerRequest(
-                        span = span, url = Url(
+                    val req = Request(
+                        url = Url(
                             scheme = request.url.protocol.name,
                             host = request.url.host,
-                            pathSegments = request.url.pathSegments
-                        ), requestBody = body
+                            pathSegments = request.url.pathSegments,
+                        ),
+                        body = RequestBody.Json(body),
                     )
+
+                    request.attributes.put(isStreamingRequestKey, value = adapter.isStreamingRequest(req))
+                    adapter.registerRequest(span, req)
                 }
                 span.end()
             }
@@ -103,14 +109,17 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                     }
                     Json.parseToJsonElement(responseString).jsonObject
                 } catch (exception: Exception) {
-                    println(exception)
+                    logger.trace("Error while parsing response body", exception)
                     JsonObject(emptyMap())
                 }
+
                 adapter.registerResponse(
-                    span = span,
-                    contentType = response.contentType()?.let { ContentType(it.contentType, it.contentSubtype) },
-                    responseCode = response.status.value.toLong(),
-                    responseBody = body,
+                    span,
+                    response = Response(
+                        contentType = response.contentType(),
+                        code = response.status.value,
+                        body = ResponseBody.Json(body),
+                    ),
                 )
                 span.end()
             }
@@ -118,13 +127,21 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
             transformResponseBody { response, content, typeInfo ->
                 val isStreamingRequest = response.call.request.attributes[isStreamingRequestKey]
                 val span = response.call.request.attributes[httpSpanKey]
-                if (!isStreamingRequest) return@transformResponseBody null
+
+                if (!isStreamingRequest) {
+                    return@transformResponseBody null
+                }
+
+                val body = JsonObject(mapOf("stream" to JsonPrimitive(true)))
 
                 adapter.registerResponse(
-                    span = span,
-                    contentType = response.contentType()?.let { ContentType(it.contentType, it.contentSubtype) },
-                    responseCode = response.status.value.toLong(),
-                    responseBody = JsonObject(mapOf("stream" to JsonPrimitive(true))),
+                    span,
+                    response = Response(
+                        contentType = response.contentType()
+                            ?.let { ContentType(it.contentType, it.contentSubtype) },
+                        code = response.status.value,
+                        body = ResponseBody.Json(body),
+                    )
                 )
 
                 val originalBody: ByteReadChannel = content
@@ -179,6 +196,8 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(TracingPlugin::class.java)
+
         private val JSON_CONFIG = Json {
             ignoreUnknownKeys = true
             encodeDefaults = true

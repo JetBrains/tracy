@@ -2,6 +2,9 @@ package ai.dev.kit.adapters.openai
 
 import ai.dev.kit.adapters.Url
 import ai.dev.kit.adapters.openai.media.OpenAIMediaContentExtractor
+import ai.dev.kit.http.protocol.Request
+import ai.dev.kit.http.protocol.Response
+import ai.dev.kit.http.protocol.asJson
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
@@ -13,9 +16,9 @@ import kotlinx.serialization.json.*
 internal class ResponsesApiHandler(
     private val extractor: OpenAIMediaContentExtractor
 ) : OpenAIApiHandler {
-
-    override fun handleRequestAttributes(span: Span, url: Url, body: JsonObject) {
-        OpenAIApiUtils.setCommonRequestAttributes(span, body)
+    override fun handleRequestAttributes(span: Span, request: Request) {
+        val body = request.body.asJson()?.jsonObject ?: return
+        OpenAIApiUtils.setCommonRequestAttributes(span, request)
 
         body["previous_response_id"]?.jsonPrimitive?.contentOrNull?.let {
             span.setAttribute("gen_ai.request.previous_response_id", it)
@@ -105,8 +108,9 @@ internal class ResponsesApiHandler(
         }
     }
 
-    override fun handleResponseAttributes(span: Span, body: JsonObject) {
-        OpenAIApiUtils.setCommonResponseAttributes(span, body)
+    override fun handleResponseAttributes(span: Span, response: Response) {
+        val body = response.body.asJson()?.jsonObject ?: return
+        OpenAIApiUtils.setCommonResponseAttributes(span, response)
 
         body["output"]?.let { outputs ->
             processAttributeTypes(span, outputs.jsonArray, 0, "completion")
@@ -117,7 +121,25 @@ internal class ResponsesApiHandler(
         }
     }
 
-    fun processAttributeTypes(span: Span, events: JsonArray, indexOfFirstAttribute: Int, type: String) {
+    override fun handleStreaming(span: Span, events: String): Unit = runCatching {
+        for (line in events.lineSequence()) {
+            if (!line.startsWith("data:")) continue
+            val data = line.removePrefix("data:").trim()
+
+            val obj = runCatching { Json.parseToJsonElement(data).jsonObject }.getOrNull() ?: continue
+            if (obj["type"]?.jsonPrimitive?.content == "response.output_text.done") {
+                obj["text"]?.jsonPrimitive?.content?.let { finalText ->
+                    span.setAttribute("gen_ai.completion.0.content", finalText)
+                    span.setAttribute("gen_ai.completion.0.finish_reason", "stop")
+                }
+            }
+        }
+    }.getOrElse { exception ->
+        span.setStatus(StatusCode.ERROR)
+        span.recordException(exception)
+    }
+
+   private fun processAttributeTypes(span: Span, events: JsonArray, indexOfFirstAttribute: Int, type: String) {
         var index = indexOfFirstAttribute
 
         for (output in events.jsonArray) {
@@ -195,24 +217,6 @@ internal class ResponsesApiHandler(
             }
             index++
         }
-    }
-
-    override fun handleStreaming(span: Span, events: String): Unit = runCatching {
-        for (line in events.lineSequence()) {
-            if (!line.startsWith("data:")) continue
-            val data = line.removePrefix("data:").trim()
-
-            val obj = runCatching { Json.parseToJsonElement(data).jsonObject }.getOrNull() ?: continue
-            if (obj["type"]?.jsonPrimitive?.content == "response.output_text.done") {
-                obj["text"]?.jsonPrimitive?.content?.let { finalText ->
-                    span.setAttribute("gen_ai.completion.0.content", finalText)
-                    span.setAttribute("gen_ai.completion.0.finish_reason", "stop")
-                }
-            }
-        }
-    }.getOrElse { exception ->
-        span.setStatus(StatusCode.ERROR)
-        span.recordException(exception)
     }
 
     /**

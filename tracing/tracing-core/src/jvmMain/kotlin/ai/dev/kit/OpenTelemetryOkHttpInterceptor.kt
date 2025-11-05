@@ -1,9 +1,12 @@
 package ai.dev.kit
 
-import ai.dev.kit.adapters.ContentType
+
 import ai.dev.kit.adapters.LLMTracingAdapter
-import ai.dev.kit.adapters.Url
+import ai.dev.kit.http.parsers.MultipartFormDataParser
+import ai.dev.kit.http.protocol.*
+import ai.dev.kit.http.protocol.Url
 import ai.dev.kit.tracing.TracingManager
+import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.serialization.json.Json
@@ -11,13 +14,15 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import okhttp3.Interceptor
+import okhttp3.MediaType
 import okhttp3.OkHttpClient
-import okhttp3.Response
-import okhttp3.ResponseBody
 import okio.Buffer
 import okio.BufferedSource
 import okio.ForwardingSource
 import okio.buffer
+import okhttp3.RequestBody as OkHttpRequestBody
+import okhttp3.Response as OkHttpResponse
+import okhttp3.ResponseBody as OkHttpResponseBody
 
 fun instrument(client: OkHttpClient, interceptor: OpenTelemetryOkHttpInterceptor): OkHttpClient {
     val clientBuilder = client.newBuilder()
@@ -97,7 +102,7 @@ abstract class OpenTelemetryOkHttpInterceptor(
     private val spanName: String,
     private val adapter: LLMTracingAdapter,
 ) : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
+    override fun intercept(chain: Interceptor.Chain): OkHttpResponse {
         val tracer = TracingManager.tracer
 
         val span = tracer.spanBuilder(spanName).startSpan()
@@ -105,31 +110,31 @@ abstract class OpenTelemetryOkHttpInterceptor(
 
         span.makeCurrent().use { _ ->
             try {
-                val request = chain.request()
-
-                val body = request.body?.let {
-                    val buffer = Buffer()
-                    it.writeTo(buffer)
-                    Json.parseToJsonElement(buffer.readUtf8()).jsonObject
+                // register request
+                val request = chain.request().let {
+                    val url = Url(it.url.scheme, it.url.host, it.url.pathSegments)
+                    val body = parseRequestBody(mediaType = it.body?.contentType(), it.body)
+                    if (body != null) Request(url, body) else null
                 }
-                isStreamingRequest = adapter.isStreamingRequest(body)
+                isStreamingRequest = request?.let { adapter.isStreamingRequest(it) } ?: false
 
-                adapter.registerRequest(
-                    span = span,
-                    url = Url(request.url.scheme, request.url.host, request.url.pathSegments),
-                    requestBody = body ?: JsonObject(emptyMap()),
-                )
+                if (request != null) {
+                    adapter.registerRequest(span, request)
+                }
 
+                // register response
                 val response = chain.proceed(chain.request())
-                val contentType = response.body?.contentType()
+                val responseMediaType = response.body?.contentType()
 
                 return if (isStreamingRequest) {
                     val streamingMarker = JsonObject(mapOf("stream" to JsonPrimitive(true)))
                     adapter.registerResponse(
                         span = span,
-                        contentType = contentType?.let { ContentType(contentType.type, contentType.subtype) },
-                        responseCode = response.code.toLong(),
-                        responseBody = streamingMarker,
+                        response = Response(
+                            contentType = responseMediaType?.toContentType(),
+                            code = response.code,
+                            body = ResponseBody.Json(streamingMarker)
+                        ),
                     )
                     wrapStreamingResponse(response, span)
                 } else {
@@ -140,9 +145,11 @@ abstract class OpenTelemetryOkHttpInterceptor(
                     }
                     adapter.registerResponse(
                         span = span,
-                        contentType = contentType?.let { ContentType(contentType.type, contentType.subtype) },
-                        response.code.toLong(),
-                        decodedResponse
+                        response = Response(
+                            contentType = responseMediaType?.toContentType(),
+                            code = response.code,
+                            body = ResponseBody.Json(decodedResponse)
+                        ),
                     )
                     response
                 }
@@ -151,15 +158,17 @@ abstract class OpenTelemetryOkHttpInterceptor(
                 span.recordException(e)
                 throw e
             } finally {
-                if (!isStreamingRequest) span.end()
+                if (!isStreamingRequest) {
+                    span.end()
+                }
             }
         }
     }
 
-    internal fun wrapStreamingResponse(originalResponse: Response, span: Span): Response {
+    private fun wrapStreamingResponse(originalResponse: OkHttpResponse, span: Span): OkHttpResponse {
         val originalBody = originalResponse.body ?: return originalResponse
 
-        val tracingBody = object : ResponseBody() {
+        val tracingBody = object : OkHttpResponseBody() {
             private val capturedText = StringBuilder()
 
             override fun contentType() = originalBody.contentType()
@@ -203,4 +212,33 @@ abstract class OpenTelemetryOkHttpInterceptor(
 
         return originalResponse.newBuilder().body(tracingBody).build()
     }
+
+    private fun parseRequestBody(mediaType: MediaType?, body: OkHttpRequestBody?): RequestBody? {
+        if (body == null) {
+            return null
+        }
+        val buffer = Buffer()
+        body.writeTo(buffer)
+
+        return when (mediaType?.toContentType()) {
+            ContentType.Application.Json -> {
+                val json = try {
+                    Json.parseToJsonElement(buffer.readUtf8()).jsonObject
+                }
+                catch (_: Exception) {
+                    return null
+                }
+                RequestBody.Json(json)
+            }
+            ContentType.MultiPart.FormData -> {
+                val parser = MultipartFormDataParser()
+                val formData = parser.parse(mediaType, buffer)
+
+                RequestBody.DataForm(formData)
+            }
+            else -> null
+        }
+    }
+
+    private fun MediaType.toContentType(): ContentType = ContentType.parse(this.toString())
 }

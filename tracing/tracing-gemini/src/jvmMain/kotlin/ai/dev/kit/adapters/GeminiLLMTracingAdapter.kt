@@ -1,60 +1,17 @@
 package ai.dev.kit.adapters
 
+import ai.dev.kit.http.protocol.Request
+import ai.dev.kit.http.protocol.Response
+import ai.dev.kit.http.protocol.asJson
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
 
 class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingAttributes.GenAiSystemIncubatingValues.GEMINI) {
-    /**
-     * Extracts `text` attribute from `parts` array if
-     * `parts` contains only a single message with a single
-     * `text` attribute.
-     *
-     * Examples:
-     * 1. `text` will be returned:
-     * ```json
-     * {
-     *     "parts": [
-     *         {
-     *             "text": "Hello! I am a large language model!"
-     *         }
-     *     ]
-     * }
-     * ```
-     * 2. `null` will be returned (i.e., clients are expected to attach an entire `parts` array into span):
-     * ```json
-     * {
-     *     "parts": [
-     *         {
-     *             "text": "Hello! I am a large language model.",
-     *             "thoughtSignature": "CvcBAR/123"
-     *         }
-     *     ]
-     * }
-     * ```
-     */
-    private fun JsonElement.singleTextMessageInParts(): String? {
-        val parts = this
-        if (parts !is JsonArray || parts.size != 1) {
-            return null
-        }
-        val item = parts.first().jsonObject
-        // only the 'text' attribute is present -> display it on Langfuse with Markdown rendering
-        if (item.keys.size == 1 && item.keys.first() == "text") {
-            return item["text"]?.jsonPrimitive?.content
-        }
-        return null
-    }
-
-    override fun getRequestBodyAttributes(span: Span, url: Url, body: JsonObject) {
+    override fun getRequestBodyAttributes(span: Span, request: Request) {
         // See: https://ai.google.dev/api/caching#Content
+        val body = request.body.asJson()?.jsonObject ?: return
+
         body["contents"]?.let {
             for ((index, message) in it.jsonArray.withIndex()) {
                 span.setAttribute("gen_ai.prompt.$index.role", message.jsonObject["role"]?.jsonPrimitive?.content)
@@ -72,7 +29,7 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingA
         }
 
         // url ends with `[model]:[operation]`
-        val (model, operation) = url.pathSegments.lastOrNull()?.split(":")
+        val (model, operation) = request.url.pathSegments.lastOrNull()?.split(":")
             ?.let { it.firstOrNull() to it.lastOrNull() } ?: (null to null)
 
         model?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL, model) }
@@ -122,8 +79,10 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingA
         }
     }
 
-    override fun getResultBodyAttributes(span: Span, body: JsonObject) {
+    override fun getResultBodyAttributes(span: Span, response: Response) {
         // See: https://ai.google.dev/api/generate-content#v1beta.GenerateContentResponse
+        val body = response.body.asJson()?.jsonObject ?: return
+
         body["responseId"]?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
         body["modelVersion"]?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
 
@@ -202,6 +161,51 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingA
         }
     }
 
+    // streaming is not supported
+    override fun isStreamingRequest(request: Request) = false
+    override fun handleStreaming(span: Span, events: String) = Unit
+
+    /**
+     * Extracts `text` attribute from `parts` array if
+     * `parts` contains only a single message with a single
+     * `text` attribute.
+     *
+     * Examples:
+     * 1. `text` will be returned:
+     * ```json
+     * {
+     *     "parts": [
+     *         {
+     *             "text": "Hello! I am a large language model!"
+     *         }
+     *     ]
+     * }
+     * ```
+     * 2. `null` will be returned (i.e., clients are expected to attach an entire `parts` array into span):
+     * ```json
+     * {
+     *     "parts": [
+     *         {
+     *             "text": "Hello! I am a large language model.",
+     *             "thoughtSignature": "CvcBAR/123"
+     *         }
+     *     ]
+     * }
+     * ```
+     */
+    private fun JsonElement.singleTextMessageInParts(): String? {
+        val parts = this
+        if (parts !is JsonArray || parts.size != 1) {
+            return null
+        }
+        val item = parts.first().jsonObject
+        // only the 'text' attribute is present -> display it on Langfuse with Markdown rendering
+        if (item.keys.size == 1 && item.keys.first() == "text") {
+            return item["text"]?.jsonPrimitive?.content
+        }
+        return null
+    }
+
     private fun extractUsageTokenDetails(span: Span, usage: JsonElement, attribute: String) {
         // turn the given attribute into snake-cased format
         val snakeCasedAttribute = attribute.replace(Regex("([a-z])([A-Z])"), "$1_$2").lowercase()
@@ -217,8 +221,4 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingA
             }
         }
     }
-
-    // streaming is not supported
-    override fun isStreamingRequest(body: JsonObject?) = false
-    override fun handleStreaming(span: Span, events: String) = Unit
 }

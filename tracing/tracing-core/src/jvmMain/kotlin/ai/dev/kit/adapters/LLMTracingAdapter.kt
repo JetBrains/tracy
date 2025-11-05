@@ -1,26 +1,17 @@
 package ai.dev.kit.adapters
 
 import ai.dev.kit.tracing.DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES
+import ai.dev.kit.http.protocol.*
 import ai.dev.kit.tracing.TracingManager
+import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.sdk.trace.ReadableSpan
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_SYSTEM
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-
-data class Url(
-    val scheme: String,
-    val host: String,
-    val pathSegments: List<String>,
-)
-
-data class ContentType(val type: String, val subtype: String) {
-    fun asString(): String = "$type/$subtype"
-}
 
 /**
  * A sealed class representing an adapter for tracing LLM interactions.
@@ -32,39 +23,44 @@ data class ContentType(val type: String, val subtype: String) {
  */
 abstract class LLMTracingAdapter(private val genAISystem: String) {
     companion object {
-        private const val REQUIRED_TYPE = "application"
-        private const val REQUIRED_SUBTYPE = "json"
+        private val REQUIRED_CONTENT_TYPE = ContentType.Application.Json
+        private val EVENT_STREAM_CONTENT_TYPE = ContentType.Text.EventStream
 
         private const val ATTRIBUTES_NUMBER_ATTRIBUTE_KEY = "gen_ai.request.SpanAttributeNumber"
     }
 
-    fun registerRequest(span: Span, url: Url, requestBody: JsonObject): Unit = runCatching {
+    fun registerRequest(span: Span, request: Request): Unit = runCatching {
         span.setAttribute(ATTRIBUTES_NUMBER_ATTRIBUTE_KEY, "0 (limit ${getMaxNumberOfSpanAttributes()})")
-        getRequestBodyAttributes(span, url, requestBody)
-        span.setAttribute("gen_ai.api_base", "${url.scheme}://${url.host}")
+        getRequestBodyAttributes(span, request)
+        span.setAttribute("gen_ai.api_base", "${request.url.scheme}://${request.url.host}")
         span.setAttribute(GEN_AI_SYSTEM, genAISystem)
+
         return@runCatching
     }.getOrElse { exception ->
         span.setStatus(StatusCode.ERROR)
         span.recordException(exception)
     }
 
-    fun registerResponse(span: Span, contentType: ContentType?, responseCode: Long, responseBody: JsonObject): Unit =
+    fun registerResponse(span: Span, response: Response): Unit =
         runCatching {
-            val isStreamingRequest = responseBody["stream"]?.jsonPrimitive?.boolean == true
+            val body = response.body.asJson()?.jsonObject ?: return
+            val isStreamingRequest = body["stream"]?.jsonPrimitive?.boolean == true
 
-            if (contentType?.type == REQUIRED_TYPE && contentType.subtype == REQUIRED_SUBTYPE) {
-                getResultBodyAttributes(span, responseBody)
-            } else if (isStreamingRequest && contentType.toString().contains("text/event-stream")) {
-                span.setAttribute("gen_ai.response.streaming", true)
-                span.setAttribute("gen_ai.completion.content.type", contentType.toString())
-            } else {
-                contentType?.let { span.setAttribute("gen_ai.completion.content.type", it.asString()) }
+            if (response.contentType != null) {
+                if (response.contentType.match(REQUIRED_CONTENT_TYPE)) {
+                    getResultBodyAttributes(span, response)
+                } else if (isStreamingRequest && response.contentType.match(EVENT_STREAM_CONTENT_TYPE)) {
+                    span.setAttribute("gen_ai.response.streaming", true)
+                    span.setAttribute("gen_ai.completion.content.type", response.contentType.toString())
+                } else {
+                    span.setAttribute("gen_ai.completion.content.type", response.contentType.toString())
+                }
             }
 
-            span.setAttribute("http.status_code", responseCode)
-            if (responseCode in 400..499 || responseCode in 500..599) {
-                getResultErrorBodyAttributes(span, responseBody)
+            span.setAttribute("http.status_code", response.code.toLong())
+
+            if (response.isError()) {
+                getResultErrorBodyAttributes(span, response.body)
                 span.setStatus(StatusCode.ERROR)
             } else {
                 span.setStatus(StatusCode.OK)
@@ -95,8 +91,8 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
             ?: DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES
 
 
-    protected open fun getResultErrorBodyAttributes(span: Span, body: JsonObject) {
-        body["error"]?.jsonObject?.let { error ->
+    protected open fun getResultErrorBodyAttributes(span: Span, body: ResponseBody) {
+        body.asJson()?.jsonObject["error"]?.jsonObject?.let { error ->
             error["message"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.message", it.content) }
             error["type"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.type", it.content) }
             error["param"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.param", it.content) }
@@ -104,10 +100,9 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
         }
     }
 
-    protected abstract fun getRequestBodyAttributes(span: Span, url: Url, body: JsonObject)
+    protected abstract fun getRequestBodyAttributes(span: Span, request: Request)
+    protected abstract fun getResultBodyAttributes(span: Span, response: Response)
 
-    protected abstract fun getResultBodyAttributes(span: Span, body: JsonObject)
-
-    abstract fun isStreamingRequest(body: JsonObject?): Boolean
+    abstract fun isStreamingRequest(request: Request): Boolean
     abstract fun handleStreaming(span: Span, events: String)
 }

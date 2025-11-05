@@ -40,6 +40,8 @@ kotlin {
                 implementation(libs.opentelemetry.semconv.incubating)
                 implementation(libs.kotlinx.coroutines)
                 implementation(libs.kotlin.logging)
+                implementation(libs.apache.mime4j.core)
+                implementation(libs.apache.mime4j)
             }
         }
 

@@ -1,17 +1,16 @@
 package ai.dev.kit.adapters
 
+import ai.dev.kit.http.protocol.Request
+import ai.dev.kit.http.protocol.Response
+import ai.dev.kit.http.protocol.asJson
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
 
 class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingAttributes.GenAiSystemIncubatingValues.ANTHROPIC) {
-    override fun getRequestBodyAttributes(span: Span, url: Url, body: JsonObject) {
+    override fun getRequestBodyAttributes(span: Span, request: Request) {
+        val body = request.body.asJson()?.jsonObject ?: return
+
         body["temperature"]?.jsonPrimitive?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_TEMPERATURE, it.doubleOrNull) }
         body["model"]?.jsonPrimitive?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL, it.content) }
         body["max_tokens"]?.jsonPrimitive?.intOrNull?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_MAX_TOKENS, it.toLong()) }
@@ -56,7 +55,9 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubati
         }
     }
 
-    override fun getResultBodyAttributes(span: Span, body: JsonObject) {
+    override fun getResultBodyAttributes(span: Span, response: Response) {
+        val body = response.body.asJson()?.jsonObject ?: return
+
         body["id"]?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
         body["type"]?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_OUTPUT_TYPE, it.jsonPrimitive.content) }
         body["role"]?.let { span.setAttribute("gen_ai.response.role", it.jsonPrimitive.content) }
@@ -127,6 +128,6 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubati
     }
 
     // streaming is not supported
-    override fun isStreamingRequest(body: JsonObject?) = false
+    override fun isStreamingRequest(request: Request) = false
     override fun handleStreaming(span: Span, events: String) = Unit
 }

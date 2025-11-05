@@ -1,16 +1,16 @@
 package ai.dev.kit.adapters
 
-import ai.dev.kit.adapters.openai.ChatCompletionsHandler
-import ai.dev.kit.adapters.openai.ImagesGenerationsHandler
-import ai.dev.kit.adapters.openai.OpenAIApiHandler
-import ai.dev.kit.adapters.openai.OpenAIApiUtils
-import ai.dev.kit.adapters.openai.ResponsesApiHandler
+import ai.dev.kit.adapters.openai.*
 import ai.dev.kit.adapters.openai.media.ChatCompletionsMediaContentExtractor
 import ai.dev.kit.adapters.openai.media.ResponsesMediaContentExtractor
+import ai.dev.kit.http.protocol.Request
+import ai.dev.kit.http.protocol.Response
+import ai.dev.kit.http.protocol.Url
+import ai.dev.kit.http.protocol.asJson
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 
@@ -29,9 +29,9 @@ private enum class OpenAIApiType(val route: String) {
 class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.OPENAI) {
     private var handler: OpenAIApiHandler? = null
 
-    override fun getRequestBodyAttributes(span: Span, url: Url, body: JsonObject) {
+    override fun getRequestBodyAttributes(span: Span, request: Request) {
         if (handler == null) {
-            handler = when (detectApiType(url)) {
+            handler = when (detectApiType(request.url)) {
                 OpenAIApiType.CHAT_COMPLETIONS -> ChatCompletionsHandler(
                     extractor = ChatCompletionsMediaContentExtractor()
                 )
@@ -41,17 +41,18 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
                 OpenAIApiType.IMAGES_GENERATIONS -> ImagesGenerationsHandler()
             }
         }
-        handler?.handleRequestAttributes(span, url, body)
+        handler?.handleRequestAttributes(span, request)
     }
 
-    override fun getResultBodyAttributes(span: Span, body: JsonObject) {
-        OpenAIApiUtils.setCommonResponseAttributes(span, body)
-
-        handler?.handleResponseAttributes(span, body)
+    override fun getResultBodyAttributes(span: Span, response: Response) {
+        OpenAIApiUtils.setCommonResponseAttributes(span, response)
+        handler?.handleResponseAttributes(span, response)
     }
 
-    override fun isStreamingRequest(body: JsonObject?) =
-        body?.get("stream")?.jsonPrimitive?.boolean == true
+    override fun isStreamingRequest(request: Request): Boolean {
+        val body = request.body.asJson()?.jsonObject ?: return false
+        return body["stream"]?.jsonPrimitive?.boolean ?: false
+    }
 
     override fun handleStreaming(span: Span, events: String) {
         handler?.handleStreaming(span, events)

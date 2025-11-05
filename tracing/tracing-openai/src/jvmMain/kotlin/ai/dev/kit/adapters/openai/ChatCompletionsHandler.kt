@@ -1,7 +1,9 @@
 package ai.dev.kit.adapters.openai
 
-import ai.dev.kit.adapters.Url
 import ai.dev.kit.adapters.openai.media.OpenAIMediaContentExtractor
+import ai.dev.kit.http.protocol.Request
+import ai.dev.kit.http.protocol.Response
+import ai.dev.kit.http.protocol.asJson
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
@@ -14,9 +16,9 @@ import kotlinx.serialization.json.*
 internal class ChatCompletionsHandler(
     private val extractor: OpenAIMediaContentExtractor
 ) : OpenAIApiHandler {
-
-    override fun handleRequestAttributes(span: Span, url: Url, body: JsonObject) {
-        OpenAIApiUtils.setCommonRequestAttributes(span, body)
+    override fun handleRequestAttributes(span: Span, request: Request) {
+        val body = request.body.asJson()?.jsonObject ?: return
+        OpenAIApiUtils.setCommonRequestAttributes(span, request)
 
         body["messages"]?.let {
             for ((index, message) in it.jsonArray.withIndex()) {
@@ -88,7 +90,9 @@ internal class ChatCompletionsHandler(
         span.setAttribute("gen_ai.prompt.$index.content", result)
     }
 
-    override fun handleResponseAttributes(span: Span, body: JsonObject) {
+    override fun handleResponseAttributes(span: Span, response: Response) {
+        val body = response.body.asJson()?.jsonObject ?: return
+
         body["choices"]?.let {
             for ((index, choice) in it.jsonArray.withIndex()) {
                 val index = choice.jsonObject["index"]?.jsonPrimitive?.intOrNull ?: index
