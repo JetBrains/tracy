@@ -1,6 +1,5 @@
 package ai.dev.kit.adapters.openai
 
-import ai.dev.kit.adapters.Url
 import ai.dev.kit.adapters.openai.media.OpenAIMediaContentExtractor
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
