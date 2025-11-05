@@ -1,48 +1,50 @@
 package ai.dev.kit.adapters.openai.media
 
+import ai.dev.kit.adapters.media.MediaContent
 import ai.dev.kit.adapters.media.MediaContentExtractor
+import ai.dev.kit.adapters.media.Resource
 import ai.dev.kit.common.DataUrl
 import ai.dev.kit.common.isValidUrl
 import ai.dev.kit.common.parseDataUrl
 import ai.dev.kit.exporters.setDataUrlAttributes
 import ai.dev.kit.exporters.setUrlAttributes
 import io.opentelemetry.api.trace.Span
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mu.KotlinLogging
 import io.ktor.http.Headers
+import io.ktor.http.headers
 
-/**
- * Types of media content supported by OpenAI.
- *
- * @see ChatCompletions
- * @see ResponsesApi
- */
-internal sealed class SupportedContentTypeTags(
-    val image: String,
-    val audio: String?,
-    val file: String,
-) {
-    /**
-     * See details: [Chat Completions API Docs](https://platform.openai.com/docs/api-reference/chat/create)
-     */
-    object ChatCompletions : SupportedContentTypeTags(
-        image = "image_url",
-        audio = "input_audio",
-        file = "file",
-    )
-
-    /**
-     * See details: [Responses API Docs](https://platform.openai.com/docs/api-reference/responses/create#responses_create-input-input_item_list-input_message-content)
-     */
-    object ResponsesApi : SupportedContentTypeTags(
-        image = "input_image",
-        audio = null,
-        file = "input_file",
-    )
-}
+///**
+// * Types of media content supported by OpenAI.
+// *
+// * @see ChatCompletions
+// * @see ResponsesApi
+// */
+//internal sealed class SupportedContentTypeTags(
+//    val image: String,
+//    val audio: String?,
+//    val file: String,
+//) {
+//    /**
+//     * See details: [Chat Completions API Docs](https://platform.openai.com/docs/api-reference/chat/create)
+//     */
+//    object ChatCompletions : SupportedContentTypeTags(
+//        image = "image_url",
+//        audio = "input_audio",
+//        file = "file",
+//    )
+//
+//    /**
+//     * See details: [Responses API Docs](https://platform.openai.com/docs/api-reference/responses/create#responses_create-input-input_item_list-input_message-content)
+//     */
+//    object ResponsesApi : SupportedContentTypeTags(
+//        image = "input_image",
+//        audio = null,
+//        file = "input_file",
+//    )
+//}
 
 /**
  * OpenAI-oriented extract of media content
@@ -51,9 +53,7 @@ internal sealed class SupportedContentTypeTags(
  * @see ResponsesMediaContentExtractor
  * @see MediaContentExtractor
  */
-internal abstract class OpenAIMediaContentExtractor(
-    private val tags: SupportedContentTypeTags
-) : MediaContentExtractor {
+internal abstract class OpenAIMediaContentExtractor : MediaContentExtractor {
     protected val logger = KotlinLogging.logger {}
 
     /**
@@ -70,23 +70,41 @@ internal abstract class OpenAIMediaContentExtractor(
     override fun setUploadableContentAttributes(
         span: Span,
         field: String,
-        content: JsonArray,
+        content: MediaContent,
     ) {
-        val supportedTypes = listOf(tags.image, tags.audio, tags.file)
-
-        content.asSequence()
-            .map { it.jsonObject }
-            .mapNotNull { obj ->
-                val type = obj["type"]?.jsonPrimitive?.content
-                if (type != null && type in supportedTypes) type to obj else null
-            }
-            .forEachIndexed { index, (type, obj) ->
-                when (type) {
-                    tags.image -> setImageUrlAttributes(span, field, index, obj)
-                    tags.audio -> setAudioInputAttributes(span, field, index, obj)
-                    tags.file -> setFileInputAttributes(span, field, index, obj)
+        for ((index, part) in content.parts.withIndex()) {
+            val (resource, contentType) = part
+            when (resource) {
+                is Resource.Base64 -> {
+                    if (contentType == null) {
+                        logger.warn { "Base64-encoded data should have content type specified, got null for index $index" }
+                        continue
+                    }
+                    val dataUrl = DataUrl(
+                        mediaType = "${contentType.contentType}/${contentType.contentSubtype}",
+                        headers = headers {
+                            for (param in contentType.parameters) {
+                                set(param.name, param.value)
+                            }
+                        },
+                        base64 = true,
+                        data = resource.base64,
+                    )
+                    setDataUrlAttributes(span, field, index, dataUrl)
+                }
+                is Resource.DataUrl -> {
+                    val dataUrl = resource.dataUrl.parseDataUrl()
+                    if (dataUrl != null) {
+                        setDataUrlAttributes(span, field, index, dataUrl)
+                    } else {
+                        logger.warn { "Invalid data url, received: ${resource.dataUrl}" }
+                    }
+                }
+                is Resource.Url -> {
+                    setUrlAttributes(span, field, index, resource.url)
                 }
             }
+        }
     }
 
     protected fun setImageUrlAttributes(
@@ -120,9 +138,7 @@ internal abstract class OpenAIMediaContentExtractor(
  *
  * See details: [Chat Completions API](https://platform.openai.com/docs/api-reference/chat/create)
  */
-internal class ChatCompletionsMediaContentExtractor : OpenAIMediaContentExtractor(
-    tags = SupportedContentTypeTags.ChatCompletions,
-) {
+internal class ChatCompletionsMediaContentExtractor : OpenAIMediaContentExtractor() {
     override fun setAudioInputAttributes(
         span: Span, field: String, index: Int, contentItem: JsonObject) {
         // data is base64-encoded
@@ -167,9 +183,7 @@ internal class ChatCompletionsMediaContentExtractor : OpenAIMediaContentExtracto
  *
  * See details: [Responses API](https://platform.openai.com/docs/api-reference/responses/create)
  */
-internal class ResponsesMediaContentExtractor : OpenAIMediaContentExtractor(
-    tags = SupportedContentTypeTags.ResponsesApi
-) {
+internal class ResponsesMediaContentExtractor : OpenAIMediaContentExtractor() {
     override fun setAudioInputAttributes(
         span: Span, field: String, index: Int, contentItem: JsonObject) {
         // no-op for responses API

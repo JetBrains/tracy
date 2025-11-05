@@ -1,9 +1,14 @@
 package ai.dev.kit.adapters.openai
 
+import ai.dev.kit.adapters.media.MediaContent
+import ai.dev.kit.adapters.media.MediaContentPart
+import ai.dev.kit.adapters.media.Resource
 import ai.dev.kit.adapters.openai.media.OpenAIMediaContentExtractor
+import ai.dev.kit.common.isValidUrl
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.asJson
+import io.ktor.http.ContentType
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
@@ -81,7 +86,8 @@ internal class ChatCompletionsHandler(
         }
         else if (content is JsonArray) {
             // array that contains entries of either image, audio, file or normal text
-            extractor.setUploadableContentAttributes(span, field = "input", content)
+            val mediaContent = parseMediaContent(content)
+            extractor.setUploadableContentAttributes(span, field = "input", mediaContent)
             content.jsonArray.toString()
         }
         else {
@@ -184,5 +190,58 @@ internal class ChatCompletionsHandler(
         usage["completion_tokens"]?.jsonPrimitive?.intOrNull?.let {
             span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
         }
+    }
+
+    /**
+     * Extracts media content parts (images, audio, files) Implementation of media content extractor for Chat Completions API.
+     *
+     * See details: [Chat Completions API](https://platform.openai.com/docs/api-reference/chat/create)
+     */
+    private fun parseMediaContent(content: JsonArray): MediaContent {
+        val parts = buildList {
+            for (part in content) {
+                val type = part.jsonObject["type"]?.jsonPrimitive?.content ?: continue
+
+                val mediaPart = when (type) {
+                    "image_url" -> {
+                        val url = part.jsonObject["image_url"]?.jsonObject["url"]?.jsonPrimitive?.content ?: continue
+                        if (url.isValidUrl()) {
+                            MediaContentPart(Resource.Url(url))
+                        }
+                        else if (url.startsWith("data:")) {
+                            MediaContentPart(Resource.DataUrl(url))
+                        }
+                        else {
+                            null
+                        }
+                    }
+                    "input_audio" -> {
+                        // data is base64-encoded
+                        val data = part.jsonObject["input_audio"]?.jsonObject["data"]?.jsonPrimitive?.content
+                            ?: continue
+                        val format = part.jsonObject["input_audio"]?.jsonObject["format"]?.jsonPrimitive?.content
+                            ?: continue
+                        MediaContentPart(
+                            resource = Resource.Base64(data),
+                            contentType = ContentType.parse("audio/$format")
+                        )
+                    }
+                    "file" -> {
+                        // OpenAI expects a data url with a base64-encoded PDF file
+                        val fileData = part.jsonObject["file"]?.jsonObject["file_data"]?.jsonPrimitive?.content
+                            ?: continue
+                        MediaContentPart(Resource.DataUrl(fileData))
+                    }
+                    else -> null
+                }
+
+                // append media part if it's valid
+                if (mediaPart != null) {
+                    add(mediaPart)
+                }
+            }
+        }
+
+        return MediaContent(parts)
     }
 }

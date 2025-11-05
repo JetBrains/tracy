@@ -1,6 +1,10 @@
 package ai.dev.kit.adapters.openai
 
+import ai.dev.kit.adapters.media.MediaContent
+import ai.dev.kit.adapters.media.MediaContentPart
+import ai.dev.kit.adapters.media.Resource
 import ai.dev.kit.adapters.openai.media.OpenAIMediaContentExtractor
+import ai.dev.kit.common.isValidUrl
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.asJson
@@ -102,7 +106,8 @@ internal class ResponsesApiHandler(
         for (input in inputs) {
             val content = input.jsonObject["content"]
             if (content is JsonArray) {
-                extractor.setUploadableContentAttributes(span, field, content)
+                val mediaContent = parseMediaContent(content)
+                extractor.setUploadableContentAttributes(span, field, mediaContent)
             }
         }
     }
@@ -228,5 +233,46 @@ internal class ResponsesApiHandler(
         usage["output_tokens"]?.jsonPrimitive?.intOrNull?.let {
             span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
         }
+    }
+
+    private fun parseMediaContent(content: JsonArray): MediaContent {
+        val parts = buildList {
+            for (part in content) {
+                val type = part.jsonObject["type"]?.jsonPrimitive?.content ?: continue
+
+                val mediaPart = when (type) {
+                    "input_image" -> {
+                        val url = part.jsonObject["image_url"]?.jsonPrimitive?.content ?: continue
+                        if (url.isValidUrl()) {
+                            MediaContentPart(Resource.Url(url))
+                        } else if (url.startsWith("data:")) {
+                            MediaContentPart(Resource.DataUrl(url))
+                        } else {
+                            null
+                        }
+                    }
+                    "input_file" -> {
+                        if ("file_url" in part.jsonObject) {
+                            val url = part.jsonObject["file_url"]?.jsonPrimitive?.content ?: continue
+                            if (url.isValidUrl()) MediaContentPart(Resource.Url(url)) else null
+                        }
+                        else if ("file_data" in part.jsonObject) {
+                            val dataUrl = part.jsonObject["file_data"]?.jsonPrimitive?.content ?: continue
+                            MediaContentPart(Resource.DataUrl(dataUrl))
+                        } else {
+                            null
+                        }
+                    }
+                    else -> null
+                }
+
+                // if the media part is valid, append it to the list
+                if (mediaPart != null) {
+                    add(mediaPart)
+                }
+            }
+        }
+
+        return MediaContent(parts)
     }
 }
