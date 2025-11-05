@@ -1,8 +1,7 @@
 package ai.dev.kit.adapters
 
 import ai.dev.kit.adapters.openai.*
-import ai.dev.kit.adapters.openai.media.ChatCompletionsMediaContentExtractor
-import ai.dev.kit.adapters.openai.media.ResponsesMediaContentExtractor
+import ai.dev.kit.adapters.openai.media.OpenAIMediaContentExtractor
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.Url
@@ -33,12 +32,8 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
     override fun getRequestBodyAttributes(span: Span, request: Request) {
         if (handler == null) {
             handler = when (detectApiType(request.url)) {
-                OpenAIApiType.CHAT_COMPLETIONS -> ChatCompletionsHandler(
-                    extractor = ChatCompletionsMediaContentExtractor()
-                )
-                OpenAIApiType.RESPONSES_API -> ResponsesApiHandler(
-                    extractor = ResponsesMediaContentExtractor()
-                )
+                OpenAIApiType.CHAT_COMPLETIONS -> ChatCompletionsHandler(extractor = OpenAIMediaContentExtractor())
+                OpenAIApiType.RESPONSES_API -> ResponsesApiHandler(extractor = OpenAIMediaContentExtractor())
                 OpenAIApiType.IMAGES_GENERATIONS -> ImagesGenerationsHandler()
                 OpenAIApiType.IMAGES_EDITS -> ImagesEditsHandler()
             }

@@ -1,14 +1,14 @@
 package ai.dev.kit.adapters.openai
 
 import ai.dev.kit.adapters.media.MediaContent
+import ai.dev.kit.adapters.media.MediaContentExtractor
 import ai.dev.kit.adapters.media.MediaContentPart
 import ai.dev.kit.adapters.media.Resource
-import ai.dev.kit.adapters.openai.media.OpenAIMediaContentExtractor
 import ai.dev.kit.common.isValidUrl
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.asJson
-import io.ktor.http.ContentType
+import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
@@ -19,8 +19,7 @@ import kotlinx.serialization.json.*
  * Handler for OpenAI Chat Completions API
  */
 internal class ChatCompletionsHandler(
-    private val extractor: OpenAIMediaContentExtractor
-) : OpenAIApiHandler {
+    private val extractor: MediaContentExtractor) : OpenAIApiHandler {
     override fun handleRequestAttributes(span: Span, request: Request) {
         val body = request.body.asJson()?.jsonObject ?: return
         OpenAIApiUtils.setCommonRequestAttributes(span, request)
@@ -193,9 +192,13 @@ internal class ChatCompletionsHandler(
     }
 
     /**
-     * Extracts media content parts (images, audio, files) Implementation of media content extractor for Chat Completions API.
+     * Extracts media content parts (images, audio, files) from JSON content.
      *
-     * See details: [Chat Completions API](https://platform.openai.com/docs/api-reference/chat/create)
+     * As for files, supports only files attached directly in the data URL (i.e., in the `file_data` field).
+     * Files attached via file IDs (`file_id` field) are ignored.
+     * See the schema for files: [Chat Completions API: File Content Schema](https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages-user-message-content-array-of-content-parts-file-content-part-file).
+     *
+     * See endpoint details: [Chat Completions API](https://platform.openai.com/docs/api-reference/chat/create)
      */
     private fun parseMediaContent(content: JsonArray): MediaContent {
         val parts = buildList {

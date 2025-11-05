@@ -1,9 +1,9 @@
 package ai.dev.kit.adapters.openai
 
 import ai.dev.kit.adapters.media.MediaContent
+import ai.dev.kit.adapters.media.MediaContentExtractor
 import ai.dev.kit.adapters.media.MediaContentPart
 import ai.dev.kit.adapters.media.Resource
-import ai.dev.kit.adapters.openai.media.OpenAIMediaContentExtractor
 import ai.dev.kit.common.isValidUrl
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
@@ -17,8 +17,7 @@ import kotlinx.serialization.json.*
  * Handler for OpenAI Responses API
  */
 internal class ResponsesApiHandler(
-    private val extractor: OpenAIMediaContentExtractor
-) : OpenAIApiHandler {
+    private val extractor: MediaContentExtractor) : OpenAIApiHandler {
     override fun handleRequestAttributes(span: Span, request: Request) {
         val body = request.body.asJson()?.jsonObject ?: return
         OpenAIApiUtils.setCommonRequestAttributes(span, request)
@@ -235,6 +234,11 @@ internal class ResponsesApiHandler(
         }
     }
 
+    /**
+     * Extracts media content parts (images, files) from JSON content.
+     *
+     * See details: [Responses API](https://platform.openai.com/docs/api-reference/responses/create)
+     */
     private fun parseMediaContent(content: JsonArray): MediaContent {
         val parts = buildList {
             for (part in content) {
