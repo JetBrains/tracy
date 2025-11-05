@@ -220,7 +220,8 @@ abstract class OpenTelemetryOkHttpInterceptor(
         val buffer = Buffer()
         body.writeTo(buffer)
 
-        return when (mediaType?.toContentType()) {
+        // check for the content type regardless of the parameters
+        return when (mediaType?.toContentType()?.withoutParameters()) {
             ContentType.Application.Json -> {
                 val json = try {
                     Json.parseToJsonElement(buffer.readUtf8()).jsonObject
