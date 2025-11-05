@@ -10,6 +10,7 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.opentelemetry.context.Context
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter
+import io.opentelemetry.sdk.common.CompletableResultCode
 import io.opentelemetry.sdk.trace.ReadWriteSpan
 import io.opentelemetry.sdk.trace.ReadableSpan
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder
@@ -26,6 +27,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 const val LANGFUSE_BASE_URL = "https://cloud.langfuse.com"
 
@@ -113,17 +115,17 @@ fun SdkTracerProviderBuilder.addLangfuseSpanProcessor(
  * @see uploadMediaFileToLangfuse
  */
 class MediaContentUploadingSpanProcessor(
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val client: HttpClient = HttpClient {
+        install(ContentNegotiation) {
+            json()
+        }
+    }
 ) : SpanProcessor {
+    private val isClosed = AtomicBoolean(false)
+
     companion object {
         private val logger = KotlinLogging.logger {}
-
-        // used to request media files by URLs
-        private val client = HttpClient {
-            install(ContentNegotiation) {
-                json()
-            }
-        }
     }
 
     override fun onStart(parentContext: Context, span: ReadWriteSpan) {}
@@ -173,6 +175,21 @@ class MediaContentUploadingSpanProcessor(
     }
 
     override fun isEndRequired(): Boolean = true
+
+    override fun shutdown(): CompletableResultCode {
+        closeClient()
+        return CompletableResultCode.ofSuccess()
+    }
+
+    override fun close() {
+        closeClient()
+    }
+
+    private fun closeClient() {
+        if (isClosed.compareAndSet(false, true)) {
+            client.close()
+        }
+    }
 
     private suspend fun uploadMediaFromUrl(
         traceId: String,
