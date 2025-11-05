@@ -31,11 +31,13 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
 
     override fun getRequestBodyAttributes(span: Span, request: Request) {
         if (handler == null) {
+            val extractor = OpenAIMediaContentExtractor()
+
             handler = when (detectApiType(request.url)) {
-                OpenAIApiType.CHAT_COMPLETIONS -> ChatCompletionsHandler(extractor = OpenAIMediaContentExtractor())
-                OpenAIApiType.RESPONSES_API -> ResponsesApiHandler(extractor = OpenAIMediaContentExtractor())
-                OpenAIApiType.IMAGES_GENERATIONS -> ImagesGenerationsHandler()
-                OpenAIApiType.IMAGES_EDITS -> ImagesEditsHandler()
+                OpenAIApiType.CHAT_COMPLETIONS -> ChatCompletionsHandler(extractor)
+                OpenAIApiType.RESPONSES_API -> ResponsesApiHandler(extractor)
+                OpenAIApiType.IMAGES_GENERATIONS -> ImagesGenerationsHandler(extractor)
+                OpenAIApiType.IMAGES_EDITS -> ImagesEditsHandler(extractor)
             }
         }
         handler?.handleRequestAttributes(span, request)
