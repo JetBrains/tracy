@@ -2,6 +2,7 @@ package ai.dev.kit.adapters.openai
 
 import ai.dev.kit.adapters.Url
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
 
@@ -164,13 +165,13 @@ internal class ResponsesApiHandler : OpenAIApiHandler {
                     output.jsonObject["status"]?.jsonPrimitive?.content?.let {
                         span.setAttribute("gen_ai.$type.$index.status", it)
                     }
-                    output.jsonObject["summary"]?.jsonArray?.toString()?.let {
-                        span.setAttribute("gen_ai.$type.$index.summary", it)
+                    output.jsonObject["summary"]?.jsonArray?.let {
+                        span.setAttribute("gen_ai.$type.$index.summary", it.toString())
                     }
 
                     // content = null breaks rendering on Langfuse
-                    output.jsonObject["content"]?.jsonPrimitive?.content?.let {
-                        span.setAttribute("gen_ai.$type.$index.output_content", it)
+                    output.jsonObject["content"]?.jsonArray?.let {
+                        span.setAttribute("gen_ai.$type.$index.output_content", it.toString())
                     }
                 }
             }
@@ -178,7 +179,7 @@ internal class ResponsesApiHandler : OpenAIApiHandler {
         }
     }
 
-    override fun handleStreaming(span: Span, events: String) {
+    override fun handleStreaming(span: Span, events: String): Unit = runCatching {
         for (line in events.lineSequence()) {
             if (!line.startsWith("data:")) continue
             val data = line.removePrefix("data:").trim()
@@ -189,9 +190,11 @@ internal class ResponsesApiHandler : OpenAIApiHandler {
                     span.setAttribute("gen_ai.completion.0.content", finalText)
                     span.setAttribute("gen_ai.completion.0.finish_reason", "stop")
                 }
-                return
             }
         }
+    }.getOrElse { exception ->
+        span.setStatus(StatusCode.ERROR)
+        span.recordException(exception)
     }
 
     /**

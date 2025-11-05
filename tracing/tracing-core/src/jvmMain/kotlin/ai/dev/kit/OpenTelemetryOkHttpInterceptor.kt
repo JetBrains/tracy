@@ -100,7 +100,7 @@ abstract class OpenTelemetryOkHttpInterceptor(
         span.makeCurrent().use { _ ->
             try {
                 val request = chain.request()
-                val url = request.url
+
                 val body = request.body?.let {
                     val buffer = Buffer()
                     it.writeTo(buffer)
@@ -110,41 +110,36 @@ abstract class OpenTelemetryOkHttpInterceptor(
 
                 adapter.registerRequest(
                     span = span,
-                    url = Url(url.scheme, url.host, url.pathSegments),
+                    url = Url(request.url.scheme, request.url.host, request.url.pathSegments),
                     requestBody = body ?: JsonObject(emptyMap()),
                 )
-
 
                 val response = chain.proceed(chain.request())
                 val contentType = response.body?.contentType()
 
-                if (isStreamingRequest) {
+                return if (isStreamingRequest) {
                     val streamingMarker = JsonObject(mapOf("stream" to JsonPrimitive(true)))
-
                     adapter.registerResponse(
                         span = span,
                         contentType = contentType?.let { ContentType(contentType.type, contentType.subtype) },
                         responseCode = response.code.toLong(),
                         responseBody = streamingMarker,
                     )
-
-                    return wrapStreamingResponse(response, span)
+                    wrapStreamingResponse(response, span)
+                } else {
+                    val decodedResponse = try {
+                        Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
+                    } catch (_: Exception) {
+                        JsonObject(emptyMap())
+                    }
+                    adapter.registerResponse(
+                        span = span,
+                        contentType = contentType?.let { ContentType(contentType.type, contentType.subtype) },
+                        response.code.toLong(),
+                        decodedResponse
+                    )
+                    response
                 }
-
-                val decodedResponse = try {
-                    Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
-                } catch (_: Exception) {
-                    JsonObject(emptyMap())
-                }
-
-                adapter.registerResponse(
-                    span = span,
-                    contentType = contentType?.let { ContentType(contentType.type, contentType.subtype) },
-                    response.code.toLong(),
-                    decodedResponse
-                )
-
-                return response
             } catch (e: Exception) {
                 span.setStatus(StatusCode.ERROR)
                 span.recordException(e)

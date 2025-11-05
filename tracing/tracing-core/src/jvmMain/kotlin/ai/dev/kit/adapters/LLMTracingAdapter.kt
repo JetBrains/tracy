@@ -35,51 +35,58 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
         private const val REQUIRED_SUBTYPE = "json"
     }
 
-    fun registerRequest(span: Span, url: Url, requestBody: JsonObject) {
-        span.setAttribute("gen_ai.request.SpanAttributeNumber", "0 (limit ${TracingManager.maxNumberOfSpanAttributes})")
-
+    fun registerRequest(span: Span, url: Url, requestBody: JsonObject): Unit = runCatching {
         getRequestBodyAttributes(span, url, requestBody)
+        span.setAttribute("gen_ai.request.SpanAttributeNumber", "0 (limit ${TracingManager.maxNumberOfSpanAttributes})")
         span.setAttribute("gen_ai.api_base", "${url.scheme}://${url.host}")
         span.setAttribute(GEN_AI_SYSTEM, genAISystem)
+        return@runCatching
+    }.getOrElse { exception ->
+        span.setStatus(StatusCode.ERROR)
+        span.recordException(exception)
     }
 
-    fun registerResponse(span: Span, contentType: ContentType?, responseCode: Long, responseBody: JsonObject) {
-        val isStreamingRequest = responseBody["stream"]?.jsonPrimitive?.boolean == true
+    fun registerResponse(span: Span, contentType: ContentType?, responseCode: Long, responseBody: JsonObject): Unit =
+        runCatching {
+            val isStreamingRequest = responseBody["stream"]?.jsonPrimitive?.boolean == true
 
-        if (contentType?.type == REQUIRED_TYPE && contentType.subtype == REQUIRED_SUBTYPE) {
-            getResultBodyAttributes(span, responseBody)
-        } else if (isStreamingRequest && contentType.toString().contains("text/event-stream")) {
-            span.setAttribute("gen_ai.response.streaming", true)
-            span.setAttribute("gen_ai.completion.content.type", contentType.toString())
-        } else {
-            contentType?.let { span.setAttribute("gen_ai.completion.content.type", it.asString()) }
-        }
-
-        span.setAttribute("http.status_code", responseCode)
-        if (responseCode in 400..499 || responseCode in 500..599) {
-            getResultErrorBodyAttributes(span, responseBody)
-            span.setStatus(StatusCode.ERROR)
-        } else {
-            span.setStatus(StatusCode.OK)
-        }
-
-        val numberOfSpanAttributes = (span as? ReadableSpan)?.attributes?.size()
-
-        numberOfSpanAttributes?.let {
-            val limit = TracingManager.maxNumberOfSpanAttributes ?: Int.MAX_VALUE
-            if (it >= limit) {
-                span.setAttribute(
-                    "gen_ai.request.SpanAttributeNumber",
-                    "Limit (${TracingManager.maxNumberOfSpanAttributes}) exceeded. Adjust TracingConfig or env"
-                )
+            if (contentType?.type == REQUIRED_TYPE && contentType.subtype == REQUIRED_SUBTYPE) {
+                getResultBodyAttributes(span, responseBody)
+            } else if (isStreamingRequest && contentType.toString().contains("text/event-stream")) {
+                span.setAttribute("gen_ai.response.streaming", true)
+                span.setAttribute("gen_ai.completion.content.type", contentType.toString())
             } else {
-                span.setAttribute(
-                    "gen_ai.request.SpanAttributeNumber",
-                    "$it (limit ${TracingManager.maxNumberOfSpanAttributes})"
-                )
+                contentType?.let { span.setAttribute("gen_ai.completion.content.type", it.asString()) }
             }
+
+            span.setAttribute("http.status_code", responseCode)
+            if (responseCode in 400..499 || responseCode in 500..599) {
+                getResultErrorBodyAttributes(span, responseBody)
+                span.setStatus(StatusCode.ERROR)
+            } else {
+                span.setStatus(StatusCode.OK)
+            }
+
+            val numberOfSpanAttributes = (span as? ReadableSpan)?.attributes?.size()
+
+            numberOfSpanAttributes?.let {
+                val limit = TracingManager.maxNumberOfSpanAttributes ?: Int.MAX_VALUE
+                if (it >= limit) {
+                    span.setAttribute(
+                        "gen_ai.request.SpanAttributeNumber",
+                        "Limit (${TracingManager.maxNumberOfSpanAttributes}) exceeded. Adjust TracingConfig or env"
+                    )
+                } else {
+                    span.setAttribute(
+                        "gen_ai.request.SpanAttributeNumber", "$it (limit ${TracingManager.maxNumberOfSpanAttributes})"
+                    )
+                }
+            }
+            return@runCatching
+        }.getOrElse { exception ->
+            span.setStatus(StatusCode.ERROR)
+            span.recordException(exception)
         }
-    }
 
     protected open fun getResultErrorBodyAttributes(span: Span, body: JsonObject) {
         body["error"]?.jsonObject?.let { error ->

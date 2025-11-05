@@ -1,8 +1,8 @@
 package ai.dev.kit
 
-import  ai.dev.kit.adapters.Url
 import ai.dev.kit.adapters.ContentType
 import ai.dev.kit.adapters.LLMTracingAdapter
+import ai.dev.kit.adapters.Url
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.fluent.processor.Span
 import io.ktor.client.*
@@ -56,80 +56,62 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 val span = tracer.spanBuilder("http-client-span").startSpan()
                 span.makeCurrent().use {
                     request.attributes.put(httpSpanKey, span)
-                    try {
-                        val body = try {
-                            val bodyType = request.bodyType?.type
-                            when {
-                                request.body is EmptyContent -> JsonObject(emptyMap())
-                                (bodyType != null) && bodyType.hasAnnotation<Serializable>() -> {
-                                    serializeToJson(request.body)?.let { Json.parseToJsonElement(it).jsonObject }
-                                        ?: JsonObject(emptyMap())
-                                }
-
-                                else -> Json.parseToJsonElement(request.body.toString()).jsonObject
+                    val body = try {
+                        val bodyType = request.bodyType?.type
+                        when {
+                            request.body is EmptyContent -> JsonObject(emptyMap())
+                            (bodyType != null) && bodyType.hasAnnotation<Serializable>() -> {
+                                serializeToJson(request.body)?.let { Json.parseToJsonElement(it).jsonObject }
+                                    ?: JsonObject(emptyMap())
                             }
-                        } catch (_: Exception) {
-                            JsonObject(emptyMap())
+
+                            else -> Json.parseToJsonElement(request.body.toString()).jsonObject
                         }
-
-                        request.attributes.put(isStreamingRequestKey, adapter.isStreamingRequest(body))
-
-                        adapter.registerRequest(
-                            span = span,
-                            url = Url(
-                                scheme = request.url.protocol.name,
-                                host = request.url.host,
-                                pathSegments = request.url.pathSegments,
-                            ),
-                            requestBody = body
-                        )
-                    } catch (e: Exception) {
-                        span.setStatus(StatusCode.ERROR)
-                        span.recordException(e)
-                        span.end()
-                        throw e
+                    } catch (_: Exception) {
+                        JsonObject(emptyMap())
                     }
+
+                    request.attributes.put(isStreamingRequestKey, adapter.isStreamingRequest(body))
+
+                    adapter.registerRequest(
+                        span = span, url = Url(
+                            scheme = request.url.protocol.name,
+                            host = request.url.host,
+                            pathSegments = request.url.pathSegments
+                        ), requestBody = body
+                    )
                 }
+                span.end()
             }
 
             onResponse { response ->
                 val isStreamingRequest = response.call.request.attributes[isStreamingRequestKey]
                 val span = response.call.request.attributes[httpSpanKey]
                 if (isStreamingRequest) return@onResponse
-
-                try {
-                    val body = try {
-                        // peek the response body to avoid consuming the underlying channel
-                        val responseString = run {
-                            // NOTE: we must first peek and only then await.
-                            // otherwise there are cases when an empty body gets peeked
-                            val peeked = response.rawContent.readBuffer.peek()
-                            response.rawContent.awaitContent(Int.MAX_VALUE)
-                            peeked.request(Long.MAX_VALUE)
-                            val buffer = Buffer()
-                            buffer.write(peeked, peeked.buffer.size)
-                            buffer.readString()
-                        }
-                        Json.parseToJsonElement(responseString).jsonObject
-                    } catch (exception: Exception) {
-                        println(exception)
-                        JsonObject(emptyMap())
+                val body = try {
+                    // peek the response body to avoid consuming the underlying channel
+                    val responseString = run {
+                        // NOTE: we must first peek and only then await.
+                        // otherwise there are cases when an empty body gets peeked
+                        val peeked = response.rawContent.readBuffer.peek()
+                        response.rawContent.awaitContent(Int.MAX_VALUE)
+                        peeked.request(Long.MAX_VALUE)
+                        val buffer = Buffer()
+                        buffer.write(peeked, peeked.buffer.size)
+                        buffer.readString()
                     }
-
-                    adapter.registerResponse(
-                        span = span,
-                        contentType = response.contentType()
-                            ?.let { ContentType(it.contentType, it.contentSubtype) },
-                        responseCode = response.status.value.toLong(),
-                        responseBody = body,
-                    )
-                } catch (e: Exception) {
-                    span.setStatus(StatusCode.ERROR)
-                    span.recordException(e)
-                    throw e
-                } finally {
-                    span.end()
+                    Json.parseToJsonElement(responseString).jsonObject
+                } catch (exception: Exception) {
+                    println(exception)
+                    JsonObject(emptyMap())
                 }
+                adapter.registerResponse(
+                    span = span,
+                    contentType = response.contentType()?.let { ContentType(it.contentType, it.contentSubtype) },
+                    responseCode = response.status.value.toLong(),
+                    responseBody = body,
+                )
+                span.end()
             }
 
             transformResponseBody { response, content, typeInfo ->
@@ -139,8 +121,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
 
                 adapter.registerResponse(
                     span = span,
-                    contentType = response.contentType()
-                        ?.let { ContentType(it.contentType, it.contentSubtype) },
+                    contentType = response.contentType()?.let { ContentType(it.contentType, it.contentSubtype) },
                     responseCode = response.status.value.toLong(),
                     responseBody = JsonObject(mapOf("stream" to JsonPrimitive(true))),
                 )
@@ -165,7 +146,6 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                         span.setStatus(StatusCode.ERROR)
                         span.recordException(e)
                         if (!tracingChannel.isClosedForWrite) tracingChannel.close(e)
-                        throw e
                     } finally {
                         try {
                             adapter.handleStreaming(span, capturedText.toString())

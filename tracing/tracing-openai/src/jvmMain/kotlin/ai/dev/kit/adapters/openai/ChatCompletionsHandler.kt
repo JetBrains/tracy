@@ -2,6 +2,7 @@ package ai.dev.kit.adapters.openai
 
 import ai.dev.kit.adapters.Url
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
 import kotlinx.serialization.json.*
@@ -21,7 +22,10 @@ internal class ChatCompletionsHandler : OpenAIApiHandler {
 
                 // when a tool result is encountered
                 if (role?.lowercase() == "tool") {
-                    span.setAttribute("gen_ai.prompt.$index.tool_call_id", message.jsonObject["tool_call_id"]?.jsonPrimitive?.content)
+                    span.setAttribute(
+                        "gen_ai.prompt.$index.tool_call_id",
+                        message.jsonObject["tool_call_id"]?.jsonPrimitive?.content
+                    )
                 }
             }
         }
@@ -101,7 +105,7 @@ internal class ChatCompletionsHandler : OpenAIApiHandler {
         }
     }
 
-    override fun handleStreaming(span: Span, events: String) {
+    override fun handleStreaming(span: Span, events: String): Unit = runCatching {
         var role: String? = null
         val out = buildString {
             for (line in events.lineSequence()) {
@@ -116,9 +120,12 @@ internal class ChatCompletionsHandler : OpenAIApiHandler {
                 delta["content"]?.jsonPrimitive?.content?.let { append(it) }
             }
         }
-
         if (out.isNotEmpty()) span.setAttribute("gen_ai.completion.0.content", out)
         role?.let { span.setAttribute("gen_ai.completion.0.role", it) }
+        return@runCatching
+    }.getOrElse { exception ->
+        span.setStatus(StatusCode.ERROR)
+        span.recordException(exception)
     }
 
     /**
