@@ -1,6 +1,7 @@
 package ai.dev.kit.adapters.openai
 
 import ai.dev.kit.adapters.Url
+import ai.dev.kit.adapters.openai.media.OpenAIMediaContentExtractor
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
@@ -8,7 +9,9 @@ import kotlinx.serialization.json.*
 /**
  * Handler for OpenAI Responses API
  */
-internal class ResponsesApiHandler : OpenAIApiHandler {
+internal class ResponsesApiHandler(
+    private val extractor: OpenAIMediaContentExtractor
+) : OpenAIApiHandler {
 
     override fun handleRequestAttributes(span: Span, url: Url, body: JsonObject) {
         OpenAIApiUtils.setCommonRequestAttributes(span, body)
@@ -59,6 +62,7 @@ internal class ResponsesApiHandler : OpenAIApiHandler {
         body["input"]?.let { inputs ->
             if (inputs is JsonArray) {
                 processAttributeTypes(span, inputs, promptIndex, "prompt")
+                attachMediaContentAttributes(span, field = "input", inputs)
             } else {
                 span.setAttribute("gen_ai.prompt.0.role", "user")
                 span.setAttribute("gen_ai.prompt.0.content", inputs.toString())
@@ -87,6 +91,19 @@ internal class ResponsesApiHandler : OpenAIApiHandler {
         }
     }
 
+    /**
+     * @param field must be one of: 'input', 'output' or 'metadata' (see [ai.dev.kit.exporters.MediaUploadParams.field])
+     */
+    private fun attachMediaContentAttributes(span: Span, field: String, inputs: JsonArray) {
+        // set attributes with media attachments info into the span
+        for (input in inputs) {
+            val content = input.jsonObject["content"]
+            if (content is JsonArray) {
+                extractor.setUploadableContentAttributes(span, field, content)
+            }
+        }
+    }
+
     override fun handleResponseAttributes(span: Span, body: JsonObject) {
         OpenAIApiUtils.setCommonResponseAttributes(span, body)
 
@@ -101,7 +118,9 @@ internal class ResponsesApiHandler : OpenAIApiHandler {
 
     fun processAttributeTypes(span: Span, events: JsonArray, indexOfFirstAttribute: Int, type: String) {
         var index = indexOfFirstAttribute
+
         for (output in events.jsonArray) {
+            // See: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input
             when (output.jsonObject["type"]?.jsonPrimitive?.content) {
                 "function_call", "function_call_output" -> {
                     // "type" attribute is not rendered on Langfuse
@@ -127,22 +146,21 @@ internal class ResponsesApiHandler : OpenAIApiHandler {
                         span.setAttribute("gen_ai.$type.$index.role", it)
                     }
 
-                    if (output.jsonObject["content"] is JsonArray) {
-                        output.jsonObject["content"]?.jsonArray?.let { contentArray ->
-                            val textContent = contentArray.firstOrNull {
-                                it.jsonObject["type"]?.jsonPrimitive?.content == "output_text"
-                            }?.jsonObject
+                    val content = output.jsonObject["content"]
+                    if (content is JsonArray) {
+                        val textContent = content.firstOrNull {
+                            it.jsonObject["type"]?.jsonPrimitive?.content == "output_text"
+                        }?.jsonObject
 
-                            textContent?.get("text")?.jsonPrimitive?.content?.let {
-                                span.setAttribute("gen_ai.$type.$index.content", it)
-                            }
+                        textContent?.get("text")?.jsonPrimitive?.content?.let {
+                            span.setAttribute("gen_ai.$type.$index.content", it)
+                        }
 
-                            textContent?.get("annotations")?.let {
-                                span.setAttribute("gen_ai.$type.$index.annotations", it.toString())
-                            }
+                        textContent?.get("annotations")?.let {
+                            span.setAttribute("gen_ai.$type.$index.annotations", it.toString())
                         }
                     } else {
-                        span.setAttribute("gen_ai.$type.$index.content", output.jsonObject["content"].toString())
+                        span.setAttribute("gen_ai.$type.$index.content", content.toString())
                     }
 
                     output.jsonObject["status"]?.jsonPrimitive?.content?.let {
