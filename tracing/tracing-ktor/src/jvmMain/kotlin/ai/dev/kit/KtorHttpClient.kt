@@ -83,6 +83,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                             pathSegments = request.url.pathSegments,
                         ),
                         body = RequestBody.Json(body),
+                        contentType = request.contentType(),
                     )
 
                     request.attributes.put(isStreamingRequestKey, value = adapter.isStreamingRequest(req))

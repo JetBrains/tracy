@@ -1,6 +1,7 @@
 package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
+import ai.dev.kit.tracing.autologging.createOpenAIClient
 import ai.dev.kit.tracing.fluent.providers.BaseOpenAITracingTest.Companion.MediaContentAttributeValues
 import com.openai.models.images.ImageGenerateParams
 import com.openai.models.images.ImageModel
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import java.time.Duration
 import java.util.stream.Stream
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.minutes
@@ -173,31 +175,73 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
         assertEquals(true, trace.attributes[AttributeKey.stringKey("gen_ai.error.message")]?.isNotEmpty())
     }
 
-    // TODO: implement
-    /*
     @Test
-    fun `test image generation with streaming API`() {
-        val client = instrument(createLiteLLMClient())
-        val prompt = "generate an image of dog and cat sitting next to each other"
+    fun `test image generation with streaming API`() = runTest(
+        timeout = 3.minutes,
+    ) {
+        val client = instrument(createOpenAIClient(
+            llmProviderUrl,
+            llmProviderApiKey,
+            timeout = Duration.ofMinutes(3),
+        ))
+        val prompt = "generate an image where a knife cuts a glass watermelon"
+        val model = ImageModel.GPT_IMAGE_1
+        val size = ImageGenerateParams.Size._1024X1024
+        val partialImagesCount = 2
 
         val params = ImageGenerateParams.builder()
             .prompt(prompt)
-            .model(ImageModel.GPT_IMAGE_1)
-            .size(ImageGenerateParams.Size.AUTO)
+            .model(model)
+            .partialImages(partialImagesCount.toLong())
+            .size(size)
             .n(1)
             .build()
 
-        // val events = client.images().generateStreaming(params).stream().peek { println(it) }
-        val events = client.images().generateStreaming(params)
-        events.use {
-            // it.stream()
+        client.images().generateStreaming(params).use { events ->
+            events.stream().toList()
         }
 
-        val traces = analyzeSpans()
+        validateBasicImageTracing(prompt, model)
+        val trace = analyzeSpans().first()
 
-        assertEquals(1, traces.size)
-        val trace = traces.first()
-    }*/
+        assertEquals(
+            size.asString(),
+            trace.attributes[AttributeKey.stringKey("gen_ai.request.size")]
+        )
+        assertEquals(
+            partialImagesCount.toString(),
+            trace.attributes[AttributeKey.stringKey("gen_ai.request.partial_images")]
+        )
+        assertEquals("1", trace.attributes[AttributeKey.stringKey("gen_ai.request.n")])
+
+        // expect there to be two partial images.
+        // mind that it may not always be the case:
+        // https://platform.openai.com/docs/api-reference/images/create#images_create-partial_images
+        for (index in 0 until partialImagesCount) {
+            assertEquals(
+                index.toString(),
+                trace.attributes[AttributeKey.stringKey("gen_ai.completion.partial_image.$index.partial_image_index")]
+            )
+            assertEquals(
+                size.asString(),
+                trace.attributes[AttributeKey.stringKey("gen_ai.completion.partial_image.$index.size")]
+            )
+            assertEquals(
+                true,
+                trace.attributes[AttributeKey.stringKey("gen_ai.completion.partial_image.$index.b64_json")]?.isNotEmpty()
+            )
+        }
+
+        val expectedImage = MediaContentAttributeValues.Data(
+            field = "output",
+            contentType = "image/png",
+            data = null,
+        )
+
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            expectedImage, expectedImage, expectedImage
+        ))
+    }
 
     fun provideResponseFormats(): Stream<Arguments> {
         return Stream.of(

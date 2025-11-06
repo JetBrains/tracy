@@ -8,6 +8,7 @@ import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.asJson
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -39,10 +40,12 @@ internal class ImagesGenerationsHandler(
     }
 
     override fun handleStreaming(span: Span, events: String) {
-        // TODO: impl
-        println("Streaming:")
         for (line in events.lineSequence()) {
-            println(line)
+            if (!line.startsWith("data:")) {
+                continue
+            }
+            val data = Json.parseToJsonElement(line.removePrefix("data:").trim()).jsonObject
+            handleStreamingImage(span, data, extractor)
         }
     }
 }

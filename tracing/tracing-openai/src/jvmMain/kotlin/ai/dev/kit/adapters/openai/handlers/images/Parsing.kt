@@ -12,6 +12,7 @@ import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonArray
@@ -23,14 +24,16 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 
 
+// See: https://platform.openai.com/docs/api-reference/images/create#images_create-output_format
+private const val defaultImageFormat = "png"
+
+
 internal fun handleImageGenerationResponseAttributes(
     span: Span,
     response: Response,
     extractor: MediaContentExtractor,
 ) {
     val body = response.body.asJson()?.jsonObject ?: return
-    // See: https://platform.openai.com/docs/api-reference/images/create#images_create-output_format
-    val defaultImageFormat = "png"
 
     body["data"]?.jsonArray?.let { data ->
         // collect AI response content
@@ -55,6 +58,59 @@ internal fun handleImageGenerationResponseAttributes(
         }
         span.setAttribute("gen_ai.response.$key", value.asString)
     }
+}
+
+internal fun handleStreamingImage(
+    span: Span,
+    data: JsonObject,
+    extractor: MediaContentExtractor,
+) {
+    val type = data["type"]?.jsonPrimitive?.content ?: return
+
+    when (type) {
+        "image_generation.completed" -> {
+            val base64 = data["b64_json"]?.jsonPrimitive?.content ?: return
+            // install image data as JSON object: `{ "b64_json": "data" }`
+            val content = Json.parseToJsonElement("""
+                {"b64_json": "$base64"}
+            """.trimIndent())
+            span.setAttribute("gen_ai.completion.0.content", content.asString)
+
+            data["usage"]?.jsonObject?.let { setUsageAttributes(span, it) }
+
+            val manuallyParsedKeys = listOf("b64_json", "usage")
+
+            // insert other attributes
+            for ((key, value) in data.entries) {
+                if (key !in manuallyParsedKeys) {
+                    span.setAttribute("gen_ai.response.$key", value.asString)
+                }
+            }
+        }
+        "image_generation.partial_image" -> {
+            val partialImageIndex = data["partial_image_index"]?.jsonPrimitive?.intOrNull ?: return
+            // insert attributes in `gen_ai.completion.partial_image.[index].*`
+            for ((key, value) in data.entries) {
+                span.setAttribute("gen_ai.completion.partial_image.$partialImageIndex.$key", value.asString)
+            }
+        }
+    }
+
+    // install media content for further upload
+    val base64 = data["b64_json"]?.jsonPrimitive?.content ?: return
+    val format = data["output_format"]?.jsonPrimitive?.content ?: defaultImageFormat
+    val contentType = "image/$format"
+
+    val content = MediaContent(
+        parts = listOf(
+            MediaContentPart(
+                resource = Resource.Base64(base64),
+                contentType = ContentType.parse(contentType),
+            )
+        )
+    )
+
+    extractor.setUploadableContentAttributes(span, field = "output", content)
 }
 
 private fun parseMediaContent(data: JsonArray, contentType: String): MediaContent {
