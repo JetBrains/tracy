@@ -67,6 +67,18 @@ internal class ImagesEditsHandler(
                 "model" -> {
                     span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL, content)
                 }
+                // mask is a single image that should be uploaded as well
+                "mask" -> {
+                    // base64-encoded mask content
+                    span.setAttribute("gen_ai.request.mask.content", content)
+                    span.setAttribute("gen_ai.request.mask.contentType", contentType.toString())
+                    if (part.filename != null) {
+                        span.setAttribute("gen_ai.request.mask.filename", part.filename)
+                    }
+                    // save mask for further upload
+                    mediaContentParts.add(MediaContentPart(
+                        resource = Resource.Base64(content), contentType))
+                }
                 // either a single image or an array of images
                 "image", "image[]" -> {
                     // base64-encoded image content
