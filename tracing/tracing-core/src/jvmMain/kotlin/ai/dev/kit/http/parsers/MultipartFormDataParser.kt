@@ -1,5 +1,6 @@
 package ai.dev.kit.http.parsers
 
+import ai.dev.kit.http.protocol.toContentType
 import okhttp3.MediaType
 import okio.Buffer
 import org.apache.james.mime4j.parser.AbstractContentHandler
@@ -19,36 +20,42 @@ class MultipartFormDataParser {
     /**
      * Parses a multipart/form-data HTTP request body from the given content type and buffer.
      * This method extracts the MIME-formatted parts from the provided buffer,
-     * expecting the given [mediaType] to be of multipart/form-data.
+     * expecting the given [mediaType] to be of `multipart/form-data`.
      *
      * @param mediaType The media type of the input data, used to properly parse the content.
-     * @param buffer A buffer containing the multipart/form-data content to be parsed.
+     * @param bytes An array containing the `multipart/form-data` content to be parsed.
      * @throws IllegalArgumentException if the provided content type is not multipart/form-data.
      */
-    fun parse(mediaType: MediaType, buffer: Buffer): FormData {
+    fun parse(mediaType: MediaType, bytes: ByteArray): FormData {
         checkContentType(mediaType)
 
         val parser = MimeStreamParser(MimeConfig.DEFAULT)
         val handler = MultipartContentHandler()
         parser.setContentHandler(handler)
 
-        // use headless parsing since we don't have full MIME headers
+        // use headless parsing since we don't have full MIME headers,
         // we need to prepend the Content-Type header for the parser
         val headerPrefix = "Content-Type: $mediaType\r\n\r\n"
 
         val combinedStream = SequenceInputStream(
             ByteArrayInputStream(headerPrefix.toByteArray()),
-            buffer.inputStream()
+            bytes.inputStream()
         )
 
         parser.parse(combinedStream)
-
         return FormData(handler.parts)
     }
 
+    /**
+     * An overload of [MultipartFormDataParser.parse]
+     *
+     * @see MultipartFormDataParser.parse
+     */
+    fun parse(mediaType: MediaType, buffer: Buffer) = parse(mediaType, buffer.readByteArray())
+
     companion object {
         private fun checkContentType(mediaType: MediaType) {
-            val contentType = "${mediaType.type}/${mediaType.subtype}"
+            val contentType = mediaType.toContentType().withoutParameters()
 
             if (!ContentType.MultiPart.FormData.match(contentType)) {
                 throw IllegalArgumentException("Content type must be ${ContentType.MultiPart.FormData}, got $mediaType.")

@@ -1,12 +1,15 @@
 package ai.dev.kit.http.protocol
 
 import ai.dev.kit.http.parsers.FormData
+import io.ktor.http.ContentType
 import kotlinx.serialization.json.JsonElement
+import okhttp3.HttpUrl
+import okhttp3.MediaType
 
 
-// TODO: add content type?
 data class Request(
     val url: Url,
+    val contentType: ContentType?,
     val body: RequestBody,
 )
 
@@ -15,6 +18,10 @@ data class Url(
     val host: String,
     val pathSegments: List<String>,
 )
+
+fun HttpUrl.toRequestUrl() = Url(scheme, host, pathSegments)
+
+fun MediaType.toContentType(): ContentType = ContentType.parse(this.toString())
 
 sealed class RequestBody {
     data class Json(val json: JsonElement) : RequestBody()
