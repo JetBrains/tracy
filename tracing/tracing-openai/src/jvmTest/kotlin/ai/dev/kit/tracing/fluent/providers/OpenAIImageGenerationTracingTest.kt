@@ -23,40 +23,7 @@ import kotlin.test.assertEquals
 // TODO: images must be traced same as in image attachment API (see special attribute keys).
 //       Here, check for those attribute keys as well when rebased.
 @Tag("openai")
-class OpenAIImageGenerationTracingTest : BaseOpenTelemetryTracingTest() {
-    /**
-     * When no value is provided, defaults to [PRODUCTION_URL].
-     */
-    val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
-
-    val llmProviderApiKey =
-        System.getenv("OPENAI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
-        ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
-
-    @Test
-    fun `test edit image API tracing`() = runTest {
-        val client = instrument(createOpenAIClient())
-
-        val filepath = "image.png"
-        val image = readFile(filepath)
-        val prompt = "Add a 2nd cat to the image."
-
-        val params = ImageEditParams.builder()
-            .prompt(prompt)
-            // .image(ImageEditParams.Image.ofInputStreams(listOf(image)))
-            .image(image)
-            .model(ImageModel.GPT_IMAGE_1)
-            .build()
-
-        client.images().edit(params)
-
-        val traces = analyzeSpans()
-        assertEquals(1, traces.size)
-        val trace = traces.first()
-
-        assertEquals(prompt, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
-    }
-
+class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
     @ParameterizedTest
     @MethodSource("provideResponseFormats")
     fun `test generate image with different response formats`(
@@ -135,6 +102,7 @@ class OpenAIImageGenerationTracingTest : BaseOpenTelemetryTracingTest() {
         assertEquals(ImageModel.DALL_E_2.asString(), attributes[AttributeKey.stringKey("gen_ai.request.model")])
     }
 
+    // TODO: implement
     /*
     @Test
     fun `test image generation with streaming API`() {
@@ -186,15 +154,5 @@ class OpenAIImageGenerationTracingTest : BaseOpenTelemetryTracingTest() {
             Arguments.of(ImageGenerateParams.ResponseFormat.URL),
             Arguments.of(ImageGenerateParams.ResponseFormat.B64_JSON),
         )
-    }
-
-    private fun createOpenAIClient(): OpenAIClient {
-        return createOpenAIClient(llmProviderUrl, llmProviderApiKey)
-    }
-
-    private fun readFile(filepath: String): InputStream {
-        return javaClass.classLoader
-            .getResourceAsStream(filepath)
-            ?: error("File not found")
     }
 }

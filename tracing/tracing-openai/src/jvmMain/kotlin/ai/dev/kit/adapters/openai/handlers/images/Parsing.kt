@@ -37,10 +37,9 @@ internal fun handleImageGenerationResponseAttributes(
         }
         // install media content for further upload
         val imageFormat = body["output_format"]?.jsonPrimitive?.content
-        if (imageFormat != null) {
-            val mediaContent = parseMediaContent(data, imageFormat)
-            extractor.setUploadableContentAttributes(span, field = "output", mediaContent)
-        }
+
+        val mediaContent = parseMediaContent(data, imageFormat)
+        extractor.setUploadableContentAttributes(span, field = "output", mediaContent)
     }
 
     body["usage"]?.jsonObject?.let { setUsageAttributes(span, it) }
@@ -55,12 +54,18 @@ internal fun handleImageGenerationResponseAttributes(
     }
 }
 
-private fun parseMediaContent(data: JsonArray, format: String): MediaContent {
+private fun parseMediaContent(data: JsonArray, format: String?): MediaContent {
     val parts = buildList {
         for (part in data) {
             val image = part.jsonObject
             val contentPart = if (image.hasNonNull("b64_json")) {
                 val base64 = image["b64_json"]?.jsonPrimitive?.content ?: continue
+
+                // cannot upload the image without the content type
+                if (format == null) {
+                    continue
+                }
+
                 MediaContentPart(Resource.Base64(base64), ContentType.parse("image/$format"))
             }
             else if (image.hasNonNull("url")) {
