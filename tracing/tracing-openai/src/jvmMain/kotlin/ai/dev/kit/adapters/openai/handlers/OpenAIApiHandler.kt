@@ -1,4 +1,4 @@
-package ai.dev.kit.adapters.openai
+package ai.dev.kit.adapters.openai.handlers
 
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response

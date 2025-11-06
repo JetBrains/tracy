@@ -5,10 +5,12 @@ import ai.dev.kit.adapters.media.MediaContentExtractor
 import ai.dev.kit.adapters.media.Resource
 import ai.dev.kit.common.DataUrl
 import ai.dev.kit.common.parseDataUrl
+import ai.dev.kit.exporters.UploadableMediaContentAttributeKeys
 import ai.dev.kit.exporters.setDataUrlAttributes
 import ai.dev.kit.exporters.setUrlAttributes
 import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.sdk.trace.ReadableSpan
 import mu.KotlinLogging
 
 
@@ -29,12 +31,29 @@ internal class OpenAIMediaContentExtractor : MediaContentExtractor {
         field: String,
         content: MediaContent,
     ) {
-        for ((index, part) in content.parts.withIndex()) {
+        // count the number of already installed media content parts in the given span.
+        // new content parts will start with this index
+        val installedMediaContentPartsCount = run {
+            val attributes = (span as? ReadableSpan)?.attributes?.asMap()
+                ?: return@run 0
+
+            val prefix = UploadableMediaContentAttributeKeys.KEY_NAME_PREFIX
+            val mediaContentTypeRegex = Regex("^$prefix\\.(\\d+)\\.type$")
+
+            val contentPartsCount = attributes.keys.count {
+                it.key.matches(mediaContentTypeRegex)
+            }
+            contentPartsCount
+        }
+
+        for ((offset, part) in content.parts.withIndex()) {
             val (resource, contentType) = part
+            val index = installedMediaContentPartsCount + offset
+
             when (resource) {
                 is Resource.Base64 -> {
                     if (contentType == null) {
-                        logger.warn { "Base64-encoded data should have content type specified, got null for index $index" }
+                        logger.warn { "Base64-encoded data should have content type specified, got null for index $offset" }
                         continue
                     }
                     val dataUrl = DataUrl(

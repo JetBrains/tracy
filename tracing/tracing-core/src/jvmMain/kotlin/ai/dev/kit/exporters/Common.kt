@@ -16,7 +16,7 @@ enum class SupportedMediaContentTypes(val type: String) {
  */
 class UploadableMediaContentAttributeKeys private constructor(private val index: Int) {
     companion object {
-        private const val KEY_NAME_PREFIX = "custom.uploadableMediaContent"
+        const val KEY_NAME_PREFIX = "custom.uploadableMediaContent"
         fun forIndex(index: Int) = UploadableMediaContentAttributeKeys(index)
     }
 

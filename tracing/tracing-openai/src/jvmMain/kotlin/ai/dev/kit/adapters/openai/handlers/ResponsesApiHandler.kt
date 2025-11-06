@@ -1,4 +1,4 @@
-package ai.dev.kit.adapters.openai
+package ai.dev.kit.adapters.openai.handlers
 
 import ai.dev.kit.adapters.media.MediaContent
 import ai.dev.kit.adapters.media.MediaContentExtractor
