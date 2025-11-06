@@ -67,7 +67,8 @@ internal class ImagesEditsHandler(
                 "model" -> {
                     span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL, content)
                 }
-                "image" -> {
+                // either a single image or an array of images
+                "image", "image[]" -> {
                     // base64-encoded image content
                     span.setAttribute("gen_ai.request.image.$imagesCount.content", content)
                     span.setAttribute("gen_ai.request.image.$imagesCount.contentType", contentType.toString())

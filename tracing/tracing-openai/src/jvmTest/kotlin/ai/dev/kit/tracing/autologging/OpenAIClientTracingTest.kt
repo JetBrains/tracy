@@ -152,11 +152,15 @@ private fun callChat(
     return client.chat().completions().create(params)
 }
 
-internal fun createOpenAIClient(llmProviderUrl: String?, llmProviderApiKey: String): OpenAIClient {
+internal fun createOpenAIClient(
+    llmProviderUrl: String?,
+    llmProviderApiKey: String,
+    timeout: Duration = Duration.ofSeconds(60)
+): OpenAIClient {
     return OpenAIOkHttpClient.builder()
         .baseUrl(llmProviderUrl)
         .apiKey(llmProviderApiKey)
-        .timeout(Duration.ofSeconds(60))
+        .timeout(timeout)
         .build()
 }
 

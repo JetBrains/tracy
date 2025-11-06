@@ -3,9 +3,9 @@ package ai.dev.kit.tracing.fluent.providers
 import ai.dev.kit.exporters.SupportedMediaContentTypes
 import ai.dev.kit.exporters.UploadableMediaContentAttributeKeys
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
-import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
 import ai.dev.kit.tracing.autologging.createOpenAIClient
 import com.openai.client.OpenAIClient
+import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
 import com.openai.core.JsonArray
 import com.openai.core.JsonString
 import com.openai.core.JsonValue
@@ -22,7 +22,8 @@ import io.opentelemetry.sdk.trace.data.SpanData
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.provider.Arguments
 import java.io.File
-import java.util.Base64
+import java.io.InputStream
+import java.util.*
 import java.util.stream.Stream
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -45,6 +46,10 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
     }
 
     protected fun validateBasicTracing(model: ChatModel) {
+        validateBasicTracing(model.asString())
+    }
+
+    protected fun validateBasicTracing(model: String) {
         val traces = analyzeSpans()
 
         assertEquals(1, traces.size)
@@ -58,7 +63,7 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
         val responseModel = trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]
         assertNotNull(responseModel)
-        assertTrue(responseModel.startsWith(model.asString()))
+        assertTrue(responseModel.startsWith(model))
 
         val content = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
         assertFalse(content.isNullOrEmpty())
@@ -244,18 +249,23 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
     ) {
         for ((index, values) in expected.withIndex()) {
             val keys = UploadableMediaContentAttributeKeys.forIndex(index)
+            val failMessage = "Media content attribute values do not match for index $index"
 
             when (values) {
                 is MediaContentAttributeValues.Data -> {
-                    assertEquals(values.type, span.attributes[keys.type])
-                    assertEquals(values.field, span.attributes[keys.field])
-                    assertEquals(values.contentType, span.attributes[keys.contentType])
-                    assertEquals(values.data, span.attributes[keys.data])
+                    assertEquals(values.type, span.attributes[keys.type], failMessage)
+                    assertEquals(values.field, span.attributes[keys.field], failMessage)
+                    assertEquals(values.contentType, span.attributes[keys.contentType], failMessage)
+                    if (values.data != null) {
+                        assertEquals(values.data, span.attributes[keys.data], failMessage)
+                    }
                 }
                 is MediaContentAttributeValues.Url -> {
-                    assertEquals(values.type, span.attributes[keys.type])
-                    assertEquals(values.field, span.attributes[keys.field])
-                    assertEquals(values.url, span.attributes[keys.url])
+                    assertEquals(values.type, span.attributes[keys.type], failMessage)
+                    assertEquals(values.field, span.attributes[keys.field], failMessage)
+                    if (values.url != null) {
+                        assertEquals(values.url, span.attributes[keys.url], failMessage)
+                    }
                 }
             }
         }
@@ -324,15 +334,20 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
             data class Url(
                 val type: String,
                 val field: String,
-                val url: String
+                val url: String?
             ) : MediaContentAttributeValues()
 
             data class Data(
                 val type: String,
                 val field: String,
                 val contentType: String,
-                val data: String,
+                val data: String?,
             ) : MediaContentAttributeValues()
         }
+    }
+
+    protected fun readResource(filepath: String): InputStream {
+        return javaClass.classLoader.getResourceAsStream(filepath)
+            ?: error("File not found")
     }
 }
