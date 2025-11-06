@@ -253,7 +253,7 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
             when (values) {
                 is MediaContentAttributeValues.Data -> {
-                    assertEquals(values.type, span.attributes[keys.type], failMessage)
+                    assertEquals(values.type.type, span.attributes[keys.type], failMessage)
                     assertEquals(values.field, span.attributes[keys.field], failMessage)
                     assertEquals(values.contentType, span.attributes[keys.contentType], failMessage)
                     if (values.data != null) {
@@ -261,7 +261,7 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
                     }
                 }
                 is MediaContentAttributeValues.Url -> {
-                    assertEquals(values.type, span.attributes[keys.type], failMessage)
+                    assertEquals(values.type.type, span.attributes[keys.type], failMessage)
                     assertEquals(values.field, span.attributes[keys.field], failMessage)
                     if (values.url != null) {
                         assertEquals(values.url, span.attributes[keys.url], failMessage)
@@ -274,16 +274,13 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
     protected fun MediaSource.toMediaContentAttributeValues(
         field: String
     ): MediaContentAttributeValues {
-        val media = this
-        return when (media) {
+        return when (val media = this) {
             is MediaSource.File -> MediaContentAttributeValues.Data(
-                type = SupportedMediaContentTypes.BASE64.type,
                 field = field,
                 contentType = media.contentType,
                 data = loadFileAsBase64Encoded(media.filepath)
             )
             is MediaSource.Link -> MediaContentAttributeValues.Url(
-                type = SupportedMediaContentTypes.URL.type,
                 field = field,
                 url = media.url,
             )
@@ -330,19 +327,17 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
             data class Link(val url: String) : MediaSource()
         }
 
-        sealed class MediaContentAttributeValues {
+        sealed class MediaContentAttributeValues(val type: SupportedMediaContentTypes) {
             data class Url(
-                val type: String,
                 val field: String,
                 val url: String?
-            ) : MediaContentAttributeValues()
+            ) : MediaContentAttributeValues(SupportedMediaContentTypes.URL)
 
             data class Data(
-                val type: String,
                 val field: String,
                 val contentType: String,
                 val data: String?,
-            ) : MediaContentAttributeValues()
+            ) : MediaContentAttributeValues(SupportedMediaContentTypes.BASE64)
         }
     }
 

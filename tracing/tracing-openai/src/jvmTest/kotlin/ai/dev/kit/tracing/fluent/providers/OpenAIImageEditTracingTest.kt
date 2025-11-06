@@ -1,7 +1,6 @@
 package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
-import ai.dev.kit.exporters.SupportedMediaContentTypes
 import ai.dev.kit.tracing.autologging.createOpenAIClient
 import ai.dev.kit.tracing.fluent.providers.BaseOpenAITracingTest.Companion.MediaContentAttributeValues
 import ai.dev.kit.tracing.fluent.providers.BaseOpenAITracingTest.Companion.MediaSource
@@ -52,11 +51,9 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
         validateBasicImageTracing(prompt, model)
         val trace = analyzeSpans().first()
 
-        val expectedImage = MediaContentAttributeValues.Data(
-            type = SupportedMediaContentTypes.URL.type,
+        val expectedImage = MediaContentAttributeValues.Url(
             field = "output",
-            contentType = "image/png",
-            data = null,
+            url = null,
         )
 
         verifyMediaContentUploadAttributes(trace, expected = listOf(
@@ -106,13 +103,11 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
         assertEquals(alohaMask.contentType, trace.attributes[AttributeKey.stringKey("gen_ai.request.mask.contentType")])
         assertEquals(alohaMask.filepath, trace.attributes[AttributeKey.stringKey("gen_ai.request.mask.filename")])
 
-        assertEquals(1, trace.attributes[AttributeKey.longKey("gen_ai.request.n")])
+        assertEquals("1", trace.attributes[AttributeKey.stringKey("gen_ai.request.n")])
 
-        val expectedImage = MediaContentAttributeValues.Data(
-            type = SupportedMediaContentTypes.URL.type,
+        val expectedImage = MediaContentAttributeValues.Url(
             field = "output",
-            contentType = "image/png",
-            data = null,
+            url = null,
         )
 
         verifyMediaContentUploadAttributes(trace, expected = listOf(
@@ -153,7 +148,6 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
         val trace = analyzeSpans().first()
 
         val expectedImage = MediaContentAttributeValues.Data(
-            type = SupportedMediaContentTypes.BASE64.type,
             field = "output",
             contentType = "image/jpeg",
             data = null,
@@ -200,7 +194,6 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
         val trace = analyzeSpans().first()
 
         val expectedImage = MediaContentAttributeValues.Data(
-            type = SupportedMediaContentTypes.BASE64.type,
             field = "output",
             contentType = contentType,
             data = null,
@@ -249,7 +242,6 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
         assertEquals(prompt, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
         assertEquals(true, trace.attributes[AttributeKey.stringKey("gen_ai.request.model")]?.startsWith(model.asString()))
 
-        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.response.output_format")].isNullOrEmpty())
-        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.response.quality")].isNullOrEmpty())
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.response.created")].isNullOrEmpty())
     }
 }
