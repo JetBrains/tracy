@@ -11,6 +11,8 @@ import ai.dev.kit.http.protocol.asFormData
 import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import mu.KotlinLogging
 import java.util.*
 
@@ -111,7 +113,13 @@ internal class ImagesEditsHandler(
     }
 
     override fun handleStreaming(span: Span, events: String) {
-        //TODO: implement
+        for (line in events.lineSequence()) {
+            if (!line.startsWith("data:")) {
+                continue
+            }
+            val data = Json.parseToJsonElement(line.removePrefix("data:").trim()).jsonObject
+            handleStreamingImage(span, data, extractor)
+        }
     }
 
     companion object {

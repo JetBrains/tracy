@@ -8,9 +8,12 @@ import ai.dev.kit.adapters.openai.handlers.OpenAIApiUtils
 import ai.dev.kit.adapters.openai.handlers.ResponsesApiHandler
 import ai.dev.kit.adapters.openai.media.OpenAIMediaContentExtractor
 import ai.dev.kit.http.protocol.Request
+import ai.dev.kit.http.protocol.RequestBody
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.Url
+import ai.dev.kit.http.protocol.asFormData
 import ai.dev.kit.http.protocol.asJson
+import io.ktor.http.charset
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
 import kotlinx.serialization.json.boolean
@@ -54,8 +57,19 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
     }
 
     override fun isStreamingRequest(request: Request): Boolean {
-        val body = request.body.asJson()?.jsonObject ?: return false
-        return body["stream"]?.jsonPrimitive?.boolean ?: false
+        return when (request.body) {
+            is RequestBody.DataForm -> {
+                val data = request.body.asFormData() ?: return false
+                data.parts.filter { it.name == "stream" }.any {
+                    val value = it.content.toString(it.contentType?.charset() ?: Charsets.UTF_8)
+                    value.toBooleanStrictOrNull() ?: false
+                }
+            }
+            is RequestBody.Json -> {
+                val body = request.body.asJson()?.jsonObject ?: return false
+                 body["stream"]?.jsonPrimitive?.boolean ?: false
+            }
+        }
     }
 
     override fun handleStreaming(span: Span, events: String) {

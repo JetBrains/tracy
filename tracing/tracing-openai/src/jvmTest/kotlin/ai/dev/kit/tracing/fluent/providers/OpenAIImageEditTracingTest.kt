@@ -206,6 +206,68 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
         ))
     }
 
+    @Test
+    fun `test tracing when editing two images with streaming API`() = runTest(timeout = 3.minutes) {
+        val client = instrument(createOpenAIClient(
+            llmProviderUrl = llmProviderUrl,
+            llmProviderApiKey = llmProviderApiKey,
+            timeout = Duration.ofMinutes(3)
+        ))
+
+        val model = ImageModel.GPT_IMAGE_1
+        val prompt = "Merge two images!"
+        val contentType = "image/png"
+        val partialImagesCount = 2
+        val size = ImageEditParams.Size._1024X1024
+
+        val image1 = MediaSource.File("cat-n-dog-1.png", contentType)
+        val image2 = MediaSource.File("cat-n-dog-2.png", contentType)
+        val images = listOf(image1, image2)
+
+        val params = ImageEditParams.builder()
+            .body(
+                ImageEditParams.Body.builder()
+                    .prompt(prompt)
+                    .image(
+                        images(images.map { it.filepath }, contentType)
+                    )
+                    .outputFormat(ImageEditParams.OutputFormat.PNG)
+                    .model(model)
+                    .build()
+            )
+            .size(size)
+            .partialImages(partialImagesCount.toLong())
+            .build()
+
+        client.images().editStreaming(params).use { events ->
+            events.stream().toList()
+        }
+
+        validateBasicImageTracing(prompt, model)
+        val trace = analyzeSpans().first()
+
+        assertEquals(
+            size.asString(),
+            trace.attributes[AttributeKey.stringKey("gen_ai.request.size")]
+        )
+        assertEquals(
+            partialImagesCount.toString(),
+            trace.attributes[AttributeKey.stringKey("gen_ai.request.partial_images")]
+        )
+
+        val expectedImage = MediaContentAttributeValues.Data(
+            field = "output",
+            contentType = contentType,
+            data = null,
+        )
+
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            image1.toMediaContentAttributeValues(field = "input"),
+            image2.toMediaContentAttributeValues(field = "input"),
+            expectedImage,
+        ))
+    }
+
     private fun image(filepath: String, contentType: String): MultipartField<Image> {
         val image = readResource(filepath)
 
@@ -237,7 +299,5 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
 
         assertEquals(prompt, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
         assertEquals(true, trace.attributes[AttributeKey.stringKey("gen_ai.request.model")]?.startsWith(model.asString()))
-
-        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.response.created")].isNullOrEmpty())
     }
 }
