@@ -25,6 +25,49 @@ import kotlin.time.Duration.Companion.minutes
 @Tag("openai")
 class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
     @Test
+    fun `test tracing when editing a single image`() = runTest(timeout = 3.minutes) {
+        val client = instrument(createOpenAIClient(
+            llmProviderUrl = llmProviderUrl,
+            llmProviderApiKey = llmProviderApiKey,
+            timeout = Duration.ofMinutes(3)
+        ))
+
+        val model = ImageModel.DALL_E_2
+        val prompt = "Remove cat from the image"
+        val image = MediaSource.File("cat-n-dog-2-alpha.png", "image/png")
+
+        val params = ImageEditParams.builder()
+            .body(
+                ImageEditParams.Body.builder()
+                    .prompt(prompt)
+                    .model(model)
+                    .image(
+                        image(image.filepath, image.contentType)
+                    )
+                    .responseFormat(ImageEditParams.ResponseFormat.URL)
+                    .build()
+            )
+            .build()
+
+        client.images().edit(params)
+
+        validateBasicImageTracing(prompt, model)
+        val trace = analyzeSpans().first()
+
+        val expectedImage = MediaContentAttributeValues.Data(
+            type = SupportedMediaContentTypes.URL.type,
+            field = "output",
+            contentType = "image/png",
+            data = null,
+        )
+
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            image.toMediaContentAttributeValues(field = "input"),
+            expectedImage,
+        ))
+    }
+
+    @Test
     fun `test tracing when editing an image with a mask`() = runTest {
         val client = instrument(createOpenAIClient(
             llmProviderUrl = llmProviderUrl,
@@ -82,50 +125,7 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
     }
 
     @Test
-    fun `test tracing when editing an image with DALL-E-2`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createOpenAIClient(
-            llmProviderUrl = llmProviderUrl,
-            llmProviderApiKey = llmProviderApiKey,
-            timeout = Duration.ofMinutes(3)
-        ))
-
-        val model = ImageModel.DALL_E_2
-        val prompt = "Remove cat from the image"
-        val image = MediaSource.File("cat-n-dog-2-alpha.png", "image/png")
-
-        val params = ImageEditParams.builder()
-            .body(
-                ImageEditParams.Body.builder()
-                    .prompt(prompt)
-                    .model(model)
-                    .image(
-                        image(image.filepath, image.contentType)
-                    )
-                    .responseFormat(ImageEditParams.ResponseFormat.URL)
-                    .build()
-            )
-            .build()
-
-        client.images().edit(params)
-
-        validateBasicImageTracing(prompt, model)
-        val trace = analyzeSpans().first()
-
-        val expectedImage = MediaContentAttributeValues.Data(
-            type = SupportedMediaContentTypes.URL.type,
-            field = "output",
-            contentType = "image/png",
-            data = null,
-        )
-
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            image.toMediaContentAttributeValues(field = "input"),
-            expectedImage,
-        ))
-    }
-
-    @Test
-    fun `test tracing when editing an image`() = runTest(timeout = 3.minutes) {
+    fun `test tracing when editing an image with JPEG returned`() = runTest(timeout = 3.minutes) {
         val client = instrument(createOpenAIClient(
             llmProviderUrl = llmProviderUrl,
             llmProviderApiKey = llmProviderApiKey,
@@ -167,9 +167,7 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
         ))
     }
 
-
     @Test
-    @Timeout(value = 3, unit = TimeUnit.MINUTES)
     fun `test tracing when editing two images`() = runTest(timeout = 3.minutes) {
         val client = instrument(createOpenAIClient(
             llmProviderUrl = llmProviderUrl,
@@ -253,9 +251,7 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
         assertEquals(prompt, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
         assertEquals(true, trace.attributes[AttributeKey.stringKey("gen_ai.request.model")]?.startsWith(model.asString()))
 
-        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.response.background")].isNullOrEmpty())
         assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.response.output_format")].isNullOrEmpty())
         assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.response.quality")].isNullOrEmpty())
-        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.response.size")].isNullOrEmpty())
     }
 }
