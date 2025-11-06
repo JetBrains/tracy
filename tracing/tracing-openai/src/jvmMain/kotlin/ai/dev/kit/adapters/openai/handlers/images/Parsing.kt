@@ -29,6 +29,8 @@ internal fun handleImageGenerationResponseAttributes(
     extractor: MediaContentExtractor,
 ) {
     val body = response.body.asJson()?.jsonObject ?: return
+    // See: https://platform.openai.com/docs/api-reference/images/create#images_create-output_format
+    val defaultImageFormat = "png"
 
     body["data"]?.jsonArray?.let { data ->
         // collect AI response content
@@ -36,9 +38,10 @@ internal fun handleImageGenerationResponseAttributes(
             span.setAttribute("gen_ai.completion.$index.content", image.asString)
         }
         // install media content for further upload
-        val imageFormat = body["output_format"]?.jsonPrimitive?.content
+        val format = body["output_format"]?.jsonPrimitive?.content ?: defaultImageFormat
+        val contentType = "image/$format"
 
-        val mediaContent = parseMediaContent(data, imageFormat)
+        val mediaContent = parseMediaContent(data, contentType)
         extractor.setUploadableContentAttributes(span, field = "output", mediaContent)
     }
 
@@ -54,19 +57,13 @@ internal fun handleImageGenerationResponseAttributes(
     }
 }
 
-private fun parseMediaContent(data: JsonArray, format: String?): MediaContent {
+private fun parseMediaContent(data: JsonArray, contentType: String): MediaContent {
     val parts = buildList {
         for (part in data) {
             val image = part.jsonObject
             val contentPart = if (image.hasNonNull("b64_json")) {
                 val base64 = image["b64_json"]?.jsonPrimitive?.content ?: continue
-
-                // cannot upload the image without the content type
-                if (format == null) {
-                    continue
-                }
-
-                MediaContentPart(Resource.Base64(base64), ContentType.parse("image/$format"))
+                MediaContentPart(Resource.Base64(base64), ContentType.parse(contentType))
             }
             else if (image.hasNonNull("url")) {
                 val url = image["url"]?.jsonPrimitive?.content ?: continue

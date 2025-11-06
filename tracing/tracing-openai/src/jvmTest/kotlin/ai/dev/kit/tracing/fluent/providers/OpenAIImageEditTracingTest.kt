@@ -235,10 +235,6 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
         assertEquals(1, traces.size)
         val trace = traces.first()
 
-        for ((k, v) in trace.attributes.asMap().entries) {
-            println("$k: ${v.toString().take(150)}")
-        }
-
         assertEquals(prompt, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
         assertEquals(true, trace.attributes[AttributeKey.stringKey("gen_ai.request.model")]?.startsWith(model.asString()))
 
