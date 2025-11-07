@@ -31,6 +31,7 @@ private enum class OpenAIApiType(val route: String) {
     RESPONSES_API("responses"),
     // See: https://platform.openai.com/docs/api-reference/images/create
     IMAGES_GENERATIONS("images/generations"),
+    // See: https://platform.openai.com/docs/api-reference/images/createEdit
     IMAGES_EDITS("images/edits"),
 }
 
