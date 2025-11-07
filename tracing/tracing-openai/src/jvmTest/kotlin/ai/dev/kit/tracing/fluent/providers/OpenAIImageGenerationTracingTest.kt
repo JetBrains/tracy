@@ -1,7 +1,6 @@
 package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
-import ai.dev.kit.tracing.autologging.createOpenAIClient
 import ai.dev.kit.tracing.fluent.providers.BaseOpenAITracingTest.Companion.MediaContentAttributeValues
 import com.openai.models.images.ImageGenerateParams
 import com.openai.models.images.ImageModel
@@ -20,12 +19,22 @@ import kotlin.time.Duration.Companion.minutes
 
 @Tag("openai")
 class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
+    private val patchedProviderUrl = when {
+        // when using LiteLLM, switch to the pass-through
+        baseUrl == "https://litellm.labs.jb.gg" -> "$baseUrl/openai"
+        else -> llmProviderUrl
+    }
+
     @ParameterizedTest
     @MethodSource("provideResponseFormats")
     fun `test generate image with different response formats`(
         responseFormat: ImageGenerateParams.ResponseFormat?
     ) = runTest {
-        val client = instrument(createOpenAIClient())
+        val client = instrument(createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ))
+
         val prompt = "generate an image of dog and cat sitting next to each other"
         val model = ImageModel.DALL_E_2
         val size = ImageGenerateParams.Size._256X256
@@ -77,7 +86,11 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
     fun `test generation of a single JPEG image gets traced`() = runTest(
         timeout = 3.minutes,
     ) {
-        val client = instrument(createOpenAIClient())
+        val client = instrument(createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ))
+
         val prompt = "generate an image of a cute cat"
         val model = ImageModel.GPT_IMAGE_1
         val size = ImageGenerateParams.Size._1024X1024
@@ -116,7 +129,11 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test generation of multiple images gets traced`() = runTest {
-        val client = instrument(createOpenAIClient())
+        val client = instrument(createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ))
+
         val prompt = "generate an image of a cute cat"
         val model = ImageModel.DALL_E_2
         val size = ImageGenerateParams.Size._256X256
@@ -151,7 +168,11 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test invalid param 'n=0' gets traced as an error`() = runTest {
-        val client = instrument(createOpenAIClient())
+        val client = instrument(createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ))
+
         val prompt = "generate an image of a cute cat"
         val model = ImageModel.DALL_E_2
 
@@ -180,10 +201,10 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
         timeout = 3.minutes,
     ) {
         val client = instrument(createOpenAIClient(
-            llmProviderUrl,
-            llmProviderApiKey,
-            timeout = Duration.ofMinutes(3),
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
         ))
+
         val prompt = "generate an image where a knife cuts a glass watermelon"
         val model = ImageModel.GPT_IMAGE_1
         val size = ImageGenerateParams.Size._1024X1024

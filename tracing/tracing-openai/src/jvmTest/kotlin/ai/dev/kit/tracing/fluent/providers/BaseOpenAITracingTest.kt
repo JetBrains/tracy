@@ -23,6 +23,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.provider.Arguments
 import java.io.File
 import java.io.InputStream
+import java.time.Duration
 import java.util.*
 import java.util.stream.Stream
 import kotlin.test.assertEquals
@@ -41,8 +42,17 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
         System.getenv("OPENAI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
         ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
 
-    protected fun createOpenAIClient(): OpenAIClient {
-        return createOpenAIClient(llmProviderUrl, llmProviderApiKey)
+    // llmProviderUrl = https://api.openai.com/v1, gen_ai.api_base = https://api.api.openai.com
+    protected val baseUrl = llmProviderUrl.let {
+        if (it?.endsWith("/v1") == true) it.removeSuffix("/v1") else it
+    }
+
+    protected open fun createOpenAIClient(
+        url: String? = llmProviderUrl,
+        apiKey: String = llmProviderApiKey,
+        timeout: Duration = Duration.ofSeconds(60)
+    ): OpenAIClient {
+        return ai.dev.kit.tracing.autologging.createOpenAIClient(url, apiKey, timeout)
     }
 
     protected fun validateBasicTracing(model: ChatModel) {

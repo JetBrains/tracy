@@ -1,7 +1,6 @@
 package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
-import ai.dev.kit.tracing.autologging.createOpenAIClient
 import ai.dev.kit.tracing.fluent.providers.BaseOpenAITracingTest.Companion.MediaContentAttributeValues
 import ai.dev.kit.tracing.fluent.providers.BaseOpenAITracingTest.Companion.MediaSource
 import com.openai.core.MultipartField
@@ -21,11 +20,16 @@ import kotlin.time.Duration.Companion.minutes
 
 @Tag("openai")
 class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
+    private val patchedProviderUrl = when {
+        // when using LiteLLM, switch to the pass-through
+        baseUrl == "https://litellm.labs.jb.gg" -> "$baseUrl/openai"
+        else -> llmProviderUrl
+    }
+
     @Test
     fun `test tracing when editing a single image`() = runTest(timeout = 3.minutes) {
         val client = instrument(createOpenAIClient(
-            llmProviderUrl = llmProviderUrl,
-            llmProviderApiKey = llmProviderApiKey,
+            url = patchedProviderUrl,
             timeout = Duration.ofMinutes(3)
         ))
 
@@ -65,8 +69,7 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
     @Test
     fun `test tracing when editing an image with a mask`() = runTest {
         val client = instrument(createOpenAIClient(
-            llmProviderUrl = llmProviderUrl,
-            llmProviderApiKey = llmProviderApiKey,
+            url = patchedProviderUrl,
             timeout = Duration.ofMinutes(3)
         ))
 
@@ -120,8 +123,7 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
     @Test
     fun `test tracing when editing an image with JPEG returned`() = runTest(timeout = 3.minutes) {
         val client = instrument(createOpenAIClient(
-            llmProviderUrl = llmProviderUrl,
-            llmProviderApiKey = llmProviderApiKey,
+            url = patchedProviderUrl,
             timeout = Duration.ofMinutes(3)
         ))
 
@@ -162,8 +164,7 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
     @Test
     fun `test tracing when editing two images`() = runTest(timeout = 3.minutes) {
         val client = instrument(createOpenAIClient(
-            llmProviderUrl = llmProviderUrl,
-            llmProviderApiKey = llmProviderApiKey,
+            url = patchedProviderUrl,
             timeout = Duration.ofMinutes(3)
         ))
 
@@ -209,8 +210,7 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
     @Test
     fun `test tracing when editing two images with streaming API`() = runTest(timeout = 3.minutes) {
         val client = instrument(createOpenAIClient(
-            llmProviderUrl = llmProviderUrl,
-            llmProviderApiKey = llmProviderApiKey,
+            url = patchedProviderUrl,
             timeout = Duration.ofMinutes(3)
         ))
 
