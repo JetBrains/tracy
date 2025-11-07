@@ -352,6 +352,13 @@ TracingManager.setup(WeaveConfig())
 
 // Console-Only
 TracingManager.setup(ConsoleConfig())
+
+// File (plain text and JSON formats supported)
+TracingManager.setup(FileConfig(
+  filepath = myFile.absolutePathString(),
+  append = true,
+  format = OutputFormat.JSON, // default is `OutputFormat.PLAIN_TEXT`
+))
 ```
 
 #### [Langfuse Configuration](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/TracingConfig.kt)
@@ -387,6 +394,12 @@ TracingManager.setup(ConsoleConfig())
 
 Configuration for exporting OpenTelemetry traces to console
 only. [Console Setup Example](examples/src/main/kotlin/ai/dev/kit/examples/TracingExample.kt)
+
+#### [File Configuration](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/TracingConfig.kt)
+
+Configuration for exporting OpenTelemetry traces to a file in either JSON or plain text format.
+[File Setup Example](examples/src/main/kotlin/ai/dev/kit/examples/FileTracingExample.kt)
+
 
 ### Project Structure
 
