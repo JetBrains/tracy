@@ -5,7 +5,7 @@ import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 
 @KotlinFlowTrace(name = "SimpleExample")
-fun printName(name: String): String {
+private fun printName(name: String): String {
     println("Hello $name!")
     return "Name successfully printed"
 }
