@@ -77,8 +77,37 @@ data class WeaveConfig(
 ) : TracingConfig(traceToConsole, exporterTimeout, maxNumberOfSpanAttributes, maxSpanAttributeValueLength)
 
 /**
+ * Configuration for exporting OpenTelemetry traces to a file.
+ *
+ * @param filepath a filepath to which traces should be written (e.g., `tracing.log` or `traces.jsonl`).
+ * @param append whether to append to a file if it exists or create anew.
+ * @param format the format in which to log traces to the console.
+ * @param traceToConsole If true, also logs traces to the console (useful for local debugging).
+ *        Default: false.
+ * @param maxNumberOfSpanAttributes max number of attributes per Span.
+ *  Defaults to the `MAX_NUMBER_OF_SPAN_ATTRIBUTES` environment variable or [MAX_NUMBER_OF_SPAN_ATTRIBUTES] variable.
+ * @param maxSpanAttributeValueLength max number of characters for attribute strings.
+ *  Defaults to the `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` environment variable or [MAX_SPAN_ATTRIBUTE_VALUE_LENGTH] variable.
+ */
+data class FileConfig(
+    val filepath: String,
+    val append: Boolean,
+    val format: OutputFormat = OutputFormat.PLAIN_TEXT,
+    override val traceToConsole: Boolean = false,
+    override val exporterTimeout: Long = 10,
+    override val maxNumberOfSpanAttributes: Int? = null,
+    override val maxSpanAttributeValueLength: Int? = null
+) : TracingConfig(
+    traceToConsole = traceToConsole,
+    exporterTimeout = exporterTimeout,
+    maxNumberOfSpanAttributes = maxNumberOfSpanAttributes,
+    maxSpanAttributeValueLength = maxSpanAttributeValueLength,
+)
+
+/**
  * Configuration for exporting OpenTelemetry traces to console only.
  *
+ * @param format the format in which to log traces to the console.
  * @param traceToConsole If true, also logs traces to the console (useful for local debugging).
  * Default: true.
  * @param maxNumberOfSpanAttributes max number of attributes per Span.
@@ -87,11 +116,22 @@ data class WeaveConfig(
  *  Defaults to the `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` environment variable or [MAX_SPAN_ATTRIBUTE_VALUE_LENGTH] variable.
  */
 data class ConsoleConfig(
+    val format: OutputFormat = OutputFormat.PLAIN_TEXT,
     override val traceToConsole: Boolean = true,
+    override val exporterTimeout: Long = 10,
     override val maxNumberOfSpanAttributes: Int? = null,
     override val maxSpanAttributeValueLength: Int? = null
 ) : TracingConfig(
-    traceToConsole,
+    traceToConsole = traceToConsole,
+    exporterTimeout = exporterTimeout,
     maxNumberOfSpanAttributes = maxNumberOfSpanAttributes,
     maxSpanAttributeValueLength = maxSpanAttributeValueLength
 )
+
+/**
+ * The format in which to log traces in the console.
+ */
+enum class OutputFormat {
+    PLAIN_TEXT,
+    JSON,
+}

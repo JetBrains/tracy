@@ -1,10 +1,12 @@
 package ai.dev.kit.tracing
 
 import ai.dev.kit.exporters.addLangfuseSpanProcessor
+import ai.dev.kit.exporters.addOtlpFileSpanProcessor
 import ai.dev.kit.exporters.addWeaveSpanProcessor
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.exporter.logging.LoggingSpanExporter
+import io.opentelemetry.exporter.logging.otlp.OtlpJsonLoggingSpanExporter
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.resources.Resource
 import io.opentelemetry.sdk.trace.SdkTracerProvider
@@ -44,9 +46,13 @@ fun setupTracing(
             when (tracingConfig) {
                 is LangfuseConfig -> addLangfuseSpanProcessor(tracingConfig)
                 is WeaveConfig -> addWeaveSpanProcessor(tracingConfig)
-                is ConsoleConfig -> {}
+                is FileConfig -> addOtlpFileSpanProcessor(tracingConfig)
+                is ConsoleConfig -> addConsoleSpanProcessor(tracingConfig)
             }
-            if (tracingConfig.traceToConsole) addLoggingSpanProcessor()
+            // don't add a logging span processor when already exporting to CLI
+            if (tracingConfig.traceToConsole && tracingConfig !is ConsoleConfig) {
+                addLoggingSpanProcessor()
+            }
         }
         .build()
 
@@ -61,8 +67,19 @@ fun setupTracing(
     return openTelemetry
 }
 
-private fun SdkTracerProviderBuilder.addLoggingSpanProcessor(): SdkTracerProviderBuilder {
-    val spanExporter = LoggingSpanExporter.create()
+private fun SdkTracerProviderBuilder.addConsoleSpanProcessor(
+    tracingConfig: ConsoleConfig,
+): SdkTracerProviderBuilder {
+    val spanExporter = when (tracingConfig.format) {
+        OutputFormat.PLAIN_TEXT -> LoggingSpanExporter.create()
+        OutputFormat.JSON -> OtlpJsonLoggingSpanExporter.create()
+    }
     addSpanProcessor(SimpleSpanProcessor.create(spanExporter))
+    return this
+}
+
+private fun SdkTracerProviderBuilder.addLoggingSpanProcessor(): SdkTracerProviderBuilder {
+    val exporter = LoggingSpanExporter.create()
+    addSpanProcessor(SimpleSpanProcessor.create(exporter))
     return this
 }
