@@ -82,7 +82,7 @@ class HttpClientAnthropicAITracingTest : BaseOpenTelemetryTracingTest() {
             header("Content-Type", "application/json")
             // Required by Anthropic Messages API specification
             // See: https://docs.claude.com/en/api/messages#parameter-anthropic-version
-            // header("anthropic-version", "2023-06-01")
+            header("anthropic-version", "2023-06-01")
             setBody(
                 """
                 {
