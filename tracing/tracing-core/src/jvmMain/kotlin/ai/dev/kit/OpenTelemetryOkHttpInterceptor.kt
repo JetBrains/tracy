@@ -113,12 +113,6 @@ abstract class OpenTelemetryOkHttpInterceptor(
                 // register request
                 val (bodyContent, request) = chain.request().withCopiedBodyContent()
 
-                println("URL: ${request.url}")
-                println("Headers:")
-                for ((key, value) in request.headers) {
-                    println("$key: $value")
-                }
-
                 if (bodyContent != null) {
                     val mediaType = request.body?.contentType()
                     val req = bodyContent.asRequestBody(mediaType)?.let {
