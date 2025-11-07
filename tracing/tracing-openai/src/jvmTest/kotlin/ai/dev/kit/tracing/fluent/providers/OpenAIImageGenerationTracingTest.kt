@@ -256,10 +256,6 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
         Assertions.assertEquals(1, traces.size)
         val trace = traces.first()
 
-        for ((k, v) in trace.attributes.asMap().entries) {
-            println("$k: ${v.toString().take(150)}")
-        }
-
         Assertions.assertEquals(prompt, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
         Assertions.assertEquals(
             true,
