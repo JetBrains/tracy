@@ -28,6 +28,49 @@ class HttpClientAnthropicAITracingTest : BaseOpenTelemetryTracingTest() {
         ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
 
     @Test
+    fun `test nested instrumentation calls don't cause duplicative tracing`() = runTest {
+        val adapter = AnthropicLLMTracingAdapter()
+
+        val client: HttpClient = instrument(
+            instrument(
+                instrument(HttpClient(), adapter),
+                adapter,
+            ),
+            adapter,
+        )
+        val model = "claude-sonnet-4-20250514"
+        val promptMessage = "Say: 'Hello, world!'"
+
+        client.post("$llmProviderUrl/v1/messages") {
+            header("x-api-key", llmProviderApiKey)
+            header("Content-Type", "application/json")
+            setBody(
+                """
+                {
+                    "max_tokens": 1024,
+                    "messages": [
+                        {
+                            "content": "$promptMessage",
+                            "role": "user"
+                        }
+                    ],
+                    "model": "$model"
+                }
+            """.trimIndent()
+            )
+        }
+
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+        val trace = traces.first()
+
+        assertEquals(StatusCode.OK, trace.status.statusCode)
+
+        assertEquals("anthropic", trace.attributes[AttributeKey.stringKey("gen_ai.system")])
+        assertEquals(llmProviderUrl, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
+    }
+
+    @Test
     fun `test Ktor HttpClient auto tracing for Anthropic`() = runTest {
         val client: HttpClient = instrument(HttpClient(), AnthropicLLMTracingAdapter())
 
@@ -39,7 +82,7 @@ class HttpClientAnthropicAITracingTest : BaseOpenTelemetryTracingTest() {
             header("Content-Type", "application/json")
             // Required by Anthropic Messages API specification
             // See: https://docs.claude.com/en/api/messages#parameter-anthropic-version
-            header("anthropic-version", "2023-06-01")
+            // header("anthropic-version", "2023-06-01")
             setBody(
                 """
                 {

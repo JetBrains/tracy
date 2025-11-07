@@ -1,7 +1,5 @@
 package ai.dev.kit.tracing.fluent
 
-import ai.dev.kit.adapters.AnthropicLLMTracingAdapter
-import ai.dev.kit.adapters.LLMTracingAdapter
 import ai.dev.kit.adapters.OpenAILLMTracingAdapter
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
@@ -40,126 +38,6 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
         if (acceptStream) header("Accept", "text/event-stream")
     }
 
-    @Test
-    fun `test nested instrumentation calls don't cause duplicative tracing`() = runTest {
-        val adapter = Adapters.Anthropic
-
-        val client: HttpClient = instrument(
-            instrument(
-                instrument(HttpClient(), adapter),
-                adapter,
-            ),
-            adapter,
-        )
-        val model = "claude-sonnet-4-20250514"
-        val promptMessage = "Say: 'Hello, world!'"
-
-        client.post("$baseUrl/v1/messages") {
-            header("x-api-key", llmProviderApiKey)
-            header("Content-Type", "application/json")
-            setBody(
-                """
-                {
-                    "max_tokens": 1024,
-                    "messages": [
-                        {
-                            "content": "$promptMessage",
-                            "role": "user"
-                        }
-                    ],
-                    "model": "$model"
-                }
-            """.trimIndent()
-            )
-        }
-
-        val traces = analyzeSpans()
-        assertEquals(1, traces.size)
-    }
-
-    @Test
-    fun `test Ktor HttpClient auto tracing for Anthropic`() = runTest {
-        val client: HttpClient = instrument(HttpClient(), Adapters.Anthropic)
-        val model = "claude-sonnet-4-20250514"
-        val promptMessage = "Hello, world!"
-
-        val response = client.post("$baseUrl/v1/messages") {
-            header("x-api-key", llmProviderApiKey)
-            header("Content-Type", "application/json")
-            setBody(
-                """
-                {
-                    "max_tokens": 1024,
-                    "messages": [
-                        {
-                            "content": "$promptMessage",
-                            "role": "user"
-                        }
-                    ],
-                    "model": "$model"
-                }
-            """.trimIndent()
-            )
-        }
-
-        val traces = analyzeSpans()
-
-        // assert expectations on a trace
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
-
-        assertEquals(StatusCode.OK, trace.status.statusCode)
-
-        assertEquals("anthropic", trace.attributes[AttributeKey.stringKey("gen_ai.system")])
-        assertEquals(baseUrl, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
-
-        val tracedModel = trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]
-        println("tracedModel: $tracedModel")
-        assertEquals(true, tracedModel?.startsWith(model))
-
-        assertEquals("user", trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")])
-        assertEquals(promptMessage, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]?.unquote())
-
-        val completionType = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.type")]
-        val completionText = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
-
-        assertNotNull(completionType)
-        assertTrue(completionType.isNotEmpty())
-
-        assertNotNull(completionText)
-        assertTrue(completionText.isNotEmpty())
-
-
-        // assert that tracing doesn't consume the response body
-        val responseBody = response.bodyAsText()
-        assertTrue(responseBody.isNotEmpty())
-
-        // compare trace with the actual response
-        val responseJson = Json.parseToJsonElement(responseBody).jsonObject
-
-        assertEquals(
-            responseJson["id"]!!.jsonPrimitive.content,
-            trace.attributes[AttributeKey.stringKey("gen_ai.response.id")]
-        )
-        assertEquals(responseJson["model"]!!.jsonPrimitive.content, tracedModel)
-        assertEquals(responseJson["content"]!!.jsonArray[0].jsonObject["type"]!!.jsonPrimitive.content, completionType)
-        assertEquals(
-            responseJson["content"]!!.jsonArray[0].jsonObject["text"]!!.jsonPrimitive.content,
-            completionText.unquote()
-        )
-
-        val usage = responseJson["usage"]!!.jsonObject
-        assertEquals(
-            usage["input_tokens"]!!.jsonPrimitive.int,
-            trace.attributes[AttributeKey.longKey("gen_ai.usage.input_tokens")]!!.toInt()
-        )
-        assertEquals(
-            usage["output_tokens"]!!.jsonPrimitive.int,
-            trace.attributes[AttributeKey.longKey("gen_ai.usage.output_tokens")]!!.toInt()
-        )
-    }
-
     @ParameterizedTest
     @MethodSource("provideTestParameters")
     fun `test Ktor HttpClient auto tracing with different request body types for OpenAI`(
@@ -173,7 +51,7 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
             install(ContentNegotiation) {
                 json(Json { prettyPrint = true })
             }
-        }, Adapters.OpenAI)
+        }, adapter = OpenAILLMTracingAdapter())
 
         val response = client.post("$baseUrl/v1/chat/completions") {
             addAuthHeaders()
@@ -240,7 +118,7 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test Ktor HttpClient auto tracing streaming for OpenAI`() = runTest {
-        val client: HttpClient = instrument(HttpClient(), adapter = Adapters.OpenAI)
+        val client: HttpClient = instrument(HttpClient(), adapter = OpenAILLMTracingAdapter())
 
         val model = "gpt-4o-mini"
         val response = client.post("$baseUrl/v1/chat/completions") {
@@ -302,7 +180,7 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
             }
         }
 
-        val client: HttpClient = instrument(mockedClient, Adapters.OpenAI)
+        val client: HttpClient = instrument(mockedClient, adapter = OpenAILLMTracingAdapter())
 
         val response = client.post("$baseUrl/v1/chat/completions") {
             addAuthHeaders()
@@ -388,7 +266,7 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
             }
         }
 
-        val client: HttpClient = instrument(mockedClient, Adapters.OpenAI)
+        val client: HttpClient = instrument(mockedClient, adapter = OpenAILLMTracingAdapter())
 
         client.post("$baseUrl/v1/chat/completions") {
             addAuthHeaders()
@@ -471,13 +349,6 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
         // llmProviderUrl = https://api.openai.com/v1, gen_ai.api_base = https://api.api.openai.com
         val baseUrl = llmProviderUrl.let {
             if (it.endsWith("/v1")) it.removeSuffix("/v1") else it
-        }
-
-        object Adapters {
-            val OpenAI: LLMTracingAdapter
-                get() = OpenAILLMTracingAdapter()
-            val Anthropic: LLMTracingAdapter
-                get() = AnthropicLLMTracingAdapter()
         }
 
         @Serializable
@@ -619,7 +490,7 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test streaming requests`() = runTest {
-        val client = instrument(HttpClient(), adapter = Adapters.OpenAI)
+        val client = instrument(HttpClient(), adapter = OpenAILLMTracingAdapter())
 
         val model = "gpt-4o-mini"
 
@@ -636,7 +507,7 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test non-streaming requests`() = runTest {
-        val client = instrument(HttpClient(), adapter = Adapters.OpenAI)
+        val client = instrument(HttpClient(), adapter = OpenAILLMTracingAdapter())
 
         val model = "gpt-4o-mini"
 
@@ -653,7 +524,7 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test mixed stream and non-stream requests`() = runTest {
-        val client = instrument(HttpClient(), adapter = Adapters.OpenAI)
+        val client = instrument(HttpClient(), adapter = OpenAILLMTracingAdapter())
 
         val model = "gpt-4o-mini"
 
