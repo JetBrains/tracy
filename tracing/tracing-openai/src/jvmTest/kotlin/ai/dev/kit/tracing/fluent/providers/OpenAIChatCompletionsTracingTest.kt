@@ -33,6 +33,23 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
     }
 
     @Test
+    fun `test nested instrumentation calls don't cause duplicative tracing`() = runTest {
+        val client = instrument(instrument(instrument(
+            ai.dev.kit.tracing.autologging.createOpenAIClient(llmProviderUrl, llmProviderApiKey)
+        )))
+        val model = ChatModel.GPT_4O_MINI
+
+        val params = ChatCompletionCreateParams.builder()
+            .addUserMessage("Generate polite greeting and introduce yourself")
+            .model(model).temperature(1.1).build()
+        client.chat().completions().create(params)
+
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+        validateBasicTracing(model)
+    }
+
+    @Test
     fun `test OpenAI chat completions span error status when request fails`() = runTest {
         val client = instrument(createOpenAIClient())
         val params = ChatCompletionCreateParams.builder()
