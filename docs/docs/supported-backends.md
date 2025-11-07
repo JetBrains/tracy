@@ -10,6 +10,8 @@ The library supports:
 4. File
 5. Console
 
+_Note: console and file exporters may export in JSON or plain text formats._
+
 For backend configuration see:
 
 1. `ai.dev.kit.exporters.LangfuseKt#createLangfuseExporter`
