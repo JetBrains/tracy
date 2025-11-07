@@ -45,7 +45,12 @@ internal class ImagesGenerationsHandler(
                 continue
             }
             val data = Json.parseToJsonElement(line.removePrefix("data:").trim()).jsonObject
-            handleStreamingImage(span, data, extractor)
+
+            handleStreamingImage(
+                span, data, extractor,
+                completedType = "image_generation.completed",
+                partialImageType = "image_generation.partial_image",
+            )
         }
     }
 }

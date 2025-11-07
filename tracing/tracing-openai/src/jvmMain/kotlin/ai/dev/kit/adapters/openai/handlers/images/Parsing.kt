@@ -64,11 +64,13 @@ internal fun handleStreamingImage(
     span: Span,
     data: JsonObject,
     extractor: MediaContentExtractor,
+    completedType: String,
+    partialImageType: String,
 ) {
     val type = data["type"]?.jsonPrimitive?.content ?: return
 
     when (type) {
-        "image_generation.completed" -> {
+        completedType -> {
             val base64 = data["b64_json"]?.jsonPrimitive?.content ?: return
             // install image data as JSON object: `{ "b64_json": "data" }`
             val content = Json.parseToJsonElement("""
@@ -87,7 +89,7 @@ internal fun handleStreamingImage(
                 }
             }
         }
-        "image_generation.partial_image" -> {
+        partialImageType -> {
             val partialImageIndex = data["partial_image_index"]?.jsonPrimitive?.intOrNull ?: return
             // insert attributes in `gen_ai.completion.partial_image.[index].*`
             for ((key, value) in data.entries) {

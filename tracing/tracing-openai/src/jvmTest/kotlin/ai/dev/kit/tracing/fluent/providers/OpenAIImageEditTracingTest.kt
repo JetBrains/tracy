@@ -254,6 +254,7 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
             partialImagesCount.toString(),
             trace.attributes[AttributeKey.stringKey("gen_ai.request.partial_images")]
         )
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.content")].isNullOrEmpty())
 
         val expectedImage = MediaContentAttributeValues.Data(
             field = "output",

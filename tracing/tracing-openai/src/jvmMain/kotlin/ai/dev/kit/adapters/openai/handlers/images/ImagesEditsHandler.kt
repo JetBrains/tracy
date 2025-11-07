@@ -118,7 +118,12 @@ internal class ImagesEditsHandler(
                 continue
             }
             val data = Json.parseToJsonElement(line.removePrefix("data:").trim()).jsonObject
-            handleStreamingImage(span, data, extractor)
+
+            handleStreamingImage(
+                span, data, extractor,
+                completedType = "image_edit.completed",
+                partialImageType = "image_edit.partial_image",
+            )
         }
     }
 
