@@ -64,12 +64,9 @@ class AiDevKitTraceGeneratorExtension : IrGenerationExtension {
     @OptIn(UnsafeDuringIrConstructionAPI::class)
     private fun IrFunction.findOverriddenAnnotationWithPropagation(): IrConstructorCall? =
         (this as? IrSimpleFunction)?.let { fn ->
-            val visited = mutableSetOf<IrSimpleFunction>()
             fun search(f: IrSimpleFunction): IrConstructorCall? {
-                if (!visited.add(f)) return null
                 f.findTraceAnnotation()?.let { return it }
-                return f.overriddenSymbols
-                    .map { it.owner }.firstNotNullOfOrNull { search(it) }
+                return f.overriddenSymbols.firstNotNullOfOrNull { search(it.owner) }
             }
             search(fn)
         }
