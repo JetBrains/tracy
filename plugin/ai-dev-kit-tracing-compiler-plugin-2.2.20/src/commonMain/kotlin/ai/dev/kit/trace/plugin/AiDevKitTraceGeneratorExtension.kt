@@ -42,8 +42,7 @@ class AiDevKitTraceGeneratorExtension : IrGenerationExtension {
             override fun visitSimpleFunction(declaration: IrSimpleFunction): IrStatement {
                 // Try to get this function's own @KotlinFlowTrace annotation
                 // or fall back to a propagated one from an overridden function.
-                val traceAnnotation = declaration.findTraceAnnotation()
-                    ?: declaration.findOverriddenAnnotationWithPropagation()
+                val traceAnnotation = declaration.findOverriddenAnnotationWithPropagation()
                 if (traceAnnotation != null && declaration.body != null) {
                     processFunction(
                         traceAnnotation,
@@ -63,20 +62,10 @@ class AiDevKitTraceGeneratorExtension : IrGenerationExtension {
      * in any overridden function in the hierarchy.
      */
     @OptIn(UnsafeDuringIrConstructionAPI::class)
-    private fun IrFunction.findOverriddenAnnotationWithPropagation(): IrConstructorCall? =
-        (this as? IrSimpleFunction)?.let { fn ->
-            val visited = mutableSetOf<IrSimpleFunction>()
-            fun search(f: IrSimpleFunction): IrConstructorCall? {
-                if (!visited.add(f)) return null
-                f.findTraceAnnotation()?.let { return it }
-                return f.overriddenSymbols
-                    .map { it.owner }.firstNotNullOfOrNull { search(it) }
-            }
-            search(fn)
+    private fun IrSimpleFunction.findOverriddenAnnotationWithPropagation(): IrConstructorCall? =
+        this.allOverridden(true).firstNotNullOfOrNull {
+            it.annotations.findAnnotation(traceAnnotationFqName)
         }
-
-    // Returns the @KotlinFlowTrace annotation applied directly to this function, or `null` if not present.
-    private fun IrFunction.findTraceAnnotation() = annotations.findAnnotation(traceAnnotationFqName)
 
     // Returns the actual function symbol if present ensuring proper resolution in multiplatform projects.
     @OptIn(UnsafeDuringIrConstructionAPI::class)
