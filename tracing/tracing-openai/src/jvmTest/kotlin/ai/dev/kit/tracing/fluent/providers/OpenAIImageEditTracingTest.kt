@@ -9,6 +9,7 @@ import com.openai.models.images.ImageEditParams.Image
 import com.openai.models.images.ImageModel
 import io.opentelemetry.api.common.AttributeKey
 import kotlinx.coroutines.test.runTest
+import mu.KotlinLogging
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Tag
@@ -20,6 +21,9 @@ import kotlin.time.Duration.Companion.minutes
 
 @Tag("openai")
 class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
+    private val logger = KotlinLogging.logger {}
+    private val liteLLMEndpoint = "https://litellm.labs.jb.gg"
+
     private val patchedProviderUrl = when {
         // when using LiteLLM, switch to the pass-through
         baseUrl == "https://litellm.labs.jb.gg" -> "$baseUrl/openai"
@@ -209,6 +213,11 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test tracing when editing two images with streaming API`() = runTest(timeout = 3.minutes) {
+        if (patchedProviderUrl?.startsWith(liteLLMEndpoint) == true) {
+            logger.warn { "Using LiteLLM $patchedProviderUrl endpoint. LiteLLM fails with 500 server error for this test. Skipping..." }
+            return@runTest
+        }
+
         val client = instrument(createOpenAIClient(
             url = patchedProviderUrl,
             timeout = Duration.ofMinutes(3)
