@@ -30,24 +30,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 
 @Tag("anthropic")
-class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
-    /**
-    When no value provided, defaults to anthropic provider url in [AnthropicOkHttpClient.Builder]
-    */
-    private val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
-
-    private val llmProviderApiKey =
-        System.getenv("ANTHROPIC_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
-        ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
-
-    fun createAnthropicClient(): AnthropicClient {
-        return AnthropicOkHttpClient.builder()
-            .baseUrl(llmProviderUrl)
-            .apiKey(llmProviderApiKey)
-            .timeout(Duration.ofSeconds(60))
-            .build()
-    }
-
+class AnthropicTracingTest : BaseAnthropicTracingTest() {
     @Test
     fun `test nested instrumentation calls don't cause duplicative tracing`() {
         val client = instrument(instrument(instrument(createAnthropicClient())))
@@ -388,47 +371,5 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
 
         assertEquals(errorMessage, trace.attributes[AttributeKey.stringKey("gen_ai.error.message")])
         assertEquals(529, trace.attributes[AttributeKey.longKey("http.status_code")])
-    }
-
-    private fun createTool(word: String): Tool {
-        return Tool.builder()
-            .type(Tool.Type.CUSTOM)
-            .name(word)
-            .description("Say $word to the user")
-            .inputSchema(
-                Tool.InputSchema.builder()
-                    .type(JsonString.of("object"))
-                    .properties(
-                        JsonObject.of(
-                            mapOf(
-                                "name" to JsonObject.of(
-                                    mapOf(
-                                        "type" to JsonString.of("string"),
-                                        "description" to JsonString.of("Say $word to a person")
-                                    )
-                                )
-                            )
-                        )
-                    )
-                    .required(listOf("name"))
-                    .build()
-            ).build()
-    }
-
-    private fun installHttpInterceptor(client: AnthropicClient, interceptor: Interceptor) {
-        val clientOptions = getFieldValue(client, "clientOptions")
-        val originalHttpClient = getFieldValue(clientOptions, "originalHttpClient")
-
-        // Find the object that actually holds the "okHttpClient" field
-        val okHttpHolder = if (originalHttpClient::class.simpleName == "OkHttpClient") {
-            originalHttpClient
-        } else {
-            getFieldValue(originalHttpClient, "httpClient")
-        }
-
-        val okHttpClient = getFieldValue(okHttpHolder, "okHttpClient") as okhttp3.OkHttpClient
-        val modifiedHttpClient = okHttpClient.newBuilder().addInterceptor(interceptor).build()
-
-        setFieldValue(okHttpHolder, "okHttpClient", modifiedHttpClient)
     }
 }
