@@ -38,6 +38,7 @@ kotlin {
                 implementation(libs.junit)
                 implementation(libs.junit.params)
                 implementation(libs.kotlinx.coroutines)
+                implementation(libs.ktor.client)
             }
         }
     }

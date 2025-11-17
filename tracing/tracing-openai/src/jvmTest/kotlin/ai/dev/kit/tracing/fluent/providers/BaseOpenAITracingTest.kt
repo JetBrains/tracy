@@ -3,6 +3,7 @@ package ai.dev.kit.tracing.fluent.providers
 import ai.dev.kit.exporters.SupportedMediaContentTypes
 import ai.dev.kit.exporters.UploadableMediaContentAttributeKeys
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.dev.kit.tracing.loadFileAsBase64Encoded
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
@@ -22,10 +23,8 @@ import io.opentelemetry.sdk.trace.data.SpanData
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.provider.Arguments
-import java.io.File
 import java.io.InputStream
 import java.time.Duration
-import java.util.*
 import java.util.stream.Stream
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -248,23 +247,6 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
             )),
             Arguments.of(MediaSource.Link(SAMPLE_PDF_FILE_URL))
         )
-    }
-
-    protected fun MediaSource.File.toDataUrl(): String {
-        val encodedData = loadFileAsBase64Encoded(this.filepath)
-        return "data:$contentType;base64,${encodedData}"
-    }
-
-    protected fun loadFileAsBase64Encoded(filepath: String): String {
-        val file = loadFile(filepath)
-        return Base64.getEncoder().encodeToString(file.readBytes())
-    }
-
-    protected fun loadFile(filepath: String): File {
-        val classLoader = Thread.currentThread().contextClassLoader
-        val file = classLoader.getResource(filepath)?.file?.let { File(it) }
-            ?: error("Could not find file at $filepath")
-        return file
     }
 
     protected fun verifyMediaContentUploadAttributes(
