@@ -72,6 +72,11 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test tracing when editing an image with a mask`() = runTest {
+        if (patchedProviderUrl?.startsWith(liteLLMEndpoint) == true) {
+            logger.warn { "Using LiteLLM $patchedProviderUrl endpoint. LiteLLM fails with 500 server error for this test. Skipping..." }
+            return@runTest
+        }
+
         val client = instrument(createOpenAIClient(
             url = patchedProviderUrl,
             timeout = Duration.ofMinutes(3)
