@@ -103,8 +103,6 @@ private class MultipartContentHandler : AbstractContentHandler() {
 
     override fun body(bd: BodyDescriptor, inputStream: InputStream) {
         val content = inputStream.readBytes()
-        println("bd: $bd")
-        println("mediaType: ${bd.mimeType}")
 
         parts.add(
             FormPart(

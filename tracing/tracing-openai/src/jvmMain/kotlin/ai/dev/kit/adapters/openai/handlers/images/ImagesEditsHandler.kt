@@ -35,11 +35,6 @@ internal class ImagesEditsHandler(
             } else {
                 part.content.decodeToString()
             }
-            println("content: '$s'")
-            println("contentType: ${part.contentType}")
-            println("name: ${part.name}")
-            println("filename: ${part.filename}")
-            println()
 
             val contentType = part.contentType
             if (contentType == null) {
