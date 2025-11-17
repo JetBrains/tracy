@@ -82,7 +82,6 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                         ), requestBody = body
                     )
                 }
-                span.end()
             }
 
             onResponse { response ->
