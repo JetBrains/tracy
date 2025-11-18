@@ -9,6 +9,7 @@ import org.apache.james.mime4j.stream.BodyDescriptor
 import org.apache.james.mime4j.stream.Field
 import org.apache.james.mime4j.stream.MimeConfig
 import io.ktor.http.ContentType
+import mu.KotlinLogging
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.io.SequenceInputStream
@@ -75,6 +76,10 @@ data class FormData(val parts: List<FormPart>)
 
 
 private class MultipartContentHandler : AbstractContentHandler() {
+    companion object {
+        private val logger = KotlinLogging.logger {}
+    }
+
     val parts = mutableListOf<FormPart>()
     private var currentPartName: String? = null
     private var currentFilename: String? = null
@@ -96,7 +101,13 @@ private class MultipartContentHandler : AbstractContentHandler() {
                 currentFilename = filenameMatch?.groupValues?.get(1)
             }
             "content-type" -> {
-                currentContentType = ContentType.parse(field.body)
+                currentContentType = try {
+                    ContentType.parse(field.body)
+                }
+                catch (err: Exception) {
+                    logger.trace("Failed to parse Content-Type header: ${field.body}", err)
+                    null
+                }
             }
         }
     }
@@ -113,7 +124,7 @@ private class MultipartContentHandler : AbstractContentHandler() {
             )
         )
 
-        // Reset for next part
+        // Reset for the next part
         currentPartName = null
         currentFilename = null
         currentContentType = null

@@ -1,6 +1,6 @@
 package ai.dev.kit
 
-import  ai.dev.kit.http.protocol.Url
+import ai.dev.kit.http.protocol.Url
 import ai.dev.kit.adapters.LLMTracingAdapter
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.RequestBody

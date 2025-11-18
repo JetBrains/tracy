@@ -30,12 +30,6 @@ internal class ImagesEditsHandler(
         var imagesCount = 0
 
         for (part in body.parts) {
-            val s = if (part.content.size > 100) {
-                part.content.decodeToString().substring(0, 100)
-            } else {
-                part.content.decodeToString()
-            }
-
             val contentType = part.contentType
             if (contentType == null) {
                 logger.warn { "Missing content type of form data part '${part.name}'" }
@@ -91,7 +85,7 @@ internal class ImagesEditsHandler(
                     ))
                     ++imagesCount
                 }
-                null -> { /* no-op */ }
+                null -> logger.warn { "Form data part with missing name ignored. Content type: '$contentType'" }
                 else -> span.setAttribute("gen_ai.request.${part.name}", content)
             }
         }

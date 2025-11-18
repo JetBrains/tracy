@@ -27,6 +27,7 @@ import kotlin.collections.component2
 // See: https://platform.openai.com/docs/api-reference/images/create#images_create-output_format
 private const val defaultImageFormat = "png"
 
+private val logger = mu.KotlinLogging.logger {}
 
 internal fun handleImageGenerationResponseAttributes(
     span: Span,
@@ -121,7 +122,14 @@ private fun parseMediaContent(data: JsonArray, contentType: String): MediaConten
             val image = part.jsonObject
             val contentPart = if (image.hasNonNull("b64_json")) {
                 val base64 = image["b64_json"]?.jsonPrimitive?.content ?: continue
-                MediaContentPart(Resource.Base64(base64), ContentType.parse(contentType))
+                val contentType = try {
+                    ContentType.parse(contentType)
+                } catch (err: Exception) {
+                    logger.trace("Failed to parse content type: '$contentType'", err)
+                    null
+                }
+
+                MediaContentPart(Resource.Base64(base64), contentType)
             }
             else if (image.hasNonNull("url")) {
                 val url = image["url"]?.jsonPrimitive?.content ?: continue
