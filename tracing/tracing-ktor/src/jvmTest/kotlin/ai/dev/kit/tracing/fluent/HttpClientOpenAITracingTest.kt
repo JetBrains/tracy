@@ -314,6 +314,8 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
         endpoint: String,
         requestBody: String,
     ) = runTest {
+        // TODO(JBAI-18234): adapter's handler is set to handle chat completions;
+        //                   however, we have responses api as the 2nd endpoint
         val client: HttpClient = instrument(HttpClient(), llmTracingAdapter)
 
         val response = client.post(endpoint) {
@@ -326,6 +328,8 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
         assertEquals(1, traces.size)
         val trace = traces.firstOrNull()
         assertNotNull(trace)
+
+        println("respose:\n${trace.attributes}")
 
         val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
 
