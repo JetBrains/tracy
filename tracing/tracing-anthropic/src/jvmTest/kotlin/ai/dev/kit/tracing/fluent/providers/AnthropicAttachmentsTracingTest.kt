@@ -3,17 +3,23 @@ package ai.dev.kit.tracing.fluent.providers
 import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.MediaSource
 import ai.dev.kit.tracing.asDataUrl
+import ai.dev.kit.tracing.toMediaContentAttributeValues
 import com.anthropic.core.JsonValue
 import com.anthropic.models.messages.*
+import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Tag
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import java.util.stream.Stream
+import kotlin.time.Duration.Companion.minutes
 
+@Tag("anthropic")
 class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
+    private val model = Model.CLAUDE_3_7_SONNET_20250219
+
     @ParameterizedTest
     @MethodSource("provideImagesForUpload")
-    fun `test attached image get traced`(image: MediaSource) {
+    fun `test attached image gets traced`(image: MediaSource) {
         val client = instrument(createAnthropicClient())
 
         val params = MessageCreateParams.builder()
@@ -23,16 +29,51 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
             ))
             .maxTokens(1000L)
             .temperature(0.0)
-            .model(Model.CLAUDE_3_7_SONNET_20250219)
+            .model(model)
             .build()
 
-        val response = client.messages().create(params)
-        println(response.content())
+        client.messages().create(params)
+
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
+
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            image.toMediaContentAttributeValues(field = "input")
+        ))
+    }
+
+    @Test
+    fun `test two attached images get traced`() = runTest(timeout = 3.minutes) {
+        val client = instrument(createAnthropicClient())
+
+        val image1 = MediaSource.File("image.jpg", "image/jpeg")
+        val image2 = MediaSource.Link(CAT_IMAGE_URL)
+
+        val params = MessageCreateParams.builder()
+            .addUserMessageOfBlockParams(listOf(
+                text("Tell me what you see in the image"),
+                image(image1),
+                image(image2),
+            ))
+            .maxTokens(1000L)
+            .temperature(0.0)
+            .model(model)
+            .build()
+
+        client.messages().create(params)
+
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
+
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            image1.toMediaContentAttributeValues(field = "input"),
+            image2.toMediaContentAttributeValues(field = "input"),
+        ))
     }
 
     @ParameterizedTest
     @MethodSource("provideFilesForUpload")
-    fun `test attached file get traced`(file: MediaSource) {
+    fun `test attached file gets traced`(file: MediaSource) {
         val client = instrument(createAnthropicClient())
 
         val params = MessageCreateParams.builder()
@@ -42,33 +83,75 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
             ))
             .maxTokens(1000L)
             .temperature(0.0)
-            .model(Model.CLAUDE_3_7_SONNET_20250219)
+            .model(model)
             .build()
 
-        val response = client.messages().create(params)
-        println(response.content())
+        client.messages().create(params)
+
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
+
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            file.toMediaContentAttributeValues(field = "input")
+        ))
     }
 
-    fun provideImagesForUpload(): Stream<Arguments> {
-        return Stream.of(
-            Arguments.of(
-                MediaSource.File(
-                    filepath = "./image.jpg",
-                    contentType = "image/jpeg",
-                )
-            ),
-            Arguments.of(MediaSource.Link(CAT_IMAGE_URL)),
-        )
+    @Test
+    fun `test two attached files get traced`() = runTest(timeout = 3.minutes) {
+        val client = instrument(createAnthropicClient())
+
+        val file1 = MediaSource.File("sample.pdf", "application/pdf")
+        val file2 = MediaSource.Link(SAMPLE_PDF_FILE_URL)
+
+        val params = MessageCreateParams.builder()
+            .addUserMessageOfBlockParams(listOf(
+                text("Tell me what you see in the image"),
+                file(file1),
+                file(file2),
+            ))
+            .maxTokens(1000L)
+            .temperature(0.0)
+            .model(model)
+            .build()
+
+        client.messages().create(params)
+
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
+
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            file1.toMediaContentAttributeValues(field = "input"),
+            file2.toMediaContentAttributeValues(field = "input"),
+        ))
     }
 
-    fun provideFilesForUpload(): Stream<Arguments> {
-        return Stream.of(
-            Arguments.of(MediaSource.File(
-                filepath = "./sample.pdf",
-                contentType = "application/pdf",
-            )),
-            Arguments.of(MediaSource.Link(SAMPLE_PDF_FILE_URL))
-        )
+    @Test
+    fun `test attached file and image get traced`() = runTest(timeout = 3.minutes) {
+        val client = instrument(createAnthropicClient())
+
+        val file = MediaSource.File("sample.pdf", "application/pdf")
+        val image = MediaSource.File("image.jpg", "image/jpeg")
+
+        val params = MessageCreateParams.builder()
+            .addUserMessageOfBlockParams(listOf(
+                text("Tell me what you see in the image"),
+                file(file),
+                image(image),
+            ))
+            .maxTokens(1000L)
+            .temperature(0.0)
+            .model(model)
+            .build()
+
+        client.messages().create(params)
+
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
+
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            file.toMediaContentAttributeValues(field = "input"),
+            image.toMediaContentAttributeValues(field = "input"),
+        ))
     }
 
     private fun text(content: String): ContentBlockParam {

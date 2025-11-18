@@ -2,11 +2,12 @@ package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.getFieldValue
 import ai.dev.kit.setFieldValue
-import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.dev.kit.tracing.BaseAITracingTest
 import com.anthropic.client.AnthropicClient
 import com.anthropic.client.okhttp.AnthropicOkHttpClient
 import com.anthropic.core.JsonObject
 import com.anthropic.core.JsonString
+import com.anthropic.models.messages.Model
 import com.anthropic.models.messages.Tool
 import okhttp3.Interceptor
 import org.junit.jupiter.api.TestInstance
@@ -14,11 +15,11 @@ import java.time.Duration
 
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-abstract class BaseAnthropicTracingTest : BaseOpenTelemetryTracingTest() {
+abstract class BaseAnthropicTracingTest : BaseAITracingTest() {
     /**
     When no value provided, defaults to anthropic provider url in [AnthropicOkHttpClient.Builder]
      */
-    protected val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
+    protected val llmProviderUrl: String = System.getenv("LLM_PROVIDER_URL") ?: ANTHROPIC_API_URL
 
     protected val llmProviderApiKey =
         System.getenv("ANTHROPIC_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
@@ -30,6 +31,10 @@ abstract class BaseAnthropicTracingTest : BaseOpenTelemetryTracingTest() {
             .apiKey(llmProviderApiKey)
             .timeout(Duration.ofSeconds(60))
             .build()
+    }
+
+    protected fun validateBasicTracing(model: Model) {
+        validateBasicTracing(llmProviderUrl, model.asString())
     }
 
     protected fun createTool(word: String): Tool {
@@ -75,7 +80,6 @@ abstract class BaseAnthropicTracingTest : BaseOpenTelemetryTracingTest() {
     }
 
     companion object {
-        protected const val CAT_IMAGE_URL = "https://images.pexels.com/photos/104827/cat-pet-animal-domestic-104827.jpeg"
-        protected const val SAMPLE_PDF_FILE_URL = "https://pdfobject.com/pdf/sample.pdf"
+        private const val ANTHROPIC_API_URL = "https://api.anthropic.com"
     }
 }
