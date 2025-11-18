@@ -55,7 +55,20 @@ to Gradle (in Preferences -> Build, Execution, Deployment -> Build Tools -> Grad
 Some autotracing tests depend on external LLM services and require valid API tokens.
 To run them locally, set the following environment variable:
 
-- `LITELLM_API_KEY` — required for running autotracing tests that use the LiteLLM integration.
+To run all tests with a single LLM provider, set the following environment variables:
+- `LLM_PROVIDER_API_KEY`
+- `LLM_PROVIDER_URL`
+
+To provide specific credentials for a single LLM provider, set the following environment variables:
+- `OPENAI_API_KEY` for OpenAI
+- `GEMINI_API_KEY` for Google
+- `ANTHROPIC_API_KEY` for Anthropic
+
+and leave the `LLM_PROVIDER_URL` variable unset.
+
+> [!NOTE]
+> Provider-specific environment variables take precedence over `LLM_PROVIDER_API_KEY` in their corresponding tests.
+> For example, if both `LLM_PROVIDER_API_KEY` and `OPENAI_API_KEY` are set, the OpenAI tests will use `OPENAI_API_KEY`.
 
 ### Running all unit tests
 
@@ -92,6 +105,23 @@ For example:
 ```bash
 ./gradlew :tracing:tracing-core:jvmTest --tests "ai.dev.kit.tracing.fluent.FluentTracingTest"
 ```
+
+### Skipping tests for specific LLM providers
+If you don't have API keys for certain LLM providers, you can skip the associated tests using the `skip.llm.providers` system property.
+
+To skip tests for specific providers, use the `-Dskip.llm.providers` flag with a comma-separated list of provider IDs.
+
+For example, to skip tests for OpenAI and Gemini LLMs when running all tests in the project:
+
+```bash
+./gradlew allTests -Dskip.llm.providers=openai,gemini
+```
+
+Available provider IDs:
+- `openai` - skipping OpenAI tests
+- `gemini` - skipping Gemini tests
+- `anthropic` - skipping Anthropic tests
+
 
 ### Running integration tests
 
