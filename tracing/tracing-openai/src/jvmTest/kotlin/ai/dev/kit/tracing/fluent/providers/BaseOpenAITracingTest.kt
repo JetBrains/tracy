@@ -2,7 +2,7 @@ package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.exporters.SupportedMediaContentTypes
 import ai.dev.kit.exporters.UploadableMediaContentAttributeKeys
-import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.dev.kit.tracing.BaseAITracingTest
 import ai.dev.kit.tracing.loadFileAsBase64Encoded
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
@@ -32,7 +32,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
+abstract class BaseOpenAITracingTest : BaseAITracingTest() {
     protected val llmProviderApiKey = System.getenv("OPENAI_API_KEY")
         ?: System.getenv("LLM_PROVIDER_API_KEY")
         ?: error("LLM_PROVIDER_API_KEY environment variable is not set")

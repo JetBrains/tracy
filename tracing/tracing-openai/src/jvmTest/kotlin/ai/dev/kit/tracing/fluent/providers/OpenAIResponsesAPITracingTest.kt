@@ -3,6 +3,7 @@ package ai.dev.kit.tracing.fluent.providers
 import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.MediaSource
 import ai.dev.kit.tracing.toDataUrl
+import ai.dev.kit.tracing.toMediaContentAttributeValues
 import com.openai.core.JsonValue
 import com.openai.models.ChatModel
 import com.openai.models.responses.*
