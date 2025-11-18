@@ -29,9 +29,9 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.serializer
+import mu.KotlinLogging
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
-import org.slf4j.LoggerFactory
 
 
 /**
@@ -196,7 +196,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(TracingPlugin::class.java)
+        private val logger = KotlinLogging.logger {}
 
         private val JSON_CONFIG = Json {
             ignoreUnknownKeys = true
