@@ -89,7 +89,6 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                     request.attributes.put(isStreamingRequestKey, value = adapter.isStreamingRequest(req))
                     adapter.registerRequest(span, req)
                 }
-                span.end()
             }
 
             onResponse { response ->
