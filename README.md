@@ -219,7 +219,7 @@ Below is a minimal OpenAI example. For others, check the examples directory:
 
 ```kotlin
 // Initialize tracing and export spans to the console
-TracingManager.setup(ConsoleConfig())
+TracingManager.setSdk(configureOpenTelemetrySdk(config))
 val instrumentedClient: OpenAIClient = instrument(fromEnv())
 val request = ChatCompletionCreateParams.builder()
     .addUserMessage("Generate a polite greeting and introduce yourself.")
@@ -260,7 +260,7 @@ fun greetUser(name: String): String {
 }
 
 fun main() {
-    TracingManager.setup(ConsoleConfig())
+    TracingManager.setSdk(configureOpenTelemetrySdk(config))
     greetUser("Alice")
     TracingManager.flushTraces()
 }
@@ -330,6 +330,7 @@ Manual tracing is especially useful in **Java** projects where annotation-based 
 
 An example demonstrating manual tracing can be found in [
 `ManualTracingExample.kt`](examples/src/main/kotlin/ai/dev/kit/examples/ManualTracingExample.kt).
+// TODO: Add info about how the user can provide OpenTelemetrySdk for tracing (setSdk)
 
 ### Tracing Backends
 
@@ -341,24 +342,24 @@ Currently supported backends include:
 - **[Weave](https://wandb.ai/site/weave)**
 
 You can initialize tracing with any supported backend by providing the corresponding configuration object when calling
-`TracingManager.setup(...)`.
+`TracingManager.setSdk(configureOpenTelemetrySdk(...))`.
 
 ```kotlin
 // Langfuse
-TracingManager.setup(LangfuseConfig())
+TracingManager.setSdk(configureOpenTelemetrySdk(LangfuseConfig()))
 
 // Weave
-TracingManager.setup(WeaveConfig())
+TracingManager.setSdk(configureOpenTelemetrySdk(WeaveConfig()))
 
 // Console-Only
-TracingManager.setup(ConsoleConfig())
+TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleConfig()))
 
 // File (plain text and JSON formats supported)
-TracingManager.setup(FileConfig(
+TracingManager.setSdk(configureOpenTelemetrySdk(FileConfig(
   filepath = myFile.absolutePathString(),
   append = true,
   format = OutputFormat.JSON, // default is `OutputFormat.PLAIN_TEXT`
-))
+)))
 ```
 
 #### [Langfuse Configuration](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/TracingConfig.kt)
@@ -428,7 +429,7 @@ However, some concurrency models such as `runBlocking` and raw threads create ne
 **manual propagation** of the OpenTelemetry context.
 
 - **`runBlocking` inside suspend functions:**  
-  Use [`currentSpanContextElement(...)`](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/Utils.kt)
+  Use [`currentSpanContextElement(...)`](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/fluent/processor/Utils.kt)
   to ensure child spans remain linked to their parent.  
   Without it, spans become detached and appear as separate traces.
 

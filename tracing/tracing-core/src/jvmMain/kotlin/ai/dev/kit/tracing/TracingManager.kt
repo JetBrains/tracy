@@ -15,7 +15,7 @@ object TracingManager {
 
     val tracer: Tracer
         get() = requireNotNull(openTelemetrySdk) {
-            "TracingManager not initialized. Call setup(tracingConfig) or setSdk(...) first to initialize the OpenTelemetry SDK."
+            "TracingManager not initialized. Call setSdk(...) first to initialize the OpenTelemetry SDK."
         }.getTracer(AI_DEVELOPMENT_KIT_TRACER)
 
     fun setSdk(sdk: OpenTelemetrySdk) {

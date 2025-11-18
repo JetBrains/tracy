@@ -3,6 +3,7 @@ package ai.dev.kit.examples
 import ai.dev.kit.tracing.FileConfig
 import ai.dev.kit.tracing.OutputFormat
 import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.createTempFile
@@ -33,7 +34,7 @@ fun main() {
         format = OutputFormat.JSON,
     )
 
-    TracingManager.setup(config)
+    TracingManager.setSdk(configureOpenTelemetrySdk(config))
     printName("Bob")
     println("See trace details read from the file in the console.")
     TracingManager.flushTraces()
