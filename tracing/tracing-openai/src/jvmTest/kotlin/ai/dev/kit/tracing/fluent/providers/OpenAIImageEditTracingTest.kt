@@ -30,42 +30,44 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test tracing when editing a single image`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createOpenAIClient(
-            url = patchedProviderUrl,
-            timeout = Duration.ofMinutes(3)
-        ))
+        assumingThat(patchedProviderUrl?.startsWith(OPENAI_BASE_URL) == true) {
+            val client = instrument(createOpenAIClient(
+                url = patchedProviderUrl,
+                timeout = Duration.ofMinutes(3)
+            ))
 
-        val model = ImageModel.DALL_E_2
-        val prompt = "Remove cat from the image"
-        val image = MediaSource.File("cat-n-dog-2-alpha.png", "image/png")
+            val model = ImageModel.DALL_E_2
+            val prompt = "Remove cat from the image"
+            val image = MediaSource.File("cat-n-dog-2-alpha.png", "image/png")
 
-        val params = ImageEditParams.builder()
-            .body(
-                ImageEditParams.Body.builder()
-                    .prompt(prompt)
-                    .model(model)
-                    .image(
-                        image(image.filepath, image.contentType)
-                    )
-                    .responseFormat(ImageEditParams.ResponseFormat.URL)
-                    .build()
+            val params = ImageEditParams.builder()
+                .body(
+                    ImageEditParams.Body.builder()
+                        .prompt(prompt)
+                        .model(model)
+                        .image(
+                            image(image.filepath, image.contentType)
+                        )
+                        .responseFormat(ImageEditParams.ResponseFormat.URL)
+                        .build()
+                )
+                .build()
+
+            client.images().edit(params)
+
+            validateBasicImageTracing(prompt, model)
+            val trace = analyzeSpans().first()
+
+            val expectedImage = MediaContentAttributeValues.Url(
+                field = "output",
+                url = null,
             )
-            .build()
 
-        client.images().edit(params)
-
-        validateBasicImageTracing(prompt, model)
-        val trace = analyzeSpans().first()
-
-        val expectedImage = MediaContentAttributeValues.Url(
-            field = "output",
-            url = null,
-        )
-
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            image.toMediaContentAttributeValues(field = "input"),
-            expectedImage,
-        ))
+            verifyMediaContentUploadAttributes(trace, expected = listOf(
+                image.toMediaContentAttributeValues(field = "input"),
+                expectedImage,
+            ))
+        }
     }
 
     @Test
@@ -167,48 +169,50 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test tracing when editing two images`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createOpenAIClient(
-            url = patchedProviderUrl,
-            timeout = Duration.ofMinutes(3)
-        ))
+        assumingThat(patchedProviderUrl?.startsWith(OPENAI_BASE_URL) == true) {
+            val client = instrument(createOpenAIClient(
+                url = patchedProviderUrl,
+                timeout = Duration.ofMinutes(3)
+            ))
 
-        val model = ImageModel.GPT_IMAGE_1
-        val prompt = "Merge two images. I want to see 2 cats and 2 dogs!"
-        val contentType = "image/png"
+            val model = ImageModel.GPT_IMAGE_1
+            val prompt = "Merge two images. I want to see 2 cats and 2 dogs!"
+            val contentType = "image/png"
 
-        val image1 = MediaSource.File("cat-n-dog-1.png", contentType)
-        val image2 = MediaSource.File("cat-n-dog-2.png", contentType)
-        val images = listOf(image1, image2)
+            val image1 = MediaSource.File("cat-n-dog-1.png", contentType)
+            val image2 = MediaSource.File("cat-n-dog-2.png", contentType)
+            val images = listOf(image1, image2)
 
-        val params = ImageEditParams.builder()
-            .body(
-                ImageEditParams.Body.builder()
-                    .prompt(prompt)
-                    .image(
-                        images(images.map { it.filepath }, contentType)
-                    )
-                    .outputFormat(ImageEditParams.OutputFormat.PNG)
-                    .model(model)
-                    .build()
+            val params = ImageEditParams.builder()
+                .body(
+                    ImageEditParams.Body.builder()
+                        .prompt(prompt)
+                        .image(
+                            images(images.map { it.filepath }, contentType)
+                        )
+                        .outputFormat(ImageEditParams.OutputFormat.PNG)
+                        .model(model)
+                        .build()
+                )
+                .build()
+
+            client.images().edit(params)
+
+            validateBasicImageTracing(prompt, model)
+            val trace = analyzeSpans().first()
+
+            val expectedImage = MediaContentAttributeValues.Data(
+                field = "output",
+                contentType = contentType,
+                data = null,
             )
-            .build()
 
-        client.images().edit(params)
-
-        validateBasicImageTracing(prompt, model)
-        val trace = analyzeSpans().first()
-
-        val expectedImage = MediaContentAttributeValues.Data(
-            field = "output",
-            contentType = contentType,
-            data = null,
-        )
-
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            image1.toMediaContentAttributeValues(field = "input"),
-            image2.toMediaContentAttributeValues(field = "input"),
-            expectedImage,
-        ))
+            verifyMediaContentUploadAttributes(trace, expected = listOf(
+                image1.toMediaContentAttributeValues(field = "input"),
+                image2.toMediaContentAttributeValues(field = "input"),
+                expectedImage,
+            ))
+        }
     }
 
     @Test
