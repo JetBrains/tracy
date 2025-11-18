@@ -12,6 +12,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
+import mu.KotlinLogging
 import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
@@ -102,6 +103,10 @@ abstract class OpenTelemetryOkHttpInterceptor(
     private val spanName: String,
     private val adapter: LLMTracingAdapter,
 ) : Interceptor {
+    companion object {
+        private val logger = KotlinLogging.logger {}
+    }
+
     override fun intercept(chain: Interceptor.Chain): OkHttpResponse {
         val tracer = TracingManager.tracer
 
@@ -229,7 +234,8 @@ abstract class OpenTelemetryOkHttpInterceptor(
                         bytes.toString(mediaType.charset() ?: Charsets.UTF_8)
                     ).jsonObject
                 }
-                catch (_: Exception) {
+                catch (err: Exception) {
+                    logger.trace("Error while parsing response body", err)
                     return null
                 }
                 RequestBody.Json(json)
