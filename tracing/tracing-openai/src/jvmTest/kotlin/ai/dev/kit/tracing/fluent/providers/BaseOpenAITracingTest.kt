@@ -1,9 +1,6 @@
 package ai.dev.kit.tracing.fluent.providers
 
-import ai.dev.kit.exporters.SupportedMediaContentTypes
-import ai.dev.kit.exporters.UploadableMediaContentAttributeKeys
 import ai.dev.kit.tracing.BaseAITracingTest
-import ai.dev.kit.tracing.loadFileAsBase64Encoded
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
@@ -19,13 +16,10 @@ import com.openai.models.chat.completions.ChatCompletionTool
 import com.openai.models.responses.FunctionTool
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
-import io.opentelemetry.sdk.trace.data.SpanData
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.params.provider.Arguments
 import java.io.InputStream
 import java.time.Duration
-import java.util.stream.Stream
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -70,26 +64,7 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
     }
 
     protected fun validateBasicTracing(model: ChatModel) {
-        validateBasicTracing(model.asString())
-    }
-
-    protected fun validateBasicTracing(model: String) {
-        val traces = analyzeSpans()
-
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-
-        assertNotNull(trace)
-        assertTrue(
-            llmProviderUrl.startsWith(trace.attributes[AttributeKey.stringKey("gen_ai.api_base")].toString())
-        )
-
-        val responseModel = trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]
-        assertNotNull(responseModel)
-        assertTrue(responseModel.startsWith(model))
-
-        val content = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
-        assertFalse(content.isNullOrEmpty())
+        validateBasicTracing(llmProviderUrl, model.asString())
     }
 
     protected fun validateErrorStatus() {
@@ -229,70 +204,6 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
         assertEquals(output, trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")])
     }
 
-    protected fun provideImagesForUpload(): Stream<Arguments> {
-        return Stream.of(
-            Arguments.of(MediaSource.File(
-                filepath = "./image.jpg",
-                contentType = "image/jpeg",
-            )),
-            Arguments.of(MediaSource.Link(CAT_IMAGE_URL))
-        )
-    }
-
-    protected fun provideFilesForUpload(): Stream<Arguments> {
-        return Stream.of(
-            Arguments.of(MediaSource.File(
-                filepath = "./sample.pdf",
-                contentType = "application/pdf",
-            )),
-            Arguments.of(MediaSource.Link(SAMPLE_PDF_FILE_URL))
-        )
-    }
-
-    protected fun verifyMediaContentUploadAttributes(
-        span: SpanData,
-        expected: List<MediaContentAttributeValues>
-    ) {
-        for ((index, values) in expected.withIndex()) {
-            val keys = UploadableMediaContentAttributeKeys.forIndex(index)
-            val failMessage = "Media content attribute values do not match for index $index"
-
-            when (values) {
-                is MediaContentAttributeValues.Data -> {
-                    assertEquals(values.type.type, span.attributes[keys.type], failMessage)
-                    assertEquals(values.field, span.attributes[keys.field], failMessage)
-                    assertEquals(values.contentType, span.attributes[keys.contentType], failMessage)
-                    if (values.data != null) {
-                        assertEquals(values.data, span.attributes[keys.data], failMessage)
-                    }
-                }
-                is MediaContentAttributeValues.Url -> {
-                    assertEquals(values.type.type, span.attributes[keys.type], failMessage)
-                    assertEquals(values.field, span.attributes[keys.field], failMessage)
-                    if (values.url != null) {
-                        assertEquals(values.url, span.attributes[keys.url], failMessage)
-                    }
-                }
-            }
-        }
-    }
-
-    protected fun MediaSource.toMediaContentAttributeValues(
-        field: String
-    ): MediaContentAttributeValues {
-        return when (val media = this) {
-            is MediaSource.File -> MediaContentAttributeValues.Data(
-                field = field,
-                contentType = media.contentType,
-                data = loadFileAsBase64Encoded(media.filepath)
-            )
-            is MediaSource.Link -> MediaContentAttributeValues.Url(
-                field = field,
-                url = media.url,
-            )
-        }
-    }
-
     protected val ChatCompletionMessageToolCall.id: String
         get() {
             val toolCall = this
@@ -320,32 +231,6 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
             }
             return name
         }
-
-    companion object {
-        protected const val CAT_IMAGE_URL = "https://images.pexels.com/photos/104827/cat-pet-animal-domestic-104827.jpeg"
-        protected const val SAMPLE_PDF_FILE_URL = "https://pdfobject.com/pdf/sample.pdf"
-
-        sealed class MediaSource {
-            data class File(
-                val filepath: String,
-                val contentType: String,
-            ) : MediaSource()
-            data class Link(val url: String) : MediaSource()
-        }
-
-        sealed class MediaContentAttributeValues(val type: SupportedMediaContentTypes) {
-            data class Url(
-                val field: String,
-                val url: String?
-            ) : MediaContentAttributeValues(SupportedMediaContentTypes.URL)
-
-            data class Data(
-                val field: String,
-                val contentType: String,
-                val data: String?,
-            ) : MediaContentAttributeValues(SupportedMediaContentTypes.BASE64)
-        }
-    }
 
     protected fun readResource(filepath: String): InputStream {
         return javaClass.classLoader.getResourceAsStream(filepath)

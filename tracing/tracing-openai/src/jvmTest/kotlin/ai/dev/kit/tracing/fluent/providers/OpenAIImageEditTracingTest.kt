@@ -1,8 +1,9 @@
 package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
-import ai.dev.kit.tracing.fluent.providers.BaseOpenAITracingTest.Companion.MediaContentAttributeValues
-import ai.dev.kit.tracing.fluent.providers.BaseOpenAITracingTest.Companion.MediaSource
+import ai.dev.kit.tracing.MediaContentAttributeValues
+import ai.dev.kit.tracing.MediaSource
+import ai.dev.kit.tracing.toMediaContentAttributeValues
 import com.openai.core.MultipartField
 import com.openai.models.images.ImageEditParams
 import com.openai.models.images.ImageEditParams.Image

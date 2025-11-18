@@ -38,18 +38,23 @@ abstract class BaseAITracingTest : BaseOpenTelemetryTracingTest() {
     ) {
         for ((index, values) in expected.withIndex()) {
             val keys = UploadableMediaContentAttributeKeys.forIndex(index)
+            val failMessage = "Media content attribute values do not match for index $index"
 
             when (values) {
                 is MediaContentAttributeValues.Data -> {
-                    assertEquals(values.type, span.attributes[keys.type])
-                    assertEquals(values.field, span.attributes[keys.field])
-                    assertEquals(values.contentType, span.attributes[keys.contentType])
-                    assertEquals(values.data, span.attributes[keys.data])
+                    assertEquals(values.type.type, span.attributes[keys.type], failMessage)
+                    assertEquals(values.field, span.attributes[keys.field], failMessage)
+                    assertEquals(values.contentType, span.attributes[keys.contentType], failMessage)
+                    if (values.data != null) {
+                        assertEquals(values.data, span.attributes[keys.data], failMessage)
+                    }
                 }
                 is MediaContentAttributeValues.Url -> {
-                    assertEquals(values.type, span.attributes[keys.type])
-                    assertEquals(values.field, span.attributes[keys.field])
-                    assertEquals(values.url, span.attributes[keys.url])
+                    assertEquals(values.type.type, span.attributes[keys.type], failMessage)
+                    assertEquals(values.field, span.attributes[keys.field], failMessage)
+                    if (values.url != null) {
+                        assertEquals(values.url, span.attributes[keys.url], failMessage)
+                    }
                 }
             }
         }

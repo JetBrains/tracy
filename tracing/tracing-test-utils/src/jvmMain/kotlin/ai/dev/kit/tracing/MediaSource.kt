@@ -32,32 +32,28 @@ fun MediaSource.File.asDataUrl(): DataUrl {
 fun MediaSource.toMediaContentAttributeValues(field: String): MediaContentAttributeValues {
     return when (val media = this) {
         is MediaSource.File -> MediaContentAttributeValues.Data(
-            type = SupportedMediaContentTypes.BASE64.type,
             field = field,
             contentType = media.contentType,
             data = loadFileAsBase64Encoded(media.filepath)
         )
         is MediaSource.Link -> MediaContentAttributeValues.Url(
-            type = SupportedMediaContentTypes.URL.type,
             field = field,
             url = media.url,
         )
     }
 }
 
-sealed class MediaContentAttributeValues {
+sealed class MediaContentAttributeValues(val type: SupportedMediaContentTypes) {
     data class Url(
-        val type: String,
         val field: String,
-        val url: String
-    ) : MediaContentAttributeValues()
+        val url: String?
+    ) : MediaContentAttributeValues(SupportedMediaContentTypes.URL)
 
     data class Data(
-        val type: String,
         val field: String,
         val contentType: String,
-        val data: String,
-    ) : MediaContentAttributeValues()
+        val data: String?,
+    ) : MediaContentAttributeValues(SupportedMediaContentTypes.BASE64)
 }
 
 fun loadFileAsBase64Encoded(filepath: String): String {
