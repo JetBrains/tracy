@@ -9,9 +9,9 @@ import com.openai.models.images.ImageEditParams.Image
 import com.openai.models.images.ImageModel
 import io.opentelemetry.api.common.AttributeKey
 import kotlinx.coroutines.test.runTest
-import mu.KotlinLogging
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assumptions.assumingThat
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import java.io.InputStream
@@ -21,11 +21,9 @@ import kotlin.time.Duration.Companion.minutes
 
 @Tag("openai")
 class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
-    private val logger = KotlinLogging.logger {}
-    private val liteLLMEndpoint = "https://litellm.labs.jb.gg"
-
     private val patchedProviderUrl = when {
         // when using LiteLLM, switch to the pass-through
+        // TODO: remove direct use of litellm
         baseUrl == "https://litellm.labs.jb.gg" -> "$baseUrl/openai"
         else -> llmProviderUrl
     }
@@ -71,62 +69,59 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
     }
 
     @Test
-    fun `test tracing when editing an image with a mask`() = runTest {
-        if (patchedProviderUrl?.startsWith(liteLLMEndpoint) == true) {
-            logger.warn { "Using LiteLLM $patchedProviderUrl endpoint. LiteLLM fails with 500 server error for this test. Skipping..." }
-            return@runTest
+    fun `test tracing when editing an image with a mask`() = runTest(timeout = 3.minutes) {
+        assumingThat(patchedProviderUrl?.startsWith(OPENAI_BASE_URL) == true) {
+            val client = instrument(createOpenAIClient(
+                url = patchedProviderUrl,
+                timeout = Duration.ofMinutes(3)
+            ))
+
+            val prompt = "Fill the mask area with beach deckchairs"
+            val model = ImageModel.DALL_E_2
+
+            val alohaImage = MediaSource.File("aloha.png", "image/png")
+            val alohaMask = MediaSource.File("aloha-mask.png", "image/png")
+
+            val editParams = ImageEditParams.builder()
+                .responseFormat(ImageEditParams.ResponseFormat.URL)
+                .image(
+                    image(alohaImage.filepath, alohaImage.contentType)
+                )
+                .mask(
+                    MultipartField.builder<InputStream>()
+                        .value(readResource(alohaMask.filepath))
+                        .contentType(alohaMask.contentType)
+                        .filename(alohaMask.filepath)
+                        .build()
+                )
+                .prompt(prompt)
+                .model(model)
+                .n(1)
+                .build()
+
+            client.images().edit(editParams)
+
+            validateBasicImageTracing(prompt, model)
+            val trace = analyzeSpans().first()
+
+            // check mask properties attached
+            assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.request.mask.content")].isNullOrEmpty())
+            assertEquals(alohaMask.contentType, trace.attributes[AttributeKey.stringKey("gen_ai.request.mask.contentType")])
+            assertEquals(alohaMask.filepath, trace.attributes[AttributeKey.stringKey("gen_ai.request.mask.filename")])
+
+            assertEquals("1", trace.attributes[AttributeKey.stringKey("gen_ai.request.n")])
+
+            val expectedImage = MediaContentAttributeValues.Url(
+                field = "output",
+                url = null,
+            )
+
+            verifyMediaContentUploadAttributes(trace, expected = listOf(
+                alohaImage.toMediaContentAttributeValues(field = "input"),
+                alohaMask.toMediaContentAttributeValues(field = "input"),
+                expectedImage,
+            ))
         }
-
-        val client = instrument(createOpenAIClient(
-            url = patchedProviderUrl,
-            timeout = Duration.ofMinutes(3)
-        ))
-
-        val prompt = "Fill the mask area with beach deckchairs"
-        val model = ImageModel.DALL_E_2
-
-        val alohaImage = MediaSource.File("aloha.png", "image/png")
-        val alohaMask = MediaSource.File("aloha-mask.png", "image/png")
-
-        val editParams = ImageEditParams.builder()
-            .responseFormat(ImageEditParams.ResponseFormat.URL)
-            .image(
-                image(alohaImage.filepath, alohaImage.contentType)
-            )
-            .mask(
-                MultipartField.builder<InputStream>()
-                    .value(readResource(alohaMask.filepath))
-                    .contentType(alohaMask.contentType)
-                    .filename(alohaMask.filepath)
-                    .build()
-            )
-            .prompt(prompt)
-            .model(model)
-            .n(1)
-            .build()
-
-        client.images().edit(editParams)
-
-        validateBasicImageTracing(prompt, model)
-        val trace = analyzeSpans().first()
-
-        // check mask properties attached
-        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.request.mask.content")].isNullOrEmpty())
-        assertEquals(alohaMask.contentType, trace.attributes[AttributeKey.stringKey("gen_ai.request.mask.contentType")])
-        assertEquals(alohaMask.filepath, trace.attributes[AttributeKey.stringKey("gen_ai.request.mask.filename")])
-
-        assertEquals("1", trace.attributes[AttributeKey.stringKey("gen_ai.request.n")])
-
-        val expectedImage = MediaContentAttributeValues.Url(
-            field = "output",
-            url = null,
-        )
-
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            alohaImage.toMediaContentAttributeValues(field = "input"),
-            alohaMask.toMediaContentAttributeValues(field = "input"),
-            expectedImage,
-        ))
     }
 
     @Test
@@ -218,69 +213,66 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test tracing when editing two images with streaming API`() = runTest(timeout = 3.minutes) {
-        if (patchedProviderUrl?.startsWith(liteLLMEndpoint) == true) {
-            logger.warn { "Using LiteLLM $patchedProviderUrl endpoint. LiteLLM fails with 500 server error for this test. Skipping..." }
-            return@runTest
-        }
+        assumingThat(patchedProviderUrl?.startsWith(OPENAI_BASE_URL) == true) {
+            val client = instrument(createOpenAIClient(
+                url = patchedProviderUrl,
+                timeout = Duration.ofMinutes(3)
+            ))
 
-        val client = instrument(createOpenAIClient(
-            url = patchedProviderUrl,
-            timeout = Duration.ofMinutes(3)
-        ))
+            val model = ImageModel.GPT_IMAGE_1
+            val prompt = "Merge two images!"
+            val contentType = "image/png"
+            val partialImagesCount = 2
+            val size = ImageEditParams.Size._1024X1024
 
-        val model = ImageModel.GPT_IMAGE_1
-        val prompt = "Merge two images!"
-        val contentType = "image/png"
-        val partialImagesCount = 2
-        val size = ImageEditParams.Size._1024X1024
+            val image1 = MediaSource.File("cat-n-dog-1.png", contentType)
+            val image2 = MediaSource.File("cat-n-dog-2.png", contentType)
+            val images = listOf(image1, image2)
 
-        val image1 = MediaSource.File("cat-n-dog-1.png", contentType)
-        val image2 = MediaSource.File("cat-n-dog-2.png", contentType)
-        val images = listOf(image1, image2)
+            val params = ImageEditParams.builder()
+                .body(
+                    ImageEditParams.Body.builder()
+                        .prompt(prompt)
+                        .image(
+                            images(images.map { it.filepath }, contentType)
+                        )
+                        .outputFormat(ImageEditParams.OutputFormat.PNG)
+                        .model(model)
+                        .build()
+                )
+                .size(size)
+                .partialImages(partialImagesCount.toLong())
+                .build()
 
-        val params = ImageEditParams.builder()
-            .body(
-                ImageEditParams.Body.builder()
-                    .prompt(prompt)
-                    .image(
-                        images(images.map { it.filepath }, contentType)
-                    )
-                    .outputFormat(ImageEditParams.OutputFormat.PNG)
-                    .model(model)
-                    .build()
+            client.images().editStreaming(params).use { events ->
+                events.stream().toList()
+            }
+
+            validateBasicImageTracing(prompt, model)
+            val trace = analyzeSpans().first()
+
+            assertEquals(
+                size.asString(),
+                trace.attributes[AttributeKey.stringKey("gen_ai.request.size")]
             )
-            .size(size)
-            .partialImages(partialImagesCount.toLong())
-            .build()
+            assertEquals(
+                partialImagesCount.toString(),
+                trace.attributes[AttributeKey.stringKey("gen_ai.request.partial_images")]
+            )
+            assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")].isNullOrEmpty())
 
-        client.images().editStreaming(params).use { events ->
-            events.stream().toList()
+            val expectedImage = MediaContentAttributeValues.Data(
+                field = "output",
+                contentType = contentType,
+                data = null,
+            )
+
+            verifyMediaContentUploadAttributes(trace, expected = listOf(
+                image1.toMediaContentAttributeValues(field = "input"),
+                image2.toMediaContentAttributeValues(field = "input"),
+                expectedImage,
+            ))
         }
-
-        validateBasicImageTracing(prompt, model)
-        val trace = analyzeSpans().first()
-
-        assertEquals(
-            size.asString(),
-            trace.attributes[AttributeKey.stringKey("gen_ai.request.size")]
-        )
-        assertEquals(
-            partialImagesCount.toString(),
-            trace.attributes[AttributeKey.stringKey("gen_ai.request.partial_images")]
-        )
-        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")].isNullOrEmpty())
-
-        val expectedImage = MediaContentAttributeValues.Data(
-            field = "output",
-            contentType = contentType,
-            data = null,
-        )
-
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            image1.toMediaContentAttributeValues(field = "input"),
-            image2.toMediaContentAttributeValues(field = "input"),
-            expectedImage,
-        ))
     }
 
     private fun image(filepath: String, contentType: String): MultipartField<Image> {

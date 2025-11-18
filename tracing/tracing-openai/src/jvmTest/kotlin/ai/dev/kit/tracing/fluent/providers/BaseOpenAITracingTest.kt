@@ -3,7 +3,6 @@ package ai.dev.kit.tracing.fluent.providers
 import ai.dev.kit.exporters.SupportedMediaContentTypes
 import ai.dev.kit.exporters.UploadableMediaContentAttributeKeys
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
-import ai.dev.kit.tracing.autologging.createOpenAIClient
 import com.openai.client.OpenAIClient
 import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
 import com.openai.core.JsonArray
@@ -326,6 +325,8 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
         }
 
     companion object {
+        protected const val OPENAI_BASE_URL = "https://api.openai.com"
+
         protected const val CAT_IMAGE_URL = "https://images.pexels.com/photos/104827/cat-pet-animal-domestic-104827.jpeg"
         protected const val SAMPLE_PDF_FILE_URL = "https://pdfobject.com/pdf/sample.pdf"
 

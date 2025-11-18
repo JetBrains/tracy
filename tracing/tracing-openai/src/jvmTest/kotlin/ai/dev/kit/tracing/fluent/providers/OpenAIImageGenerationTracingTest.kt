@@ -9,6 +9,7 @@ import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.test.runTest
 import mu.KotlinLogging
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assumptions.assumingThat
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -21,12 +22,10 @@ import kotlin.time.Duration.Companion.minutes
 
 @Tag("openai")
 class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
-    private val logger = KotlinLogging.logger {}
-    private val liteLLMEndpoint = "https://litellm.labs.jb.gg"
-
     private val patchedProviderUrl = when {
         // when using LiteLLM, switch to the pass-through
-        baseUrl == liteLLMEndpoint -> "$baseUrl/openai"
+        // TODO: remove direct use of litellm
+        baseUrl == "https://litellm.labs.jb.gg" -> "$baseUrl/openai"
         else -> llmProviderUrl
     }
 
@@ -34,62 +33,59 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
     @MethodSource("provideResponseFormats")
     fun `test generate image with different response formats`(
         responseFormat: ImageGenerateParams.ResponseFormat?
-    ) = runTest {
-        if (patchedProviderUrl?.startsWith(liteLLMEndpoint) == true) {
-            logger.warn { "Using LiteLLM $patchedProviderUrl endpoint. LiteLLM may fail with 500 server error for this test. Skipping..." }
-            return@runTest
+    ) = runTest(timeout = 3.minutes) {
+        assumingThat(patchedProviderUrl?.startsWith(OPENAI_BASE_URL) == true) {
+            val client = instrument(createOpenAIClient(
+                url = patchedProviderUrl,
+                timeout = Duration.ofMinutes(3)
+            ))
+
+            val prompt = "generate an image of dog and cat sitting next to each other"
+            val model = ImageModel.DALL_E_2
+            val size = ImageGenerateParams.Size._256X256
+
+            val params = ImageGenerateParams.builder()
+                .prompt(prompt)
+                .responseFormat(responseFormat)
+                .model(model)
+                .size(size)
+                .n(1)
+                .build()
+
+            client.images().generate(params)
+
+            validateBasicImageTracing(prompt, model)
+            val trace = analyzeSpans().first()
+
+            assertEquals(
+                size.asString(),
+                trace.attributes[AttributeKey.stringKey("gen_ai.request.size")]
+            )
+            assertEquals(
+                responseFormat?.asString() ?: "null",
+                trace.attributes[AttributeKey.stringKey("gen_ai.request.response_format")]
+            )
+            assertEquals("1", trace.attributes[AttributeKey.stringKey("gen_ai.request.n")])
+
+            val expectedImage = when (responseFormat) {
+                ImageGenerateParams.ResponseFormat.B64_JSON ->
+                    MediaContentAttributeValues.Data(
+                        field = "output",
+                        contentType = "image/png",
+                        data = null,
+                    )
+                ImageGenerateParams.ResponseFormat.URL, null ->
+                    MediaContentAttributeValues.Url(
+                        field = "output",
+                        url = null,
+                    )
+                else -> error("Unexpected response format: $responseFormat")
+            }
+
+            verifyMediaContentUploadAttributes(trace, expected = listOf(
+                expectedImage,
+            ))
         }
-
-        val client = instrument(createOpenAIClient(
-            url = patchedProviderUrl,
-            timeout = Duration.ofMinutes(3)
-        ))
-
-        val prompt = "generate an image of dog and cat sitting next to each other"
-        val model = ImageModel.DALL_E_2
-        val size = ImageGenerateParams.Size._256X256
-
-        val params = ImageGenerateParams.builder()
-            .prompt(prompt)
-            .responseFormat(responseFormat)
-            .model(model)
-            .size(size)
-            .n(1)
-            .build()
-
-        client.images().generate(params)
-
-        validateBasicImageTracing(prompt, model)
-        val trace = analyzeSpans().first()
-
-        assertEquals(
-            size.asString(),
-            trace.attributes[AttributeKey.stringKey("gen_ai.request.size")]
-        )
-        assertEquals(
-            responseFormat?.asString() ?: "null",
-            trace.attributes[AttributeKey.stringKey("gen_ai.request.response_format")]
-        )
-        assertEquals("1", trace.attributes[AttributeKey.stringKey("gen_ai.request.n")])
-
-        val expectedImage = when (responseFormat) {
-            ImageGenerateParams.ResponseFormat.B64_JSON ->
-                MediaContentAttributeValues.Data(
-                    field = "output",
-                    contentType = "image/png",
-                    data = null,
-                )
-            ImageGenerateParams.ResponseFormat.URL, null ->
-                MediaContentAttributeValues.Url(
-                    field = "output",
-                    url = null,
-                )
-            else -> error("Unexpected response format: $responseFormat")
-        }
-
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            expectedImage,
-        ))
     }
 
     @Test
@@ -203,7 +199,7 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
 
         // when OpenAI endpoint requested directly
-        if (patchedProviderUrl?.startsWith("https://api.openai.com") == true) {
+        assumingThat(patchedProviderUrl?.startsWith(OPENAI_BASE_URL) == true) {
             assertEquals("n", trace.attributes[AttributeKey.stringKey("gen_ai.error.param")])
             assertEquals("invalid_request_error", trace.attributes[AttributeKey.stringKey("gen_ai.error.type")])
             assertEquals("integer_below_min_value", trace.attributes[AttributeKey.stringKey("gen_ai.error.code")])
