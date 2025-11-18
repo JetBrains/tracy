@@ -34,9 +34,9 @@ class AnthropicTracingTest : BaseOpenTelemetryTracingTest() {
     /**
     When no value provided, defaults to anthropic provider url in [AnthropicOkHttpClient.Builder]
     */
-    val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
+    private val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
 
-    val llmProviderApiKey =
+    private val llmProviderApiKey =
         System.getenv("ANTHROPIC_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
         ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
 

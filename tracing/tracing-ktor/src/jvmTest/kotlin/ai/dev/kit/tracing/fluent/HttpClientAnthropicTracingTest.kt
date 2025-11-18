@@ -19,11 +19,11 @@ import kotlin.test.assertTrue
 @Tag("anthropic")
 class HttpClientAnthropicAITracingTest : BaseOpenTelemetryTracingTest() {
     companion object {
-        const val ANTHROPIC_API_URL = "https://api.anthropic.com"
+        private const val ANTHROPIC_API_URL = "https://api.anthropic.com"
     }
 
-    val llmProviderUrl: String = System.getenv("LLM_PROVIDER_URL") ?: ANTHROPIC_API_URL
-    val llmProviderApiKey =
+    private val llmProviderUrl: String = System.getenv("LLM_PROVIDER_URL") ?: ANTHROPIC_API_URL
+    private val llmProviderApiKey =
         System.getenv("ANTHROPIC_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
         ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
 

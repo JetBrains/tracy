@@ -17,7 +17,7 @@ import kotlin.test.AfterTest
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class BaseOpenTelemetryTracingTest {
-    internal lateinit var spanExporter: InMemorySpanExporter
+    private lateinit var spanExporter: InMemorySpanExporter
 
     @BeforeAll
     fun setupTelemetry() {
@@ -36,7 +36,7 @@ abstract class BaseOpenTelemetryTracingTest {
         TracingManager.shutdownTracing()
     }
 
-    fun analyzeSpans(): List<SpanData> {
+    protected fun analyzeSpans(): List<SpanData> {
         TracingManager.flushTraces(10)
         return spanExporter.finishedSpanItems.mapNotNull { it }
     }

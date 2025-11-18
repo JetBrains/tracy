@@ -151,7 +151,7 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
         }
     }
 
-    fun validateMultipleToolCallResponseWithInput() {
+    protected fun validateMultipleToolCallResponseWithInput() {
         val traces = analyzeSpans()
         assertEquals(2, traces.size)
 
