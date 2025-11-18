@@ -29,13 +29,13 @@ class TracingTest : BaseOpenTelemetryTracingTest() {
     /**
      * When no value is provided, defaults to [PRODUCTION_URL].
      */
-    val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
+    private val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
 
-    val llmProviderApiKey =
+    private val llmProviderApiKey =
         System.getenv("OPENAI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
         ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
 
-    internal lateinit var client: OpenAIClient
+    private lateinit var client: OpenAIClient
 
     @BeforeAll
     fun createClient() {

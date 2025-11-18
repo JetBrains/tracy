@@ -32,7 +32,7 @@ import kotlin.test.assertTrue
 
 @Tag("openai")
 class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
-    val llmTracingAdapter = OpenAILLMTracingAdapter()
+    private val llmTracingAdapter = OpenAILLMTracingAdapter()
 
     private fun HttpRequestBuilder.addAuthHeaders(acceptStream: Boolean = false) {
         header("Authorization", "Bearer $llmProviderApiKey")
@@ -343,13 +343,13 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
     }
 
     companion object {
-        val llmProviderUrl: String = System.getenv("LLM_PROVIDER_URL") ?: PRODUCTION_URL
-        val llmProviderApiKey =
+        private val llmProviderUrl: String = System.getenv("LLM_PROVIDER_URL") ?: PRODUCTION_URL
+        private val llmProviderApiKey =
             System.getenv("OPENAI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
             ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
 
         // llmProviderUrl = https://api.openai.com/v1, gen_ai.api_base = https://api.api.openai.com
-        val baseUrl = llmProviderUrl.let {
+        private val baseUrl = llmProviderUrl.let {
             if (it.endsWith("/v1")) it.removeSuffix("/v1") else it
         }
 

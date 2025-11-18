@@ -12,7 +12,7 @@ import kotlin.jvm.optionals.getOrElse
 
 fun haikuTestCase(topic: String) = TestCase(name = topic, HaikuTopic(topic), NoGroundTruth)
 
-val apiToken = System.getenv("OPENAI_API_KEY")
+private val apiToken = System.getenv("OPENAI_API_KEY")
     ?: error("Environment variable 'OPENAI_API_KEY' is not set")
 
 @Tag("openai")

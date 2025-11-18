@@ -26,9 +26,9 @@ import com.google.genai.types.HttpOptions as GeminiHttpOptions
 
 @Tag("gemini")
 class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
-    val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
+    private val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
 
-    val llmProviderApiKey =
+    private val llmProviderApiKey =
         System.getenv("GEMINI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
         ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
 

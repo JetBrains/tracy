@@ -19,8 +19,8 @@ import kotlin.test.assertTrue
 
 @Tag("gemini")
 class HttpClientGeminiTracingTest : BaseOpenTelemetryTracingTest() {
-    val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
-    val llmProviderApiKey =
+    private val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
+    private val llmProviderApiKey =
         System.getenv("GEMINI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
         ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
 
