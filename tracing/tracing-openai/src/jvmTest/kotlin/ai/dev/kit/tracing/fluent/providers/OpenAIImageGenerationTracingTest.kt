@@ -133,42 +133,44 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
     }
 
     @Test
-    fun `test generation of multiple images gets traced`() = runTest {
-        val client = instrument(createOpenAIClient(
-            url = patchedProviderUrl,
-            timeout = Duration.ofMinutes(3)
-        ))
+    fun `test generation of multiple images gets traced`() = runTest(timeout = 3.minutes) {
+        assumingThat(patchedProviderUrl?.startsWith(OPENAI_BASE_URL) == true) {
+            val client = instrument(createOpenAIClient(
+                url = patchedProviderUrl,
+                timeout = Duration.ofMinutes(3)
+            ))
 
-        val prompt = "generate an image of a cute cat"
-        val model = ImageModel.DALL_E_2
-        val size = ImageGenerateParams.Size._256X256
+            val prompt = "generate an image of a cute cat"
+            val model = ImageModel.DALL_E_2
+            val size = ImageGenerateParams.Size._256X256
 
-        val params = ImageGenerateParams.builder()
-            .prompt(prompt)
-            .model(model)
-            .size(size)
-            .n(3)
-            .build()
+            val params = ImageGenerateParams.builder()
+                .prompt(prompt)
+                .model(model)
+                .size(size)
+                .n(3)
+                .build()
 
-        client.images().generate(params)
+            client.images().generate(params)
 
-        validateBasicImageTracing(prompt, model)
-        val trace = analyzeSpans().first()
+            validateBasicImageTracing(prompt, model)
+            val trace = analyzeSpans().first()
 
-        assertEquals(
-            size.asString(),
-            trace.attributes[AttributeKey.stringKey("gen_ai.request.size")]
-        )
-        assertEquals("3", trace.attributes[AttributeKey.stringKey("gen_ai.request.n")])
+            assertEquals(
+                size.asString(),
+                trace.attributes[AttributeKey.stringKey("gen_ai.request.size")]
+            )
+            assertEquals("3", trace.attributes[AttributeKey.stringKey("gen_ai.request.n")])
 
-        val expectedImage = MediaContentAttributeValues.Url(
-            field = "output",
-            url = null,
-        )
+            val expectedImage = MediaContentAttributeValues.Url(
+                field = "output",
+                url = null,
+            )
 
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            expectedImage, expectedImage, expectedImage
-        ))
+            verifyMediaContentUploadAttributes(trace, expected = listOf(
+                expectedImage, expectedImage, expectedImage
+            ))
+        }
     }
 
     @Test
