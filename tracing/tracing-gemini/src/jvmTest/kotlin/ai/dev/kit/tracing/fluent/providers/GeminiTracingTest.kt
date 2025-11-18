@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.runTest
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
+import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import java.net.SocketTimeoutException
@@ -34,9 +35,8 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
 
     fun createGeminiClient(): GeminiClient {
         // TODO: fix
-        if (llmProviderUrl?.startsWith("https://litellm.labs.jb.gg") != true) {
-            error("Gemini tests for now is only supported with LITELLM")
-        }
+        // require the provider to be LiteLLM
+        Assumptions.assumeTrue(llmProviderUrl?.startsWith("https://litellm.labs.jb.gg") == true)
 
         val projectId = "jetbrains-grazie"
         val location = "us-central1"
