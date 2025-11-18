@@ -19,6 +19,7 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystem
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import mu.KotlinLogging
 
 
 /**
@@ -32,21 +33,34 @@ private enum class OpenAIApiType(val route: String) {
     // See: https://platform.openai.com/docs/api-reference/images/create
     IMAGES_GENERATIONS("images/generations"),
     // See: https://platform.openai.com/docs/api-reference/images/createEdit
-    IMAGES_EDITS("images/edits"),
+    IMAGES_EDITS("images/edits");
+
+    companion object {
+        fun detect(url: Url): OpenAIApiType? {
+            val route = url.pathSegments.joinToString(separator = "/")
+            return entries.firstOrNull { route.contains(it.route) }
+        }
+    }
 }
 
 class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.OPENAI) {
+    private val logger = KotlinLogging.logger {}
     private var handler: OpenAIApiHandler? = null
 
     override fun getRequestBodyAttributes(span: Span, request: Request) {
+        // TODO(Vladislav0Art): JBAI-18234 create handler every time a new request is processed
         if (handler == null) {
             val extractor = OpenAIMediaContentExtractor()
 
-            handler = when (detectApiType(request.url)) {
+            handler = when (OpenAIApiType.detect(request.url)) {
                 OpenAIApiType.CHAT_COMPLETIONS -> ChatCompletionsHandler(extractor)
                 OpenAIApiType.RESPONSES_API -> ResponsesApiHandler(extractor)
                 OpenAIApiType.IMAGES_GENERATIONS -> ImagesGenerationsHandler(extractor)
                 OpenAIApiType.IMAGES_EDITS -> ImagesEditsHandler(extractor)
+                else -> {
+                    logger.warn { "Unknown OpenAI API detected. Defaulting to 'chat completion'." }
+                    ChatCompletionsHandler(extractor)
+                }
             }
         }
         handler?.handleRequestAttributes(span, request)
@@ -75,16 +89,5 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
 
     override fun handleStreaming(span: Span, events: String) {
         handler?.handleStreaming(span, events)
-    }
-}
-
-private fun detectApiType(url: Url): OpenAIApiType {
-    val route = url.pathSegments.joinToString(separator = "/")
-    return when {
-        route.endsWith(OpenAIApiType.CHAT_COMPLETIONS.route) -> OpenAIApiType.CHAT_COMPLETIONS
-        route.endsWith(OpenAIApiType.RESPONSES_API.route) -> OpenAIApiType.RESPONSES_API
-        route.endsWith(OpenAIApiType.IMAGES_GENERATIONS.route) -> OpenAIApiType.IMAGES_GENERATIONS
-        route.endsWith(OpenAIApiType.IMAGES_EDITS.route) -> OpenAIApiType.IMAGES_EDITS
-        else -> throw IllegalArgumentException("Unknown API type with route '$route'")
     }
 }
