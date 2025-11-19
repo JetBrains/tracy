@@ -236,8 +236,9 @@ abstract class OpenTelemetryOkHttpInterceptor(
                 }
                 catch (err: Exception) {
                     logger.trace("Error while parsing response body", err)
-                    return null
-                }
+                    null
+                } ?: return null
+
                 RequestBody.Json(json)
             }
             ContentType.MultiPart.FormData -> {
