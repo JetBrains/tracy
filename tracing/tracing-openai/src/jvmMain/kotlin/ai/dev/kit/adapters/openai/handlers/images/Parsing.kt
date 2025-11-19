@@ -102,14 +102,16 @@ internal fun handleStreamingImage(
     // install media content for further upload
     val base64 = data["b64_json"]?.jsonPrimitive?.content ?: return
     val format = data["output_format"]?.jsonPrimitive?.content ?: defaultImageFormat
-    val contentType = "image/$format"
+    val contentType = try {
+        ContentType.parse("image/$format")
+    } catch (err: Exception) {
+        logger.trace("Failed to parse content type: 'image/$format'. Skipping this content part", err)
+        null
+    } ?: return
 
     val content = MediaContent(
         parts = listOf(
-            MediaContentPart(
-                resource = Resource.Base64(base64),
-                contentType = ContentType.parse(contentType),
-            )
+            MediaContentPart(Resource.Base64(base64, contentType))
         )
     )
 
@@ -130,7 +132,7 @@ private fun parseMediaContent(data: JsonArray, contentType: String): MediaConten
                     null
                 } ?: continue
 
-                MediaContentPart(Resource.Base64(base64), contentType)
+                MediaContentPart(Resource.Base64(base64, contentType))
             }
             else if (image.hasNonNull("url")) {
                 val url = image["url"]?.jsonPrimitive?.content ?: continue

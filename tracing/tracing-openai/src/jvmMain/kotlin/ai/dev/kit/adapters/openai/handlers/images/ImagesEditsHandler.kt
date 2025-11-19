@@ -67,8 +67,9 @@ internal class ImagesEditsHandler(
                         span.setAttribute("gen_ai.request.mask.filename", part.filename)
                     }
                     // save mask for further upload
-                    mediaContentParts.add(MediaContentPart(
-                        resource = Resource.Base64(content), contentType))
+                    mediaContentParts.add(
+                        MediaContentPart(resource = Resource.Base64(content, contentType))
+                    )
                 }
                 // either a single image or an array of images
                 "image", "image[]" -> {
@@ -79,10 +80,9 @@ internal class ImagesEditsHandler(
                         span.setAttribute("gen_ai.request.image.$imagesCount.filename", part.filename)
                     }
                     // save image for further upload
-                    mediaContentParts.add(MediaContentPart(
-                        resource = Resource.Base64(content),
-                        contentType,
-                    ))
+                    mediaContentParts.add(
+                        MediaContentPart(resource = Resource.Base64(content, contentType))
+                    )
                     ++imagesCount
                 }
                 null -> logger.warn { "Form data part with missing name ignored. Content type: '$contentType'" }

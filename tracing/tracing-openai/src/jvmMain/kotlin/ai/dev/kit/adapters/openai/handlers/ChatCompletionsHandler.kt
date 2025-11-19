@@ -14,6 +14,7 @@ import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
 import kotlinx.serialization.json.*
+import mu.KotlinLogging
 
 /**
  * Handler for OpenAI Chat Completions API
@@ -224,10 +225,15 @@ internal class ChatCompletionsHandler(
                             ?: continue
                         val format = part.jsonObject["input_audio"]?.jsonObject["format"]?.jsonPrimitive?.content
                             ?: continue
-                        MediaContentPart(
-                            resource = Resource.Base64(data),
-                            contentType = ContentType.parse("audio/$format")
-                        )
+
+                        val contentType = try {
+                            ContentType.parse("audio/$format")
+                        } catch (err: Exception) {
+                            logger.trace("Failed to parse content type: 'audio/$format'. Skipping this content part", err)
+                            null
+                        } ?: continue
+
+                        MediaContentPart(resource = Resource.Base64(data, contentType))
                     }
                     "file" -> {
                         // OpenAI expects a data url with a base64-encoded PDF file
@@ -246,5 +252,9 @@ internal class ChatCompletionsHandler(
         }
 
         return MediaContent(parts)
+    }
+
+    companion object {
+        private val logger = KotlinLogging.logger {}
     }
 }

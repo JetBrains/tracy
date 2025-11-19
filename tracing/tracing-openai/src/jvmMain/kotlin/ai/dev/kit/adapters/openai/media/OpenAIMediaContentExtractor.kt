@@ -47,15 +47,13 @@ internal class OpenAIMediaContentExtractor : MediaContentExtractor {
         }
 
         for ((offset, part) in content.parts.withIndex()) {
-            val (resource, contentType) = part
+            val resource = part.resource
             val index = installedMediaContentPartsCount + offset
 
             when (resource) {
                 is Resource.Base64 -> {
-                    if (contentType == null) {
-                        logger.warn { "Base64-encoded data should have content type specified, got null for index $offset" }
-                        continue
-                    }
+                    val contentType = resource.contentType
+
                     val dataUrl = DataUrl(
                         mediaType = "${contentType.contentType}/${contentType.contentSubtype}",
                         headers = headers {

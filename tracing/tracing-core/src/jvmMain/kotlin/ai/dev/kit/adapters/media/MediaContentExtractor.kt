@@ -44,25 +44,11 @@ data class MediaContent(
  * provides additional information about the format of the media.
  *
  * @property resource The media resource, which can be a URL, data URL, or Base64-encoded data.
- * @property contentType The MIME type of the resource (e.g., image/png, text/plain). This is
- * required when the resource is Base64-encoded data.
- *
- * @throws IllegalArgumentException if the resource is Base64-encoded data and no content type
- * is provided.
  *
  * @see Resource
  * @see MediaContent
  */
-data class MediaContentPart(
-    val resource: Resource,
-    val contentType: ContentType? = null,
-) {
-    init {
-        if (resource is Resource.Base64 && contentType == null) {
-            error("Base64-encoded data should have content type specified, got null")
-        }
-    }
-}
+data class MediaContentPart(val resource: Resource)
 
 /**
  * Represents a sealed hierarchy of different resource types used to represent media content.
@@ -82,5 +68,5 @@ data class MediaContentPart(
 sealed class Resource {
     data class Url(val url: String) : Resource()
     data class DataUrl(val dataUrl: String) : Resource()
-    data class Base64(val base64: String) : Resource()
+    data class Base64(val base64: String, val contentType: ContentType) : Resource()
 }
