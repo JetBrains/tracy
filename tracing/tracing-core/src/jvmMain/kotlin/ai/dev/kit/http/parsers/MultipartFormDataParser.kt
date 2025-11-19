@@ -15,7 +15,7 @@ import java.io.InputStream
 import java.io.SequenceInputStream
 
 /**
- * Parses a multipart/form-data HTTP request body.
+ * Parses a `multipart/form-data` HTTP request body.
  */
 class MultipartFormDataParser {
     /**
@@ -65,6 +65,14 @@ class MultipartFormDataParser {
     }
 }
 
+/**
+ * Represents a part of a form-data entity, typically used in multipart requests.
+ *
+ * @property name The name of the form field associated with this part. Can be null if not provided.
+ * @property filename The filename associated with this part, commonly used for file uploads. Can be null if not applicable.
+ * @property content The raw binary content of the form part.
+ * @property contentType The MIME type of the content associated with this part. Can be null if not specified.
+ */
 data class FormPart(
     val name: String?,
     val filename: String? = null,
@@ -72,9 +80,30 @@ data class FormPart(
     val contentType: ContentType? = null
 )
 
+/**
+ * Represents the parsed contents of a multipart/form-data HTTP request body.
+ *
+ * This data class encapsulates a collection of individual form parts, each represented
+ * by the [FormPart] data class.
+ *
+ * @property parts A list of individual form parts, where each part contains metadata and raw content.
+ */
 data class FormData(val parts: List<FormPart>)
 
-
+/**
+ * Handles parsing of `multipart/form-data` content into individual form parts.
+ *
+ * Key behavior:
+ * - Parses the `Content-Disposition` header to extract the field name and optional filename.
+ * - Parses the `Content-Type` header to determine the MIME type of the current part.
+ * - Maintains a list of all parsed parts in [parts], which includes the metadata and binary content.
+ *
+ * Inherits:
+ * - [AbstractContentHandler]: Provides the abstract methods `field` and `body` to handle MIME message parts.
+ *
+ * Properties:
+ * - `parts`: A mutable list of [FormPart] that holds the parsed data from the multipart content.
+ */
 private class MultipartContentHandler : AbstractContentHandler() {
     companion object {
         private val logger = KotlinLogging.logger {}
