@@ -22,12 +22,13 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.collections.component1
 import kotlin.collections.component2
+import mu.KotlinLogging.logger
 
 
 // See: https://platform.openai.com/docs/api-reference/images/create#images_create-output_format
 private const val defaultImageFormat = "png"
 
-private val logger = mu.KotlinLogging.logger {}
+private val logger = logger {}
 
 internal fun handleImageGenerationResponseAttributes(
     span: Span,

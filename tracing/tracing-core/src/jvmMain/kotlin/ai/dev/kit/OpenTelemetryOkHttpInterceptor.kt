@@ -131,6 +131,12 @@ abstract class OpenTelemetryOkHttpInterceptor(
                         isStreamingRequest = adapter.isStreamingRequest(req)
                         adapter.registerRequest(span, req)
                     }
+                    else {
+                        logger.warn { "Failed to register request, cannot build request from body content with media type of $mediaType" }
+                    }
+                }
+                else {
+                    logger.warn { "Failed to register request, body content is null" }
                 }
 
                 // register response
