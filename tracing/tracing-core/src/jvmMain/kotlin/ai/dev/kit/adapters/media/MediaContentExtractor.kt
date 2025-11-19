@@ -21,10 +21,38 @@ interface MediaContentExtractor {
     )
 }
 
+/**
+ * Represents a collection of media content parts.
+ *
+ * @property parts A list of `MediaContentPart` objects that constitute the media content.
+ *
+ * This class is typically used in conjunction with a [MediaContentExtractor] to attach extracted
+ * media content to specific fields in spans for operations such as telemetry and tracing.
+ *
+ * @see MediaContentPart
+ * @see MediaContentExtractor
+ */
 data class MediaContent(
     val parts: List<MediaContentPart>
 )
 
+/**
+ * Represents a part of media content, consisting of a resource and an optional content type.
+ *
+ * This class is designed to handle various types of media resources, such as URLs, data URLs, or
+ * Base64-encoded content. The resource defines the actual media data, while the content type
+ * provides additional information about the format of the media.
+ *
+ * @property resource The media resource, which can be a URL, data URL, or Base64-encoded data.
+ * @property contentType The MIME type of the resource (e.g., image/png, text/plain). This is
+ * required when the resource is Base64-encoded data.
+ *
+ * @throws IllegalArgumentException if the resource is Base64-encoded data and no content type
+ * is provided.
+ *
+ * @see Resource
+ * @see MediaContent
+ */
 data class MediaContentPart(
     val resource: Resource,
     val contentType: ContentType? = null,
@@ -36,6 +64,21 @@ data class MediaContentPart(
     }
 }
 
+/**
+ * Represents a sealed hierarchy of different resource types used to represent media content.
+ *
+ * This class is typically used to encapsulate various forms of resource data that can be processed
+ * or transmitted, such as URLs, Data URLs, or Base64-encoded strings.
+ *
+ * Subclasses:
+ * - Url: Represents a standard URL pointing to a resource.
+ * - DataUrl: Represents a Data URL containing inline data of the resource.
+ * - Base64: Represents a Base64-encoded string containing the resource data.
+ *
+ * Use cases include:
+ * - Storing references to external resources.
+ * - Embedding data directly in the form of Base64 or Data URLs.
+ */
 sealed class Resource {
     data class Url(val url: String) : Resource()
     data class DataUrl(val dataUrl: String) : Resource()
