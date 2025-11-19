@@ -122,12 +122,13 @@ private fun parseMediaContent(data: JsonArray, contentType: String): MediaConten
             val image = part.jsonObject
             val contentPart = if (image.hasNonNull("b64_json")) {
                 val base64 = image["b64_json"]?.jsonPrimitive?.content ?: continue
+
                 val contentType = try {
                     ContentType.parse(contentType)
                 } catch (err: Exception) {
-                    logger.trace("Failed to parse content type: '$contentType'", err)
+                    logger.trace("Failed to parse content type: '$contentType'. Skipping this data part", err)
                     null
-                }
+                } ?: continue
 
                 MediaContentPart(Resource.Base64(base64), contentType)
             }
