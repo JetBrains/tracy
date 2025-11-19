@@ -11,6 +11,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.context.Context
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter
 import io.opentelemetry.sdk.common.CompletableResultCode
@@ -18,6 +19,8 @@ import io.opentelemetry.sdk.trace.ReadWriteSpan
 import io.opentelemetry.sdk.trace.ReadableSpan
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder
 import io.opentelemetry.sdk.trace.SpanProcessor
+import io.opentelemetry.sdk.trace.data.DelegatingSpanData
+import io.opentelemetry.sdk.trace.data.SpanData
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
 import io.opentelemetry.sdk.trace.export.SpanExporter
 import java.security.MessageDigest
@@ -87,7 +90,11 @@ class LangfuseExporterConfig(
     }
 
     override fun configureSpanProcessors(sdkTracerBuilder: SdkTracerProviderBuilder) {
-        val langfuseExportingSpanProcessor = BatchSpanProcessor.builder(createSpanExporter())
+        // filtering out technical span attributes related to media content
+        val filteringSpanExporter = MediaContentAttributeFilteringSpanExporter(createSpanExporter())
+
+        val langfuseExportingSpanProcessor = BatchSpanProcessor
+            .builder(filteringSpanExporter)
             .setScheduleDelay(5, TimeUnit.SECONDS)
             .build()
 
@@ -151,13 +158,13 @@ class MediaContentUploadingSpanProcessor(
             val keys = UploadableMediaContentAttributeKeys.forIndex(index)
 
             val type = span.attributes.get(keys.type)
-            val field =
-                span.attributes.get(keys.field) ?: error("Field attribute not found for media item at index $index")
+            val field = span.attributes.get(keys.field)
+                ?: error("Field attribute not found for media item at index $index")
 
             when (type) {
                 SupportedMediaContentTypes.URL.type -> {
-                    val url =
-                        span.attributes.get(keys.url) ?: error("URL attribute not found for media item at index $index")
+                    val url = span.attributes.get(keys.url)
+                        ?: error("URL attribute not found for media item at index $index")
                     scope.launch { uploadMediaFromUrl(traceId, field, url) }
                 }
 
@@ -233,6 +240,59 @@ class MediaContentUploadingSpanProcessor(
         )
     }
 }
+
+/**
+ * A [SpanExporter] implementation that filters out specific media content attributes
+ * from spans before delegating them to another [SpanExporter].
+ *
+ * The attributes filtered are identified by a specific prefix defined in
+ * [UploadableMediaContentAttributeKeys.KEY_NAME_PREFIX].
+ *
+ * This exporter wraps the provided [delegate] exporter and ensures that any span data
+ * passed through it has unwanted attributes removed.
+ *
+ * @property delegate The underlying [SpanExporter] to which the filtered span data is forwarded.
+ *
+ * @see FilteredSpanData
+ */
+class MediaContentAttributeFilteringSpanExporter(
+    private val delegate: SpanExporter
+) : SpanExporter {
+    override fun export(spans: Collection<SpanData>): CompletableResultCode? {
+        val filteredSpans = spans.map { FilteredSpanData(it) }
+        return delegate.export(filteredSpans)
+    }
+
+    override fun flush(): CompletableResultCode? = delegate.flush()
+
+    override fun shutdown(): CompletableResultCode? = delegate.shutdown()
+}
+
+/**
+ * Filters out unwanted media content attributes from the given span
+ * that are defined by the prefix [UploadableMediaContentAttributeKeys.KEY_NAME_PREFIX].
+ */
+private class FilteredSpanData(
+    private val delegate: SpanData,
+) : DelegatingSpanData(delegate) {
+    private val filteredAttributes: Attributes = filterAttributes(delegate.attributes)
+
+    override fun getAttributes(): Attributes = filteredAttributes
+
+    private fun filterAttributes(attributes: Attributes): Attributes {
+        val prefix = UploadableMediaContentAttributeKeys.KEY_NAME_PREFIX
+
+        val builder = delegate.attributes.toBuilder()
+        // filter out unwanted keys
+        for (key in delegate.attributes.asMap().keys) {
+            if (key.key.startsWith(prefix)) {
+                builder.remove(key)
+            }
+        }
+        return builder.build()
+    }
+}
+
 
 private class RequestFailedException(message: String) : RuntimeException(message)
 
