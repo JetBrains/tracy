@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
 import java.io.InputStream
 import java.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -21,20 +20,10 @@ import kotlin.time.Duration.Companion.minutes
 
 @Tag("openai")
 class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
-    private val patchedProviderUrl = when {
-        // when using LiteLLM, switch to the pass-through
-        // TODO: remove direct use of litellm
-        baseUrl == "https://litellm.labs.jb.gg" -> "$baseUrl/openai"
-        else -> llmProviderUrl
-    }
-
-    @EnabledIfEnvironmentVariable(
-        named = "LLM_PROVIDER_URL",
-        matches = OPENAI_BASE_URL,
-        disabledReason = "LLM_PROVIDER_URL environment variable is not $OPENAI_BASE_URL",
-    )
     @Test
     fun `test tracing when editing a single image`() = runTest(timeout = 3.minutes) {
+        assumeOpenAIEndpoint(patchedProviderUrl)
+
         val client = instrument(createOpenAIClient(
             url = patchedProviderUrl,
             timeout = Duration.ofMinutes(3)
@@ -73,13 +62,10 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
         ))
     }
 
-    @EnabledIfEnvironmentVariable(
-        named = "LLM_PROVIDER_URL",
-        matches = OPENAI_BASE_URL,
-        disabledReason = "LLM_PROVIDER_URL environment variable is not $OPENAI_BASE_URL",
-    )
     @Test
     fun `test tracing when editing an image with a mask`() = runTest(timeout = 3.minutes) {
+        assumeOpenAIEndpoint(patchedProviderUrl)
+
         val client = instrument(createOpenAIClient(
             url = patchedProviderUrl,
             timeout = Duration.ofMinutes(3)
@@ -173,13 +159,10 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
         ))
     }
 
-    @EnabledIfEnvironmentVariable(
-        named = "LLM_PROVIDER_URL",
-        matches = OPENAI_BASE_URL,
-        disabledReason = "LLM_PROVIDER_URL environment variable is not $OPENAI_BASE_URL",
-    )
     @Test
     fun `test tracing when editing two images`() = runTest(timeout = 3.minutes) {
+        assumeOpenAIEndpoint(patchedProviderUrl)
+
         val client = instrument(createOpenAIClient(
             url = patchedProviderUrl,
             timeout = Duration.ofMinutes(3)
@@ -224,13 +207,10 @@ class OpenAIImageEditTracingTest : BaseOpenAITracingTest() {
         ))
     }
 
-    @EnabledIfEnvironmentVariable(
-        named = "LLM_PROVIDER_URL",
-        matches = OPENAI_BASE_URL,
-        disabledReason = "LLM_PROVIDER_URL environment variable is not $OPENAI_BASE_URL",
-    )
     @Test
     fun `test tracing when editing two images with streaming API`() = runTest(timeout = 3.minutes) {
+        assumeOpenAIEndpoint(patchedProviderUrl)
+
         val client = instrument(createOpenAIClient(
             url = patchedProviderUrl,
             timeout = Duration.ofMinutes(3)

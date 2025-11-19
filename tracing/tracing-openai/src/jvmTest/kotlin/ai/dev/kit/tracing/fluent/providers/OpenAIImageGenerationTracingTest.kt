@@ -8,10 +8,8 @@ import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Assumptions.assumingThat
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -22,23 +20,13 @@ import kotlin.time.Duration.Companion.minutes
 
 @Tag("openai")
 class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
-    private val patchedProviderUrl = when {
-        // when using LiteLLM, switch to the pass-through
-        // TODO: remove direct use of litellm
-        baseUrl == "https://litellm.labs.jb.gg" -> "$baseUrl/openai"
-        else -> llmProviderUrl
-    }
-
-    @EnabledIfEnvironmentVariable(
-        named = "LLM_PROVIDER_URL",
-        matches = OPENAI_BASE_URL,
-        disabledReason = "LLM_PROVIDER_URL environment variable is not $OPENAI_BASE_URL",
-    )
     @ParameterizedTest
     @MethodSource("provideResponseFormats")
     fun `test generate image with different response formats`(
         responseFormat: ImageGenerateParams.ResponseFormat?
     ) = runTest(timeout = 3.minutes) {
+        assumeOpenAIEndpoint(patchedProviderUrl)
+
         val client = instrument(createOpenAIClient(
             url = patchedProviderUrl,
             timeout = Duration.ofMinutes(3)
@@ -136,13 +124,10 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
         ))
     }
 
-    @EnabledIfEnvironmentVariable(
-        named = "LLM_PROVIDER_URL",
-        matches = OPENAI_BASE_URL,
-        disabledReason = "LLM_PROVIDER_URL environment variable is not $OPENAI_BASE_URL",
-    )
     @Test
     fun `test generation of multiple images gets traced`() = runTest(timeout = 3.minutes) {
+        assumeOpenAIEndpoint(patchedProviderUrl)
+
         val client = instrument(createOpenAIClient(
             url = patchedProviderUrl,
             timeout = Duration.ofMinutes(3)
@@ -182,6 +167,8 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test invalid param 'n=0' gets traced as an error`() = runTest {
+        assumeOpenAIEndpoint(patchedProviderUrl)
+
         val client = instrument(createOpenAIClient(
             url = patchedProviderUrl,
             timeout = Duration.ofMinutes(3)
@@ -206,13 +193,10 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
         val trace = analyzeSpans().first()
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
 
-        // when OpenAI endpoint requested directly
-        assumingThat(patchedProviderUrl?.startsWith(OPENAI_BASE_URL) == true) {
-            assertEquals("n", trace.attributes[AttributeKey.stringKey("gen_ai.error.param")])
-            assertEquals("invalid_request_error", trace.attributes[AttributeKey.stringKey("gen_ai.error.type")])
-            assertEquals("integer_below_min_value", trace.attributes[AttributeKey.stringKey("gen_ai.error.code")])
-            assertEquals(true, trace.attributes[AttributeKey.stringKey("gen_ai.error.message")]?.isNotEmpty())
-        }
+        assertEquals("n", trace.attributes[AttributeKey.stringKey("gen_ai.error.param")])
+        assertEquals("invalid_request_error", trace.attributes[AttributeKey.stringKey("gen_ai.error.type")])
+        assertEquals("integer_below_min_value", trace.attributes[AttributeKey.stringKey("gen_ai.error.code")])
+        assertEquals(true, trace.attributes[AttributeKey.stringKey("gen_ai.error.message")]?.isNotEmpty())
     }
 
     @Test
