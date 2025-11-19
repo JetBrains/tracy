@@ -325,7 +325,7 @@ abstract class BaseOpenAITracingTest : BaseOpenTelemetryTracingTest() {
         }
 
     companion object {
-        protected const val OPENAI_BASE_URL = "https://api.openai.com"
+        protected const val OPENAI_BASE_URL = PRODUCTION_URL
 
         protected const val CAT_IMAGE_URL = "https://images.pexels.com/photos/104827/cat-pet-animal-domestic-104827.jpeg"
         protected const val SAMPLE_PDF_FILE_URL = "https://pdfobject.com/pdf/sample.pdf"
