@@ -314,8 +314,6 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
         endpoint: String,
         requestBody: String,
     ) = runTest {
-        // TODO(JBAI-18234): adapter's handler is set to handle chat completions;
-        //                   however, we have responses api as the 2nd endpoint
         val client: HttpClient = instrument(HttpClient(), llmTracingAdapter)
 
         val response = client.post(endpoint) {

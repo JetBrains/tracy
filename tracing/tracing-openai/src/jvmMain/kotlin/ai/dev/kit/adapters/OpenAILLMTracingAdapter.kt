@@ -44,25 +44,11 @@ private enum class OpenAIApiType(val route: String) {
 }
 
 class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.OPENAI) {
-    private val logger = KotlinLogging.logger {}
     private var handler: OpenAIApiHandler? = null
+    private var previousApiType: OpenAIApiType? = null
 
     override fun getRequestBodyAttributes(span: Span, request: Request) {
-        // TODO(Vladislav0Art): JBAI-18234 create handler every time a new request is processed
-        if (handler == null) {
-            val extractor = MediaContentExtractorImpl()
-
-            handler = when (OpenAIApiType.detect(request.url)) {
-                OpenAIApiType.CHAT_COMPLETIONS -> ChatCompletionsHandler(extractor)
-                OpenAIApiType.RESPONSES_API -> ResponsesApiHandler(extractor)
-                OpenAIApiType.IMAGES_GENERATIONS -> ImagesGenerationsHandler(extractor)
-                OpenAIApiType.IMAGES_EDITS -> ImagesEditsHandler(extractor)
-                else -> {
-                    logger.warn { "Unknown OpenAI API detected. Defaulting to 'chat completion'." }
-                    ChatCompletionsHandler(extractor)
-                }
-            }
-        }
+        adaptHandlerToEndpoint(request.url)
         handler?.handleRequestAttributes(span, request)
     }
 
@@ -89,5 +75,38 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
 
     override fun handleStreaming(span: Span, events: String) {
         handler?.handleStreaming(span, events)
+    }
+
+    /**
+     * Updates the [handler] to the corresponding OpenAI API endpoint based on the provided URL. This method
+     * detects the API type from the URL and updates the [handler] implementation accordingly.
+     *
+     * When [previousApiType] matches the detected API type, the existing [handler] is used.
+     * Otherwise, [handler] is set to a new instance according to the detected API type.
+     *
+     * @param url The URL used to determine the appropriate OpenAI API endpoint and adapt the [handler].
+     */
+    private fun adaptHandlerToEndpoint(url: Url) {
+        val apiType = OpenAIApiType.detect(url)
+
+        if (previousApiType == null || previousApiType != apiType) {
+            val extractor = MediaContentExtractorImpl()
+
+            handler = when (apiType) {
+                OpenAIApiType.CHAT_COMPLETIONS -> ChatCompletionsHandler(extractor)
+                OpenAIApiType.RESPONSES_API -> ResponsesApiHandler(extractor)
+                OpenAIApiType.IMAGES_GENERATIONS -> ImagesGenerationsHandler(extractor)
+                OpenAIApiType.IMAGES_EDITS -> ImagesEditsHandler(extractor)
+                null -> {
+                    logger.warn { "Unknown OpenAI API detected. Defaulting to 'chat completion'." }
+                    ChatCompletionsHandler(extractor)
+                }
+            }
+            previousApiType = apiType
+        }
+    }
+
+    companion object {
+        private val logger = KotlinLogging.logger {}
     }
 }

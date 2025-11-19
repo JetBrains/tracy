@@ -11,6 +11,7 @@ import com.openai.models.chat.completions.*
 import com.openai.models.embeddings.EmbeddingCreateParams
 import com.openai.models.embeddings.EmbeddingModel
 import io.opentelemetry.api.common.AttributeKey
+import com.openai.models.responses.ResponseCreateParams
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.minutes
 import kotlin.jvm.optionals.getOrNull
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -389,6 +391,44 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
             image.toMediaContentAttributeValues(field = "input"),
             file.toMediaContentAttributeValues(field = "input"),
         ))
+    }
+
+    @Test
+    @Timeout(value = 3, unit = TimeUnit.MINUTES)
+    fun `test single instrumented client is used for multiple endpoints`() = runTest(timeout = 3.minutes) {
+        val client = instrument(createOpenAIClient())
+
+        // I. chat completions
+        val model1 = ChatModel.GPT_4O
+        client.chat().completions().create(
+            ChatCompletionCreateParams.builder()
+                .model(model1)
+                .addUserMessage("Tell me about yourself")
+                .build()
+        )
+        validateBasicTracing(model1)
+        cleanSpans()
+
+        // II. responses
+        val model2 = ChatModel.GPT_4O_MINI
+        client.responses().create(
+            ResponseCreateParams.builder()
+                .input("Tell me about yourself")
+                .model(model2)
+                .build()
+        )
+        validateBasicTracing(model2)
+        cleanSpans()
+
+        // III. chat completions
+        val model3 = ChatModel.GPT_4
+        client.chat().completions().create(
+            ChatCompletionCreateParams.builder()
+                .model(model3)
+                .addUserMessage("Tell me about yourself")
+                .build()
+        )
+        validateBasicTracing(model3)
     }
 
     private fun partText(prompt: String) = ChatCompletionContentPart.ofText(
