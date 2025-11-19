@@ -394,7 +394,6 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
     }
 
     @Test
-    @Timeout(value = 3, unit = TimeUnit.MINUTES)
     fun `test single instrumented client is used for multiple endpoints`() = runTest(timeout = 3.minutes) {
         val client = instrument(createOpenAIClient())
 
