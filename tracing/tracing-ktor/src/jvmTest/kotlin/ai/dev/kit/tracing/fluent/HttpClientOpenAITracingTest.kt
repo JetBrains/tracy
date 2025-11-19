@@ -329,8 +329,6 @@ class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
         val trace = traces.firstOrNull()
         assertNotNull(trace)
 
-        println("respose:\n${trace.attributes}")
-
         val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
 
         assertEquals(StatusCode.OK, trace.status.statusCode)
