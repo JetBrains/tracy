@@ -20,6 +20,8 @@ import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mu.KotlinLogging
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 
 /**
@@ -44,17 +46,23 @@ private enum class OpenAIApiType(val route: String) {
 }
 
 class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.OPENAI) {
+    private val handlerLock = ReentrantLock()
     private var handler: OpenAIApiHandler? = null
     private var previousApiType: OpenAIApiType? = null
 
     override fun getRequestBodyAttributes(span: Span, request: Request) {
-        adaptHandlerToEndpoint(request.url)
-        handler?.handleRequestAttributes(span, request)
+        val currentHandler = handlerLock.withLock {
+            adaptHandlerToEndpoint(request.url)
+            handler
+        }
+        currentHandler?.handleRequestAttributes(span, request)
     }
 
     override fun getResponseBodyAttributes(span: Span, response: Response) {
+        val currentHandler = handlerLock.withLock { handler }
+
         OpenAIApiUtils.setCommonResponseAttributes(span, response)
-        handler?.handleResponseAttributes(span, response)
+        currentHandler?.handleResponseAttributes(span, response)
     }
 
     override fun isStreamingRequest(request: Request): Boolean {
@@ -74,7 +82,8 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
     }
 
     override fun handleStreaming(span: Span, events: String) {
-        handler?.handleStreaming(span, events)
+        val currentHandler = handlerLock.withLock { handler }
+        currentHandler?.handleStreaming(span, events)
     }
 
     /**
@@ -83,6 +92,8 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
      *
      * When [previousApiType] matches the detected API type, the existing [handler] is used.
      * Otherwise, [handler] is set to a new instance according to the detected API type.
+     *
+     * **This function should be called under the lock held**.
      *
      * @param url The URL used to determine the appropriate OpenAI API endpoint and adapt the [handler].
      */
