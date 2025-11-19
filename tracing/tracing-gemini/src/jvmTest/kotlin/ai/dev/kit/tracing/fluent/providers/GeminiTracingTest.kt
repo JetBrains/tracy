@@ -12,9 +12,9 @@ import kotlinx.coroutines.test.runTest
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
-import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
 import java.net.SocketTimeoutException
 import java.time.Duration
 import kotlin.test.assertEquals
@@ -25,6 +25,13 @@ import com.google.genai.Client as GeminiClient
 import com.google.genai.types.GenerateContentConfig as GeminiGenerateContentConfig
 import com.google.genai.types.HttpOptions as GeminiHttpOptions
 
+// TODO: fix
+// require the provider to be LiteLLM
+@EnabledIfEnvironmentVariable(
+    named = "LLM_PROVIDER_URL",
+    matches = "https://litellm.labs.jb.gg",
+    disabledReason = "LLM_PROVIDER_URL environment variable is not https://litellm.labs.jb.gg",
+)
 @Tag("gemini")
 class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
     val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
@@ -34,10 +41,6 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
         ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
 
     fun createGeminiClient(): GeminiClient {
-        // TODO: fix
-        // require the provider to be LiteLLM
-        Assumptions.assumeTrue(llmProviderUrl?.startsWith("https://litellm.labs.jb.gg") == true)
-
         val projectId = "jetbrains-grazie"
         val location = "us-central1"
 
