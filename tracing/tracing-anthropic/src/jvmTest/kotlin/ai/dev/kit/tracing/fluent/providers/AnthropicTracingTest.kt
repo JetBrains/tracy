@@ -1,12 +1,6 @@
 package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
-import ai.dev.kit.getFieldValue
-import ai.dev.kit.setFieldValue
-import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
-import com.anthropic.client.AnthropicClient
-import com.anthropic.client.okhttp.AnthropicOkHttpClient
-import com.anthropic.core.JsonObject
 import com.anthropic.core.JsonString
 import com.anthropic.helpers.MessageAccumulator
 import com.anthropic.models.messages.*
@@ -24,7 +18,6 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
-import java.time.Duration
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
