@@ -1,13 +1,21 @@
 package ai.dev.kit.adapters
 
+import ai.dev.kit.adapters.media.MediaContent
+import ai.dev.kit.adapters.media.MediaContentExtractor
+import ai.dev.kit.adapters.media.MediaContentPart
+import ai.dev.kit.adapters.media.Resource
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.asJson
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes
 import kotlinx.serialization.json.*
+import mu.KotlinLogging
+import io.ktor.http.ContentType
 
-class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubatingAttributes.GenAiSystemIncubatingValues.ANTHROPIC) {
+class AnthropicLLMTracingAdapter(
+    private val extractor: MediaContentExtractor
+): LLMTracingAdapter(genAISystem = GenAiIncubatingAttributes.GenAiSystemIncubatingValues.ANTHROPIC) {
     override fun getRequestBodyAttributes(span: Span, request: Request) {
         val body = request.body.asJson()?.jsonObject ?: return
 
@@ -52,6 +60,11 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubati
                     span.setAttribute("gen_ai.tool.$index.parameters", tool.jsonObject["input_schema"].toString())
                 }
             }
+        }
+
+        val mediaContent = parseMediaContent(body)
+        if (mediaContent != null) {
+            extractor.setUploadableContentAttributes(span, field = "input", mediaContent)
         }
     }
 
@@ -130,4 +143,76 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiIncubati
     // streaming is not supported
     override fun isStreamingRequest(request: Request) = false
     override fun handleStreaming(span: Span, events: String) = Unit
+
+    private fun parseMediaContent(body: JsonObject): MediaContent? {
+        if (body["messages"] !is JsonArray) {
+            return null
+        }
+
+        val messages = body["messages"]?.jsonArray ?: return null
+
+        val parts: List<MediaContentPart> = buildList {
+            val supportedMessageTypes = listOf("image", "document")
+
+            for (message in messages) {
+                // message: { content: [] }
+                if (message !is JsonObject || message["content"] !is JsonArray) {
+                    continue
+                }
+                val content = message["content"]?.jsonArray ?: continue
+
+                for (part in content) {
+                    val messageType = part.jsonObject["type"]?.jsonPrimitive?.content ?: continue
+                    if (messageType !in supportedMessageTypes) {
+                        continue
+                    }
+
+                    // source is either of two:
+                    //  1. source: { data, media_type, type: "base64" }
+                    //  2. source: { url, type: "url" }
+                    val sourceType = part.jsonObject["source"]?.jsonObject["type"]?.jsonPrimitive?.content ?: continue
+                    when (sourceType) {
+                        "url" -> {
+                            val url = part.jsonObject["source"]?.jsonObject["url"]?.jsonPrimitive?.content
+                            if (url == null) {
+                                logger.warn { "Message with type '$messageType' has no URL source" }
+                                continue
+                            }
+                            // add URL resource
+                            add(MediaContentPart(
+                                resource = Resource.Url(url)
+                            ))
+                        }
+                        "base64" -> {
+                            val data = part.jsonObject["source"]?.jsonObject["data"]?.jsonPrimitive?.content
+                            val mediaType = part.jsonObject["source"]?.jsonObject["media_type"]?.jsonPrimitive?.content
+
+                            if (data == null || mediaType == null) {
+                                logger.warn { "Message with type '$messageType' misses either 'data' or 'media_type' attribute"}
+                                continue
+                            }
+
+                            val contentType = try {
+                                ContentType.parse(mediaType)
+                            } catch (err: Exception) {
+                                logger.warn(err) { "Failed to parse content type from media type of '$mediaType'" }
+                                null
+                            } ?: continue
+
+                            // add base64 resource
+                            add(MediaContentPart(
+                                resource = Resource.Base64(data, contentType)
+                            ))
+                        }
+                    }
+                }
+            }
+        }
+
+        return MediaContent(parts)
+    }
+
+    companion object {
+        private val logger = KotlinLogging.logger {}
+    }
 }

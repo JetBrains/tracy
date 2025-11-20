@@ -267,12 +267,10 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         val trace = traces.firstOrNull()
         assertNotNull(trace)
 
-        llmProviderUrl?.let {
-            assertEquals(
-                llmProviderUrl,
-                trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
-            )
-        }
+        assertEquals(
+            llmProviderUrl,
+            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
+        )
 
         assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.commonPrefixWith(model.asString()) == "claude-3-5-haiku-")
 
@@ -307,12 +305,10 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         assertNotNull(trace)
 
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
-        llmProviderUrl?.let {
-            assertEquals(
-                llmProviderUrl,
-                trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
-            )
-        }
+        assertEquals(
+            llmProviderUrl,
+            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
+        )
 
         assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")].isNullOrEmpty())
     }
@@ -362,12 +358,10 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         assertNotNull(trace)
 
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
-        llmProviderUrl?.let {
-            assertEquals(
-                llmProviderUrl,
-                trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
-            )
-        }
+        assertEquals(
+            llmProviderUrl,
+            trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
+        )
 
         assertEquals(errorMessage, trace.attributes[AttributeKey.stringKey("gen_ai.error.message")])
         assertEquals(529, trace.attributes[AttributeKey.longKey("http.status_code")])
