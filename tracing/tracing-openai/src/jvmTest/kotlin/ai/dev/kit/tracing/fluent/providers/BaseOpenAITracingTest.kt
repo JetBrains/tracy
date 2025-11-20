@@ -74,8 +74,7 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
 
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
         assertTrue(
-            (llmProviderUrl
-                ?: PRODUCTION_URL).startsWith(trace.attributes[AttributeKey.stringKey("gen_ai.api_base")].toString())
+            llmProviderUrl.startsWith(trace.attributes[AttributeKey.stringKey("gen_ai.api_base")].toString())
         )
 
         assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.error.message")].isNullOrEmpty())
