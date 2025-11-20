@@ -258,14 +258,14 @@ class MediaContentUploadingSpanProcessor(
 class MediaContentAttributeFilteringSpanExporter(
     private val delegate: SpanExporter
 ) : SpanExporter {
-    override fun export(spans: Collection<SpanData>): CompletableResultCode? {
+    override fun export(spans: Collection<SpanData>): CompletableResultCode {
         val filteredSpans = spans.map { FilteredSpanData(it) }
         return delegate.export(filteredSpans)
     }
 
-    override fun flush(): CompletableResultCode? = delegate.flush()
+    override fun flush(): CompletableResultCode = delegate.flush()
 
-    override fun shutdown(): CompletableResultCode? = delegate.shutdown()
+    override fun shutdown(): CompletableResultCode = delegate.shutdown()
 }
 
 /**
