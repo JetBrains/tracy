@@ -233,7 +233,7 @@ class AnthropicLLMTracingAdapter(
         val mediaType = source["media_type"]?.jsonPrimitive?.content
 
         if (data == null || mediaType == null) {
-            logger.warn { "Message with type '$messageType' misses either 'data' or 'media_type' attribute"}
+            logger.warn { "Message with type '$messageType' misses either 'data' or 'media_type' attribute" }
             return null
         }
 
