@@ -154,6 +154,87 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
         ))
     }
 
+    @Test
+    fun `test tracing of document attachment via ContentBlockSource schema`() = runTest(timeout = 3.minutes) {
+        /**
+         * This test case refers to the following structure of `messages`:
+         *   - messages > content: `DocumentBlockParam`
+         *      - content > source: `ContentBlockSource`
+         *         - source > content: `ContentBlockSourceContent`
+         *
+         * Example (truncated):
+         * ```json
+         *     "messages": [
+         *         {
+         *             "content": [
+         *                 { "text": "Analyze the following document", "type": "text" },
+         *                 {
+         *                     "source": {
+         *                         "content": [
+         *                             {
+         *                                 "source": { "data": "", "media_type": "image/jpeg", "type": "base64" },
+         *                                 "type": "image"
+         *                             },
+         *                             {
+         *                                 "source": { "type": "url", "url": "[URL]" },
+         *                                 "type": "image"
+         *                             }
+         *                         ],
+         *                         "type": "content"
+         *                     },
+         *                     "type": "document"
+         *                 }
+         *             ],
+         *             "role": "user"
+         *         }
+         *     ],
+         * ```
+         *
+         * See [Messages API Docs](https://platform.claude.com/docs/en/api/messages/create)
+         */
+
+        val client = instrument(createAnthropicClient())
+
+        val image1 = MediaSource.File("image.jpg", "image/jpeg")
+        val image2 = MediaSource.Link(CAT_IMAGE_URL)
+
+        val contentSource = ContentBlockParam.ofDocument(
+            DocumentBlockParam.builder()
+                .source(
+                    ContentBlockSource.builder()
+                        .content(ContentBlockSource.Content.ofBlockSource(listOf(
+                            ContentBlockSourceContent.ofImage(image(image1).image().get()),
+                            ContentBlockSourceContent.ofText(
+                                text("See the 2nd image as well").text().get()
+                            ),
+                            ContentBlockSourceContent.ofImage(image(image2).image().get()),
+                        )))
+                        .build()
+                )
+                .build()
+        )
+
+        val params = MessageCreateParams.builder()
+            .addUserMessageOfBlockParams(listOf(
+                text("Analyze the following document"),
+                contentSource,
+            ))
+            .maxTokens(2048L)
+            .temperature(0.0)
+            .model(model)
+            .build()
+
+        client.messages().create(params)
+
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
+
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            image1.toMediaContentAttributeValues(field = "input"),
+            image2.toMediaContentAttributeValues(field = "input"),
+        ))
+    }
+
     private fun text(content: String): ContentBlockParam {
         return ContentBlockParam.ofText(TextBlockParam.builder()
             .text(content)
