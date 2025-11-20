@@ -281,12 +281,15 @@ private class FilteredSpanData(delegate: SpanData) : DelegatingSpanData(delegate
         private fun filterAttributes(attributes: Attributes): Attributes {
             val prefix = UploadableMediaContentAttributeKeys.KEY_NAME_PREFIX
 
+            val keysToRemove = attributes.asMap().keys.filter { it.key.startsWith(prefix) }
+            if (keysToRemove.isEmpty()) {
+                return attributes
+            }
+
             val builder = attributes.toBuilder()
             // filter out unwanted keys
-            for (key in attributes.asMap().keys) {
-                if (key.key.startsWith(prefix)) {
-                    builder.remove(key)
-                }
+            for (key in keysToRemove) {
+                builder.remove(key)
             }
             return builder.build()
         }
