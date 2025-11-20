@@ -428,6 +428,17 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
                 .build()
         )
         validateBasicTracing(model3)
+        cleanSpans()
+
+        // IV. responses
+        val model4 = ChatModel.GPT_3_5_TURBO
+        client.responses().create(
+            ResponseCreateParams.builder()
+                .input("Tell me about yourself")
+                .model(model4)
+                .build()
+        )
+        validateBasicTracing(model4)
     }
 
     private fun partText(prompt: String) = ChatCompletionContentPart.ofText(
