@@ -19,7 +19,7 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
 
     @ParameterizedTest
     @MethodSource("provideImagesForUpload")
-    fun `test attached image gets traced`(image: MediaSource) {
+    fun `test attached image gets traced`(image: MediaSource) = runTest(timeout = 3.minutes) {
         val client = instrument(createAnthropicClient())
 
         val params = MessageCreateParams.builder()
@@ -73,7 +73,7 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
 
     @ParameterizedTest
     @MethodSource("provideFilesForUpload")
-    fun `test attached file gets traced`(file: MediaSource) {
+    fun `test attached file gets traced`(file: MediaSource) = runTest(timeout = 3.minutes) {
         val client = instrument(createAnthropicClient())
 
         val params = MessageCreateParams.builder()
