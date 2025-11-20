@@ -1,8 +1,9 @@
 package ai.dev.kit.tracing.fluent
 
 import ai.dev.kit.adapters.AnthropicLLMTracingAdapter
+import ai.dev.kit.adapters.media.MediaContentExtractorImpl
 import ai.dev.kit.instrument
-import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.dev.kit.tracing.BaseAITracingTest
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -17,7 +18,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @Tag("anthropic")
-class HttpClientAnthropicAITracingTest : BaseOpenTelemetryTracingTest() {
+class HttpClientAnthropicAITracingTest : BaseAITracingTest() {
     companion object {
         private const val ANTHROPIC_API_URL = "https://api.anthropic.com"
     }
@@ -27,9 +28,11 @@ class HttpClientAnthropicAITracingTest : BaseOpenTelemetryTracingTest() {
         System.getenv("ANTHROPIC_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
         ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
 
+    private val extractor = MediaContentExtractorImpl()
+
     @Test
     fun `test nested instrumentation calls don't cause duplicative tracing`() = runTest {
-        val adapter = AnthropicLLMTracingAdapter()
+        val adapter = AnthropicLLMTracingAdapter(extractor)
 
         val client: HttpClient = instrument(
             instrument(
@@ -72,7 +75,7 @@ class HttpClientAnthropicAITracingTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun `test Ktor HttpClient auto tracing for Anthropic`() = runTest {
-        val client: HttpClient = instrument(HttpClient(), AnthropicLLMTracingAdapter())
+        val client: HttpClient = instrument(HttpClient(), AnthropicLLMTracingAdapter(extractor))
 
         val model = "claude-sonnet-4-20250514"
         val promptMessage = "Hello, world!"

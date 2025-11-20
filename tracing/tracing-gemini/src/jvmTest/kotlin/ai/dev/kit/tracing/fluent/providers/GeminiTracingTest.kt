@@ -1,7 +1,7 @@
 package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
-import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.dev.kit.tracing.BaseAITracingTest
 import com.google.auth.oauth2.AccessToken
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.genai.errors.GenAiIOException
@@ -33,7 +33,7 @@ import com.google.genai.types.HttpOptions as GeminiHttpOptions
     disabledReason = "LLM_PROVIDER_URL environment variable is not https://litellm.labs.jb.gg",
 )
 @Tag("gemini")
-class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
+class GeminiTracingTest : BaseAITracingTest() {
     private val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
 
     private val llmProviderApiKey =

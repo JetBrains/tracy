@@ -2,7 +2,7 @@ package ai.dev.kit.tracing.fluent
 
 import ai.dev.kit.adapters.OpenAILLMTracingAdapter
 import ai.dev.kit.instrument
-import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.dev.kit.tracing.BaseAITracingTest
 import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
 import io.ktor.client.*
 import io.ktor.client.engine.mock.*
@@ -31,7 +31,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @Tag("openai")
-class HttpClientOpenAITracingTest : BaseOpenTelemetryTracingTest() {
+class HttpClientOpenAITracingTest : BaseAITracingTest() {
     private val llmTracingAdapter = OpenAILLMTracingAdapter()
 
     private fun HttpRequestBuilder.addAuthHeaders(acceptStream: Boolean = false) {

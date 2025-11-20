@@ -2,7 +2,7 @@ package ai.dev.kit.tracing.fluent
 
 import ai.dev.kit.adapters.GeminiLLMTracingAdapter
 import ai.dev.kit.instrument
-import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.dev.kit.tracing.BaseAITracingTest
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -19,7 +19,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @Tag("gemini")
-class HttpClientGeminiTracingTest : BaseOpenTelemetryTracingTest() {
+class HttpClientGeminiTracingTest : BaseAITracingTest() {
     private val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
     private val llmProviderApiKey =
         System.getenv("GEMINI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
