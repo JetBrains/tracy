@@ -272,24 +272,24 @@ class MediaContentAttributeFilteringSpanExporter(
  * Filters out unwanted media content attributes from the given span
  * that are defined by the prefix [UploadableMediaContentAttributeKeys.KEY_NAME_PREFIX].
  */
-private class FilteredSpanData(
-    private val delegate: SpanData,
-) : DelegatingSpanData(delegate) {
+private class FilteredSpanData(delegate: SpanData) : DelegatingSpanData(delegate) {
     private val filteredAttributes: Attributes = filterAttributes(delegate.attributes)
 
     override fun getAttributes(): Attributes = filteredAttributes
 
-    private fun filterAttributes(attributes: Attributes): Attributes {
-        val prefix = UploadableMediaContentAttributeKeys.KEY_NAME_PREFIX
+    companion object {
+        private fun filterAttributes(attributes: Attributes): Attributes {
+            val prefix = UploadableMediaContentAttributeKeys.KEY_NAME_PREFIX
 
-        val builder = delegate.attributes.toBuilder()
-        // filter out unwanted keys
-        for (key in delegate.attributes.asMap().keys) {
-            if (key.key.startsWith(prefix)) {
-                builder.remove(key)
+            val builder = attributes.toBuilder()
+            // filter out unwanted keys
+            for (key in attributes.asMap().keys) {
+                if (key.key.startsWith(prefix)) {
+                    builder.remove(key)
+                }
             }
+            return builder.build()
         }
-        return builder.build()
     }
 }
 
