@@ -1,30 +1,21 @@
-package ai.dev.kit.adapters.openai.media
+package ai.dev.kit.adapters.media
 
-import ai.dev.kit.adapters.media.MediaContent
-import ai.dev.kit.adapters.media.MediaContentExtractor
-import ai.dev.kit.adapters.media.Resource
 import ai.dev.kit.common.DataUrl
 import ai.dev.kit.common.parseDataUrl
 import ai.dev.kit.exporters.UploadableMediaContentAttributeKeys
 import ai.dev.kit.exporters.setDataUrlAttributes
 import ai.dev.kit.exporters.setUrlAttributes
-import io.ktor.http.*
+import io.ktor.http.headers
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.sdk.trace.ReadableSpan
 import mu.KotlinLogging
 
-
 /**
- * OpenAI-oriented extractor of media content.
+ * Implementation of a media content extractor.
  */
-internal class OpenAIMediaContentExtractor : MediaContentExtractor {
+class MediaContentExtractorImpl : MediaContentExtractor {
     /**
-     * Sets uploadable media parts (e.g., images, audio files, and PDFs)
-     * of the request into span attributes.
-     *
-     * See [OpenAI Chat Completions](https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages-user-message-content)
-     *
-     * See [OpenAI Responses API](https://platform.openai.com/docs/api-reference/responses/create#responses_create-input)
+     * Sets uploadable media parts (e.g., images, audio files, and PDFs) into span attributes.
      */
     override fun setUploadableContentAttributes(
         span: Span,
@@ -33,18 +24,7 @@ internal class OpenAIMediaContentExtractor : MediaContentExtractor {
     ) {
         // count the number of already installed media content parts in the given span.
         // new content parts will start with this index
-        val installedMediaContentPartsCount = run {
-            val attributes = (span as? ReadableSpan)?.attributes?.asMap()
-                ?: return@run 0
-
-            val prefix = UploadableMediaContentAttributeKeys.KEY_NAME_PREFIX
-            val mediaContentTypeRegex = Regex("^$prefix\\.(\\d+)\\.type$")
-
-            val contentPartsCount = attributes.keys.count {
-                it.key.matches(mediaContentTypeRegex)
-            }
-            contentPartsCount
-        }
+        val installedMediaContentPartsCount = countAlreadyInstalledContentParts(span)
 
         for ((offset, part) in content.parts.withIndex()) {
             val resource = part.resource
@@ -79,6 +59,28 @@ internal class OpenAIMediaContentExtractor : MediaContentExtractor {
                 }
             }
         }
+    }
+
+    /**
+     * Counts the number of media content parts already installed in the given span.
+     * This is done by inspecting the span's attributes for keys that match a specific regex pattern
+     * indicating media content type.
+     *
+     * @param span The span whose attributes are inspected for already installed content parts.
+     * @return The count of media content parts already installed in the provided span.
+     */
+    private fun countAlreadyInstalledContentParts(span: Span): Int {
+        val attributes = (span as? ReadableSpan)?.attributes?.asMap()
+            ?: return 0
+
+        val prefix = UploadableMediaContentAttributeKeys.KEY_NAME_PREFIX
+        val mediaContentTypeRegex = Regex("^$prefix\\.(\\d+)\\.type$")
+
+        val contentPartsCount = attributes.keys.count {
+            it.key.matches(mediaContentTypeRegex)
+        }
+
+        return contentPartsCount
     }
 
     companion object {

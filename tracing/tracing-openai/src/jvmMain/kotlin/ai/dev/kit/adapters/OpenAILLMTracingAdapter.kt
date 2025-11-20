@@ -6,7 +6,7 @@ import ai.dev.kit.adapters.openai.handlers.images.ImagesGenerationsHandler
 import ai.dev.kit.adapters.openai.handlers.OpenAIApiHandler
 import ai.dev.kit.adapters.openai.handlers.OpenAIApiUtils
 import ai.dev.kit.adapters.openai.handlers.ResponsesApiHandler
-import ai.dev.kit.adapters.openai.media.OpenAIMediaContentExtractor
+import ai.dev.kit.adapters.media.MediaContentExtractorImpl
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.RequestBody
 import ai.dev.kit.http.protocol.Response
@@ -50,7 +50,7 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
     override fun getRequestBodyAttributes(span: Span, request: Request) {
         // TODO(Vladislav0Art): JBAI-18234 create handler every time a new request is processed
         if (handler == null) {
-            val extractor = OpenAIMediaContentExtractor()
+            val extractor = MediaContentExtractorImpl()
 
             handler = when (OpenAIApiType.detect(request.url)) {
                 OpenAIApiType.CHAT_COMPLETIONS -> ChatCompletionsHandler(extractor)
