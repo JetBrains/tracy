@@ -79,11 +79,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                     }
 
                     val req = Request(
-                        url = Url(
-                            scheme = request.url.protocol.name,
-                            host = request.url.host,
-                            pathSegments = request.url.pathSegments,
-                        ),
+                        url = request.url.toProtocolUrl(),
                         body = RequestBody.Json(body),
                         contentType = request.contentType(),
                     )

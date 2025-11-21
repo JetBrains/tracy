@@ -3,7 +3,6 @@ package ai.dev.kit.http.protocol
 import ai.dev.kit.http.parsers.FormData
 import io.ktor.http.ContentType
 import kotlinx.serialization.json.JsonElement
-import okhttp3.HttpUrl
 import okhttp3.MediaType
 
 
