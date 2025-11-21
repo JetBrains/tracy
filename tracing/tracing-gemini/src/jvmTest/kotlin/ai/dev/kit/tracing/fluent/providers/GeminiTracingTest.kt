@@ -122,7 +122,7 @@ class GeminiTracingTest : BaseOpenTelemetryTracingTest() {
         val model = "gemini-2.5-flash"
         client.models.generateContent(
             model,
-            "Generate polite greeting and introduce yourself. You MUST use the tool named '${toolName}' for greeting!",
+            "Generate greeting via a tool provided to you. Use the name USER. You MUST use the tool named '${toolName}' for this!",
             GeminiGenerateContentConfig.builder()
                 .temperature(0.0f)
                 .tools(greetTool)
