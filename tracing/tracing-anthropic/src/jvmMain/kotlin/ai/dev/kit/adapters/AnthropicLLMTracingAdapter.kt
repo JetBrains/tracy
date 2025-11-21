@@ -6,6 +6,7 @@ import ai.dev.kit.adapters.media.MediaContentPart
 import ai.dev.kit.adapters.media.Resource
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
+import ai.dev.kit.http.protocol.Url
 import ai.dev.kit.http.protocol.asJson
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
@@ -145,7 +146,7 @@ class AnthropicLLMTracingAdapter(
 
     // streaming is not supported
     override fun isStreamingRequest(request: Request) = false
-    override fun handleStreaming(span: Span, events: String) = Unit
+    override fun handleStreaming(span: Span, url: Url, events: String) = Unit
 
     /**
      * Parses content of the `messages` field when its type is
