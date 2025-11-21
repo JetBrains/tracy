@@ -37,14 +37,6 @@ sealed class RequestBody {
     data class DataForm(val data: FormData) : RequestBody()
 }
 
-data class Url(
-    val scheme: String,
-    val host: String,
-    val pathSegments: List<String>,
-)
-
-fun HttpUrl.toRequestUrl() = Url(scheme, host, pathSegments)
-
 fun MediaType.toContentType(): ContentType = ContentType.parse(this.toString())
 
 fun RequestBody.asJson(): JsonElement? {
