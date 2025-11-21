@@ -20,8 +20,6 @@ import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mu.KotlinLogging
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 
 /**
@@ -46,23 +44,15 @@ private enum class OpenAIApiType(val route: String) {
 }
 
 class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.OPENAI) {
-    private val handlerLock = ReentrantLock()
-    private var handler: OpenAIApiHandler? = null
-    private var previousApiType: OpenAIApiType? = null
-
     override fun getRequestBodyAttributes(span: Span, request: Request) {
-        val currentHandler = handlerLock.withLock {
-            adaptHandlerToEndpoint(request.url)
-            handler
-        }
-        currentHandler?.handleRequestAttributes(span, request)
+        val handler = handlerFor(request.url)
+        handler.handleRequestAttributes(span, request)
     }
 
     override fun getResponseBodyAttributes(span: Span, response: Response) {
-        val currentHandler = handlerLock.withLock { handler }
-
+        val handler = handlerFor(response.url)
         OpenAIApiUtils.setCommonResponseAttributes(span, response)
-        currentHandler?.handleResponseAttributes(span, response)
+        handler.handleResponseAttributes(span, response)
     }
 
     override fun isStreamingRequest(request: Request): Boolean {
@@ -81,40 +71,32 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
         }
     }
 
-    override fun handleStreaming(span: Span, events: String) {
-        val currentHandler = handlerLock.withLock { handler }
-        currentHandler?.handleStreaming(span, events)
+    override fun handleStreaming(span: Span, url: Url, events: String) {
+        val handler = handlerFor(url)
+        handler.handleStreaming(span, events)
     }
 
     /**
-     * Updates the [handler] to the corresponding OpenAI API endpoint based on the provided URL. This method
-     * detects the API type from the URL and updates the [handler] implementation accordingly.
+     * Determines the appropriate handler for an OpenAI API based on the given URL.
      *
-     * When [previousApiType] matches the detected API type, the existing [handler] is used.
-     * Otherwise, [handler] is set to a new instance according to the detected API type.
-     *
-     * **This function should be called under the lock held**.
-     *
-     * @param url The URL used to determine the appropriate OpenAI API endpoint and adapt the [handler].
+     * @param endpoint The URL used to detect the API type and determine the corresponding handler.
+     * @return An instance of [OpenAIApiHandler] that is capable of handling requests for the detected API type.
      */
-    private fun adaptHandlerToEndpoint(url: Url) {
-        val apiType = OpenAIApiType.detect(url)
+    private fun handlerFor(endpoint: Url): OpenAIApiHandler {
+        val apiType = OpenAIApiType.detect(endpoint)
+        val extractor = MediaContentExtractorImpl()
 
-        if (previousApiType == null || previousApiType != apiType) {
-            val extractor = MediaContentExtractorImpl()
-
-            handler = when (apiType) {
-                OpenAIApiType.CHAT_COMPLETIONS -> ChatCompletionsHandler(extractor)
-                OpenAIApiType.RESPONSES_API -> ResponsesApiHandler(extractor)
-                OpenAIApiType.IMAGES_GENERATIONS -> ImagesGenerationsHandler(extractor)
-                OpenAIApiType.IMAGES_EDITS -> ImagesEditsHandler(extractor)
-                null -> {
-                    logger.warn { "Unknown OpenAI API detected. Defaulting to 'chat completion'." }
-                    ChatCompletionsHandler(extractor)
-                }
+        val handler = when (apiType) {
+            OpenAIApiType.CHAT_COMPLETIONS -> ChatCompletionsHandler(extractor)
+            OpenAIApiType.RESPONSES_API -> ResponsesApiHandler(extractor)
+            OpenAIApiType.IMAGES_GENERATIONS -> ImagesGenerationsHandler(extractor)
+            OpenAIApiType.IMAGES_EDITS -> ImagesEditsHandler(extractor)
+            null -> {
+                logger.warn { "Unknown OpenAI API detected. Defaulting to 'chat completion'." }
+                ChatCompletionsHandler(extractor)
             }
-            previousApiType = apiType
         }
+        return handler
     }
 
     companion object {
