@@ -17,7 +17,7 @@ import java.time.Duration
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class BaseAnthropicTracingTest : BaseAITracingTest() {
     /**
-    When no value provided, defaults to anthropic provider url in [AnthropicOkHttpClient.Builder]
+    When no value provided in ENV variable `LLM_PROVIDER_URL`, defaults to anthropic provider url in [ANTHROPIC_API_URL]
      */
     protected val llmProviderUrl: String = System.getenv("LLM_PROVIDER_URL") ?: ANTHROPIC_API_URL
 
