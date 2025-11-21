@@ -105,7 +105,7 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
 
         val params = MessageCreateParams.builder()
             .addUserMessageOfBlockParams(listOf(
-                text("Tell me what you see in the image"),
+                text("Describe the files attached"),
                 file(file1),
                 file(file2),
             ))
