@@ -259,7 +259,16 @@ class MediaContentAttributeFilteringSpanExporter(
     private val delegate: SpanExporter
 ) : SpanExporter {
     override fun export(spans: Collection<SpanData>): CompletableResultCode {
-        val filteredSpans = spans.map { FilteredSpanData(it) }
+        val prefix = UploadableMediaContentAttributeKeys.KEY_NAME_PREFIX
+        val filteredSpans = spans.map { span ->
+            // when a span indeed contains attributes that should be filtered out,
+            // we apply the filtering; otherwise, the span remains unmodified
+            if (span.attributes.asMap().keys.any { it.key.startsWith(prefix) }) {
+                FilteredSpanData(span)
+            } else {
+                span
+            }
+        }
         return delegate.export(filteredSpans)
     }
 
