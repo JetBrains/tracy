@@ -53,17 +53,19 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
     fun `test OpenAI responses API tool calls auto tracing`() = runTest {
         val client = instrument(createOpenAIClient())
 
-        // defines: `greet(name: String)`
-        val greetTool = createFunctionTool("hi")
+        val toolName = "hi"
+        val greetTool = createFunctionTool(toolName)
 
         val params = ResponseCreateParams.builder()
-            .input("Use a given `hi` tool to greet two people: Alex and Aleksandr. You MUST do this with the given tool!")
+            .input("Use a given `hi` tool to greet two people: USER1 and USER2. You MUST do this with the given tool!")
             .addTool(greetTool)
             .model(ChatModel.GPT_4O_MINI)
             .temperature(0.0)
             .build()
 
-        client.responses().create(params)
+        val response = client.responses().create(params)
+        val toolCalled = response.toolCalled(toolName)
+        flushTracesAndAssume(toolCalled, "Tool was not called")
 
         validateToolCall()
     }
@@ -72,9 +74,10 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
     fun `test OpenAI responses API response to a tool call auto tracing`() = runTest {
         val client = instrument(createOpenAIClient())
 
-        val greetTool = createFunctionTool("hi")
+        val toolName = "hi"
+        val greetTool = createFunctionTool(toolName)
 
-        val userPrompt = "Use the provided `hi` tool to greet Alex. You MUST use the tool!"
+        val userPrompt = "Use the provided `hi` tool to greet the user. Use the name USER. You MUST use the tool!"
 
         val paramsBuilderFirst = ResponseCreateParams.builder()
             .model(ChatModel.GPT_4O_MINI)
@@ -83,6 +86,8 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
             .input(userPrompt)
 
         val first = client.responses().create(paramsBuilderFirst.build())
+        val toolCalled = first.toolCalled(toolName)
+        flushTracesAndAssume(toolCalled, "Tool was not called")
 
         val toolCalls = first.output().mapNotNull { it.functionCall().orElse(null) }
 
@@ -121,19 +126,29 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
     fun `test OpenAI responses API multiple tools response to tool calls auto tracing`() = runTest {
         val client = instrument(createOpenAIClient())
 
-        val greetTool = createFunctionTool("hi")
-        val farewellTool = createFunctionTool("goodbye")
+        val greetToolName = "hi"
+        val greetTool = createFunctionTool(greetToolName)
+        val goodbyeToolName = "goodbye"
+        val goodbyeTool = createFunctionTool(goodbyeToolName)
 
-        val userPrompt = "Use the provided tools to greet Alex, then say goodbye to him. You MUST use the tools!"
+        val userPrompt = "Use the provided tools to greet the user, then say goodbye to him. Use the name USER. You MUST use the tools!"
 
         val paramsBuilderFirst = ResponseCreateParams.builder()
             .model(ChatModel.GPT_4O_MINI)
             .temperature(0.0)
             .addTool(greetTool)
-            .addTool(farewellTool)
+            .addTool(goodbyeTool)
             .input(userPrompt)
+
         val first = client.responses().create(paramsBuilderFirst.build())
+
+        val greetToolCalled = first.toolCalled(greetToolName)
+        flushTracesAndAssume(greetToolCalled, "Greet tool was not called")
+        val goodbyeToolCalled = first.toolCalled(goodbyeToolName)
+        flushTracesAndAssume(goodbyeToolCalled, "Goodbye tool was not called")
+
         val toolCalls = first.output().mapNotNull { it.functionCall().orElse(null) }
+
         val assistantWithToolResults = mapOf(
             "role" to "assistant",
             "content" to (
@@ -144,8 +159,8 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
                         )
                     ) + toolCalls.map { call ->
                         val resultText = when (call.name()) {
-                            "hi" -> "hi, Alex!"
-                            "goodbye" -> "goodbye, Alex!"
+                            "hi" -> "hi, USER!"
+                            "goodbye" -> "goodbye, USER!"
                             else -> "done"
                         }
                         mapOf(
@@ -161,7 +176,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
             .model(ChatModel.GPT_4O_MINI)
             .temperature(0.0)
             .addTool(greetTool)
-            .addTool(farewellTool)
+            .addTool(goodbyeTool)
             .input(
                 JsonValue.from(
                     listOf(

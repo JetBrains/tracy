@@ -85,17 +85,20 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
     fun `test OpenAI chat completions tool calls auto tracing`() = runTest {
         val client = instrument(createOpenAIClient())
 
-        // defines: `greet(name: String)`
-        val greetTool = createTool("hi")
+        val toolName = "hi"
+        val greetTool = createChatCompletionTool(toolName)
 
         val params = ChatCompletionCreateParams.builder()
-            .addUserMessage("Use a given `hi` tool to greet two people: Alex and Aleksandr. You MUST do this with the given tool!")
+            .addUserMessage("Use a given `hi` tool to greet two people: USER1 and USER2. You MUST do this with the given tool!")
             .addTool(greetTool)
             .model(ChatModel.GPT_4O_MINI)
             .temperature(0.0)
             .build()
 
-        client.chat().completions().create(params)
+        val response = client.chat().completions().create(params)
+
+        val toolCalled = response.toolCalled(toolName)
+        flushTracesAndAssume(toolCalled, "Tool was not called")
 
         validateToolCall()
     }
@@ -104,19 +107,23 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
     fun `test OpenAI chat completions response to a tool call auto tracing`() = runTest {
         val client = instrument(createOpenAIClient())
 
-        // defines: `greet(name: String)`
-        val greetTool = createTool("hi")
+        val toolName = "hi"
+        val greetTool = createChatCompletionTool(toolName)
 
         // See example at:
         // https://github.com/openai/openai-java/blob/main/openai-java-example/src/main/java/com/openai/example/FunctionCallingRawExample.java
         val paramsBuilder = ChatCompletionCreateParams.builder()
-            .addUserMessage("Use a given `hi` tool to greet a person Alex. You MUST do this with the given tool!")
+            .addUserMessage("Use a given `hi` tool to greet the user. Use the name USER. You MUST do this with the given tool!")
             .addTool(greetTool)
             .model(ChatModel.GPT_4O_MINI)
             .temperature(0.0)
 
         // expect AI to request a tool call
-        client.chat().completions().create(paramsBuilder.build()).choices().stream()
+        val response = client.chat().completions().create(paramsBuilder.build())
+        val toolCalled = response.toolCalled(toolName)
+        flushTracesAndAssume(toolCalled, "Tool was not called")
+
+        response.choices().stream()
             .map(ChatCompletion.Choice::message)
             .peek(paramsBuilder::addMessage)
             .flatMap { message -> message.toolCalls().stream().flatMap { it.stream() } }
@@ -140,17 +147,25 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
     fun `test OpenAI chat completions multiple tools response to tool calls auto tracing`() = runTest {
         val client = instrument(createOpenAIClient())
 
-        val greetTool = createTool("hi")
-        val farewellTool = createTool("goodbye")
+        val greetToolName = "hi"
+        val greetTool = createChatCompletionTool(greetToolName)
+        val goodbyeToolName = "goodbye"
+        val goodbyeTool = createChatCompletionTool(goodbyeToolName)
 
         val paramsBuilder = ChatCompletionCreateParams.builder()
-            .addUserMessage("Use the provided tools to greet Alex, then say goodbye to him. You MUST use the tools!")
+            .addUserMessage("Use the provided tools to greet the user, then say goodbye to him. Use the name USER. You MUST use the tools!")
             .addTool(greetTool)
-            .addTool(farewellTool)
+            .addTool(goodbyeTool)
             .model(ChatModel.GPT_4O_MINI)
             .temperature(0.0)
 
-        client.chat().completions().create(paramsBuilder.build()).choices().stream()
+        val response = client.chat().completions().create(paramsBuilder.build())
+        val greetToolCalled = response.toolCalled(greetToolName)
+        flushTracesAndAssume(greetToolCalled, "Greet tool was not called")
+        val goodbyeToolCalled = response.toolCalled(goodbyeToolName)
+        flushTracesAndAssume(goodbyeToolCalled, "Goodbye tool was not called")
+
+        response.choices().stream()
             .map(ChatCompletion.Choice::message)
             .peek(paramsBuilder::addMessage)
             .flatMap { msg -> msg.toolCalls().stream().flatMap { it.stream() } }

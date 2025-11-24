@@ -95,6 +95,14 @@ class GeminiTracingTest : BaseAITracingTest() {
             .build()
     }
 
+    private fun GenerateContentResponse.toolCalled(toolName: String): Boolean {
+        return parts()?.any { part ->
+            part.functionCall()
+                .map { call -> call.name().orElse(null) == toolName }
+                .orElse(false)
+        } ?: false
+    }
+
     @Test
     fun `test nested instrumentation calls don't cause duplicative tracing`() = runTest {
         val client = instrument(instrument(instrument(createGeminiClient())))
@@ -120,7 +128,7 @@ class GeminiTracingTest : BaseAITracingTest() {
         val greetTool = createTool(toolName)
 
         val model = "gemini-2.5-flash"
-        client.models.generateContent(
+        val response = client.models.generateContent(
             model,
             "Generate greeting via a tool provided to you. Use the name USER. You MUST use the tool named '${toolName}' for this!",
             GeminiGenerateContentConfig.builder()
@@ -128,6 +136,9 @@ class GeminiTracingTest : BaseAITracingTest() {
                 .tools(greetTool)
                 .build()
         )
+
+        val toolCalled = response.toolCalled(toolName)
+        flushTracesAndAssume(toolCalled, "Tool was not called")
 
         val traces = analyzeSpans()
 
@@ -152,7 +163,8 @@ class GeminiTracingTest : BaseAITracingTest() {
     fun `test Gemini tool calling with tool call result`() = runTest {
         val client = instrument(createGeminiClient())
 
-        val greetTool = createTool("hi")
+        val toolName = "hi"
+        val greetTool = createTool(toolName)
 
         val model = "gemini-2.5-flash"
         val config = GeminiGenerateContentConfig.builder()
@@ -172,6 +184,9 @@ class GeminiTracingTest : BaseAITracingTest() {
             userMessage,
             config,
         )
+
+        val toolCalled = firstResponse.toolCalled(toolName)
+        flushTracesAndAssume(toolCalled, "Tool was not called")
 
         // Step 3: Extract function calls and create function responses
         val functionCallResponses = buildList {
@@ -233,6 +248,9 @@ class GeminiTracingTest : BaseAITracingTest() {
     fun `test Gemini multiple tools response to tool calls auto tracing`() = runTest {
         val client = instrument(createGeminiClient())
 
+        val greetToolName = "hi"
+        val goodbyeToolName = "goodbye"
+
         val greetTool = createTool("hi")
         val goodbyeTool = createTool("goodbye")
 
@@ -244,7 +262,7 @@ class GeminiTracingTest : BaseAITracingTest() {
 
         val userMessage = Content.builder()
             .role("user")
-            .parts(Part.fromText("Use the provided tools to greet Alex, then say goodbye to him. You MUST use the tools!"))
+            .parts(Part.fromText("Use the provided tools to greet the user, then say goodbye to him. Use the name USER. You MUST use the tools!"))
             .build()
 
         val firstResponse = client.models.generateContent(
@@ -252,6 +270,11 @@ class GeminiTracingTest : BaseAITracingTest() {
             userMessage,
             config,
         )
+
+        val greetToolCalled = firstResponse.toolCalled(greetToolName)
+        flushTracesAndAssume(greetToolCalled, "Greet tool was not called")
+        val goodbyeToolCalled = firstResponse.toolCalled(goodbyeToolName)
+        flushTracesAndAssume(goodbyeToolCalled, "Goodbye tool was not called")
 
         val functionCallResponses = buildList {
             firstResponse.parts()?.forEach { part ->

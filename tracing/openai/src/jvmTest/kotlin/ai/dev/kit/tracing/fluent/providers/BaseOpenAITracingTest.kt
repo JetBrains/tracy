@@ -10,10 +10,12 @@ import com.openai.core.JsonValue
 import com.openai.models.ChatModel
 import com.openai.models.FunctionDefinition
 import com.openai.models.FunctionParameters
+import com.openai.models.chat.completions.ChatCompletion
 import com.openai.models.chat.completions.ChatCompletionFunctionTool
 import com.openai.models.chat.completions.ChatCompletionMessageToolCall
 import com.openai.models.chat.completions.ChatCompletionTool
 import com.openai.models.responses.FunctionTool
+import com.openai.models.responses.Response
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import org.junit.jupiter.api.Assumptions
@@ -114,7 +116,7 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
         assertEquals("hi", toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
         assertEquals("function", toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.tool.0.type")])
 
-        // if AI called the tool when check its props
+        // if AI called the tool, then check its props
         if (toolCallRequestTrace.attributes[AttributeKey.stringKey("gen_ai.completion.0.finish_reason")] == "tool_calls") {
             assertEquals("tool", toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.role")])
             assertFalse(toolCallResponseTrace.attributes[AttributeKey.stringKey("gen_ai.prompt.2.content")].isNullOrEmpty())
@@ -160,7 +162,7 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
         )
     }
 
-    protected fun createTool(word: String): ChatCompletionTool {
+    protected fun createChatCompletionTool(word: String): ChatCompletionTool {
         val functionTool = ChatCompletionFunctionTool.builder()
             .type(JsonString.of("function"))
             .function(
@@ -185,6 +187,14 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
         return ChatCompletionTool.ofFunction(functionTool)
     }
 
+    protected fun ChatCompletion.toolCalled(toolName: String): Boolean {
+        return choices().any { choice ->
+            choice.message().toolCalls()
+                .map { toolCalls -> toolCalls.any { it.name == toolName } }
+                .orElse(false)
+        }
+    }
+
     protected fun createFunctionTool(word: String): FunctionTool {
         val schema = JsonValue.from(
             mapOf(
@@ -200,6 +210,14 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
             .parameters(schema)
             .strict(false)
             .build()
+    }
+
+    protected fun Response.toolCalled(toolName: String): Boolean {
+        return output().any { item ->
+            item.functionCall()
+                .map { call -> call.name() == toolName }
+                .orElse(false)
+        }
     }
 
     protected fun validateStreaming(output: String) {

@@ -46,16 +46,20 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
     fun `test Anthropic tool auto tracing`() {
         val client = instrument(createAnthropicClient())
 
+        val toolName = "hi"
         val model = Model.CLAUDE_3_5_HAIKU_LATEST
         val params = MessageCreateParams.builder()
-            .addUserMessage("Use a provided `hi` tool to greet Alex")
-            .addTool(createTool("hi"))
+            .addUserMessage("Use a provided `hi` tool to greet the user. Use the name USER.")
+            .addTool(createTool(toolName))
             .maxTokens(1000L)
             .temperature(0.0)
             .model(model)
             .build()
 
-        client.messages().create(params)
+        val response = client.messages().create(params)
+
+        val toolCalled = response.toolCalled(toolName)
+        flushTracesAndAssume(toolCalled, "Tool was not called")
 
         val traces = analyzeSpans()
 
@@ -90,11 +94,12 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
     fun `test Anthropic tool auto tracing with a response to a tool call`() {
         val client = instrument(createAnthropicClient())
 
-        val greetTool = createTool("hi")
+        val toolName = "hi"
+        val greetTool = createTool(toolName)
 
         val model = Model.CLAUDE_3_5_HAIKU_LATEST
         val paramsBuilder = MessageCreateParams.builder()
-            .addUserMessage("Use a provided `hi` tool to hi Alex")
+            .addUserMessage("Use a provided `hi` tool to hi the user. Use the name USER.")
             .addTool(greetTool)
             .maxTokens(1000L)
             .temperature(0.0)
@@ -107,6 +112,9 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         }
         val assistantMessage = messageAccumulator.message()
         paramsBuilder.addMessage(assistantMessage)
+
+        val toolCalled = assistantMessage.toolCalled(toolName)
+        flushTracesAndAssume(toolCalled, "Tool was not called")
 
         // Find and respond to tool calls
         assistantMessage.content().forEach { block ->
@@ -170,12 +178,15 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
     fun `test Anthropic multiple tools response to tool calls auto tracing`() {
         val client = instrument(createAnthropicClient())
 
-        val greetTool = createTool("hi")
-        val goodbyeTool = createTool("goodbye")
+        val greetToolName = "hi"
+        val greetTool = createTool(greetToolName)
+
+        val goodbyeToolName = "goodbye"
+        val goodbyeTool = createTool(goodbyeToolName)
 
         val model = Model.CLAUDE_3_5_HAIKU_LATEST
         val paramsBuilder = MessageCreateParams.builder()
-            .addUserMessage("Use the provided tools to greet Alex, then say goodbye to him. You MUST use the tools!")
+            .addUserMessage("Use the provided tools to greet the user, then say goodbye to him. Use the name USER. You MUST use the tools!")
             .addTool(greetTool)
             .addTool(goodbyeTool)
             .maxTokens(1000L)
@@ -214,10 +225,14 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         val firstAssistant = messageAccumulator.message()
         paramsBuilder.addMessage(firstAssistant)
         addToolResults(firstAssistant)
+        val greetToolCalled = firstAssistant.toolCalled(greetToolName)
+        flushTracesAndAssume(greetToolCalled, "Greet tool was not called")
 
         val secondAssistant = client.messages().create(paramsBuilder.build())
         paramsBuilder.addMessage(secondAssistant)
         addToolResults(secondAssistant)
+        val goodbyeToolCalled = secondAssistant.toolCalled(goodbyeToolName)
+        flushTracesAndAssume(goodbyeToolCalled, "Goodbye tool was not called")
 
         client.messages().create(paramsBuilder.build())
 

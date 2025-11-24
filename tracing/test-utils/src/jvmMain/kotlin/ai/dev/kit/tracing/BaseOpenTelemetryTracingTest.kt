@@ -9,6 +9,7 @@ import io.opentelemetry.sdk.trace.SdkTracerProvider
 import io.opentelemetry.sdk.trace.data.SpanData
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
 import java.time.Duration
@@ -43,6 +44,11 @@ abstract class BaseOpenTelemetryTracingTest {
     protected fun analyzeSpans(): List<SpanData> {
         TracingManager.flushTraces(10)
         return spanExporter.finishedSpanItems.mapNotNull { it }
+    }
+
+    protected fun flushTracesAndAssume(assumption: Boolean, message: String) {
+        TracingManager.flushTraces(10)
+        assumeTrue(assumption, message)
     }
 }
 

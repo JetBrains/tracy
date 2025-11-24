@@ -8,6 +8,7 @@ import com.anthropic.client.AnthropicClient
 import com.anthropic.client.okhttp.AnthropicOkHttpClient
 import com.anthropic.core.JsonObject
 import com.anthropic.core.JsonString
+import com.anthropic.models.messages.Message
 import com.anthropic.models.messages.Model
 import com.anthropic.models.messages.Tool
 import okhttp3.Interceptor
@@ -65,6 +66,12 @@ abstract class BaseAnthropicTracingTest : BaseAITracingTest() {
                     .required(listOf("name"))
                     .build()
             ).build()
+    }
+
+    protected fun Message.toolCalled(toolName: String): Boolean {
+        return content().any { block ->
+            block.isToolUse() && block.asToolUse().name() == toolName
+        }
     }
 
     protected fun installHttpInterceptor(client: AnthropicClient, interceptor: Interceptor) {
