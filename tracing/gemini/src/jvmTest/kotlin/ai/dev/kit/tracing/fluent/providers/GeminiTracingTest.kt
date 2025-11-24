@@ -101,7 +101,7 @@ class GeminiTracingTest : BaseAITracingTest() {
 
     @Test
     fun `test1(TextToImage) generate image`() = runTest {
-        val client = createGeminiClient()
+        val client = instrument(createGeminiClient())
 
         val model = "gemini-2.5-flash-image"
         val params = GeminiGenerateContentConfig.builder()
@@ -130,7 +130,7 @@ class GeminiTracingTest : BaseAITracingTest() {
 
     @Test
     fun `test2(TextAndImageToImage) generate image from reference`() = runTest {
-        val client = createGeminiClient()
+        val client = instrument(createGeminiClient())
 
         val model = "gemini-2.5-flash-image"
         val params = GeminiGenerateContentConfig.builder()
@@ -166,7 +166,7 @@ class GeminiTracingTest : BaseAITracingTest() {
 
     @Test
     fun `test3(MultiturnImageEditing) generate image in chat`() = runTest {
-        val client = createGeminiClient()
+        val client = instrument(createGeminiClient())
 
         val model = "gemini-2.5-flash-image"
         val params = GeminiGenerateContentConfig.builder()
@@ -190,7 +190,7 @@ class GeminiTracingTest : BaseAITracingTest() {
 
     @Test
     fun `test4(MultiturnImageEditing) generate image in chat multi-turn`() = runTest {
-        val client = createGeminiClient()
+        val client = instrument(createGeminiClient())
 
         val model = "gemini-2.5-flash-image"
         val params = GeminiGenerateContentConfig.builder()
@@ -216,7 +216,7 @@ class GeminiTracingTest : BaseAITracingTest() {
 
     @Test
     fun `test5(HiRes) generate image in high resolution`() = runTest {
-        val client = createGeminiClient()
+        val client = instrument(createGeminiClient())
 
         val model = "gemini-2.5-flash-image"
         val params = GeminiGenerateContentConfig.builder()
@@ -247,7 +247,7 @@ class GeminiTracingTest : BaseAITracingTest() {
 
     @Test
     fun `test6(AudioUpload) understand audio file`() = runTest {
-        val client = createGeminiClient()
+        val client = instrument(createGeminiClient())
 
         val model = "gemini-2.5-flash"
         val params = GeminiGenerateContentConfig.builder()
@@ -273,7 +273,7 @@ class GeminiTracingTest : BaseAITracingTest() {
 
     @Test
     fun `test6(AudioUpload) Imagen`() = runTest {
-        val client = createGeminiClient()
+        val client = instrument(createGeminiClient())
 
         val model = "imagen-4.0-generate-001"
         val params = GenerateImagesConfig.builder()
@@ -285,7 +285,6 @@ class GeminiTracingTest : BaseAITracingTest() {
         val prompt = "Robot holding a red skateboard with a word 'hello' but in Korean."
 
         val response = client.models.generateImages(model, prompt, params)
-
 
         for ((index, part) in response.images()!!.withIndex()) {
             Files.write(Paths.get("${index}_imagen.png"), part.imageBytes().get())
