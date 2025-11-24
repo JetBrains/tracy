@@ -4,7 +4,11 @@ One can contribute to the project by reporting issues or submitting changes via 
 
 ## Reporting Issues
 
-Please use the [AI Dev Kit official YouTrack project (TODO)]() for filing feature requests and bug reports.
+Please use the [AI Dev Kit official YouTrack project (TODO)]() for filing feature requests and bug reports,
+using one of the provided templates:
+
+- [Bug Report Template](https://youtrack.jetbrains.com/newIssue?project=JBAI&summary=bug%3A+_add+a+name+here_&description=%23%23+Description+of+the+issue%0A%0A*Briefly+describe+the+problem*%0A%0A---%0A%0A%23%23+**Steps+to+reproduce**%0A%0A*How+can+we+reproduce+the+issue%3F*%0A%0A1.+%0A%0A2.+%0A%0A3.+%0A%0A---%0A%0A%23%23+Expected+behavior%0A%0A*What+did+you+expect+to+happen%3F*%0A%0A---%0A%0A%23%23+Actual+behavior%0A%0A*What+happened+instead%3F*%0A%0A---%0A%0A%23%23+Environment%0A%0A*+Tracy+version%3A%0A*+Kotlin%2FJava+version%3A%0A*+Build+tool%3A%0A*+Tracing+backend%3A%0A++...%0A%0A---%0A%0A%23%23+Additional+information%0A%0A*Include+any+extra+context%2C+examples%2C+screenshots%2C+or+ideas+that+may+help+us+investigate+the+issue.+Screenshots%2C+code+snippets%2C+and+traces+can+also+be+placed+in+the+relevant+sections+above+%28e.g.%2C+Steps+to+reproduce+or+Actual+behaviour%29.*)
+- [Feature Request Template](https://youtrack.jetbrains.com/newIssue?project=JBAI&summary=feature%3A+_add+a+name+here_&description=%23%23+Summary%0A%0A*Briefly+describe+the+feature+you+would+like+to+see*%0A%0A---%0A%0A%23%23+Motivation%0A%0A*Why+do+you+need+this+feature%3F+What+problem+does+it+solve+for+your+workflow+or+users%3F*%0A%0A---%0A%0A%23%23+Proposed+solution%0A%0A*How+should+this+feature+work%3F+What+API%2C+behavior%2C+or+configuration+would+you+expect%3F*%0A%0A---%0A%0A%23%23+Alternatives+considered%0A%0A*Have+you+tried+any+existing+workarounds%3F+Why+are+they+not+enough%3F*%0A%0A---%0A%0A%23%23+Additional+information%0A%0A*Include+any+extra+context%2C+examples%2C+screenshots%2C+or+ideas+that+may+help+us+understand+the+request*)
 
 Questions about usage and general inquiries are better suited for StackOverflow or the [#ai-dev-kit (TODO)]() channel in
 the KotlinLang Slack.
@@ -14,6 +18,10 @@ the KotlinLang Slack.
 Submit pull requests [here](https://github.com/JetBrains/ai-dev-kit/pulls).  
 Keep in mind that maintainers will need to support any code you contribute, so please follow these guidelines:
 
+* Fill out the automatically applied message in PR
+    * Add a clear description
+    * Complete all relevant checklist items
+    * Delete unrelated sections
 * If you make code changes:
     * Follow the [Kotlin Coding Conventions](https://kotlinlang.org/docs/reference/coding-conventions.html).
     * [Build the project](#building) to ensure everything compiles and all tests pass.

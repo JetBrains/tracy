@@ -6,6 +6,11 @@ Kotlin or Java projects.
 It provides a **unified API** to capture structured traces. Fully compatible with observability
 platforms like **Langfuse** and **Weights & Biases (W&B)**.
 
+> [!Note]
+> This project uses [AI Dev Kit official YouTrack project (TODO)]() for all issue tracking.  
+> Please file bug reports and feature requests there.
+> Issue templates and additional details are available in the [Contributing Guidelines](CONTRIBUTING.md).
+
 **Standards:**  
 This library implements
 the [OpenTelemetry Generative AI Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/)
