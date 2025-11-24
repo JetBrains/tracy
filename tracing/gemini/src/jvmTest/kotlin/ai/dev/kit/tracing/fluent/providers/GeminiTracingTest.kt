@@ -1,11 +1,10 @@
 package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
-import ai.dev.kit.tracing.BaseAITracingTest
-import com.google.auth.oauth2.AccessToken
-import com.google.auth.oauth2.GoogleCredentials
 import com.google.genai.errors.GenAiIOException
-import com.google.genai.types.*
+import com.google.genai.types.Content
+import com.google.genai.types.GenerateContentResponse
+import com.google.genai.types.Part
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.test.runTest
@@ -15,18 +14,14 @@ import okhttp3.Response
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
-import java.io.InputStream
 import java.net.SocketTimeoutException
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.time.Duration
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import com.google.genai.Client as GeminiClient
 import com.google.genai.types.GenerateContentConfig as GeminiGenerateContentConfig
-import com.google.genai.types.HttpOptions as GeminiHttpOptions
+
 
 // TODO: fix
 // require the provider to be LiteLLM
@@ -36,262 +31,7 @@ import com.google.genai.types.HttpOptions as GeminiHttpOptions
     disabledReason = "LLM_PROVIDER_URL environment variable is not https://litellm.labs.jb.gg",
 )
 @Tag("gemini")
-class GeminiTracingTest : BaseAITracingTest() {
-    private val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
-
-    private val llmProviderApiKey =
-        System.getenv("GEMINI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
-        ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
-
-    fun createGeminiClient(): GeminiClient {
-        val projectId = "jetbrains-grazie"
-        val location = "us-central1"
-
-        /**
-         * The Gemini SDK client forbids empty credentials,
-         * even if a proxy between the client and Inference attaches service account credentials
-         * (e.g., LiteLLM at with passthrough [configured](https://docs.litellm.ai/docs/pass_through/vertex_ai#how-to-use)).
-         */
-        val dummyCredentials = object : GoogleCredentials() {
-            override fun refreshAccessToken(): AccessToken = AccessToken("dummy-token", null)
-        }
-
-        return GeminiClient.builder()
-            .vertexAI(true)
-            .project(projectId)
-            // attaches `Authorization: Bearer dummy-token` header
-            .credentials(dummyCredentials)
-            .location(location)
-            .httpOptions(
-                GeminiHttpOptions.builder()
-                    .baseUrl("$llmProviderUrl/vertex_ai")
-                    .headers(mapOf("x-litellm-api-key" to "Bearer $llmProviderApiKey")) // TODO: fix?
-                    .timeout(Duration.ofSeconds(60).toMillis().toInt())
-                    .build()
-            )
-            .build()
-    }
-
-    private fun createTool(word: String): Tool {
-        return Tool.builder()
-            .functionDeclarations(
-                FunctionDeclaration.builder()
-                    .name(word)
-                    .description("Say $word to the user")
-                    .parameters(
-                        Schema.builder()
-                            .type("object")
-                            .description("The phrase parameters")
-                            .properties(
-                                mapOf(
-                                    "name" to Schema.builder()
-                                        .type("string")
-                                        .description("The name of the person to say $word to")
-                                        .build()
-                                )
-                            )
-                            .required("name")
-                            .build()
-                    )
-                    .build()
-            )
-            .build()
-    }
-
-
-    @Test
-    fun `test1(TextToImage) generate image`() = runTest {
-        val client = instrument(createGeminiClient())
-
-        val model = "gemini-2.5-flash-image"
-        val params = GeminiGenerateContentConfig.builder()
-            .responseModalities("TEXT", "IMAGE")
-            .build()
-
-        val response = client.models.generateContent(
-            model,
-            "Create two pictures of a nano banana dish in a fancy restaurant with a Gemini theme",
-            params,
-        )
-
-        for ((index, part) in response.parts()!!.withIndex()) {
-            if (part.text().isPresent) {
-                println(part.text().get())
-            }
-            else if (part.inlineData().isPresent) {
-                val blob = part.inlineData().get()
-
-                if (blob.data().isPresent) {
-                    Files.write(Paths.get("${index}_generated_image.png"), blob.data().get());
-                }
-            }
-        }
-    }
-
-    @Test
-    fun `test2(TextAndImageToImage) generate image from reference`() = runTest {
-        val client = instrument(createGeminiClient())
-
-        val model = "gemini-2.5-flash-image"
-        val params = GeminiGenerateContentConfig.builder()
-            .responseModalities("TEXT", "IMAGE")
-            .build()
-
-        val prompt = Content.fromParts(
-            Part.fromText("Replace dogs with cats in this image"),
-            Part.fromBytes(
-                readResource("image.jpg").readAllBytes(),
-                "image/jpeg",
-            )
-        )
-
-        val response = client.models.generateContent(
-            model,
-            prompt,
-            params,
-        )
-
-        for ((index, part) in response.parts()!!.withIndex()) {
-            if (part.text().isPresent) {
-                println(part.text().get())
-            }
-            else if (part.inlineData().isPresent) {
-                val blob = part.inlineData().get()
-                if (blob.data().isPresent) {
-                    Files.write(Paths.get("${index}_gemini_generated_image.png"), blob.data().get());
-                }
-            }
-        }
-    }
-
-    @Test
-    fun `test3(MultiturnImageEditing) generate image in chat`() = runTest {
-        val client = instrument(createGeminiClient())
-
-        val model = "gemini-2.5-flash-image"
-        val params = GeminiGenerateContentConfig.builder()
-            .responseModalities("TEXT", "IMAGE")
-            .build()
-
-        val chat = client.chats.create(model, params)
-        val response = chat.sendMessage("Create a vibrant infographic that explains photosynthesis")
-
-        for ((index, part) in response.parts()!!.withIndex()) {
-            if (part.text().isPresent) {
-                println(part.text().get())
-            } else if (part.inlineData().isPresent) {
-                val blob = part.inlineData().get()
-                if (blob.data().isPresent) {
-                    Files.write(Paths.get("${index}_photosynthesis.png"), blob.data().get())
-                }
-            }
-        }
-    }
-
-    @Test
-    fun `test4(MultiturnImageEditing) generate image in chat multi-turn`() = runTest {
-        val client = instrument(createGeminiClient())
-
-        val model = "gemini-2.5-flash-image"
-        val params = GeminiGenerateContentConfig.builder()
-            .responseModalities("TEXT", "IMAGE")
-            .build()
-
-        val chat = client.chats.create(model, params)
-
-        chat.sendMessage("Create a vibrant infographic that explains photosynthesis")
-        val response = chat.sendMessage("Update this infographic to be in Japanese")
-
-        for ((index, part) in response.parts()!!.withIndex()) {
-            if (part.text().isPresent) {
-                println(part.text().get())
-            } else if (part.inlineData().isPresent) {
-                val blob = part.inlineData().get()
-                if (blob.data().isPresent) {
-                    Files.write(Paths.get("${index}_photosynthesis_jp.png"), blob.data().get())
-                }
-            }
-        }
-    }
-
-    @Test
-    fun `test5(HiRes) generate image in high resolution`() = runTest {
-        val client = instrument(createGeminiClient())
-
-        val model = "gemini-2.5-flash-image"
-        val params = GeminiGenerateContentConfig.builder()
-            .responseModalities("TEXT", "IMAGE")
-            .imageConfig(ImageConfig.builder()
-                .aspectRatio("16:9")
-                .imageSize("4K")
-                .build())
-            .build()
-
-        val response = client.models.generateContent(
-            model,
-            "Generate a cat on the table",
-            params,
-        )
-
-        for ((index, part) in response.parts()!!.withIndex()) {
-            if (part.text().isPresent) {
-                println(part.text().get())
-            } else if (part.inlineData().isPresent) {
-                val blob = part.inlineData().get()
-                if (blob.data().isPresent) {
-                    Files.write(Paths.get("${index}_hires.png"), blob.data().get())
-                }
-            }
-        }
-    }
-
-    @Test
-    fun `test6(AudioUpload) understand audio file`() = runTest {
-        val client = instrument(createGeminiClient())
-
-        val model = "gemini-2.5-flash"
-        val params = GeminiGenerateContentConfig.builder()
-            .responseModalities("TEXT")
-            .build()
-
-        val prompt = Content.fromParts(
-            Part.fromText("Tell me what you hear in the audio file"),
-            Part.fromBytes(
-                readResource("lofi.mp3").readAllBytes(),
-                "audio/mp3",
-            )
-        )
-
-        val response = client.models.generateContent(model, prompt, params)
-
-        for (part in response.parts()!!) {
-            if (part.text().isPresent) {
-                println(part.text().get())
-            }
-        }
-    }
-
-    @Test
-    fun `test6(AudioUpload) Imagen`() = runTest {
-        val client = instrument(createGeminiClient())
-
-        val model = "imagen-4.0-generate-001"
-        val params = GenerateImagesConfig.builder()
-            .enhancePrompt(true)
-            .language("Korean")
-            .numberOfImages(3)
-            .build()
-
-        val prompt = "Robot holding a red skateboard with a word 'hello' but in Korean."
-
-        val response = client.models.generateImages(model, prompt, params)
-
-        for ((index, part) in response.images()!!.withIndex()) {
-            Files.write(Paths.get("${index}_imagen.png"), part.imageBytes().get())
-        }
-    }
-
-
+class GeminiTracingTest : BaseGeminiTracingTest() {
     @Test
     fun `test nested instrumentation calls don't cause duplicative tracing`() = runTest {
         val client = instrument(instrument(instrument(createGeminiClient())))
@@ -655,12 +395,6 @@ class GeminiTracingTest : BaseAITracingTest() {
             .build()
 
         httpClientField.set(apiClient, modifiedHttpClient)
-    }
-
-    // TODO: one Anthropic PR is merged, rebase -> will have this method from the base class
-    private fun readResource(filepath: String): InputStream {
-        return javaClass.classLoader.getResourceAsStream(filepath)
-            ?: error("File not found")
     }
 }
 
