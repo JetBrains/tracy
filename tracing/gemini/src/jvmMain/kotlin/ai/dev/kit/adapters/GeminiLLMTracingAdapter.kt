@@ -1,13 +1,18 @@
 package ai.dev.kit.adapters
 
 import ai.dev.kit.adapters.LLMTracingAdapter.Companion.PayloadType
+import ai.dev.kit.adapters.media.MediaContent
+import ai.dev.kit.adapters.media.MediaContentPart
+import ai.dev.kit.adapters.media.Resource
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.Url
 import ai.dev.kit.http.protocol.asJson
+import io.ktor.http.ContentType
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
+import mu.KotlinLogging
 
 class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.GEMINI) {
     override fun getRequestBodyAttributes(span: Span, request: Request) {
@@ -28,6 +33,10 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
                 }
             }
         }
+
+        // add image attachments to span media upload attributes
+        val mediaContent = parseRequestMediaContent(body)
+        // TODO: extractor.upload(span, mediaContent)
 
         // url ends with `[model]:[operation]`
         val (model, operation) = request.url.pathSegments.lastOrNull()?.split(":")
@@ -132,6 +141,10 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
             }
         }
 
+        // parse media content parts and set as media upload attributes
+        val mediaContent = parseResponseMediaContent(body)
+        // TODO: extractor.setUploadableContentAttributes(span, mediaContent)
+
         body["usageMetadata"]?.let { usage ->
             usage.jsonObject["promptTokenCount"]?.jsonPrimitive?.intOrNull?.let {
                 span.setAttribute(GEN_AI_USAGE_INPUT_TOKENS, it)
@@ -168,6 +181,83 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
     // streaming is not supported
     override fun isStreamingRequest(request: Request) = false
     override fun handleStreaming(span: Span, url: Url, events: String) = Unit
+
+    private fun parseRequestMediaContent(body: JsonObject): MediaContent? {
+        val contents = body["contents"]
+        if (contents !is JsonArray) {
+            return null
+        }
+
+        val resources: List<Resource> = buildList {
+            for (content in contents.jsonArray) {
+                val parts = content.jsonObject["parts"]
+                if (parts !is JsonArray) {
+                    continue
+                }
+
+                for (part in parts.jsonArray) {
+                    val inlineData = part.jsonObject["inlineData"]?.jsonObject ?: continue
+                    val resource = inlineData.toResource() ?: continue
+                    add(resource)
+                }
+            }
+        }
+
+        return MediaContent(parts = resources.map { MediaContentPart(it) })
+    }
+
+    private fun parseResponseMediaContent(body: JsonObject): MediaContent? {
+        val candidates = body["candidates"]
+        if (candidates !is JsonArray) {
+            return null
+        }
+
+        val resource: List<Resource> = buildList {
+            for (candidate in candidates) {
+                val content = candidate.jsonObject["content"]?.jsonObject ?: continue
+                val parts = content["parts"]
+                if (parts !is JsonArray) {
+                    continue
+                }
+
+                for (part in parts.jsonArray) {
+                    val inlineData = part.jsonObject["inlineData"]?.jsonObject ?: continue
+                    val resource = inlineData.toResource() ?: continue
+                    add(resource)
+                }
+            }
+        }
+
+        return MediaContent(parts = resource.map { MediaContentPart(it) })
+    }
+
+    /**
+     * Should be executed on JSON objects that are of schema:
+     * ```json
+     * "inlineData": {
+     *    "data": "...",
+     *    "mimeType": "image/jpeg"
+     * }
+     * ```
+     *
+     * Converts JSON objects matching the schema above into [Resource].
+     */
+    private fun JsonObject.toResource(): Resource? {
+        // TODO: any urls supported or base64 only?
+        val inlineData = this
+        val data = inlineData["data"]?.jsonPrimitive?.content ?: return null
+        val mimeType = inlineData["mimeType"]?.jsonPrimitive?.content ?: return null
+
+        val contentType = try {
+            ContentType.parse(mimeType)
+        }
+        catch (err: Exception) {
+            logger.trace("Cannot convert the mime type '$mimeType' to content type", err)
+            null
+        } ?: return null
+
+        return Resource.Base64(data, contentType)
+    }
 
     /**
      * Extracts `text` attribute from `parts` array if
@@ -227,6 +317,8 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
     }
 
     companion object {
+        private val logger = KotlinLogging.logger {}
+
         private val mappedRequestAttributes: List<String> = listOf(
             "contents",
             "tools",
