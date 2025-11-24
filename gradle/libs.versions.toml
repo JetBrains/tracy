@@ -15,7 +15,7 @@ opentelemetry = "1.51.0"
 opentelemetry-semconv-incubating = "1.34.0-alpha"
 logging = "3.0.5"
 logback = "1.5.13"
-dokka = "2.0.0"
+dokka = "2.1.0"
 apache-mime4j = "0.8.13"
 
 [libraries]
