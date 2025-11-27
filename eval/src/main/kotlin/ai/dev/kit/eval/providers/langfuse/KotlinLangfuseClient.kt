@@ -13,20 +13,25 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 
-internal object KotlinLangfuseClient {
-    internal var baseUrl: String? = null
-    private val langfuseJson = Json { ignoreUnknownKeys = true }
-    private var authHeader: String? = null
+internal class KotlinLangfuseClient private constructor(
+    internal val baseUrl: String?,
+    private val authHeader: String? = null,
+) {
+    companion object {
+        private val langfuseJson = Json { ignoreUnknownKeys = true }
+
+        internal fun setupCredentials(
+            langfuseExporterConfig: LangfuseExporterConfig
+        ) = KotlinLangfuseClient(
+            baseUrl = langfuseExporterConfig.resolvedBaseUrl,
+            authHeader = langfuseExporterConfig.basicAuthHeader(),
+        )
+    }
 
     private val client = HttpClient(CIO) {
         install(ContentNegotiation) {
             json()
         }
-    }
-
-    internal fun setupCredentials(langfuseExporterConfig: LangfuseExporterConfig) {
-        baseUrl = langfuseExporterConfig.resolvedBaseUrl
-        authHeader = langfuseExporterConfig.basicAuthHeader()
     }
 
     internal suspend fun sendRequest(

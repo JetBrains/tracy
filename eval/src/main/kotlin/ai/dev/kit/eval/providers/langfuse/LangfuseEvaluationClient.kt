@@ -1,6 +1,5 @@
 package ai.dev.kit.eval.providers.langfuse
 
-import ai.dev.kit.eval.providers.langfuse.KotlinLangfuseClient.baseUrl
 import ai.dev.kit.eval.utils.*
 import ai.dev.kit.exporters.http.LangfuseExporterConfig
 import ai.dev.kit.tracing.TracingManager
@@ -14,14 +13,14 @@ class LangfuseEvaluationClient(
     langfuseExporterConfig: LangfuseExporterConfig
 ) : LoggingClient {
     override val clientName: String = "Langfuse"
+    private val langfuseClient = KotlinLangfuseClient.setupCredentials(langfuseExporterConfig)
 
     init {
-        KotlinLangfuseClient.setupCredentials(langfuseExporterConfig)
         TracingManager.setSdk(configureOpenTelemetrySdk(langfuseExporterConfig))
     }
 
     override suspend fun getOrCreateExperiment(experimentName: String): String? {
-        val resp = getLangfuseProject()
+        val resp = langfuseClient.getLangfuseProject()
         return resp.firstOrNull()?.jsonObject?.get("id")?.jsonPrimitive?.content
     }
 
@@ -29,7 +28,7 @@ class LangfuseEvaluationClient(
     override fun createRun(experimentId: String, runName: String): String = runName
 
     override fun getRunLink(experimentId: String, runId: String): String {
-        return "$baseUrl/project/$experimentId/sessions/${
+        return "${langfuseClient.baseUrl}/project/$experimentId/sessions/${
             URLEncoder.encode(
                 runId,
                 StandardCharsets.UTF_8.toString()
@@ -38,7 +37,7 @@ class LangfuseEvaluationClient(
     }
 
     override fun getTraceLink(experimentId: String, traceId: String): String {
-        return "$baseUrl/project/$experimentId/traces/${
+        return "${langfuseClient.baseUrl}/project/$experimentId/traces/${
             URLEncoder.encode(
                 traceId,
                 StandardCharsets.UTF_8.toString()
@@ -47,7 +46,7 @@ class LangfuseEvaluationClient(
     }
 
     override suspend fun logMetric(runId: String, name: String, score: Double, traceId: String?) {
-        logScoreToLangfuse(
+        langfuseClient.logScoreToLangfuse(
             traceId = traceId,
             sessionId = if (traceId == null) runId else null,
             observationId = null,
