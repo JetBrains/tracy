@@ -3,7 +3,7 @@ site_name: AI Development Kit
 # TODO: add site_url, favicon, style.css (for details, see PR description: https://github.com/JetBrains/ai-dev-kit/pull/95)
 nav:
   - Documentation:
-      - Welcome to MkDocs: index.md
+      - Welcome to AI Dev Kit: index.md
       - Overview: overview.md
       - Tracing API: tracing-api.md
       - Supported Backends: supported-backends.md
