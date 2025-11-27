@@ -290,7 +290,6 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
         // the installed interceptor will imitate timeout
         installHttpInterceptor(client, interceptor = timeoutInterceptor)
 
-
         try {
             client.models.generateContent(
                 "gemini-2.5-flash",
