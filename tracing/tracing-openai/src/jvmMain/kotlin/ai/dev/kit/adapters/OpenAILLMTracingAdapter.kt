@@ -20,6 +20,7 @@ import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mu.KotlinLogging
+import java.util.concurrent.ConcurrentHashMap
 
 
 /**
@@ -44,6 +45,8 @@ private enum class OpenAIApiType(val route: String) {
 }
 
 class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.OPENAI) {
+    private val handlers = ConcurrentHashMap<OpenAIApiType, OpenAIApiHandler>()
+
     override fun getRequestBodyAttributes(span: Span, request: Request) {
         val handler = handlerFor(request.url)
         handler.handleRequestAttributes(span, request)
@@ -87,10 +90,18 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
         val extractor = MediaContentExtractorImpl()
 
         val handler = when (apiType) {
-            OpenAIApiType.CHAT_COMPLETIONS -> ChatCompletionsHandler(extractor)
-            OpenAIApiType.RESPONSES_API -> ResponsesApiHandler(extractor)
-            OpenAIApiType.IMAGES_GENERATIONS -> ImagesGenerationsHandler(extractor)
-            OpenAIApiType.IMAGES_EDITS -> ImagesEditsHandler(extractor)
+            OpenAIApiType.CHAT_COMPLETIONS -> handlers.getOrPut(OpenAIApiType.CHAT_COMPLETIONS) {
+                ChatCompletionsHandler(extractor)
+            }
+            OpenAIApiType.RESPONSES_API -> handlers.getOrPut(OpenAIApiType.RESPONSES_API) {
+                ResponsesApiHandler(extractor)
+            }
+            OpenAIApiType.IMAGES_GENERATIONS -> handlers.getOrPut(OpenAIApiType.IMAGES_GENERATIONS) {
+                ImagesGenerationsHandler(extractor)
+            }
+            OpenAIApiType.IMAGES_EDITS -> handlers.getOrPut(OpenAIApiType.IMAGES_EDITS) {
+                ImagesEditsHandler(extractor)
+            }
             null -> {
                 logger.warn { "Unknown OpenAI API detected. Defaulting to 'chat completion'." }
                 ChatCompletionsHandler(extractor)
