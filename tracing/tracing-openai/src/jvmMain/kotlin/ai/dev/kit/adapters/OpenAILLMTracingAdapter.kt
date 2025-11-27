@@ -102,7 +102,7 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
             OpenAIApiType.IMAGES_EDITS -> handlers.getOrPut(OpenAIApiType.IMAGES_EDITS) {
                 ImagesEditsHandler(extractor)
             }
-            null -> {
+            null -> handlers.getOrPut(OpenAIApiType.CHAT_COMPLETIONS) {
                 logger.warn { "Unknown OpenAI API detected. Defaulting to 'chat completion'." }
                 ChatCompletionsHandler(extractor)
             }
