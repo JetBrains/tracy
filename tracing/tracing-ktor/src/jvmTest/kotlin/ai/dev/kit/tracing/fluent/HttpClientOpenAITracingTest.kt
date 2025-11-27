@@ -3,6 +3,7 @@ package ai.dev.kit.tracing.fluent
 import ai.dev.kit.adapters.OpenAILLMTracingAdapter
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseAITracingTest
+import ai.dev.kit.tracing.TracingManager
 import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
 import io.ktor.client.*
 import io.ktor.client.engine.mock.*
@@ -152,6 +153,69 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
 
         val content = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
         assertFalse(content.isNullOrEmpty())
+    }
+
+    @Test
+    fun `test Ktor HttpClient auto tracing streaming does not trace if disabled`() = runTest {
+        TracingManager.isTracingEnabled = false
+        val client: HttpClient = instrument(HttpClient(), adapter = llmTracingAdapter)
+
+        val response = client.post("$baseUrl/v1/chat/completions") {
+            addAuthHeaders(acceptStream = true)
+            setBody(
+                """
+            {
+                "messages": [
+                    { "role": "user", "content": "hello world" }
+                ],
+                "model": "gpt-4o-mini",
+                "stream": true
+            }
+            """.trimIndent()
+            )
+        }
+
+        // Enable tracing after the request started (mid-flight)
+        TracingManager.isTracingEnabled = true
+
+        val responseText = response.bodyAsChannel().readRemaining().readText()
+        assertTrue(responseText.isNotEmpty())
+
+        val traces = analyzeSpans()
+        assertTrue(traces.isEmpty(), "No spans should be created for requests started with tracing disabled")
+    }
+
+    @Test
+    fun `test Ktor HttpClient auto tracing does not trace if disabled`() = runTest {
+        TracingManager.isTracingEnabled = false
+        val client = instrument(HttpClient(), adapter = llmTracingAdapter)
+
+        val response = client.post("$baseUrl/v1/chat/completions") {
+            addAuthHeaders(acceptStream = true)
+            setBody(
+                """
+                {
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": "hello world"
+                        }
+                    ],
+                    "model": "gpt-4o-mini",
+                    "stream": false
+                }
+                """.trimIndent()
+            )
+        }
+
+        // Enable tracing after the request started (mid-flight)
+        TracingManager.isTracingEnabled = true
+
+        val responseText = response.bodyAsChannel().readRemaining().readText()
+        assertTrue(responseText.isNotEmpty())
+
+        val traces = analyzeSpans()
+        assertTrue(traces.isEmpty(), "No spans should be created for requests started with tracing disabled")
     }
 
     @Test

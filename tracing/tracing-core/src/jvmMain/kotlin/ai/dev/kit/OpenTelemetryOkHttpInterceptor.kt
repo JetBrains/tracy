@@ -108,6 +108,10 @@ abstract class OpenTelemetryOkHttpInterceptor(
     }
 
     override fun intercept(chain: Interceptor.Chain): OkHttpResponse {
+        if (!TracingManager.isTracingEnabled) {
+            return chain.proceed(chain.request())
+        }
+
         val tracer = TracingManager.tracer
 
         val span = tracer.spanBuilder(spanName).startSpan()
@@ -130,12 +134,10 @@ abstract class OpenTelemetryOkHttpInterceptor(
                     if (req != null) {
                         isStreamingRequest = adapter.isStreamingRequest(req)
                         adapter.registerRequest(span, req)
-                    }
-                    else {
+                    } else {
                         logger.warn { "Failed to register request, cannot build request from body content with media type of $mediaType" }
                     }
-                }
-                else {
+                } else {
                     logger.warn { "Failed to register request, body content is null" }
                 }
 
@@ -239,19 +241,20 @@ abstract class OpenTelemetryOkHttpInterceptor(
                     Json.parseToJsonElement(
                         bytes.toString(mediaType.charset() ?: Charsets.UTF_8)
                     ).jsonObject
-                }
-                catch (err: Exception) {
+                } catch (err: Exception) {
                     logger.trace("Error while parsing response body", err)
                     null
                 } ?: return null
 
                 RequestBody.Json(json)
             }
+
             ContentType.MultiPart.FormData -> {
                 val parser = MultipartFormDataParser()
                 val formData = parser.parse(mediaType, bytes)
                 RequestBody.DataForm(formData)
             }
+
             else -> null
         }
     }

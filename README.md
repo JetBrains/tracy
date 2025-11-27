@@ -238,6 +238,30 @@ TracingManager.flushTraces()
 Full
 example: [OpenAI Client Auto Tracing Example](examples/src/main/kotlin/ai/dev/kit/examples/clients/OpenAIClientAutotracingExample.kt)
 
+### Tracing Configuration
+
+- **Runtime toggle**: Spans are emitted only if both conditions are met:
+    - Tracing SDK instance has been installed via `TracingManager.setSdk(...)`
+      Runtime tracing is controlled through `TracingManager.isTracingEnabled`, which defaults to the value of the
+      `IS_TRACY_ENABLED` environment variable. if the variable is not set, tracing is enabled by default. You can also
+      change this value programmatically at any time.
+
+- **Compile-time plugin toggle**:
+    - [Annotation-Based Tracing](#annotation-based-tracing) requires the Kotlin Compiler Plugin, and you can enable or
+      disable it at compile time by setting the project property `enableTracyPlugin`. The property itself is optional.
+      If you don’t define it, the plugin is enabled by default, but you can turn it off whenever needed by setting
+      `enableTracyPlugin=false` in `gradle.properties` or by passing it on the command line with
+      `-PenableTracyPlugin=false`.
+
+- **Configuration**:
+    - Provide required backend settings to enable trace collection, either via environment variables **or** constructor
+      parameters. See [Tracing Backends](#tracing-backends).
+
+- **Behavior**:
+    - **SDK missing**: returns a no-op tracer; minimal overhead, no errors.
+    - **SDK set after instrumentation**: instrumented clients start emitting spans immediately.
+    - **Runtime toggle**: tracing can be dynamically enabled or disabled via `TracingManager.isTracingEnabled`.
+
 ### Annotation-Based Tracing
 
 You can trace regular functions (not only client calls) using the [

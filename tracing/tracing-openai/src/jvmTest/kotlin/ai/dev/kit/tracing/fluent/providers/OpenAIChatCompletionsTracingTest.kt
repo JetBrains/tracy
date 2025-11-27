@@ -2,6 +2,7 @@ package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.MediaSource
+import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.loadFileAsBase64Encoded
 import ai.dev.kit.tracing.toDataUrl
 import ai.dev.kit.tracing.toMediaContentAttributeValues
@@ -37,9 +38,13 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test nested instrumentation calls don't cause duplicative tracing`() = runTest {
-        val client = instrument(instrument(instrument(
-            ai.dev.kit.tracing.autologging.createOpenAIClient(llmProviderUrl, llmProviderApiKey)
-        )))
+        val client = instrument(
+            instrument(
+                instrument(
+                    ai.dev.kit.tracing.autologging.createOpenAIClient(llmProviderUrl, llmProviderApiKey)
+                )
+            )
+        )
         val model = ChatModel.GPT_4O_MINI
 
         val params = ChatCompletionCreateParams.builder()
@@ -209,10 +214,12 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
         val params = ChatCompletionCreateParams.builder()
             .model(model)
-            .addUserMessageOfArrayOfContentParts(listOf(
-                partImage(image),
-                partText(prompt),
-            ))
+            .addUserMessageOfArrayOfContentParts(
+                listOf(
+                    partImage(image),
+                    partText(prompt),
+                )
+            )
             .build()
 
         // send request
@@ -221,9 +228,11 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
         // expect the content of a request to be captures successfully
         validateBasicTracing(model)
         val trace = analyzeSpans().first()
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            image.toMediaContentAttributeValues(field = "input")
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                image.toMediaContentAttributeValues(field = "input")
+            )
+        )
     }
 
     @Test
@@ -236,10 +245,12 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
         val params = ChatCompletionCreateParams.builder()
             .model(model)
-            .addUserMessageOfArrayOfContentParts(listOf(
-                partAudio(filepath),
-                partText(prompt),
-            ))
+            .addUserMessageOfArrayOfContentParts(
+                listOf(
+                    partAudio(filepath),
+                    partText(prompt),
+                )
+            )
             .build()
 
         client.chat().completions().create(params)
@@ -248,9 +259,11 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
         val trace = analyzeSpans().first()
 
         val expectedMedia = MediaSource.File(filepath, "audio/wav")
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            expectedMedia.toMediaContentAttributeValues(field = "input")
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                expectedMedia.toMediaContentAttributeValues(field = "input")
+            )
+        )
     }
 
     @Test
@@ -266,19 +279,23 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
         val params = ChatCompletionCreateParams.builder()
             .model(model)
-            .addUserMessageOfArrayOfContentParts(listOf(
-                partFile(media),
-                partText(prompt),
-            ))
+            .addUserMessageOfArrayOfContentParts(
+                listOf(
+                    partFile(media),
+                    partText(prompt),
+                )
+            )
             .build()
 
         client.chat().completions().create(params)
 
         validateBasicTracing(model)
         val trace = analyzeSpans().first()
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            media.toMediaContentAttributeValues(field = "input")
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                media.toMediaContentAttributeValues(field = "input")
+            )
+        )
     }
 
     @Test
@@ -312,6 +329,23 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
     }
 
     @Test
+    fun `test OpenAI chat completions auto tracing disable`() = runTest {
+        TracingManager.isTracingEnabled = false
+
+        val model = ChatModel.GPT_4O_MINI
+        val client = instrument(createOpenAIClient())
+
+        val params = ChatCompletionCreateParams.builder()
+            .addUserMessage("Generate polite greeting and introduce yourself")
+            .model(model).temperature(1.1).build()
+
+        client.chat().completions().create(params)
+
+        val traces = analyzeSpans()
+        assert(traces.isEmpty())
+    }
+
+    @Test
     @Timeout(value = 3, unit = TimeUnit.MINUTES)
     fun `test several media types sent simultaneously are uploaded on Langfuse`() = runTest {
         val model = ChatModel.GPT_4O
@@ -324,11 +358,13 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
         val params = ChatCompletionCreateParams.builder()
             .model(model)
-            .addUserMessageOfArrayOfContentParts(listOf(
-                partImage(image),
-                partFile(file),
-                partText(prompt),
-            ))
+            .addUserMessageOfArrayOfContentParts(
+                listOf(
+                    partImage(image),
+                    partFile(file),
+                    partText(prompt),
+                )
+            )
             .build()
 
         // send request
@@ -336,10 +372,12 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
         validateBasicTracing(model)
         val trace = analyzeSpans().first()
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            image.toMediaContentAttributeValues(field = "input"),
-            file.toMediaContentAttributeValues(field = "input"),
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                image.toMediaContentAttributeValues(field = "input"),
+                file.toMediaContentAttributeValues(field = "input"),
+            )
+        )
     }
 
     private fun partText(prompt: String) = ChatCompletionContentPart.ofText(

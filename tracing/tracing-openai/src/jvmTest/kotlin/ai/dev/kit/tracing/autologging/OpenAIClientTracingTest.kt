@@ -66,7 +66,10 @@ class TracingTest : BaseOpenTelemetryTracingTest() {
             assertEquals("OpenAI-generation", span.name)
             assertEquals(model, attributes[GEN_AI_REQUEST_MODEL])
             assertEquals("openai", attributes[GEN_AI_SYSTEM])
-            assertTrue((llmProviderUrl ?: PRODUCTION_URL).startsWith(attributes[AttributeKey.stringKey("gen_ai.api_base")].toString()))
+            assertTrue(
+                (llmProviderUrl
+                    ?: PRODUCTION_URL).startsWith(attributes[AttributeKey.stringKey("gen_ai.api_base")].toString())
+            )
             assertEquals("system", attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")])
             assertEquals(systemMessage, attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
             assertEquals("user", attributes[AttributeKey.stringKey("gen_ai.prompt.1.role")])
@@ -131,6 +134,21 @@ class TracingTest : BaseOpenTelemetryTracingTest() {
                 "Outputs is properly captured"
             )
             assertNotNull(outerSpan.attributes.asMap()[AttributeKey.stringKey(customAttributeName)])
+        }
+    }
+
+    @Test
+    fun testWithSpanTracingDisabled() {
+        TracingManager.isTracingEnabled = false
+        val customAttributeName = "testAttribute"
+
+        withSpan("callChat") {
+            it.setAttribute(customAttributeName, "testValue")
+            callChat(client)
+        }
+
+        analyzeSpans().let { spans ->
+            assertTrue("No spans are created") { spans.isEmpty() }
         }
     }
 }

@@ -25,7 +25,7 @@ class AiDevKitTraceGradlePlugin : KotlinCompilerPluginSupportPlugin {
     }
 
     override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean {
-        val enablePlugin = kotlinCompilation.target.project.findProperty("enableAiDevKitPlugin") as? String
+        val enablePlugin = kotlinCompilation.target.project.findProperty("enableTracyPlugin") as? String
         return enablePlugin?.toBoolean() != false
     }
 

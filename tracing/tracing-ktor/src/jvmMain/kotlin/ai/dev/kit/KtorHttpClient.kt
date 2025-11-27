@@ -49,6 +49,7 @@ fun instrument(client: HttpClient, adapter: LLMTracingAdapter): HttpClient {
 
 private class TracingPlugin(private val adapter: LLMTracingAdapter) {
     private val httpSpanKey = AttributeKey<Span>("HttpSpanKey")
+    private val tracingEnabledKey = AttributeKey<Boolean>("TracingEnabledKey")
     private val isStreamingRequestKey = AttributeKey<Boolean>("IsStreamingRequestKey")
 
     @OptIn(InternalAPI::class, InternalIoApi::class)
@@ -58,6 +59,9 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
         // duplicate plugins are ignored by the API implementation
         config.install(createClientPlugin("NetworkParamsPlugin") {
             onRequest { request, _ ->
+                val tracingEnabled = TracingManager.isTracingEnabled
+                request.attributes.put(tracingEnabledKey, tracingEnabled)
+                if (!tracingEnabled) return@onRequest
                 val span = tracer.spanBuilder("http-client-span").startSpan()
                 span.makeCurrent().use {
                     request.attributes.put(httpSpanKey, span)
@@ -92,8 +96,12 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
             }
 
             onResponse { response ->
-                val isStreamingRequest = response.call.request.attributes[isStreamingRequestKey]
-                val span = response.call.request.attributes[httpSpanKey]
+                val enabled = response.call.request.attributes[tracingEnabledKey]
+                if (!enabled) return@onResponse
+                val isStreamingRequest = response.call.request.attributes.getOrNull(isStreamingRequestKey)
+                    ?: return@onResponse
+                val span = response.call.request.attributes.getOrNull(httpSpanKey)
+                    ?: return@onResponse
                 if (isStreamingRequest) return@onResponse
                 val body = try {
                     // peek the response body to avoid consuming the underlying channel
@@ -125,8 +133,13 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
             }
 
             transformResponseBody { response, content, typeInfo ->
-                val isStreamingRequest = response.call.request.attributes[isStreamingRequestKey]
-                val span = response.call.request.attributes[httpSpanKey]
+                val enabled = response.call.request.attributes[tracingEnabledKey]
+                if (!enabled) return@transformResponseBody null
+
+                val isStreamingRequest = response.call.request.attributes.getOrNull(isStreamingRequestKey)
+                    ?: return@transformResponseBody null
+                val span = response.call.request.attributes.getOrNull(httpSpanKey)
+                    ?: return@transformResponseBody null
 
                 if (!isStreamingRequest) {
                     return@transformResponseBody null

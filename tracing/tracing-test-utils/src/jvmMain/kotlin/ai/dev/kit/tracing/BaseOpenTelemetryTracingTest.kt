@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
 import java.time.Duration
 import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -26,10 +27,13 @@ abstract class BaseOpenTelemetryTracingTest {
         spanExporter = testTracing.spanExporter
     }
 
-    @AfterTest
-    fun cleanSpans() {
-        spanExporter.reset()
+    @BeforeTest
+    fun enableTracingBeforeTest() {
+        TracingManager.isTracingEnabled = true
     }
+
+    @AfterTest
+    fun resetExporter() = spanExporter.reset()
 
     @AfterAll
     fun shutdownTelemetry() {

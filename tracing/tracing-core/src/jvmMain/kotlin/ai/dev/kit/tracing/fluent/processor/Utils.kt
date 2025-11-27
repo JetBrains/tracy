@@ -66,6 +66,9 @@ actual inline fun <T> withTrace(
     traceAnnotation: KotlinFlowTrace,
     crossinline block: () -> T
 ): T {
+    if (!TracingManager.isTracingEnabled) {
+        return block()
+    }
     val method = function.javaMethod ?: throw IllegalArgumentException("Function must be a Java method")
     val span = createSpan(traceAnnotation, method, args)
     val scope = span.makeCurrent()
@@ -91,6 +94,9 @@ actual suspend inline fun <T> withTraceSuspended(
     traceAnnotation: KotlinFlowTrace,
     crossinline block: suspend () -> T
 ): T {
+    if (!TracingManager.isTracingEnabled) {
+        return block()
+    }
     val method = function.javaMethod ?: throw IllegalArgumentException("Function must be a Java method")
     val span = createSpan(
         traceAnnotation, method, args, currentSpanContext(currentCoroutineContext())
