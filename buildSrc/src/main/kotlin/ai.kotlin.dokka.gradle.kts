@@ -12,7 +12,7 @@ dokka {
 
         sourceLink {
             localDirectory = rootDir
-            remoteUrl("https://github.com/JetBrains/ai-dev-kit/tree/main")
+            remoteUrl("https://github.com/JetBrains/tracy/tree/main")
             remoteLineSuffix = "#L"
         }
 

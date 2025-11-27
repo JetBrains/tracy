@@ -1,6 +1,6 @@
-site_name: AI Development Kit
+site_name: Tracy
 #site_url: [link-to-hosted-docs]
-# TODO: add site_url, favicon, style.css (for details, see PR description: https://github.com/JetBrains/ai-dev-kit/pull/95)
+# TODO: add site_url, favicon, style.css (for details, see PR description: https://github.com/JetBrains/tracy/pull/95)
 nav:
   - Documentation:
       - Welcome to MkDocs: index.md
@@ -65,8 +65,8 @@ theme:
 extra_css:
   - stylesheets/extra.css
 
-repo_url: https://github.com/JetBrains/ai-dev-kit
-repo_name: "AI Dev Kit on GitHub"
+repo_url: https://github.com/JetBrains/tracy
+repo_name: "Tracy on GitHub"
 edit_uri: edit/develop/docs/docs/
 copyright: Copyright © 2000-2025 JetBrains s.r.o.
 

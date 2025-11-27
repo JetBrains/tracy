@@ -11,7 +11,7 @@ the KotlinLang Slack.
 
 ## Submitting Changes
 
-Submit pull requests [here](https://github.com/JetBrains/ai-dev-kit/pulls).  
+Submit pull requests [here](https://github.com/JetBrains/tracy/pulls).  
 Keep in mind that maintainers will need to support any code you contribute, so please follow these guidelines:
 
 * If you make code changes:
