@@ -1,6 +1,9 @@
 package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
+import ai.dev.kit.tracing.MediaContentAttributeValues
+import ai.dev.kit.tracing.MediaSource
+import ai.dev.kit.tracing.toMediaContentAttributeValues
 import com.google.genai.types.Content
 import com.google.genai.types.GenerateImagesConfig
 import com.google.genai.types.ImageConfig
@@ -9,8 +12,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
-import java.nio.file.Files
-import java.nio.file.Paths
+import kotlin.test.assertEquals
 import com.google.genai.types.GenerateContentConfig as GeminiGenerateContentConfig
 
 
@@ -32,24 +34,23 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
             .responseModalities("TEXT", "IMAGE")
             .build()
 
-        val response = client.models.generateContent(
+        client.models.generateContent(
             model,
             "Create two pictures of a nano banana dish in a fancy restaurant with a Gemini theme",
             params,
         )
 
-        for ((index, part) in response.parts()!!.withIndex()) {
-            if (part.text().isPresent) {
-                println(part.text().get())
-            }
-            else if (part.inlineData().isPresent) {
-                val blob = part.inlineData().get()
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
 
-                if (blob.data().isPresent) {
-                    Files.write(Paths.get("${index}_generated_image.png"), blob.data().get());
-                }
-            }
-        }
+        val expectedImage = MediaContentAttributeValues.Data(
+            field = "output",
+            contentType = "image/png",
+            data = null,
+        )
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            expectedImage
+        ))
     }
 
     @Test
@@ -61,31 +62,31 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
             .responseModalities("TEXT", "IMAGE")
             .build()
 
+        val image = MediaSource.File("image.jpg", "image/jpeg")
+
         val prompt = Content.fromParts(
             Part.fromText("Replace dogs with cats in this image"),
-            Part.fromBytes(
-                readResource("image.jpg").readAllBytes(),
-                "image/jpeg",
-            )
+            Part.fromBytes(readResource(image.filepath).readAllBytes(), "image/jpeg")
         )
 
-        val response = client.models.generateContent(
+        client.models.generateContent(
             model,
             prompt,
             params,
         )
 
-        for ((index, part) in response.parts()!!.withIndex()) {
-            if (part.text().isPresent) {
-                println(part.text().get())
-            }
-            else if (part.inlineData().isPresent) {
-                val blob = part.inlineData().get()
-                if (blob.data().isPresent) {
-                    Files.write(Paths.get("${index}_gemini_generated_image.png"), blob.data().get());
-                }
-            }
-        }
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
+
+        val expectedImage = MediaContentAttributeValues.Data(
+            field = "output",
+            contentType = "image/png",
+            data = null,
+        )
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            image.toMediaContentAttributeValues(field = "input"),
+            expectedImage,
+        ))
     }
 
     @Test
@@ -98,18 +99,19 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
             .build()
 
         val chat = client.chats.create(model, params)
-        val response = chat.sendMessage("Create a vibrant infographic that explains photosynthesis")
+        chat.sendMessage("Create a vibrant infographic that explains photosynthesis")
 
-        for ((index, part) in response.parts()!!.withIndex()) {
-            if (part.text().isPresent) {
-                println(part.text().get())
-            } else if (part.inlineData().isPresent) {
-                val blob = part.inlineData().get()
-                if (blob.data().isPresent) {
-                    Files.write(Paths.get("${index}_photosynthesis.png"), blob.data().get())
-                }
-            }
-        }
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
+
+        val expectedImage = MediaContentAttributeValues.Data(
+            field = "output",
+            contentType = "image/png",
+            data = null,
+        )
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            expectedImage,
+        ))
     }
 
     @Test
@@ -123,19 +125,30 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
 
         val chat = client.chats.create(model, params)
 
+        // expect two images to be generated
         chat.sendMessage("Create a vibrant infographic that explains photosynthesis")
-        val response = chat.sendMessage("Update this infographic to be in Japanese")
+        chat.sendMessage("Update this infographic to be in Japanese")
 
-        for ((index, part) in response.parts()!!.withIndex()) {
-            if (part.text().isPresent) {
-                println(part.text().get())
-            } else if (part.inlineData().isPresent) {
-                val blob = part.inlineData().get()
-                if (blob.data().isPresent) {
-                    Files.write(Paths.get("${index}_photosynthesis_jp.png"), blob.data().get())
-                }
-            }
-        }
+        val traces = analyzeSpans()
+        assertEquals(2, traces.size)
+
+        val trace1 = traces.first()
+        val trace2 = traces.last()
+
+        val expectedImage = MediaContentAttributeValues.Data(
+            field = "output",
+            contentType = "image/png",
+            data = null,
+        )
+
+        verifyMediaContentUploadAttributes(trace1, expected = listOf(
+            expectedImage
+        ))
+        // the first image becomes an input
+        verifyMediaContentUploadAttributes(trace2, expected = listOf(
+            expectedImage.copy(field = "input"),
+            expectedImage,
+        ))
     }
 
     @Test
@@ -151,22 +164,23 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
                 .build())
             .build()
 
-        val response = client.models.generateContent(
+        client.models.generateContent(
             model,
             "Generate a cat on the table",
             params,
         )
 
-        for ((index, part) in response.parts()!!.withIndex()) {
-            if (part.text().isPresent) {
-                println(part.text().get())
-            } else if (part.inlineData().isPresent) {
-                val blob = part.inlineData().get()
-                if (blob.data().isPresent) {
-                    Files.write(Paths.get("${index}_hires.png"), blob.data().get())
-                }
-            }
-        }
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
+
+        val expectedImage = MediaContentAttributeValues.Data(
+            field = "output",
+            contentType = "image/png",
+            data = null,
+        )
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            expectedImage,
+        ))
     }
 
     @Test
@@ -178,11 +192,13 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
             .responseModalities("TEXT")
             .build()
 
+        val file = MediaSource.File("lofi.mp3", "audio/mp3")
+
         val prompt = Content.fromParts(
             Part.fromText("Tell me what you hear in the audio file"),
             Part.fromBytes(
-                readResource("lofi.mp3").readAllBytes(),
-                "audio/mp3",
+                readResource(file.filepath).readAllBytes(),
+                file.contentType,
             )
         )
 
@@ -193,6 +209,13 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
                 println(part.text().get())
             }
         }
+
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
+
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            file.toMediaContentAttributeValues(field = "input"),
+        ))
     }
 
     @Test
@@ -208,10 +231,23 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
 
         val prompt = "Robot holding a red skateboard with a word 'hello' but in Korean."
 
-        val response = client.models.generateImages(model, prompt, params)
+        client.models.generateImages(model, prompt, params)
 
-        for ((index, part) in response.images()!!.withIndex()) {
-            Files.write(Paths.get("${index}_imagen.png"), part.imageBytes().get())
-        }
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+        val trace = traces.first()
+
+        println("attributes:\n ${trace.attributes}")
+
+        val expectedImage = MediaContentAttributeValues.Data(
+            field = "output",
+            contentType = "image/png",
+            data = null,
+        )
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            expectedImage, expectedImage, expectedImage
+        ))
     }
+
+    // TODO: upscaleImage, editImage
 }
