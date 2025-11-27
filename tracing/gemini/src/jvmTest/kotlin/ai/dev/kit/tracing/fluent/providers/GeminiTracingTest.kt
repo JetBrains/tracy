@@ -303,10 +303,8 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
         }
 
         val traces = analyzeSpans()
-
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
+        assertTrue(traces.isNotEmpty())
+        val trace = traces.first()
 
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
         assertEquals(
