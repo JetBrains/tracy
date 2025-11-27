@@ -1,5 +1,6 @@
 package ai.dev.kit.tracing.fluent.providers
 
+import ai.dev.kit.tracing.BaseAITracingTest
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import com.google.auth.oauth2.AccessToken
 import com.google.auth.oauth2.GoogleCredentials
@@ -13,7 +14,7 @@ import com.google.genai.Client as GeminiClient
 import com.google.genai.types.HttpOptions as GeminiHttpOptions
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-abstract class BaseGeminiTracingTest : BaseOpenTelemetryTracingTest() {
+abstract class BaseGeminiTracingTest : BaseAITracingTest() {
     protected val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
 
     protected val llmProviderApiKey =
@@ -73,11 +74,5 @@ abstract class BaseGeminiTracingTest : BaseOpenTelemetryTracingTest() {
                     .build()
             )
             .build()
-    }
-
-    // TODO: one Anthropic PR is merged, rebase -> will have this method from the base class
-    protected fun readResource(filepath: String): InputStream {
-        return javaClass.classLoader.getResourceAsStream(filepath)
-            ?: error("File not found")
     }
 }
