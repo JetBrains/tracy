@@ -1,5 +1,7 @@
 package ai.dev.kit.adapters.handlers
 
+import ai.dev.kit.adapters.LLMTracingAdapter.Companion.PayloadType
+import ai.dev.kit.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
 import ai.dev.kit.adapters.media.MediaContent
 import ai.dev.kit.adapters.media.MediaContentExtractor
 import ai.dev.kit.adapters.media.MediaContentPart
@@ -8,17 +10,10 @@ import ai.dev.kit.common.parseSafe
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.asJson
-import io.ktor.http.ContentType
+import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
 import mu.KotlinLogging
 
 /**
@@ -29,10 +24,6 @@ import mu.KotlinLogging
 class GeminiContentGenHandler(
     private val extractor: MediaContentExtractor
 ) : GeminiApiHandler {
-    companion object {
-        private val logger = KotlinLogging.logger {}
-    }
-
     override fun handleRequestAttributes(span: Span, request: Request) {
         // See: https://ai.google.dev/api/caching#Content
         val body = request.body.asJson()?.jsonObject ?: return
@@ -101,6 +92,8 @@ class GeminiContentGenHandler(
             config.jsonObject["topP"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_P, it) }
             config.jsonObject["topK"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_K, it) }
         }
+
+        span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.REQUEST)
     }
 
     override fun handleResponseAttributes(span: Span, response: Response) {
@@ -189,6 +182,8 @@ class GeminiContentGenHandler(
             // candidate tokens details
             extractUsageTokenDetails(span, usage, attribute = "candidatesTokensDetails")
         }
+
+        span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
     }
 
     override fun handleStreaming(span: Span, events: String) = Unit
@@ -323,5 +318,24 @@ class GeminiContentGenHandler(
                 }
             }
         }
+    }
+
+    companion object {
+        private val logger = KotlinLogging.logger {}
+
+        private val mappedRequestAttributes: List<String> = listOf(
+            "contents",
+            "tools",
+            "generationConfig"
+        )
+
+        private val mappedResponseAttributes: List<String> = listOf(
+            "responseId",
+            "modelVersion",
+            "candidates",
+            "usageMetadata"
+        )
+
+        private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes
     }
 }

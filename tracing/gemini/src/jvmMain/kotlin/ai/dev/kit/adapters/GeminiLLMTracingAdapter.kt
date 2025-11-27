@@ -60,24 +60,4 @@ class GeminiLLMTracingAdapter(
     private fun isImagenResponse(body: JsonObject): Boolean {
         return "predictions" in body
     }
-
-    companion object {
-        private val logger = KotlinLogging.logger {}
-
-        private val mappedRequestAttributes: List<String> = listOf(
-            "contents",
-            "tools",
-            "generationConfig"
-        )
-
-        private val mappedResponseAttributes: List<String> = listOf(
-            "responseId",
-            "modelVersion",
-            "candidates",
-            "usageMetadata"
-        )
-
-        private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes
-    }
-    // span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
 }
