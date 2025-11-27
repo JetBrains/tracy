@@ -10,7 +10,7 @@ private fun Project.versionOf(name: String): String {
 }
 
 private class Versions {
-    val okhttp = "3.14.9" // NOTE: the actual version used doesn't have a package list published, using latest
+    val okhttp = "latest" // NOTE: the actual version used doesn't have a package list published, using latest
     val opentelemetry = project.versionOf("opentelemetry")
     val openai = project.versionOf("openai")
     val gemini = project.versionOf("gemini")
