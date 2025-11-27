@@ -1,14 +1,12 @@
 package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.tracing.BaseAITracingTest
-import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import com.google.auth.oauth2.AccessToken
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.genai.types.FunctionDeclaration
 import com.google.genai.types.Schema
 import com.google.genai.types.Tool
 import org.junit.jupiter.api.TestInstance
-import java.io.InputStream
 import java.time.Duration
 import com.google.genai.Client as GeminiClient
 import com.google.genai.types.HttpOptions as GeminiHttpOptions
