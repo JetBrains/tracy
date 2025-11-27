@@ -61,7 +61,7 @@ abstract class BaseExporterConfig(
      *
      * @param sdkTracerBuilder the [SdkTracerProviderBuilder] to configure
      */
-    open fun addSpanProcessor(sdkTracerBuilder: SdkTracerProviderBuilder) {
+    open fun configureSpanProcessors(sdkTracerBuilder: SdkTracerProviderBuilder) {
         createSpanExporter()?.let { exporter ->
             sdkTracerBuilder.addSpanProcessor(
                 BatchSpanProcessor.builder(exporter)
@@ -73,7 +73,6 @@ abstract class BaseExporterConfig(
             sdkTracerBuilder.addConsoleLoggingSpanProcessor()
         }
     }
-
 
     /**
      * Constructs a [SpanLimits] instance using the resolved configuration for
@@ -94,7 +93,7 @@ abstract class BaseExporterConfig(
      * The [LoggingSpanExporter] outputs every finished span at `INFO` level
      * using `java.util.logging`.
      */
-    private fun SdkTracerProviderBuilder.addConsoleLoggingSpanProcessor(): SdkTracerProviderBuilder {
+    protected fun SdkTracerProviderBuilder.addConsoleLoggingSpanProcessor(): SdkTracerProviderBuilder {
         val spanExporter = LoggingSpanExporter.create()
         addSpanProcessor(SimpleSpanProcessor.create(spanExporter))
         return this

@@ -17,7 +17,8 @@ import kotlinx.serialization.json.*
  * Handler for OpenAI Responses API
  */
 internal class ResponsesApiHandler(
-    private val extractor: MediaContentExtractor) : OpenAIApiHandler {
+    private val extractor: MediaContentExtractor
+) : OpenAIApiHandler {
     override fun handleRequestAttributes(span: Span, request: Request) {
         val body = request.body.asJson()?.jsonObject ?: return
         OpenAIApiUtils.setCommonRequestAttributes(span, request)
@@ -98,7 +99,7 @@ internal class ResponsesApiHandler(
     }
 
     /**
-     * @param field must be one of: 'input', 'output' or 'metadata' (see [ai.dev.kit.exporters.MediaUploadParams.field])
+     * @param field must be one of: 'input', 'output' or 'metadata' (see [ai.dev.kit.exporters.http.MediaUploadParams.field])
      */
     private fun attachMediaContentAttributes(span: Span, field: String, inputs: JsonArray) {
         // set attributes with media attachments info into the span
@@ -142,7 +143,7 @@ internal class ResponsesApiHandler(
         span.recordException(exception)
     }
 
-   private fun processAttributeTypes(span: Span, events: JsonArray, indexOfFirstAttribute: Int, type: String) {
+    private fun processAttributeTypes(span: Span, events: JsonArray, indexOfFirstAttribute: Int, type: String) {
         var index = indexOfFirstAttribute
 
         for (output in events.jsonArray) {
@@ -255,18 +256,19 @@ internal class ResponsesApiHandler(
                             null
                         }
                     }
+
                     "input_file" -> {
                         if ("file_url" in part.jsonObject) {
                             val url = part.jsonObject["file_url"]?.jsonPrimitive?.content ?: continue
                             if (url.isValidUrl()) MediaContentPart(Resource.Url(url)) else null
-                        }
-                        else if ("file_data" in part.jsonObject) {
+                        } else if ("file_data" in part.jsonObject) {
                             val dataUrl = part.jsonObject["file_data"]?.jsonPrimitive?.content ?: continue
                             MediaContentPart(Resource.DataUrl(dataUrl))
                         } else {
                             null
                         }
                     }
+
                     else -> null
                 }
 
