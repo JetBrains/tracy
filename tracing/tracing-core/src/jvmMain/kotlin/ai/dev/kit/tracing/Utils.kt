@@ -40,10 +40,12 @@ fun configureOpenTelemetrySdk(
         )
     )
 
-    val tracerProvider = SdkTracerProvider.builder().setResource(resource).apply {
-        exporterConfig.addSpanProcessor(this)
-        setSpanLimits(exporterConfig.createSpanLimits())
-    }.build()
+    val tracerProvider = SdkTracerProvider.builder()
+        .setResource(resource)
+        .setSpanLimits(exporterConfig.createSpanLimits())
+        .apply {
+            exporterConfig.configureSpanProcessors(this)
+        }.build()
 
     val openTelemetry = OpenTelemetrySdk.builder().setTracerProvider(tracerProvider).build()
 

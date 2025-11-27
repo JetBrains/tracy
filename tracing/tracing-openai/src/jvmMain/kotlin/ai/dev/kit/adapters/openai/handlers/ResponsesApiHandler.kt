@@ -103,7 +103,7 @@ internal class ResponsesApiHandler(
     }
 
     /**
-     * @param field must be one of: 'input', 'output' or 'metadata' (see [ai.dev.kit.exporters.MediaUploadParams.field])
+     * @param field must be one of: 'input', 'output' or 'metadata' (see [ai.dev.kit.exporters.http.MediaUploadParams.field])
      */
     private fun attachMediaContentAttributes(span: Span, field: String, inputs: JsonArray) {
         // set attributes with media attachments info into the span
@@ -262,6 +262,7 @@ internal class ResponsesApiHandler(
                             null
                         }
                     }
+
                     "input_file" -> {
                         if ("file_url" in part.jsonObject) {
                             val url = part.jsonObject["file_url"]?.jsonPrimitive?.content ?: continue
@@ -273,6 +274,7 @@ internal class ResponsesApiHandler(
                             null
                         }
                     }
+
                     else -> null
                 }
 
