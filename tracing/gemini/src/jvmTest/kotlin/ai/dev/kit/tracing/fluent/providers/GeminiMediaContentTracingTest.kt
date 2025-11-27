@@ -4,10 +4,7 @@ import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.MediaContentAttributeValues
 import ai.dev.kit.tracing.MediaSource
 import ai.dev.kit.tracing.toMediaContentAttributeValues
-import com.google.genai.types.Content
-import com.google.genai.types.GenerateImagesConfig
-import com.google.genai.types.ImageConfig
-import com.google.genai.types.Part
+import com.google.genai.types.*
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -241,5 +238,79 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
         ))
     }
 
-    // TODO: upscaleImage, editImage
+    @Test
+    fun `test image editing API gets traced`() = runTest {
+        val client = instrument(createGeminiClient())
+
+        val model = "imagen-3.0-capability-001"
+        val params = EditImageConfig.builder()
+            .numberOfImages(2)
+            .language("English")
+            .aspectRatio("1:1")
+            .editMode(EditMode.Known.EDIT_MODE_DEFAULT)
+            .build()
+
+        val prompt = "I attached two images: Naruto and a comics image in Noir style. Draw Naruto in the style of the given comics image. Modify only the Naruto image, the 2nd one is given as an inspiration and shouldn't be used directly"
+
+        val subjectImage = MediaSource.File("naruto.png", "image/png")
+        val styleImage = MediaSource.File("noir-style-image.jpg", "image/jpeg")
+
+        val subject = SubjectReferenceImage.builder()
+            .referenceId(1)
+            .referenceImage(
+                Image.builder()
+                    .mimeType(subjectImage.contentType)
+                    .imageBytes(readResource(subjectImage.filepath).readAllBytes())
+                    .build()
+            )
+            .config(
+                SubjectReferenceConfig.builder()
+                    .subjectDescription("Naruto character")
+                    .build()
+            )
+            .build()
+
+        val style = StyleReferenceImage.builder()
+            .referenceId(2)
+            .referenceImage(
+                Image.builder()
+                    .mimeType(styleImage.contentType)
+                    .imageBytes(readResource(styleImage.filepath).readAllBytes())
+                    .build()
+            )
+            .config(
+                StyleReferenceConfig.builder()
+                    .styleDescription("Comics Noir Style")
+                    .build()
+            )
+            .build()
+
+        client.models.editImage(
+            model,
+            prompt,
+            listOf(subject, style),
+            params,
+        )
+
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+        val trace = traces.first()
+
+        val expectedImage = MediaContentAttributeValues.Data(
+            field = "output",
+            contentType = "image/png",
+            data = null,
+        )
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            subjectImage.toMediaContentAttributeValues(field = "input"),
+            styleImage.toMediaContentAttributeValues(field = "input"),
+            expectedImage,
+            expectedImage,
+        ))
+    }
+
+    @Test
+    fun `test image upscaling API gets traced`() = runTest {
+        // use upscaleImage
+    }
 }

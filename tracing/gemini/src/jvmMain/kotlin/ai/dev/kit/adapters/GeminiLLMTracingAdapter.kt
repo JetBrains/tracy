@@ -31,11 +31,40 @@ class GeminiLLMTracingAdapter(
 
         if (request.isImagenRequest()) {
             // Imagen API: https://ai.google.dev/gemini-api/docs/imagen
-            body["instances"]?.let {
-                for ((index, instance) in it.jsonArray.withIndex()) {
-                    span.setAttribute("gen_ai.prompt.$index.content", instance.jsonObject["prompt"]?.jsonPrimitive?.content)
+            val instances = body["instances"]?.jsonArray ?: emptyList()
+
+            for ((index, instance) in instances.withIndex()) {
+                span.setAttribute("gen_ai.prompt.$index.content", instance.jsonObject["prompt"]?.jsonPrimitive?.content)
+            }
+
+            // build resources and other image attributes from the input images
+            val images: List<Pair<Resource, JsonObject>> = buildList {
+                for (instance in instances) {
+                    val images = instance.jsonObject["referenceImages"]?.jsonArray ?: continue
+                    for (image in images) {
+                        // create resource from image data
+                        val ref = image.jsonObject["referenceImage"]?.jsonObject ?: continue
+                        val mimeType = ref["mimeType"]?.jsonPrimitive?.content ?: continue
+                        val base64 = ref["bytesBase64Encoded"]?.jsonPrimitive?.content ?: continue
+                        val contentType = ContentType.parseSafe(mimeType) ?: continue
+                        val resource = Resource.Base64(base64, contentType)
+
+                        // save other attributes of this image (excluding "referenceImage")
+                        val attributes = Json.encodeToJsonElement(
+                            image.jsonObject.filterKeys { it != "referenceImage" }
+                        ).jsonObject
+                        add(resource to attributes)
+                    }
                 }
             }
+            // set image attributes into span
+            for ((index, attributes) in images.map { it.second }.withIndex()) {
+                span.setAttribute("tracy.request.image.$index.attributes", attributes.toString())
+            }
+            // save media content for upload
+            val mediaContent = MediaContent(parts = images.map { MediaContentPart(resource = it.first) })
+            extractor.setUploadableContentAttributes(span, field = "input", mediaContent)
+
             body["parameters"]?.let { span.setAttribute("tracy.request.imagen.parameters", it.toString()) }
         }
         else {
@@ -112,7 +141,7 @@ class GeminiLLMTracingAdapter(
         val body = response.body.asJson()?.jsonObject ?: return
 
         // TODO: when PR (https://github.com/JetBrains/tracy/pull/124) is merged, write `isImagenResponse()` using `url`
-        if ("predictions" in body) {
+        if (isImagenResponse(body)) {
             val predictions = body["predictions"]?.jsonArray ?: return
             for ((index, prediction) in predictions.withIndex()) {
                 span.setAttribute("gen_ai.completion.$index.content", prediction.jsonObject["prompt"]?.jsonPrimitive?.content)
@@ -121,10 +150,13 @@ class GeminiLLMTracingAdapter(
                 for (prediction in predictions) {
                     val mimeType = prediction.jsonObject["mimeType"]?.jsonPrimitive?.content ?: continue
                     val base64 = prediction.jsonObject["bytesBase64Encoded"]?.jsonPrimitive?.content ?: continue
-                    val resource = Resource.Base64(base64, ContentType.parse(mimeType))
+                    val contentType = ContentType.parseSafe(mimeType) ?: continue
+
+                    val resource = Resource.Base64(base64, contentType)
                     add(resource)
                 }
             }
+
             // setting generated images for upload
             val mediaContent = MediaContent(resources.map { MediaContentPart(it) })
             extractor.setUploadableContentAttributes(span, field = "output", mediaContent)
@@ -229,6 +261,10 @@ class GeminiLLMTracingAdapter(
         return (model?.startsWith("imagen") == true) && (operation == "predict")
     }
 
+    private fun isImagenResponse(body: JsonObject): Boolean {
+        return "predictions" in body
+    }
+
     private fun parseRequestMediaContent(body: JsonObject): MediaContent? {
         val contents = body["contents"]
         if (contents !is JsonArray) {
@@ -294,14 +330,7 @@ class GeminiLLMTracingAdapter(
         val inlineData = this
         val data = inlineData["data"]?.jsonPrimitive?.content ?: return null
         val mimeType = inlineData["mimeType"]?.jsonPrimitive?.content ?: return null
-
-        val contentType = try {
-            ContentType.parse(mimeType)
-        }
-        catch (err: Exception) {
-            logger.trace("Cannot convert the mime type '$mimeType' to content type", err)
-            null
-        } ?: return null
+        val contentType = ContentType.parseSafe(mimeType) ?: return null
 
         return Resource.Base64(data, contentType)
     }
@@ -360,6 +389,16 @@ class GeminiLLMTracingAdapter(
                     span.setAttribute("gen_ai.usage.$snakeCasedAttribute.$index.token_count", it.toLong())
                 }
             }
+        }
+    }
+
+    private fun ContentType.Companion.parseSafe(mimeType: String): ContentType? {
+        return try {
+            ContentType.parse(mimeType)
+        }
+        catch (err: Exception) {
+            logger.trace("Cannot convert the mime type '$mimeType' to content type", err)
+            null
         }
     }
 
