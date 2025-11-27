@@ -26,7 +26,7 @@ import com.google.genai.types.GenerateContentConfig as GeminiGenerateContentConf
 @Tag("gemini")
 class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
     @Test
-    fun `test1(TextToImage) generate image`() = runTest {
+    fun `test generated image get traced`() = runTest {
         val client = instrument(createGeminiClient())
 
         val model = "gemini-2.5-flash-image"
@@ -36,7 +36,7 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
 
         client.models.generateContent(
             model,
-            "Create two pictures of a nano banana dish in a fancy restaurant with a Gemini theme",
+            "Generate a single image of a restaurant",
             params,
         )
 
@@ -49,12 +49,12 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
             data = null,
         )
         verifyMediaContentUploadAttributes(trace, expected = listOf(
-            expectedImage
+            expectedImage,
         ))
     }
 
     @Test
-    fun `test2(TextAndImageToImage) generate image from reference`() = runTest {
+    fun `test generated image and attached reference get traced`() = runTest {
         val client = instrument(createGeminiClient())
 
         val model = "gemini-2.5-flash-image"
@@ -90,7 +90,7 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
     }
 
     @Test
-    fun `test3(MultiturnImageEditing) generate image in chat`() = runTest {
+    fun `test image generated in chat gets traced`() = runTest {
         val client = instrument(createGeminiClient())
 
         val model = "gemini-2.5-flash-image"
@@ -115,7 +115,7 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
     }
 
     @Test
-    fun `test4(MultiturnImageEditing) generate image in chat multi-turn`() = runTest {
+    fun `test images generated in multi-turn chat generation get traced`() = runTest {
         val client = instrument(createGeminiClient())
 
         val model = "gemini-2.5-flash-image"
@@ -152,7 +152,7 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
     }
 
     @Test
-    fun `test5(HiRes) generate image in high resolution`() = runTest {
+    fun `test image generated with high-resolution gets traced`() = runTest {
         val client = instrument(createGeminiClient())
 
         val model = "gemini-2.5-flash-image"
@@ -184,7 +184,7 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
     }
 
     @Test
-    fun `test6(AudioUpload) understand audio file`() = runTest {
+    fun `test attached audio file gets traced`() = runTest {
         val client = instrument(createGeminiClient())
 
         val model = "gemini-2.5-flash"
@@ -202,13 +202,7 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
             )
         )
 
-        val response = client.models.generateContent(model, prompt, params)
-
-        for (part in response.parts()!!) {
-            if (part.text().isPresent) {
-                println(part.text().get())
-            }
-        }
+        client.models.generateContent(model, prompt, params)
 
         validateBasicTracing(model)
         val trace = analyzeSpans().first()
@@ -219,7 +213,7 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
     }
 
     @Test
-    fun `test6(AudioUpload) Imagen`() = runTest {
+    fun `test images generated with Imagen API get traced`() = runTest {
         val client = instrument(createGeminiClient())
 
         val model = "imagen-4.0-generate-001"
@@ -236,8 +230,6 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
         val traces = analyzeSpans()
         assertEquals(1, traces.size)
         val trace = traces.first()
-
-        println("attributes:\n ${trace.attributes}")
 
         val expectedImage = MediaContentAttributeValues.Data(
             field = "output",
