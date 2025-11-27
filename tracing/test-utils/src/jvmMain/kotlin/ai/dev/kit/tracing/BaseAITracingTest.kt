@@ -5,6 +5,7 @@ import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.sdk.trace.data.SpanData
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.provider.Arguments
+import java.io.InputStream
 import java.util.stream.Stream
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -89,6 +90,11 @@ abstract class BaseAITracingTest : BaseOpenTelemetryTracingTest() {
             ),
             Arguments.of(MediaSource.Link(SAMPLE_PDF_FILE_URL))
         )
+    }
+
+    protected fun readResource(filepath: String): InputStream {
+        return javaClass.classLoader.getResourceAsStream(filepath)
+            ?: error("File not found")
     }
 
     companion object {

@@ -230,11 +230,6 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
             return id
         }
 
-    protected fun readResource(filepath: String): InputStream {
-        return javaClass.classLoader.getResourceAsStream(filepath)
-            ?: error("File not found")
-    }
-
     /**
      * Assumes that the provided URL points to the expected OpenAI production endpoint.
      * Uses JUnit assumptions to enforce this condition during testing.
