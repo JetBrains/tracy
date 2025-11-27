@@ -9,16 +9,16 @@ private fun Project.versionOf(name: String): String {
     return libs.findVersion(name).get().requiredVersion
 }
 
-private class Versions {
-    val okhttp = "latest" // NOTE: the actual version used doesn't have a package list published, using latest
-    val opentelemetry = project.versionOf("opentelemetry")
-    val openai = project.versionOf("openai")
-    val gemini = project.versionOf("gemini")
-    val anthropic = project.versionOf("anthropic")
+private fun Project.getVersions() = object {
+    val okhttp = "3.14.9" // NOTE: the actual version used doesn't have a package list published, using latest
+    val opentelemetry = versionOf("opentelemetry")
+    val openai = versionOf("openai")
+    val gemini = versionOf("gemini")
+    val anthropic = versionOf("anthropic")
 }
 
 dokka {
-    val versions = Versions()
+    val versions = project.getVersions()
 
     dokkaSourceSets.configureEach {
          includes.from("Module.md")
