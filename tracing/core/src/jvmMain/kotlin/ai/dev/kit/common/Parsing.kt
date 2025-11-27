@@ -112,3 +112,12 @@ fun String.isValidUrl(): Boolean {
         false
     }
 }
+
+fun ContentType.Companion.parseSafe(mimeType: String): ContentType? {
+    return try {
+        ContentType.parse(mimeType)
+    }
+    catch (err: Exception) {
+        null
+    }
+}
