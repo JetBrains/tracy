@@ -16,6 +16,7 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
 import mu.KotlinLogging
 
+// TODO: create handlers (for imagen and normal)
 class GeminiLLMTracingAdapter(
     private val extractor: MediaContentExtractor
 ) : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.GEMINI) {
@@ -37,18 +38,22 @@ class GeminiLLMTracingAdapter(
                 span.setAttribute("gen_ai.prompt.$index.content", instance.jsonObject["prompt"]?.jsonPrimitive?.content)
             }
 
-            // build resources and other image attributes from the input images
-            val images: List<Pair<Resource, JsonObject>> = buildList {
+            // build resources from the input images
+            val images: List<Resource> = buildList {
                 for (instance in instances) {
-                    val images = instance.jsonObject["referenceImages"]?.jsonArray ?: continue
-                    for (image in images) {
+                    val image = instance.jsonObject["image"]?.jsonObject ?: continue
+                    val resource = parseImagenImage(image) ?: continue
+                    add(resource)
+                }
+            }
+            // build resources and other image attributes from the input reference images
+            val referenceImages: List<Pair<Resource, JsonObject>> = buildList {
+                for (instance in instances) {
+                    val referenceImages = instance.jsonObject["referenceImages"]?.jsonArray ?: continue
+                    for (image in referenceImages) {
                         // create resource from image data
-                        val ref = image.jsonObject["referenceImage"]?.jsonObject ?: continue
-                        val mimeType = ref["mimeType"]?.jsonPrimitive?.content ?: continue
-                        val base64 = ref["bytesBase64Encoded"]?.jsonPrimitive?.content ?: continue
-                        val contentType = ContentType.parseSafe(mimeType) ?: continue
-                        val resource = Resource.Base64(base64, contentType)
-
+                        val imageRef = image.jsonObject["referenceImage"]?.jsonObject ?: continue
+                        val resource = parseImagenImage(imageRef) ?: continue
                         // save other attributes of this image (excluding "referenceImage")
                         val attributes = Json.encodeToJsonElement(
                             image.jsonObject.filterKeys { it != "referenceImage" }
@@ -57,12 +62,15 @@ class GeminiLLMTracingAdapter(
                     }
                 }
             }
-            // set image attributes into span
-            for ((index, attributes) in images.map { it.second }.withIndex()) {
-                span.setAttribute("tracy.request.image.$index.attributes", attributes.toString())
+            // set reference image attributes into span
+            for ((index, attributes) in referenceImages.map { it.second }.withIndex()) {
+                span.setAttribute("tracy.request.referenceImage.$index.attributes", attributes.toString())
             }
             // save media content for upload
-            val mediaContent = MediaContent(parts = images.map { MediaContentPart(resource = it.first) })
+            val mediaContent = run {
+                val resources = images + referenceImages.map { it.first }
+                MediaContent(parts = resources.map { MediaContentPart(it) })
+            }
             extractor.setUploadableContentAttributes(span, field = "input", mediaContent)
 
             body["parameters"]?.let { span.setAttribute("tracy.request.imagen.parameters", it.toString()) }
@@ -146,16 +154,7 @@ class GeminiLLMTracingAdapter(
             for ((index, prediction) in predictions.withIndex()) {
                 span.setAttribute("gen_ai.completion.$index.content", prediction.jsonObject["prompt"]?.jsonPrimitive?.content)
             }
-            val resources: List<Resource> = buildList {
-                for (prediction in predictions) {
-                    val mimeType = prediction.jsonObject["mimeType"]?.jsonPrimitive?.content ?: continue
-                    val base64 = prediction.jsonObject["bytesBase64Encoded"]?.jsonPrimitive?.content ?: continue
-                    val contentType = ContentType.parseSafe(mimeType) ?: continue
-
-                    val resource = Resource.Base64(base64, contentType)
-                    add(resource)
-                }
-            }
+            val resources = parseImagenImages(predictions)
 
             // setting generated images for upload
             val mediaContent = MediaContent(resources.map { MediaContentPart(it) })
@@ -263,6 +262,29 @@ class GeminiLLMTracingAdapter(
 
     private fun isImagenResponse(body: JsonObject): Boolean {
         return "predictions" in body
+    }
+
+    /**
+     * Expects an array of schemas:
+     * ```json
+     * {
+     *    "mimeType": "string",
+     *    "bytesBase64Encoded": "string"
+     * }
+     * ```
+     */
+    private fun parseImagenImages(images: JsonArray): List<Resource> = buildList {
+        for (image in images) {
+            val resource = parseImagenImage(image.jsonObject) ?: continue
+            add(resource)
+        }
+    }
+
+    private fun parseImagenImage(image: JsonObject): Resource? {
+        val mimeType = image.jsonObject["mimeType"]?.jsonPrimitive?.content ?: return null
+        val base64 = image.jsonObject["bytesBase64Encoded"]?.jsonPrimitive?.content ?: return null
+        val contentType = ContentType.parseSafe(mimeType) ?: return null
+        return Resource.Base64(base64, contentType)
     }
 
     private fun parseRequestMediaContent(body: JsonObject): MediaContent? {

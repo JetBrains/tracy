@@ -311,6 +311,38 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
 
     @Test
     fun `test image upscaling API gets traced`() = runTest {
-        // use upscaleImage
+        val client = instrument(createGeminiClient())
+
+        val model = "imagen-4.0-upscale-preview"
+        val outputMimeType = "image/jpeg"
+        val params = UpscaleImageConfig.builder()
+             .outputMimeType(outputMimeType)
+             .imagePreservationFactor(0.8f)
+             .labels(mapOf("label1" to "value1", "label2" to "value2"))
+            .build()
+        val upscaleFactor = ""
+
+        val image = MediaSource.File("image.jpg", "image/jpeg")
+        val inputImage = Image.builder()
+            .mimeType(image.contentType)
+            .imageBytes(readResource(image.filepath).readAllBytes())
+            .build()
+
+        // upscaleImage
+        client.models.upscaleImage(model, inputImage, upscaleFactor, params)
+
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+        val trace = traces.first()
+
+        val expectedImage = MediaContentAttributeValues.Data(
+            field = "output",
+            contentType = outputMimeType,
+            data = null,
+        )
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            image.toMediaContentAttributeValues(field = "input"),
+            expectedImage,
+        ))
     }
 }
