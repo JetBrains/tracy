@@ -95,13 +95,6 @@ class GeminiTracingTest : BaseAITracingTest() {
             .build()
     }
 
-    private fun GenerateContentResponse.toolCalled(toolName: String): Boolean {
-        return parts()?.any { part ->
-            part.functionCall()
-                .map { call -> call.name().orElse(null) == toolName }
-                .orElse(false)
-        } ?: false
-    }
 
     @Test
     fun `test nested instrumentation calls don't cause duplicative tracing`() = runTest {
@@ -137,8 +130,7 @@ class GeminiTracingTest : BaseAITracingTest() {
                 .build()
         )
 
-        val toolCalled = response.toolCalled(toolName)
-        flushTracesAndAssume(toolCalled, "Tool was not called")
+        flushTracesAndAssumeToolCalled(response, toolName, GenerateContentResponse::containsToolCall)
 
         val traces = analyzeSpans()
 
@@ -185,8 +177,7 @@ class GeminiTracingTest : BaseAITracingTest() {
             config,
         )
 
-        val toolCalled = firstResponse.toolCalled(toolName)
-        flushTracesAndAssume(toolCalled, "Tool was not called")
+        flushTracesAndAssumeToolCalled(firstResponse, toolName, GenerateContentResponse::containsToolCall)
 
         // Step 3: Extract function calls and create function responses
         val functionCallResponses = buildList {
@@ -271,10 +262,8 @@ class GeminiTracingTest : BaseAITracingTest() {
             config,
         )
 
-        val greetToolCalled = firstResponse.toolCalled(greetToolName)
-        flushTracesAndAssume(greetToolCalled, "Greet tool was not called")
-        val goodbyeToolCalled = firstResponse.toolCalled(goodbyeToolName)
-        flushTracesAndAssume(goodbyeToolCalled, "Goodbye tool was not called")
+        flushTracesAndAssumeToolCalled(firstResponse, greetToolName, GenerateContentResponse::containsToolCall)
+        flushTracesAndAssumeToolCalled(firstResponse, goodbyeToolName, GenerateContentResponse::containsToolCall)
 
         val functionCallResponses = buildList {
             firstResponse.parts()?.forEach { part ->
@@ -453,7 +442,7 @@ class GeminiTracingTest : BaseAITracingTest() {
         val labelsAttribute = trace.attributes[AttributeKey.stringKey("tracy.request.labels")]
 
         assertNotNull(labelsAttribute)
-        assertEquals("{\"labelKey\":\"labelValue\"}",labelsAttribute)
+        assertEquals("{\"labelKey\":\"labelValue\"}", labelsAttribute)
     }
 
     private fun installHttpInterceptor(client: GeminiClient, interceptor: Interceptor) {
@@ -471,4 +460,12 @@ class GeminiTracingTest : BaseAITracingTest() {
 
         httpClientField.set(apiClient, modifiedHttpClient)
     }
+}
+
+private fun GenerateContentResponse.containsToolCall(toolName: String): Boolean {
+    return parts()?.any { part ->
+        part.functionCall()
+            .map { call -> call.name().orElse(null) == toolName }
+            .orElse(false)
+    } ?: false
 }

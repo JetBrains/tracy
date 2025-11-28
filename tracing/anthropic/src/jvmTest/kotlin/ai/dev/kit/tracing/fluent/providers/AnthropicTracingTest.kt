@@ -58,8 +58,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
 
         val response = client.messages().create(params)
 
-        val toolCalled = response.toolCalled(toolName)
-        flushTracesAndAssume(toolCalled, "Tool was not called")
+        flushTracesAndAssumeToolCalled(response, toolName, Message::containsToolCall)
 
         val traces = analyzeSpans()
 
@@ -113,8 +112,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         val assistantMessage = messageAccumulator.message()
         paramsBuilder.addMessage(assistantMessage)
 
-        val toolCalled = assistantMessage.toolCalled(toolName)
-        flushTracesAndAssume(toolCalled, "Tool was not called")
+        flushTracesAndAssumeToolCalled(assistantMessage, toolName, Message::containsToolCall)
 
         // Find and respond to tool calls
         assistantMessage.content().forEach { block ->
@@ -225,14 +223,14 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         val firstAssistant = messageAccumulator.message()
         paramsBuilder.addMessage(firstAssistant)
         addToolResults(firstAssistant)
-        val greetToolCalled = firstAssistant.toolCalled(greetToolName)
-        flushTracesAndAssume(greetToolCalled, "Greet tool was not called")
+
+        flushTracesAndAssumeToolCalled(firstAssistant, greetToolName, Message::containsToolCall)
 
         val secondAssistant = client.messages().create(paramsBuilder.build())
         paramsBuilder.addMessage(secondAssistant)
         addToolResults(secondAssistant)
-        val goodbyeToolCalled = secondAssistant.toolCalled(goodbyeToolName)
-        flushTracesAndAssume(goodbyeToolCalled, "Goodbye tool was not called")
+
+        flushTracesAndAssumeToolCalled(secondAssistant, goodbyeToolName, Message::containsToolCall)
 
         client.messages().create(paramsBuilder.build())
 

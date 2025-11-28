@@ -68,12 +68,6 @@ abstract class BaseAnthropicTracingTest : BaseAITracingTest() {
             ).build()
     }
 
-    protected fun Message.toolCalled(toolName: String): Boolean {
-        return content().any { block ->
-            block.isToolUse() && block.asToolUse().name() == toolName
-        }
-    }
-
     protected fun installHttpInterceptor(client: AnthropicClient, interceptor: Interceptor) {
         val clientOptions = getFieldValue(client, "clientOptions")
         val originalHttpClient = getFieldValue(clientOptions, "originalHttpClient")
@@ -93,5 +87,11 @@ abstract class BaseAnthropicTracingTest : BaseAITracingTest() {
 
     companion object {
         private const val ANTHROPIC_API_URL = "https://api.anthropic.com"
+    }
+}
+
+internal fun Message.containsToolCall(toolName: String): Boolean {
+    return content().any { block ->
+        block.isToolUse() && block.asToolUse().name() == toolName
     }
 }

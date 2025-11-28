@@ -64,8 +64,8 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
             .build()
 
         val response = client.responses().create(params)
-        val toolCalled = response.toolCalled(toolName)
-        flushTracesAndAssume(toolCalled, "Tool was not called")
+
+        flushTracesAndAssumeToolCalled(response, toolName, Response::containsToolCall)
 
         validateToolCall()
     }
@@ -86,8 +86,8 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
             .input(userPrompt)
 
         val first = client.responses().create(paramsBuilderFirst.build())
-        val toolCalled = first.toolCalled(toolName)
-        flushTracesAndAssume(toolCalled, "Tool was not called")
+
+        flushTracesAndAssumeToolCalled(first, toolName, Response::containsToolCall)
 
         val toolCalls = first.output().mapNotNull { it.functionCall().orElse(null) }
 
@@ -142,10 +142,8 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
 
         val first = client.responses().create(paramsBuilderFirst.build())
 
-        val greetToolCalled = first.toolCalled(greetToolName)
-        flushTracesAndAssume(greetToolCalled, "Greet tool was not called")
-        val goodbyeToolCalled = first.toolCalled(goodbyeToolName)
-        flushTracesAndAssume(goodbyeToolCalled, "Goodbye tool was not called")
+        flushTracesAndAssumeToolCalled(first, greetToolName, Response::containsToolCall)
+        flushTracesAndAssumeToolCalled(first, goodbyeToolName, Response::containsToolCall)
 
         val toolCalls = first.output().mapNotNull { it.functionCall().orElse(null) }
 

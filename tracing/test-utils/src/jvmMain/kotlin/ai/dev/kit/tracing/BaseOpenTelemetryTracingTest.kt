@@ -46,9 +46,14 @@ abstract class BaseOpenTelemetryTracingTest {
         return spanExporter.finishedSpanItems.mapNotNull { it }
     }
 
-    protected fun flushTracesAndAssume(assumption: Boolean, message: String) {
+    protected fun <T> flushTracesAndAssumeToolCalled(
+        response: T,
+        toolName: String,
+        containsToolCall: (T, String) -> Boolean,
+    ) {
         TracingManager.flushTraces(10)
-        assumeTrue(assumption, message)
+        val called = containsToolCall(response, toolName)
+        assumeTrue(called, "`$toolName` tool was not called")
     }
 }
 
