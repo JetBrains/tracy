@@ -10,7 +10,8 @@ private fun Project.versionOf(name: String): String {
 }
 
 private fun Project.getVersions() = object {
-    val okhttp = "3.14.9" // NOTE: the actual version used doesn't have a package list published, using latest
+    // NOTE: the actual version used doesn't have a package list published, using latest
+    val okhttp = "latest"
     val opentelemetry = versionOf("opentelemetry")
     val openai = versionOf("openai")
     val gemini = versionOf("gemini")
@@ -90,9 +91,9 @@ dokka {
             packageListUrl("https://javadoc.io/doc/com.google.genai/google-genai/${versions.gemini}/element-list")
         }
 
-        externalDocumentationLinks.register("com.anthropic:anthropic-java") {
-            url("https://javadoc.io/doc/com.anthropic/anthropic-java/${versions.anthropic}/")
-            packageListUrl("https://javadoc.io/doc/com.anthropic/anthropic-java/${versions.anthropic}/element-list")
-        }
+//        externalDocumentationLinks.register("com.anthropic:anthropic-java") {
+//            url("https://javadoc.io/doc/com.anthropic/anthropic-java/${versions.anthropic}/")
+//            packageListUrl("https://javadoc.io/doc/com.anthropic/anthropic-java/${versions.anthropic}/element-list")
+//        }
     }
 }
