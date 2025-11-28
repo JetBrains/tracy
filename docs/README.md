@@ -1,4 +1,4 @@
-# Documentation
+# Web Documentation
 
 ## Module Structure
 
@@ -186,17 +186,19 @@ Here are the steps how to fix compilation errors that occur in your documentatio
 > <!--- KNIT example-[md-file-name]-02.kt -->
 > ``````
 
+# API Reference
+API reference documentation is generated
+using [Dokka Gradle plugin v2](https://kotlinlang.org/docs/dokka-migration.html).
 
----
-
-
-### API reference
-
-
-API reference documentation is generated using [Dokka](https://github.com/Kotlin/dokka), a documentation engine for Kotlin. The API documentation is built with:
-
+To build the API documentation execute `dokkaGenerate` Gradle task in the root project directory:
 ```bash
 ./gradlew dokkaGenerate
+```
+
+To view the generated documentation, use any static file server, e.g.:
+```bash
+cd build/dokka/html
+python3 -m http.server --bind 127.0.0.1
 ```
 
 The generated API documentation is deployed at _TODO(add link)_.
