@@ -91,9 +91,9 @@ dokka {
             packageListUrl("https://javadoc.io/doc/com.google.genai/google-genai/${versions.gemini}/element-list")
         }
 
-//        externalDocumentationLinks.register("com.anthropic:anthropic-java") {
-//            url("https://javadoc.io/doc/com.anthropic/anthropic-java/${versions.anthropic}/")
-//            packageListUrl("https://javadoc.io/doc/com.anthropic/anthropic-java/${versions.anthropic}/element-list")
-//        }
+        externalDocumentationLinks.register("com.anthropic:anthropic-java") {
+            url("https://javadoc.io/doc/com.anthropic/anthropic-java/${versions.anthropic}/")
+            packageListUrl("https://javadoc.io/doc/com.anthropic/anthropic-java/${versions.anthropic}/element-list")
+        }
     }
 }
