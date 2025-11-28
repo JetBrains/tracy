@@ -7,7 +7,6 @@ plugins {
     kotlin("jvm")
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.knit)
-     id("ai.kotlin.dokka")
 }
 
 kotlin {
@@ -27,13 +26,6 @@ dependencies {
     implementation(libs.gemini)
     implementation(libs.openai)
     implementation(libs.okhttp)
-}
-
-
-dokka {
-    dokkaSourceSets.configureEach {
-        suppress.set(true)
-    }
 }
 
 val knitProperties: Provider<Properties> =
