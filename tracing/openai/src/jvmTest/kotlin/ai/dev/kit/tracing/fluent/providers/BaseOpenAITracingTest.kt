@@ -187,14 +187,6 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
         return ChatCompletionTool.ofFunction(functionTool)
     }
 
-    protected fun ChatCompletion.toolCalled(toolName: String): Boolean {
-        return choices().any { choice ->
-            choice.message().toolCalls()
-                .map { toolCalls -> toolCalls.any { it.name == toolName } }
-                .orElse(false)
-        }
-    }
-
     protected fun createFunctionTool(word: String): FunctionTool {
         val schema = JsonValue.from(
             mapOf(
@@ -210,14 +202,6 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
             .parameters(schema)
             .strict(false)
             .build()
-    }
-
-    protected fun Response.toolCalled(toolName: String): Boolean {
-        return output().any { item ->
-            item.functionCall()
-                .map { call -> call.name() == toolName }
-                .orElse(false)
-        }
     }
 
     protected fun validateStreaming(output: String) {
@@ -246,19 +230,6 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
             return id
         }
 
-    protected val ChatCompletionMessageToolCall.name: String
-        get() {
-            val toolCall = this
-            val name = if (toolCall.isFunction()) {
-                toolCall.function().get().function().name()
-            } else if (toolCall.isCustom()) {
-                toolCall.custom().get().custom().name()
-            } else {
-                throw IllegalStateException("Cannot extract name of the tool call $toolCall")
-            }
-            return name
-        }
-
     protected fun readResource(filepath: String): InputStream {
         return javaClass.classLoader.getResourceAsStream(filepath)
             ?: error("File not found")
@@ -272,5 +243,34 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
      */
     protected fun assumeOpenAIEndpoint(url: String) {
         Assumptions.assumeTrue(url.startsWith(PRODUCTION_URL))
+    }
+}
+
+internal val ChatCompletionMessageToolCall.name: String
+    get() {
+        val toolCall = this
+        val name = if (toolCall.isFunction()) {
+            toolCall.function().get().function().name()
+        } else if (toolCall.isCustom()) {
+            toolCall.custom().get().custom().name()
+        } else {
+            throw IllegalStateException("Cannot extract name of the tool call $toolCall")
+        }
+        return name
+    }
+
+internal fun Response.containsToolCall(toolName: String): Boolean {
+    return output().any { item ->
+        item.functionCall()
+            .map { call -> call.name() == toolName }
+            .orElse(false)
+    }
+}
+
+internal fun ChatCompletion.containsToolCall(toolName: String): Boolean {
+    return choices().any { choice ->
+        choice.message().toolCalls()
+            .map { toolCalls -> toolCalls.any { it.name == toolName } }
+            .orElse(false)
     }
 }

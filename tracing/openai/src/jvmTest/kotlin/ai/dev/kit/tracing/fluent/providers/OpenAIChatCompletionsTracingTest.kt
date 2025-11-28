@@ -94,8 +94,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
         val response = client.chat().completions().create(params)
 
-        val toolCalled = response.toolCalled(toolName)
-        flushTracesAndAssume(toolCalled, "Tool was not called")
+        flushTracesAndAssumeToolCalled(response, toolName, ChatCompletion::containsToolCall)
 
         validateToolCall()
     }
@@ -117,8 +116,8 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
         // expect AI to request a tool call
         val response = client.chat().completions().create(paramsBuilder.build())
-        val toolCalled = response.toolCalled(toolName)
-        flushTracesAndAssume(toolCalled, "Tool was not called")
+
+        flushTracesAndAssumeToolCalled(response, toolName, ChatCompletion::containsToolCall)
 
         response.choices().stream()
             .map(ChatCompletion.Choice::message)
@@ -157,10 +156,9 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
             .temperature(0.0)
 
         val response = client.chat().completions().create(paramsBuilder.build())
-        val greetToolCalled = response.toolCalled(greetToolName)
-        flushTracesAndAssume(greetToolCalled, "Greet tool was not called")
-        val goodbyeToolCalled = response.toolCalled(goodbyeToolName)
-        flushTracesAndAssume(goodbyeToolCalled, "Goodbye tool was not called")
+
+        flushTracesAndAssumeToolCalled(response, greetToolName, ChatCompletion::containsToolCall)
+        flushTracesAndAssumeToolCalled(response, goodbyeToolName, ChatCompletion::containsToolCall)
 
         response.choices().stream()
             .map(ChatCompletion.Choice::message)
