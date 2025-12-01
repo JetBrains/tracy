@@ -12,8 +12,8 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.cargo/bin:$PATH"
 
 # Copy the project
-PROJECT_ROOT="../../"
-COPY $PROJECT_ROOT /repo
+# NOTE: expecting the context to be the project root
+COPY . /repo
 
 # Build the documentation
 WORKDIR /repo/docs
