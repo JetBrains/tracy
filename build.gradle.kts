@@ -1,13 +1,13 @@
 plugins {
     id("ai.kotlin.dokka")
     alias(libs.plugins.kotlin.serialization) apply false
-    id("ai.dev.kit.trace") apply false
 }
 
 subprojects {
     repositories {
         mavenCentral()
     }
+
     tasks.withType<Test> {
         useJUnitPlatform {
             val areTestsRunLocally = System.getProperty("aiDevKitLocalTests", "true").toBoolean()
@@ -40,10 +40,10 @@ tasks.register("publishContentModules") {
 
 dependencies {
     dokka(project(":tracing:tracing-anthropic"))
-    dokka(project(":tracing:tracing-openai"))
+    dokka(project(":tracing:tracing-core"))
     dokka(project(":tracing:tracing-gemini"))
     dokka(project(":tracing:tracing-ktor"))
+    dokka(project(":tracing:tracing-openai"))
     dokka(project(":tracing:tracing-test-utils"))
-    dokka(project(":tracing:tracing-core"))
 }
 
