@@ -17,17 +17,6 @@ internal class KotlinLangfuseClient private constructor(
     internal val baseUrl: String?,
     private val authHeader: String? = null,
 ) {
-    companion object {
-        private val langfuseJson = Json { ignoreUnknownKeys = true }
-
-        internal fun setupCredentials(
-            langfuseExporterConfig: LangfuseExporterConfig
-        ) = KotlinLangfuseClient(
-            baseUrl = langfuseExporterConfig.resolvedBaseUrl,
-            authHeader = langfuseExporterConfig.basicAuthHeader(),
-        )
-    }
-
     private val client = HttpClient(CIO) {
         install(ContentNegotiation) {
             json()
@@ -47,5 +36,16 @@ internal class KotlinLangfuseClient private constructor(
         }
 
         return langfuseJson.parseToJsonElement(response.bodyAsText()).jsonObject
+    }
+
+    companion object {
+        private val langfuseJson = Json { ignoreUnknownKeys = true }
+
+        internal fun setupCredentials(
+            langfuseExporterConfig: LangfuseExporterConfig
+        ) = KotlinLangfuseClient(
+            baseUrl = langfuseExporterConfig.resolvedBaseUrl,
+            authHeader = langfuseExporterConfig.basicAuthHeader(),
+        )
     }
 }
