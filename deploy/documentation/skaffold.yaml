@@ -8,7 +8,8 @@ build:
     sha256: {}
   artifacts:
     - image: registry.jetbrains.team/p/ai-development-kit/containers/documentation-deployment
-      docker: {}
+      docker:
+        dockerfile: Dockerfile
   local:
     useDockerCLI: false
     useBuildkit: true
