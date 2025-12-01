@@ -10,7 +10,6 @@ RUN apk add --no-cache python3 py3-pip curl git
 # Install uv & add it to PATH
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:$PATH"
-RUN uv --version
 
 # Copy the project
 # NOTE: expecting the context to be the project root
