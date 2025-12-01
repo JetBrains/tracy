@@ -190,10 +190,19 @@ Here are the steps how to fix compilation errors that occur in your documentatio
 API reference documentation is generated
 using [Dokka Gradle plugin v2](https://kotlinlang.org/docs/dokka-migration.html).
 
-To build the API documentation execute `dokkaGenerate` Gradle task in the root project directory:
+## HTML Documentation
+To build the API HTML documentation execute `dokkaGenerate` Gradle task in the root project directory:
 ```bash
 ./gradlew dokkaGenerate
 ```
+
+This will generate:
+* Dokka HTML documentation for each module in the `<module>/build/dokka/html` directory
+* Javadoc HTML documentation for each module in the `<module>/build/dokka/javadoc` directory
+* Aggregated documentation in the root project build directory: `build/dokka` in Dokka HTML and Javadoc.
+
+See [select documentation output format](https://kotlinlang.org/docs/dokka-migration.html#select-documentation-output-format)
+for details.
 
 To view the generated documentation, use any static file server, e.g.:
 ```bash
@@ -201,4 +210,21 @@ cd build/dokka/html
 python3 -m http.server --bind 127.0.0.1
 ```
 
-The generated API documentation is deployed at _TODO(add link)_.
+## Build javadoc.jar
+To create javadoc.jar run *dokkaHtmlJar* or *dokkaJavadocJar* in the scope of some module:
+```bash
+./gradlew :tracing:tracing-core:dokkaHtmlJar
+```
+
+This will pack Dokka or Javadoc HTML documentation into `javadoc.jar` file in the `<module>/build/libs` directory.
+
+## Documentation Publishing
+javadoc.jar's for all modules are published automatically. E.g. this will build and publish documentation alongside 
+library jars to the local Maven repository:
+```bash
+./gradlew publishToMavenLocal
+```
+
+The default publishing configuration uses Dokka HTML documentation for publishing, 
+since the Javadoc output format [is currently in Alpha](https://kotlinlang.org/docs/dokka-migration.html#select-documentation-output-format) 
+and its successful integration with tools that accept Javadoc as input is not guaranteed.
