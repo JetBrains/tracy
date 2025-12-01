@@ -1,0 +1,27 @@
+---
+apiVersion: skaffold/v4beta8
+kind: Config
+metadata:
+  name: documentation-deployment
+build:
+  tagPolicy:
+    sha256: {}
+  artifacts:
+    - image: registry.jetbrains.team/p/ai-development-kit/containers/documentation-deployment
+      docker: {}
+  local:
+    useDockerCLI: false
+    useBuildkit: true
+deploy:
+  helm:
+    releases:
+      - name: documentation-deployment # Will clash with other apps in one namespace, so please change for each new app
+        remoteChart: oci://registry.jetbrains.team/p/cb/helm-charts/simple-app
+        upgradeOnChange: true
+        version: 0.3.2
+        setValueTemplates:
+          image: "{{.IMAGE_FULLY_QUALIFIED}}"
+          imagePullSecret: "{{.IMAGE_PULL_SECRET}}"
+          applicationName: "{{.APPLICATION_NAME}}"
+        valuesFiles:
+          - values.yaml
