@@ -1,6 +1,7 @@
-
 plugins {
     id("org.jetbrains.dokka")
+    id("org.jetbrains.dokka-javadoc")
+    `maven-publish`
 }
 
 private fun Project.versionOf(name: String): String {
@@ -95,5 +96,24 @@ dokka {
             url("https://javadoc.io/doc/com.anthropic/anthropic-java/${versions.anthropic}/")
             packageListUrl("https://javadoc.io/doc/com.anthropic/anthropic-java/${versions.anthropic}/element-list")
         }
+    }
+}
+
+// Documentation archive generation and publishing
+val htmlJar = tasks.register<Jar>("dokkaHtmlJar") {
+    dependsOn(tasks.dokkaGeneratePublicationHtml)
+    from(tasks.dokkaGeneratePublicationHtml.flatMap { it.outputDirectory })
+    archiveClassifier.set("javadoc")
+}
+
+val javadocJar by tasks.register<Jar>("dokkaJavadocJar") {
+    dependsOn(tasks.dokkaGeneratePublicationJavadoc)
+    from(tasks.dokkaGeneratePublicationJavadoc.flatMap { it.outputDirectory })
+    archiveClassifier.set("javadoc")
+}
+
+publishing {
+    publications.withType<MavenPublication> {
+        artifact(htmlJar)
     }
 }
