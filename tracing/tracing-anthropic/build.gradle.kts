@@ -4,7 +4,6 @@ plugins {
     kotlin("multiplatform")
     alias(libs.plugins.kotlin.serialization)
     id("ai.dev.kit.space.publishing")
-    id("ai.dev.kit.trace")
     id("ai.kotlin.dokka")
 }
 
