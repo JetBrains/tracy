@@ -27,10 +27,6 @@ import mu.KotlinLogging
 class GeminiImagenHandler(
     private val extractor: MediaContentExtractor
 ) : GeminiApiHandler {
-    companion object {
-        private val logger = KotlinLogging.logger {}
-    }
-
     override fun handleRequestAttributes(span: Span, request: Request) {
         val body = request.body.asJson()?.jsonObject ?: return
 
@@ -120,5 +116,9 @@ class GeminiImagenHandler(
         }
 
         return Resource.Base64(base64, contentType)
+    }
+
+    companion object {
+        private val logger = KotlinLogging.logger {}
     }
 }

@@ -45,7 +45,8 @@ abstract class BaseGeminiTracingTest : BaseAITracingTest() {
             .httpOptions(
                 GeminiHttpOptions.builder()
                     .baseUrl("$llmProviderUrl/vertex_ai")
-                    .headers(mapOf("x-litellm-api-key" to "Bearer $llmProviderApiKey")) // TODO: fix?
+                    // TODO: fix?
+                    .headers(mapOf("x-litellm-api-key" to "Bearer $llmProviderApiKey"))
                     .timeout(Duration.ofSeconds(60).toMillis().toInt())
                     .build()
             )
