@@ -106,6 +106,7 @@ class LangfuseExporterConfig(
 
         sdkTracerBuilder.addSpanProcessor(
             SpanProcessor.composite(
+                // first, upload media content then export to langfuse
                 mediaContentUploadingSpanProcessor,
                 langfuseExportingSpanProcessor,
             )
@@ -304,7 +305,6 @@ private class FilteredSpanData(delegate: SpanData) : DelegatingSpanData(delegate
         }
     }
 }
-
 
 private class RequestFailedException(message: String) : RuntimeException(message)
 
