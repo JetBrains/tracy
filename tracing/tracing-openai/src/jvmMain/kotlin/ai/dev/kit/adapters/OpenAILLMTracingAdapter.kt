@@ -20,6 +20,7 @@ import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mu.KotlinLogging
+import java.util.concurrent.ConcurrentHashMap
 
 
 /**
@@ -44,31 +45,17 @@ private enum class OpenAIApiType(val route: String) {
 }
 
 class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.OPENAI) {
-    private val logger = KotlinLogging.logger {}
-    private var handler: OpenAIApiHandler? = null
+    private val handlers = ConcurrentHashMap<OpenAIApiType, OpenAIApiHandler>()
 
     override fun getRequestBodyAttributes(span: Span, request: Request) {
-        // TODO(Vladislav0Art): JBAI-18234 create handler every time a new request is processed
-        if (handler == null) {
-            val extractor = MediaContentExtractorImpl()
-
-            handler = when (OpenAIApiType.detect(request.url)) {
-                OpenAIApiType.CHAT_COMPLETIONS -> ChatCompletionsHandler(extractor)
-                OpenAIApiType.RESPONSES_API -> ResponsesApiHandler(extractor)
-                OpenAIApiType.IMAGES_GENERATIONS -> ImagesGenerationsHandler(extractor)
-                OpenAIApiType.IMAGES_EDITS -> ImagesEditsHandler(extractor)
-                else -> {
-                    logger.warn { "Unknown OpenAI API detected. Defaulting to 'chat completion'." }
-                    ChatCompletionsHandler(extractor)
-                }
-            }
-        }
-        handler?.handleRequestAttributes(span, request)
+        val handler = handlerFor(request.url)
+        handler.handleRequestAttributes(span, request)
     }
 
     override fun getResponseBodyAttributes(span: Span, response: Response) {
+        val handler = handlerFor(response.url)
         OpenAIApiUtils.setCommonResponseAttributes(span, response)
-        handler?.handleResponseAttributes(span, response)
+        handler.handleResponseAttributes(span, response)
     }
 
     override fun isStreamingRequest(request: Request): Boolean {
@@ -87,7 +74,43 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
         }
     }
 
-    override fun handleStreaming(span: Span, events: String) {
-        handler?.handleStreaming(span, events)
+    override fun handleStreaming(span: Span, url: Url, events: String) {
+        val handler = handlerFor(url)
+        handler.handleStreaming(span, events)
+    }
+
+    /**
+     * Determines the appropriate handler for an OpenAI API based on the given URL.
+     *
+     * @param endpoint The URL used to detect the API type and determine the corresponding handler.
+     * @return An instance of [OpenAIApiHandler] that is capable of handling requests for the detected API type.
+     */
+    private fun handlerFor(endpoint: Url): OpenAIApiHandler {
+        val apiType = OpenAIApiType.detect(endpoint)
+        val extractor = MediaContentExtractorImpl()
+
+        val handler = when (apiType) {
+            OpenAIApiType.CHAT_COMPLETIONS -> handlers.getOrPut(OpenAIApiType.CHAT_COMPLETIONS) {
+                ChatCompletionsHandler(extractor)
+            }
+            OpenAIApiType.RESPONSES_API -> handlers.getOrPut(OpenAIApiType.RESPONSES_API) {
+                ResponsesApiHandler(extractor)
+            }
+            OpenAIApiType.IMAGES_GENERATIONS -> handlers.getOrPut(OpenAIApiType.IMAGES_GENERATIONS) {
+                ImagesGenerationsHandler(extractor)
+            }
+            OpenAIApiType.IMAGES_EDITS -> handlers.getOrPut(OpenAIApiType.IMAGES_EDITS) {
+                ImagesEditsHandler(extractor)
+            }
+            null -> handlers.getOrPut(OpenAIApiType.CHAT_COMPLETIONS) {
+                logger.warn { "Unknown OpenAI API detected. Defaulting to 'chat completion'." }
+                ChatCompletionsHandler(extractor)
+            }
+        }
+        return handler
+    }
+
+    companion object {
+        private val logger = KotlinLogging.logger {}
     }
 }

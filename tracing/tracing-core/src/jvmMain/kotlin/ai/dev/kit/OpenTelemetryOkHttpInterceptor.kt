@@ -5,7 +5,7 @@ import ai.dev.kit.adapters.LLMTracingAdapter
 import ai.dev.kit.http.parsers.MultipartFormDataParser
 import ai.dev.kit.http.protocol.*
 import ai.dev.kit.tracing.TracingManager
-import io.ktor.http.*
+import io.ktor.http.ContentType
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.serialization.json.Json
@@ -16,12 +16,12 @@ import mu.KotlinLogging
 import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.Buffer
 import okio.BufferedSource
 import okio.ForwardingSource
 import okio.buffer
+import okhttp3.Request as OkHttpRequest
 import okhttp3.Response as OkHttpResponse
 import okhttp3.ResponseBody as OkHttpResponseBody
 
@@ -123,7 +123,7 @@ abstract class OpenTelemetryOkHttpInterceptor(
                     val req = bodyContent.asRequestBody(mediaType)?.let {
                         Request(
                             contentType = mediaType?.toContentType(),
-                            url = request.url.toRequestUrl(),
+                            url = request.url.toProtocolUrl(),
                             body = it,
                         )
                     }
@@ -145,15 +145,17 @@ abstract class OpenTelemetryOkHttpInterceptor(
 
                 return if (isStreamingRequest) {
                     val streamingMarker = JsonObject(mapOf("stream" to JsonPrimitive(true)))
+                    val url = request.url.toProtocolUrl()
                     adapter.registerResponse(
                         span = span,
                         response = Response(
                             contentType = responseMediaType?.toContentType(),
                             code = response.code,
-                            body = ResponseBody.Json(streamingMarker)
+                            body = ResponseBody.Json(streamingMarker),
+                            url = url,
                         ),
                     )
-                    wrapStreamingResponse(response, span)
+                    wrapStreamingResponse(response, url, span)
                 } else {
                     val decodedResponse = try {
                         Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
@@ -165,7 +167,8 @@ abstract class OpenTelemetryOkHttpInterceptor(
                         response = Response(
                             contentType = responseMediaType?.toContentType(),
                             code = response.code,
-                            body = ResponseBody.Json(decodedResponse)
+                            body = ResponseBody.Json(decodedResponse),
+                            url = request.url.toProtocolUrl(),
                         ),
                     )
                     response
@@ -182,7 +185,11 @@ abstract class OpenTelemetryOkHttpInterceptor(
         }
     }
 
-    private fun wrapStreamingResponse(originalResponse: OkHttpResponse, span: Span): OkHttpResponse {
+    private fun wrapStreamingResponse(
+        originalResponse: OkHttpResponse,
+        url: Url,
+        span: Span,
+    ): OkHttpResponse {
         val originalBody = originalResponse.body ?: return originalResponse
 
         val tracingBody = object : OkHttpResponseBody() {
@@ -220,7 +227,7 @@ abstract class OpenTelemetryOkHttpInterceptor(
 
             override fun close() {
                 try {
-                    adapter.handleStreaming(span, capturedText.toString())
+                    adapter.handleStreaming(span, url, capturedText.toString())
                 } finally {
                     span.end()
                 }
@@ -256,7 +263,7 @@ abstract class OpenTelemetryOkHttpInterceptor(
         }
     }
 
-    private fun Request.withCopiedBodyContent(): Pair<ByteArray?, Request> {
+    private fun OkHttpRequest.withCopiedBodyContent(): Pair<ByteArray?, OkHttpRequest> {
         val body = this.body ?: return null to this
         val mediaType = body.contentType()
 

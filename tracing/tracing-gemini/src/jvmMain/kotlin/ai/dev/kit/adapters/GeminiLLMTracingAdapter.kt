@@ -3,6 +3,7 @@ package ai.dev.kit.adapters
 import ai.dev.kit.adapters.LLMTracingAdapter.Companion.PayloadType
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
+import ai.dev.kit.http.protocol.Url
 import ai.dev.kit.http.protocol.asJson
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
@@ -166,7 +167,7 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
 
     // streaming is not supported
     override fun isStreamingRequest(request: Request) = false
-    override fun handleStreaming(span: Span, events: String) = Unit
+    override fun handleStreaming(span: Span, url: Url, events: String) = Unit
 
     /**
      * Extracts `text` attribute from `parts` array if

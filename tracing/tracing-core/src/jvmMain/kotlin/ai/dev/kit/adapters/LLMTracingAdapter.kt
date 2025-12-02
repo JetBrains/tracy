@@ -3,7 +3,7 @@ package ai.dev.kit.adapters
 import ai.dev.kit.exporters.BaseExporterConfig.Companion.DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES
 import ai.dev.kit.http.protocol.*
 import ai.dev.kit.tracing.TracingManager
-import io.ktor.http.*
+import io.ktor.http.ContentType
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.sdk.trace.ReadableSpan
@@ -130,5 +130,5 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
     protected abstract fun getResponseBodyAttributes(span: Span, response: Response)
 
     abstract fun isStreamingRequest(request: Request): Boolean
-    abstract fun handleStreaming(span: Span, events: String)
+    abstract fun handleStreaming(span: Span, url: Url, events: String)
 }

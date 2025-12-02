@@ -3,7 +3,6 @@ package ai.dev.kit.http.protocol
 import ai.dev.kit.http.parsers.FormData
 import io.ktor.http.ContentType
 import kotlinx.serialization.json.JsonElement
-import okhttp3.HttpUrl
 import okhttp3.MediaType
 
 
@@ -36,14 +35,6 @@ sealed class RequestBody {
     data class Json(val json: JsonElement) : RequestBody()
     data class DataForm(val data: FormData) : RequestBody()
 }
-
-data class Url(
-    val scheme: String,
-    val host: String,
-    val pathSegments: List<String>,
-)
-
-fun HttpUrl.toRequestUrl() = Url(scheme, host, pathSegments)
 
 fun MediaType.toContentType(): ContentType = ContentType.parse(this.toString())
 

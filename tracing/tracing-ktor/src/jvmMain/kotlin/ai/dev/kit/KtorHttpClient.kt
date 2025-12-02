@@ -1,15 +1,16 @@
 package ai.dev.kit
 
-import ai.dev.kit.http.protocol.Url
 import ai.dev.kit.adapters.LLMTracingAdapter
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.RequestBody
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.ResponseBody
+import ai.dev.kit.http.protocol.toProtocolUrl
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.fluent.processor.Span
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
+import io.ktor.client.statement.request
 import io.ktor.client.utils.*
 import io.ktor.http.*
 import io.ktor.util.*
@@ -77,11 +78,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                     }
 
                     val req = Request(
-                        url = Url(
-                            scheme = request.url.protocol.name,
-                            host = request.url.host,
-                            pathSegments = request.url.pathSegments,
-                        ),
+                        url = request.url.toProtocolUrl(),
                         body = RequestBody.Json(body),
                         contentType = request.contentType(),
                     )
@@ -119,6 +116,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                         contentType = response.contentType(),
                         code = response.status.value,
                         body = ResponseBody.Json(body),
+                        url = response.request.url.toProtocolUrl(),
                     ),
                 )
                 span.end()
@@ -141,6 +139,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                             ?.let { ContentType(it.contentType, it.contentSubtype) },
                         code = response.status.value,
                         body = ResponseBody.Json(body),
+                        url = response.request.url.toProtocolUrl(),
                     )
                 )
 
@@ -166,7 +165,11 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                         if (!tracingChannel.isClosedForWrite) tracingChannel.close(e)
                     } finally {
                         try {
-                            adapter.handleStreaming(span, capturedText.toString())
+                            adapter.handleStreaming(
+                                span = span,
+                                url = response.request.url.toProtocolUrl(),
+                                events = capturedText.toString()
+                            )
                         } finally {
                             span.end()
                             if (!tracingChannel.isClosedForWrite) tracingChannel.close()
@@ -182,7 +185,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
      * Helper function to serialize `@Serializable` objects with an unknown type
      */
     @OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)
-    fun serializeToJson(obj: Any): String? {
+    private fun serializeToJson(obj: Any): String? {
         return try {
             val kClass = obj::class
             if (kClass.hasAnnotation<Serializable>()) {

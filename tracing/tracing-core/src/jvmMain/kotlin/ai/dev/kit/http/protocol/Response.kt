@@ -13,11 +13,13 @@ import kotlinx.serialization.json.JsonElement
  *                (e.g., 200 for success, 404 for not found).
  * @property body The body of the HTTP response, encapsulated in a [ResponseBody] object, which can
  *                represent different response formats, such as JSON.
+ * @property url The URL associated with the HTTP response (i.e., where the initial request was made to).
  */
 data class Response(
     val contentType: ContentType?,
     val code: Int,
     val body: ResponseBody,
+    val url: Url,
 )
 
 /**
