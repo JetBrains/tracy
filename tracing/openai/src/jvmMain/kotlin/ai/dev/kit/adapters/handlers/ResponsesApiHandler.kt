@@ -70,7 +70,7 @@ internal class ResponsesApiHandler(
 
         body["input"]?.let { inputs ->
             if (inputs is JsonArray) {
-                processAttributeTypes(span, inputs, promptIndex, "prompt")
+                parseRequestInputAttributes(span, inputs)
                 attachMediaContentAttributes(span, field = "input", inputs)
             } else {
                 span.setAttribute("gen_ai.prompt.0.role", "user")
@@ -116,12 +116,76 @@ internal class ResponsesApiHandler(
         }
     }
 
+    /**
+     * Parses attributes from the Response Object of the Responses API.
+     *
+     * See [Response Object, Responses API](https://platform.openai.com/docs/api-reference/responses/object)
+     */
     override fun handleResponseAttributes(span: Span, response: Response) {
         val body = response.body.asJson()?.jsonObject ?: return
         OpenAIApiUtils.setCommonResponseAttributes(span, response)
 
+        // we manually map `output` and `usage` attributes;
+        // the rest of attributes get mapped by `populateUnmappedAttributes` below.
         body["output"]?.let { outputs ->
-            processAttributeTypes(span, outputs.jsonArray, 0, "completion")
+            for ((index, output) in outputs.jsonArray.withIndex()) {
+                when (val type = output.jsonObject["type"]?.jsonPrimitive?.content) {
+                    "message", null -> {
+                        // See schema: https://platform.openai.com/docs/api-reference/responses/object#responses-object-output-output_message
+                        output.jsonObject["role"]?.jsonPrimitive?.content?.let {
+                            span.setAttribute("gen_ai.completion.$index.role", it)
+                        }
+                        output.jsonObject["id"]?.jsonPrimitive?.content?.let {
+                            span.setAttribute("gen_ai.completion.$index.id", it)
+                        }
+                        output.jsonObject["status"]?.jsonPrimitive?.content?.let {
+                            span.setAttribute("gen_ai.completion.$index.finish_reason", it)
+                        }
+
+                        val content = output.jsonObject["content"]
+                        // See schema: https://platform.openai.com/docs/api-reference/responses/object#responses-object-output-output_message-content
+                        if (content is JsonArray) {
+                            // if there is a single message that has a type of `output_text`, then install it as completion content;
+                            // otherwise, set the entire array instead.
+                            if (content.size == 1 && content.count { it.jsonObject["type"]?.jsonPrimitive?.content == "output_text" } == 1) {
+                                val message = content
+                                    .first { it.jsonObject["type"]?.jsonPrimitive?.content == "output_text" }
+                                    .jsonObject
+
+                                message["text"]?.jsonPrimitive?.content?.let { span.setAttribute("gen_ai.completion.$index.content", it) }
+                                message["annotations"]?.let { span.setAttribute("gen_ai.completion.$index.annotations", it.toString()) }
+                            }
+                            else {
+                                // set the entire array as completion content
+                                span.setAttribute("gen_ai.completion.$index.content", content.toString())
+                            }
+                        } else if (content != null) {
+                            span.setAttribute("gen_ai.completion.$index.content", content.toString())
+                        }
+                    }
+                    else -> {
+                        // any other types, including 'function_call' and 'reasoning'
+                        // See output types: https://platform.openai.com/docs/api-reference/responses/object#responses-object-output
+                        for ((k, v) in output.jsonObject.entries) {
+                            val key = when {
+                                // prefix `function_call` with "tool_"
+                                type == "function_call" && k == "type" -> "tool_call_type"
+                                type == "function_call" -> "tool_$k"
+                                // special treatment for content of `reasoning`
+                                type == "reasoning" && k == "content" -> "output_content"
+                                // special treatment of `type` field
+                                k == "type" -> "output_type"
+                                else -> k
+                            }
+                            val value = when {
+                                v is JsonPrimitive -> v.content
+                                else -> v.toString()
+                            }
+                            span.setAttribute("gen_ai.completion.$index.$key", value)
+                        }
+                    }
+                }
+            }
         }
 
         body["usage"]?.let { usage ->
@@ -149,83 +213,75 @@ internal class ResponsesApiHandler(
         span.recordException(exception)
     }
 
-    private fun processAttributeTypes(span: Span, events: JsonArray, indexOfFirstAttribute: Int, type: String) {
-        var index = indexOfFirstAttribute
-
-        for (output in events.jsonArray) {
+    /**
+     * Parses input field of the request when it is of an array type.
+     *
+     * See the [schema](https://platform.openai.com/docs/api-reference/responses/create#responses_create-input)
+     */
+    private fun parseRequestInputAttributes(span: Span, inputs: JsonArray) {
+        for ((index, input) in inputs.jsonArray.withIndex()) {
             // See: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input
-            when (output.jsonObject["type"]?.jsonPrimitive?.content) {
-                "function_call", "function_call_output" -> {
-                    // "type" attribute is not rendered on Langfuse
-                    output.jsonObject["type"]?.jsonPrimitive?.content?.let {
-                        span.setAttribute("gen_ai.$type.$index.tool_call_type", it)
-                    }
-                    output.jsonObject["call_id"]?.jsonPrimitive?.content?.let {
-                        span.setAttribute("gen_ai.$type.$index.tool_call_id", it)
-                    }
-                    output.jsonObject["name"]?.jsonPrimitive?.content?.let {
-                        span.setAttribute("gen_ai.$type.$index.tool_name", it)
-                    }
-                    output.jsonObject["arguments"]?.jsonPrimitive?.content?.let {
-                        span.setAttribute("gen_ai.$type.$index.tool_arguments", it)
-                    }
-                    output.jsonObject["output"]?.jsonPrimitive?.content?.let {
-                        span.setAttribute("gen_ai.$type.$index.output", it)
-                    }
-                }
+            when (val type = input.jsonObject["type"]?.jsonPrimitive?.content) {
+               "message" -> {
+                   // this message can be either:
+                   //   1. Input message: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input-input_item_list-item-input_message
+                   //   2. Output message: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input-input_item_list-item-output_message
+                   // the difference is in the `role` and `content` fields
 
-                "message", null -> {
-                    output.jsonObject["role"]?.jsonPrimitive?.content?.let {
-                        span.setAttribute("gen_ai.$type.$index.role", it)
-                    }
+                   // install primitive keys common for both input and output messages
+                   val fields = listOf("id", "role", "status", "type")
+                   for (field in fields) {
+                       input.jsonObject[field]?.jsonPrimitive?.content?.let { value ->
+                           val key = when (field) {
+                               "type" -> "input_type"
+                               else -> field
+                           }
+                           span.setAttribute("gen_ai.prompt.$index.$key", value)
+                       }
+                   }
 
-                    val content = output.jsonObject["content"]
-                    if (content is JsonArray) {
-                        val textContent = content.firstOrNull {
-                            it.jsonObject["type"]?.jsonPrimitive?.content == "output_text"
-                        }?.jsonObject
+                   val content = input.jsonObject["content"]
+                   if (content is JsonArray) {
+                       // if there is a single message that has a type of `input_text`, then install it as prompt content;
+                       // otherwise, set the entire array instead.
+                       if (content.size == 1 && content.count { it.jsonObject["type"]?.jsonPrimitive?.content == "input_text" } == 1) {
+                           val message = content.first { it.jsonObject["type"]?.jsonPrimitive?.content == "input_text" }.jsonObject
 
-                        textContent?.get("text")?.jsonPrimitive?.content?.let {
-                            span.setAttribute("gen_ai.$type.$index.content", it)
+                           message["text"]?.jsonPrimitive?.content?.let { span.setAttribute("gen_ai.prompt.$index.content", it) }
+                           message["type"]?.jsonPrimitive?.content?.let { span.setAttribute("gen_ai.prompt.$index.content_type", it) }
+                       } else {
+                           // set the entire array as prompt content
+                           span.setAttribute("gen_ai.prompt.$index.content", content.toString())
+                       }
+
+                   } else if (content != null) {
+                       span.setAttribute("gen_ai.prompt.$index.content", content.toString())
+                   }
+               }
+                else -> {
+                    // any other types, including 'function_call_output' and 'reasoning'
+                    // See input types: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input-input_item_list-item
+                    for ((k, v) in input.jsonObject.entries) {
+                        val functionCallTypes = listOf("function_call", "function_call_output")
+                        val key = when {
+                            // prefix `function_call`/`function_call_output` with "tool_"
+                            (type in functionCallTypes) && k == "type" -> "tool_call_type"
+                            (type in functionCallTypes) && k == "output" -> "output"
+                            type in functionCallTypes -> "tool_$k"
+                            // special treatment for content of `reasoning`
+                            type == "reasoning" && k == "content" -> "output_content"
+                            // special treatment of `type` field
+                            k == "type" -> "output_type"
+                            else -> k
                         }
-
-                        textContent?.get("annotations")?.let {
-                            span.setAttribute("gen_ai.$type.$index.annotations", it.toString())
+                        val value = when {
+                            v is JsonPrimitive -> v.content
+                            else -> v.toString()
                         }
-                    } else {
-                        span.setAttribute("gen_ai.$type.$index.content", content.toString())
-                    }
-
-                    output.jsonObject["status"]?.jsonPrimitive?.content?.let {
-                        span.setAttribute("gen_ai.$type.$index.finish_reason", it)
-                    }
-                }
-
-                "reasoning" -> {
-                    // "type" attribute is not rendered on Langfuse
-                    output.jsonObject["type"]?.jsonPrimitive?.content?.let {
-                        span.setAttribute("gen_ai.$type.$index.output_type", it)
-                    }
-                    output.jsonObject["id"]?.jsonPrimitive?.content?.let {
-                        span.setAttribute("gen_ai.$type.$index.id", it)
-                    }
-                    output.jsonObject["encrypted_content"]?.jsonPrimitive?.content?.let {
-                        span.setAttribute("gen_ai.$type.$index.encrypted_content", it)
-                    }
-                    output.jsonObject["status"]?.jsonPrimitive?.content?.let {
-                        span.setAttribute("gen_ai.$type.$index.status", it)
-                    }
-                    output.jsonObject["summary"]?.jsonArray?.let {
-                        span.setAttribute("gen_ai.$type.$index.summary", it.toString())
-                    }
-
-                    // content = null breaks rendering on Langfuse
-                    output.jsonObject["content"]?.jsonArray?.let {
-                        span.setAttribute("gen_ai.$type.$index.output_content", it.toString())
+                        span.setAttribute("gen_ai.prompt.$index.$key", value)
                     }
                 }
             }
-            index++
         }
     }
 
@@ -311,8 +367,13 @@ internal class ResponsesApiHandler(
 
         // https://platform.openai.com/docs/api-reference/responses/object
         private val mappedResponseAttributes: List<String> = listOf(
+            // parsed by `OpenAIApiUtils.setCommonResponseAttributes`
+            "id",
+            "object",
+            "model",
+
             "output",
-            "usage"
+            "usage",
         )
 
         private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes
