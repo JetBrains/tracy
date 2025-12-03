@@ -7,14 +7,18 @@ import ai.dev.kit.tracing.toMediaContentAttributeValues
 import com.openai.core.JsonValue
 import com.openai.models.ChatModel
 import com.openai.models.responses.*
+import io.opentelemetry.api.common.AttributeKey
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assumptions
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.time.Duration
 import kotlin.time.Duration.Companion.minutes
+import kotlin.test.assertEquals
 
 
 @Tag("openai")
@@ -58,7 +62,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
         val greetTool = createFunctionTool(toolName)
 
         val params = ResponseCreateParams.builder()
-            .input("Call the `hi` tool with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool call.")
+            .input("Call the `$toolName` tool with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool call.")
             .addTool(greetTool)
             .model(ChatModel.GPT_4O_MINI)
             .temperature(0.0)
@@ -78,7 +82,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
         val toolName = "hi"
         val greetTool = createFunctionTool(toolName)
 
-        val userPrompt = "Call the `hi` tool with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool call."
+        val userPrompt = "Call the `$toolName` tool with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool call."
 
         val paramsBuilderFirst = ResponseCreateParams.builder()
             .model(ChatModel.GPT_4O_MINI)
@@ -132,7 +136,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
         val goodbyeToolName = "goodbye"
         val goodbyeTool = createFunctionTool(goodbyeToolName)
 
-        val userPrompt = "Call the `hi` tool with the argument `name` set to 'USER' and `goodbye` with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool calls."
+        val userPrompt = "Call the `$greetToolName` tool with the argument `name` set to 'USER' and the `$goodbyeToolName` tool with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool calls."
 
         val paramsBuilderFirst = ResponseCreateParams.builder()
             .model(ChatModel.GPT_4O_MINI)
@@ -261,9 +265,113 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
 
         validateBasicTracing(model)
         val trace = analyzeSpans().first()
+
+        // prompt gets traced
+        val content = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
+        assertNotNull(content)
+        assertTrue(content!!.contains(prompt), "Content attribute must contain '$prompt'")
+
         verifyMediaContentUploadAttributes(trace, expected = listOf(
             image.toMediaContentAttributeValues(field = "input"),
         ))
+    }
+
+    @Test
+    fun `test user text messages and attached image get traced`() = runTest {
+        val model = ChatModel.GPT_4O_MINI
+        val prelude = "You are given an image."
+        val prompt = "Describe what you see in the image."
+
+        val image = MediaSource.File(
+            filepath = "./image.jpg",
+            contentType = "image/jpeg",
+        )
+
+        val client = instrument(createOpenAIClient())
+        val params = ResponseCreateParams.builder()
+            .input(
+                // text -> image -> text
+                inputWith(
+                    inputText(prelude),
+                    inputImage(image),
+                    inputText(prompt),
+                )
+            )
+            .model(model)
+            .temperature(0.0)
+            .build()
+
+        client.responses().create(params)
+
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
+
+        val content = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
+        assertNotNull(content)
+
+        // both prompts should exist in the content attribute
+        assertTrue(content!!.contains(prelude), "Content attribute must contain '$prelude'")
+        assertTrue(content.contains(prompt), "Content attribute must contain '$prompt'")
+
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            image.toMediaContentAttributeValues(field = "input"),
+        ))
+    }
+
+    @Test
+    fun `test user prompt is sent as a single message in input field`() = runTest {
+        val model = ChatModel.GPT_4O_MINI
+        val prompt = "How are you?"
+
+        val client = instrument(createOpenAIClient())
+        val params = ResponseCreateParams.builder()
+            .input(inputWith(inputText(prompt)))
+            .model(model)
+            .temperature(0.0)
+            .build()
+
+        client.responses().create(params)
+
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
+
+        val content = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
+        assertNotNull(content)
+        assertEquals(prompt, content, "Content attribute must be equal to '$prompt'")
+    }
+
+    @Test
+    fun `test user prompt is sent as several distinct messages`() = runTest {
+        val model = ChatModel.GPT_4O_MINI
+        val prelude = "I want you to do two things:"
+        val thing1 = "1. Count from 0 to 10 in a single sentence."
+        val thing2 = "2. Write the alphabet."
+
+        val client = instrument(createOpenAIClient())
+        val params = ResponseCreateParams.builder()
+            .input(
+                inputWith(
+                    inputText(prelude),
+                    inputText(thing1),
+                    inputText(thing2),
+                )
+            )
+            .model(model)
+            .temperature(0.0)
+            .build()
+
+        client.responses().create(params)
+
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
+
+        val content = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
+        assertNotNull(content)
+
+        val chunks = listOf(prelude, thing1, thing2)
+        for (chunk in chunks) {
+            assertTrue(content!!.contains(chunk), "Content attribute must contain '$chunk'")
+        }
     }
 
     @ParameterizedTest
