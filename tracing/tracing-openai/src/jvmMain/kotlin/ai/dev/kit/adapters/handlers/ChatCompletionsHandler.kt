@@ -1,4 +1,4 @@
-package ai.dev.kit.adapters.openai.handlers
+package ai.dev.kit.adapters.handlers
 
 import ai.dev.kit.adapters.LLMTracingAdapter.Companion.PayloadType
 import ai.dev.kit.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes

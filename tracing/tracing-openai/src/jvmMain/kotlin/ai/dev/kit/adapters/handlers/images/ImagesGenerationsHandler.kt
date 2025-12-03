@@ -1,8 +1,8 @@
-package ai.dev.kit.adapters.openai.handlers.images
+package ai.dev.kit.adapters.handlers.images
 
 import ai.dev.kit.adapters.media.MediaContentExtractor
-import ai.dev.kit.adapters.openai.handlers.OpenAIApiHandler
-import ai.dev.kit.adapters.openai.handlers.asString
+import ai.dev.kit.adapters.handlers.OpenAIApiHandler
+import ai.dev.kit.adapters.handlers.asString
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.asJson
