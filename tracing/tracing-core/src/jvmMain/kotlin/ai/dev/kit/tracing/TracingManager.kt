@@ -38,11 +38,11 @@ object TracingManager {
      * Indicates whether tracing is enabled at runtime.
      *
      * The initial value is derived from the `IS_TRACY_ENABLED` environment variable. If the variable is
-     * not set, tracing is enabled by default. This property can be changed programmatically at any time
+     * not set, tracing is disabled by default. This property can be changed programmatically at any time
      * to enable or disable tracing dynamically.
      */
     @Volatile
-    var isTracingEnabled: Boolean = System.getenv("IS_TRACY_ENABLED")?.toBoolean() ?: true
+    var isTracingEnabled: Boolean = System.getenv("IS_TRACY_ENABLED")?.toBoolean() ?: false
 
     @Volatile
     internal var openTelemetrySdk: OpenTelemetrySdk? = null

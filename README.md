@@ -248,7 +248,7 @@ example: [OpenAI Client Auto Tracing Example](examples/src/main/kotlin/ai/dev/ki
 - **Runtime toggle**: Spans are emitted only if both conditions are met:
     - Tracing SDK instance has been installed via `TracingManager.setSdk(...)`
       Runtime tracing is controlled through `TracingManager.isTracingEnabled`, which defaults to the value of the
-      `IS_TRACY_ENABLED` environment variable. if the variable is not set, tracing is enabled by default. You can also
+      `IS_TRACY_ENABLED` environment variable. if the variable is not set, tracing is disabled by default. You can also
       change this value programmatically at any time.
 
 - **Compile-time plugin toggle**:
