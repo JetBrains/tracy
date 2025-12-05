@@ -3,6 +3,7 @@ package ai.dev.kit.tracing
 import ai.dev.kit.config.BuildConfig
 import ai.dev.kit.exporters.BaseExporterConfig
 import ai.dev.kit.tracing.TracingManager.setSdk
+import ai.dev.kit.tracing.policy.ContentCapturePolicy
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.sdk.OpenTelemetrySdk
@@ -35,6 +36,10 @@ object TracingManager {
      */
     private const val AI_DEVELOPMENT_KIT_TRACER = "ai-development-kit"
 
+    private val logger = KotlinLogging.logger {}
+
+    private val hasLoggedMissingSdk = AtomicBoolean(false)
+
     /**
      * Indicates whether tracing is enabled at runtime.
      *
@@ -48,9 +53,14 @@ object TracingManager {
     @Volatile
     internal var openTelemetrySdk: OpenTelemetrySdk? = null
 
-    private val logger = KotlinLogging.logger {}
-
-    private val hasLoggedMissingSdk = AtomicBoolean(false)
+    /**
+     * Policy that controls capturing inputs and outputs in spans.
+     * Disabled by default. Can be overridden programmatically at runtime.
+     *
+     * @see ContentCapturePolicy
+     */
+    @Volatile
+    var contentCapturePolicy = ContentCapturePolicy.fromEnvironment()
 
     /**
      * Provides the default [Tracer] instance for the AI Development Kit.
