@@ -225,7 +225,7 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
 
         if (out.isNotEmpty()) {
             val kind = kindByRole(role)
-            span.setAttribute("gen_ai.completion.0.content", out?.orRedacted(kind))
+            span.setAttribute("gen_ai.completion.0.content", out.orRedacted(kind))
         }
         role?.let { span.setAttribute("gen_ai.completion.0.role", it) }
 
