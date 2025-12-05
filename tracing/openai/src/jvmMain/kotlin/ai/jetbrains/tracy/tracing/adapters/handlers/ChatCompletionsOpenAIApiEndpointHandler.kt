@@ -60,7 +60,7 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                 val role = message.jsonObject["role"]?.jsonPrimitive?.content
                 val kind = kindByRole(role)
 
-                span.setAttribute("gen_ai.prompt.$index.role", role?.orRedacted(kind))
+                span.setAttribute("gen_ai.prompt.$index.role", role)
 
                 // content may be of different schemas
                 val messageContent = message.jsonObject["content"]

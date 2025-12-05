@@ -1,6 +1,7 @@
 package ai.dev.kit.tracing
 
 import ai.dev.kit.adapters.media.UploadableMediaContentAttributeKeys
+import ai.dev.kit.tracing.policy.ContentCapturePolicy
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.sdk.trace.data.SpanData
 import org.junit.jupiter.api.TestInstance
@@ -86,6 +87,21 @@ abstract class BaseAITracingTest : BaseOpenTelemetryTracingTest() {
             Arguments.of(MediaSource.Link(CAT_IMAGE_URL))
         )
     }
+
+    protected fun provideContentCapturePolicies(): Stream<Arguments> = Stream.of(
+        Arguments.of(ContentCapturePolicy(
+            captureInputs = false,
+            captureOutputs = false,
+        )),
+        Arguments.of(ContentCapturePolicy(
+            captureInputs = true,
+            captureOutputs = false,
+        )),
+        Arguments.of(ContentCapturePolicy(
+            captureInputs = false,
+            captureOutputs = true,
+        )),
+    )
 
     /**
      * Expects `sample.pdf` file under `resources` directory of the test module.
