@@ -2,10 +2,12 @@ package ai.jetbrains.tracy.tracing.adapters.handlers
 
 import ai.jetbrains.tracy.tracing.clients.instrument
 import ai.dev.kit.tracing.MediaSource
+import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.toDataUrl
 import ai.dev.kit.tracing.toMediaContentAttributeValues
 import ai.jetbrains.tracy.tracing.adapters.BaseOpenAITracingTest
 import ai.jetbrains.tracy.tracing.adapters.containsToolCall
+import ai.dev.kit.tracing.policy.ContentCapturePolicy
 import com.openai.core.JsonValue
 import com.openai.models.ChatModel
 import com.openai.models.responses.*
@@ -21,6 +23,8 @@ import org.junit.jupiter.params.provider.MethodSource
 import java.time.Duration
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.minutes
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 
 
 @Tag("openai")
@@ -327,6 +331,63 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
         client.responses().create(paramsBuilder.build())
         validateAdditionalAttributes()
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideContentCapturePolicies")
+    fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) = runTest {
+        TracingManager.contentCapturePolicy = policy
+
+        val client = instrument(createOpenAIClient())
+
+        val greetTool = createFunctionTool("hi")
+        val params = ResponseCreateParams.builder()
+            .input("Use a given `hi` tool to greet a person named Alex. You MUST use the given tool!")
+            .addTool(greetTool)
+            .model(ChatModel.GPT_4O_MINI)
+            .temperature(0.0)
+            .build()
+
+        client.responses().create(params)
+
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+        val trace = traces.first()
+
+        // input side
+        val prompt = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
+        val name = trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")]
+        val description = trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.description")]
+        val parameters = trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.parameters")]
+
+        if (!policy.captureInputs) {
+            assertEquals("REDACTED", prompt, "User prompt should be redacted")
+            assertEquals("REDACTED", name, "Tool name should be redacted")
+            assertEquals("REDACTED", description, "Tool description should be redacted")
+            assertEquals("REDACTED", parameters, "Tool parameters should be redacted")
+        } else {
+            assertNotEquals("REDACTED", prompt, "User prompt should NOT be redacted")
+            assertNotEquals("REDACTED", name, "Tool name should NOT be redacted")
+            assertNotEquals("REDACTED", description, "Tool description should NOT be redacted")
+            assertNotEquals("REDACTED", parameters, "Tool parameters should NOT be redacted")
+        }
+
+        // output side
+        // assume AI called a tool
+        Assumptions.assumeTrue(
+            trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool_name")] != null
+        )
+
+        val toolName = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool_name")]
+        val toolArguments = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool_arguments")]
+
+        if (!policy.captureOutputs) {
+            assertEquals("REDACTED", toolName, "Tool name content should be redacted")
+            assertEquals("REDACTED", toolArguments, "Tool arguments content should be redacted")
+        } else {
+            assertNotEquals("REDACTED", toolName, "Tool name content should NOT be redacted")
+            assertNotEquals("REDACTED", toolArguments, "Tool arguments content should NOT be redacted")
+        }
     }
 
     @ParameterizedTest

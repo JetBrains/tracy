@@ -2,17 +2,23 @@ package ai.jetbrains.tracy.tracing.adapters.handlers.images
 
 import ai.dev.kit.tracing.MediaContentAttributeValues
 import ai.dev.kit.tracing.MediaSource
+import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.toMediaContentAttributeValues
 import ai.jetbrains.tracy.tracing.clients.instrument
 import ai.jetbrains.tracy.tracing.adapters.BaseOpenAITracingTest
+import ai.dev.kit.tracing.policy.ContentCapturePolicy
 import com.openai.core.MultipartField
 import com.openai.models.images.ImageEditParams
 import com.openai.models.images.ImageModel
 import io.opentelemetry.api.common.AttributeKey
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import java.io.InputStream
 import java.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -296,6 +302,73 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         )
     }
 
+    @ParameterizedTest
+    @MethodSource("provideContentCapturePolicies")
+    fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) = runTest(timeout = 3.minutes) {
+        TracingManager.contentCapturePolicy = policy
+
+        val client = instrument(createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ))
+
+        val model = ImageModel.GPT_IMAGE_1
+        val promptMessage = "Add a 2nd cat to the image"
+        val outputFormat = ImageEditParams.OutputFormat.JPEG
+        val image = MediaSource.File("cat-n-dog-2.png", "image/png")
+
+        val params = ImageEditParams.builder()
+            .body(
+                ImageEditParams.Body.builder()
+                    .prompt(promptMessage)
+                    .model(model)
+                    .image(
+                        image(image.filepath, image.contentType)
+                    )
+                    .outputFormat(outputFormat)
+                    .build()
+            )
+            .build()
+
+        client.images().edit(params)
+
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+        val trace = traces.first()
+
+        // input attributes
+        val prompt = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
+        if (!policy.captureInputs) {
+            assertEquals("REDACTED", prompt, "Prompt should be redacted")
+        } else {
+            assertNotEquals("REDACTED", prompt, "Prompt should NOT be redacted")
+        }
+
+        // response attributes
+        val completion = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
+        if (!policy.captureOutputs) {
+            assertEquals("REDACTED", completion, "Completion content should be redacted")
+        } else {
+            assertNotEquals("REDACTED", completion, "Completion content should NOT be redacted")
+        }
+
+        // media content uploads
+        val mediaContentUploads = buildList {
+            if (policy.captureInputs) {
+                add(image.toMediaContentAttributeValues(field = "input"))
+            }
+            if (policy.captureOutputs) {
+                val expectedImage = MediaContentAttributeValues.Data(
+                    field = "output",
+                    contentType = "image/${outputFormat.value().name.lowercase()}",
+                    data = null,
+                )
+                add(expectedImage)
+            }
+        }
+        verifyMediaContentUploadAttributes(trace, expected = mediaContentUploads)
+    }
+
     private fun image(filepath: String, contentType: String): MultipartField<ImageEditParams.Image> {
         val image = readResource(filepath)
 
@@ -306,7 +379,7 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             .build()
     }
 
-    private fun images(filepaths: List<String>, string: String): MultipartField<ImageEditParams.Image> {
+    private fun images(filepaths: List<String>, contentType: String): MultipartField<ImageEditParams.Image> {
         val images = buildList {
             for (filepath in filepaths) {
                 val image = readResource(filepath)
@@ -315,7 +388,7 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         }
         return MultipartField.builder<ImageEditParams.Image>()
             .value(ImageEditParams.Image.ofInputStreams(images))
-            .contentType(string)
+            .contentType(contentType)
             .filename(filepaths.first())
             .build()
     }
