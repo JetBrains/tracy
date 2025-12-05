@@ -11,6 +11,7 @@ import ai.dev.kit.common.isValidUrl
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.asJson
+import ai.dev.kit.tracing.policy.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
@@ -51,7 +52,10 @@ internal class ResponsesOpenAIApiEndpointHandler(
             span.setAttribute(GEN_AI_OUTPUT_TYPE, it)
         }
         body["tool_choice"]?.let {
-            val content = if (it is JsonPrimitive) it.content else it.toString()
+            val content = when (it) {
+                is JsonPrimitive -> it.content
+                else -> it.toString()
+            }
             span.setAttribute("gen_ai.request.tool_choice", content)
         }
         body["reasoning"]?.let {
@@ -64,7 +68,7 @@ internal class ResponsesOpenAIApiEndpointHandler(
         // because of inserting instructions property as the first prompt,
         // other input properties will have a position shifted by one
         val instructionsInsertedAsFirstPrompt: Boolean = body["instructions"]?.jsonPrimitive?.let {
-            span.setAttribute("gen_ai.prompt.0.content", it.contentOrNull)
+            span.setAttribute("gen_ai.prompt.0.content", it.contentOrNull?.orRedactedInput())
             span.setAttribute("gen_ai.prompt.0.role", "system")
             true
         } ?: false
@@ -73,7 +77,10 @@ internal class ResponsesOpenAIApiEndpointHandler(
             when (inputs) {
                 is JsonArray -> {
                     parseRequestInputAttributes(span, inputs, instructionsInsertedAsFirstPrompt)
-                    attachMediaContentAttributes(span, inputs)
+                    // attach media upload attributes only when content tracing is allowed
+                    if (contentTracingAllowed(ContentKind.INPUT)) {
+                        attachMediaContentAttributes(span, inputs)
+                    }
                 }
                 else -> {
                     val index = if (instructionsInsertedAsFirstPrompt) 1 else 0
@@ -82,7 +89,7 @@ internal class ResponsesOpenAIApiEndpointHandler(
                         else -> inputs.toString()
                     }
                     span.setAttribute("gen_ai.prompt.$index.role", "user")
-                    span.setAttribute("gen_ai.prompt.$index.content", content)
+                    span.setAttribute("gen_ai.prompt.$index.content", content?.orRedactedInput())
                 }
             }
         }
@@ -90,20 +97,17 @@ internal class ResponsesOpenAIApiEndpointHandler(
         body["tools"]?.let { tools ->
             if (tools is JsonArray) {
                 for ((index, tool) in tools.jsonArray.withIndex()) {
-                    span.setAttribute("gen_ai.tool.$index.type", tool.jsonObject["type"]?.jsonPrimitive?.content)
+                    val toolType = tool.jsonObject["type"]?.jsonPrimitive?.contentOrNull
+                    val toolName = tool.jsonObject["name"]?.jsonPrimitive?.contentOrNull
+                    val toolDescription = tool.jsonObject["description"]?.jsonPrimitive?.contentOrNull
+                    val toolParameters = tool.jsonObject["parameters"]?.jsonObject.toString()
+                    val strict = tool.jsonObject["strict"]?.jsonPrimitive?.boolean?.toString()
 
-                    tool.jsonObject["name"]?.let {
-                        span.setAttribute("gen_ai.tool.$index.name", it.jsonPrimitive.content)
-                    }
-                    tool.jsonObject["description"]?.let {
-                        span.setAttribute("gen_ai.tool.$index.description", it.jsonPrimitive.content)
-                    }
-                    tool.jsonObject["parameters"]?.let {
-                        span.setAttribute("gen_ai.tool.$index.parameters", it.jsonObject.toString())
-                    }
-                    tool.jsonObject["strict"]?.let {
-                        span.setAttribute("gen_ai.tool.$index.strict", it.jsonPrimitive.boolean.toString())
-                    }
+                    span.setAttribute("gen_ai.tool.$index.type", toolType)
+                    span.setAttribute("gen_ai.tool.$index.name", toolName?.orRedactedInput())
+                    span.setAttribute("gen_ai.tool.$index.description", toolDescription?.orRedactedInput())
+                    span.setAttribute("gen_ai.tool.$index.parameters", toolParameters.orRedactedInput())
+                    span.setAttribute("gen_ai.tool.$index.strict", strict)
                 }
             }
         }
@@ -216,10 +220,14 @@ internal class ResponsesOpenAIApiEndpointHandler(
             if (!line.startsWith("data:")) continue
             val data = line.removePrefix("data:").trim()
 
-            val obj = runCatching { Json.parseToJsonElement(data).jsonObject }.getOrNull() ?: continue
-            if (obj["type"]?.jsonPrimitive?.content == "response.output_text.done") {
-                obj["text"]?.jsonPrimitive?.content?.let { finalText ->
-                    span.setAttribute("gen_ai.completion.0.content", finalText)
+            val event = runCatching {
+                Json.parseToJsonElement(data).jsonObject
+            }.getOrNull() ?: continue
+
+            val type = event["type"]?.jsonPrimitive?.content
+            if (type == "response.output_text.done") {
+                event["text"]?.jsonPrimitive?.content?.let {
+                    span.setAttribute("gen_ai.completion.0.content", it.orRedactedOutput())
                     span.setAttribute("gen_ai.completion.0.finish_reason", "stop")
                 }
             }
@@ -281,21 +289,21 @@ internal class ResponsesOpenAIApiEndpointHandler(
                                 .jsonObject
 
                             message["text"]?.jsonPrimitive?.content?.let {
-                                span.setAttribute("gen_ai.prompt.$position.content", it)
+                                span.setAttribute("gen_ai.prompt.$position.content", it.orRedactedInput())
                             }
                             message["type"]?.jsonPrimitive?.content?.let {
                                 span.setAttribute("gen_ai.prompt.$position.content_type", it)
                             }
                         } else {
                             // set the entire array as prompt content
-                            span.setAttribute("gen_ai.prompt.$position.content", content.toString())
+                            span.setAttribute("gen_ai.prompt.$position.content", content.toString().orRedactedInput())
                         }
                     } else if (content != null) {
                         val value = when (content) {
                             is JsonPrimitive -> content.contentOrNull
                             else -> content.toString()
                         }
-                        span.setAttribute("gen_ai.prompt.$position.content", value)
+                        span.setAttribute("gen_ai.prompt.$position.content", value?.orRedactedInput())
                     }
                 }
 
@@ -319,7 +327,7 @@ internal class ResponsesOpenAIApiEndpointHandler(
                             v is JsonPrimitive -> v.content
                             else -> v.toString()
                         }
-                        span.setAttribute("gen_ai.prompt.$position.$key", value)
+                        span.setAttribute("gen_ai.prompt.$position.$key", value.orRedactedInput())
                     }
                 }
             }
