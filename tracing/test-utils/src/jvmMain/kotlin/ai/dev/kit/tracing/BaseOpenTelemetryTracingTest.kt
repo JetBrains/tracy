@@ -25,6 +25,11 @@ abstract class BaseOpenTelemetryTracingTest {
     fun setupTelemetry() {
         val testTracing = initOpenTelemetry()
         TracingManager.setSdk(testTracing.openTelemetrySdk)
+        // Enable sensitive content capture for tests to keep existing assertions valid
+        TracingManager.contentCapturePolicy = ContentCapturePolicy(
+            captureInputs = true,
+            captureOutputs = true,
+        )
         spanExporter = testTracing.spanExporter
     }
 
