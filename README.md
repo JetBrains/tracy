@@ -215,6 +215,33 @@ All clients can be instrumented in a similar way using the `instrument(...)` fun
 
 ### Client Auto Tracing
 
+#### Tracing Sensitive Content
+
+According to OTEL [semantic conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-spans/#full-buffered-content), capturing of sensitive (e.g., user messages or assistant replies) data should be disabled by default (read more [here](https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-spans/#capturing-instructions-inputs-and-outputs)). Therefore, by default Tracy disguises sensitive content by replacing it with a placeholder "REDACTED", preserving the trace structure and recorded attributes.
+
+You may enable tracing of both input and output independently by following either of the ways below:
+1. Set the system properties:
+```
+tracy.tracing.capture.input=true|false
+tracy.tracing.capture.output=true|false
+```
+2. Set the environment variables:
+```bash
+TRACY_CAPTURE_INPUT=true|false
+TRACY_CAPTURE_OUTPUT=true|false
+```
+3. Override the default programmatically in code:
+```kotlin
+TracingManager.contentCapturePolicy = ContentCapturePolicy(
+    captureInput = true,
+    captureOutput = true,
+)
+
+// use tracing below
+```
+
+#### Examples Tracing
+
 Below is a minimal OpenAI example. For others, check the examples directory:
 
 * [Anthropic Client Auto Tracing Example](examples/src/main/kotlin/ai/dev/kit/examples/clients/AnthropicClientAutotracingExample.kt)

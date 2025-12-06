@@ -17,8 +17,8 @@ data class ContentCapturePolicy(
          * Precedence: system properties > env vars > defaults.
          *
          * System properties:
-         *  - ai.dev.kit.tracing.capture.input
-         *  - ai.dev.kit.tracing.capture.output
+         *  - tracy.tracing.capture.input
+         *  - tracy.tracing.capture.output
          *
          * Environment variables:
          *  - TRACY_CAPTURE_INPUT
@@ -35,12 +35,12 @@ data class ContentCapturePolicy(
 
             return ContentCapturePolicy(
                 captureInputs = readBool(
-                    sysKey = "ai.dev.kit.tracing.capture.input",
+                    sysKey = "tracy.tracing.capture.input",
                     envKey = "TRACY_CAPTURE_INPUT",
                     default = DEFAULT_CAPTURE_INPUTS,
                 ),
                 captureOutputs = readBool(
-                    sysKey = "ai.dev.kit.tracing.capture.output",
+                    sysKey = "tracy.tracing.capture.output",
                     envKey = "TRACY_CAPTURE_OUTPUT",
                     default = DEFAULT_CAPTURE_OUTPUTS,
                 ),
