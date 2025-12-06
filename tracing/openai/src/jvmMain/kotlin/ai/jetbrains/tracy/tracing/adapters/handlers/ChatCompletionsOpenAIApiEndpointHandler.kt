@@ -70,7 +70,7 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                 if (role?.lowercase() == "tool") {
                     span.setAttribute(
                         "gen_ai.prompt.$index.tool_call_id",
-                        message.jsonObject["tool_call_id"]?.jsonPrimitive?.content?.orRedacted(kind)
+                        message.jsonObject["tool_call_id"]?.jsonPrimitive?.content
                     )
                 }
             }
