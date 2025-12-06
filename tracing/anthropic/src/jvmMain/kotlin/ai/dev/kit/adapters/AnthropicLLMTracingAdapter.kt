@@ -8,6 +8,10 @@ import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.Url
 import ai.dev.kit.http.protocol.asJson
+import ai.dev.kit.tracing.policy.ContentKind
+import ai.dev.kit.tracing.policy.contentTracingAllowed
+import ai.dev.kit.tracing.policy.orRedactedInput
+import ai.dev.kit.tracing.policy.orRedactedOutput
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import ai.dev.kit.adapters.LLMTracingAdapter.Companion.PayloadType
@@ -34,7 +38,7 @@ class AnthropicLLMTracingAdapter(): LLMTracingAdapter(genAISystem = GenAiSystemI
 
         // system prompt
         body["system"]?.jsonObject?.let { system ->
-            system["text"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.prompt.system.content", it.content) }
+            system["text"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.prompt.system.content", it.content.orRedactedInput()) }
             system["type"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.prompt.system.type", it.content) }
         }
 
@@ -45,7 +49,9 @@ class AnthropicLLMTracingAdapter(): LLMTracingAdapter(genAISystem = GenAiSystemI
             if (it is JsonArray) {
                 for ((index, message) in it.jsonArray.withIndex()) {
                     span.setAttribute("gen_ai.prompt.$index.role", message.jsonObject["role"]?.jsonPrimitive?.content)
-                    span.setAttribute("gen_ai.prompt.$index.content", message.jsonObject["content"]?.toString())
+                    val content = message.jsonObject["content"]?.toString()
+                    // treat all request messages (including assistant history) as input per policy
+                    span.setAttribute("gen_ai.prompt.$index.content", content?.orRedactedInput())
                 }
             }
         }
@@ -55,17 +61,19 @@ class AnthropicLLMTracingAdapter(): LLMTracingAdapter(genAISystem = GenAiSystemI
         body["tools"]?.let {
             if (it is JsonArray) {
                 for ((index, tool) in it.jsonArray.withIndex()) {
-                    span.setAttribute("gen_ai.tool.$index.name", tool.jsonObject["name"]?.jsonPrimitive?.content)
-                    span.setAttribute("gen_ai.tool.$index.description", tool.jsonObject["description"]?.jsonPrimitive?.content)
+                    span.setAttribute("gen_ai.tool.$index.name", tool.jsonObject["name"]?.jsonPrimitive?.content?.orRedactedInput())
+                    span.setAttribute("gen_ai.tool.$index.description", tool.jsonObject["description"]?.jsonPrimitive?.content?.orRedactedInput())
                     span.setAttribute("gen_ai.tool.$index.type", tool.jsonObject["type"]?.jsonPrimitive?.content)
-                    span.setAttribute("gen_ai.tool.$index.parameters", tool.jsonObject["input_schema"].toString())
+                    span.setAttribute("gen_ai.tool.$index.parameters", tool.jsonObject["input_schema"].toString().orRedactedInput())
                 }
             }
         }
 
-        val mediaContent = parseMediaContent(body)
-        if (mediaContent != null) {
-            extractor.setUploadableContentAttributes(span, field = "input", mediaContent)
+        if (contentTracingAllowed(ContentKind.INPUT)) {
+            val mediaContent = parseMediaContent(body)
+            if (mediaContent != null) {
+                extractor.setUploadableContentAttributes(span, field = "input", mediaContent)
+            }
         }
 
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.REQUEST)
@@ -85,33 +93,40 @@ class AnthropicLLMTracingAdapter(): LLMTracingAdapter(genAISystem = GenAiSystemI
                 val type = message.jsonObject["type"]?.jsonPrimitive?.content
                 span.setAttribute("gen_ai.completion.$index.type", type)
 
-                if (type == "text") {
-                    // normal text message
-                    span.setAttribute("gen_ai.completion.$index.content", message.jsonObject["text"]?.toString())
-                } else if (type == "tool_use") {
-                    // tool call request by LLM
-                    val toolCall = message
-                    // gen_ai.tool.call.id
-                    span.setAttribute(
-                        "gen_ai.completion.$index.tool.call.id",
-                        toolCall.jsonObject["id"]?.jsonPrimitive?.content
-                    )
-                    // gen_ai.tool.type
-                    span.setAttribute(
-                        "gen_ai.completion.$index.tool.call.type",
-                        toolCall.jsonObject["type"]?.jsonPrimitive?.content
-                    )
-                    // gen_ai.tool.name
-                    span.setAttribute(
-                        "gen_ai.completion.$index.tool.name",
-                        toolCall.jsonObject["name"]?.jsonPrimitive?.content
-                    )
-                    span.setAttribute(
-                        "gen_ai.completion.$index.tool.arguments",
-                        toolCall.jsonObject["input"].toString()
-                    )
-                } else {
-                    span.setAttribute("gen_ai.completion.$index.content", message.toString())
+                when (type) {
+                    "text" -> {
+                        // normal text message
+                        span.setAttribute(
+                            "gen_ai.completion.$index.content",
+                            message.jsonObject["text"]?.toString()?.orRedactedOutput()
+                        )
+                    }
+                    "tool_use" -> {
+                        // tool call request by LLM
+                        val toolCall = message
+                        // gen_ai.tool.call.id
+                        span.setAttribute(
+                            "gen_ai.completion.$index.tool.call.id",
+                            toolCall.jsonObject["id"]?.jsonPrimitive?.content
+                        )
+                        // gen_ai.tool.type
+                        span.setAttribute(
+                            "gen_ai.completion.$index.tool.call.type",
+                            toolCall.jsonObject["type"]?.jsonPrimitive?.content
+                        )
+                        // gen_ai.tool.name
+                        span.setAttribute(
+                            "gen_ai.completion.$index.tool.name",
+                            toolCall.jsonObject["name"]?.jsonPrimitive?.content?.orRedactedOutput()
+                        )
+                        span.setAttribute(
+                            "gen_ai.completion.$index.tool.arguments",
+                            toolCall.jsonObject["input"].toString().orRedactedOutput()
+                        )
+                    }
+                    else -> {
+                        span.setAttribute("gen_ai.completion.$index.content", message.toString().orRedactedOutput())
+                    }
                 }
             }
         }

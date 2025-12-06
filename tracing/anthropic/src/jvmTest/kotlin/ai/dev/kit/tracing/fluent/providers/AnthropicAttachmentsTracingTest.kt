@@ -3,15 +3,20 @@ package ai.dev.kit.tracing.fluent.providers
 import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.MediaSource
 import ai.dev.kit.tracing.asDataUrl
+import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.toMediaContentAttributeValues
+import ai.dev.kit.tracing.policy.ContentCapturePolicy
 import com.anthropic.core.JsonValue
 import com.anthropic.models.messages.*
+import io.opentelemetry.api.common.AttributeKey
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.time.Duration
+import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.time.Duration.Companion.minutes
 
 @Tag("anthropic")
@@ -45,6 +50,55 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
         verifyMediaContentUploadAttributes(trace, expected = listOf(
             image.toMediaContentAttributeValues(field = "input")
         ))
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideContentCapturePolicies")
+    fun `test capture policy hides sensitive data for attachments`(policy: ContentCapturePolicy) = runTest(
+        timeout = 3.minutes
+    ) {
+        TracingManager.contentCapturePolicy = policy
+
+        val client = instrument(createAnthropicClient())
+
+        val image = MediaSource.File("image.jpg", "image/jpeg")
+
+        val params = MessageCreateParams.builder()
+            .addUserMessageOfBlockParams(listOf(
+                text("Tell me what you see in the image"),
+                image(image),
+            ))
+            .maxTokens(1000L)
+            .temperature(0.0)
+            .model(model)
+            .build()
+
+        client.messages().create(params)
+
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+        val trace = traces.first()
+
+        val prompt = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
+        if (!policy.captureInputs) {
+            assertEquals("REDACTED", prompt, "User prompt should be redacted")
+        } else {
+            assertNotEquals("REDACTED", prompt, "User prompt should NOT be redacted")
+        }
+
+        val completion = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
+        if (!policy.captureOutputs) {
+            assertEquals("REDACTED", completion, "Assistant completion should be redacted")
+        } else {
+            assertNotEquals("REDACTED", completion, "Assistant completion should NOT be redacted")
+        }
+
+        val expectedUploads = buildList {
+            if (policy.captureInputs) {
+                add(image.toMediaContentAttributeValues(field = "input"))
+            }
+        }
+        verifyMediaContentUploadAttributes(trace, expected = expectedUploads)
     }
 
     @Test

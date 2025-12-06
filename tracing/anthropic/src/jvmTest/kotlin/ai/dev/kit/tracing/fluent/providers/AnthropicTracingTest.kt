@@ -1,6 +1,8 @@
 package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
+import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.policy.ContentCapturePolicy
 import com.anthropic.core.JsonString
 import com.anthropic.core.JsonValue
 import com.anthropic.helpers.MessageAccumulator
@@ -18,14 +20,82 @@ import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNotEquals
 
 @Tag("anthropic")
 class AnthropicTracingTest : BaseAnthropicTracingTest() {
+    @ParameterizedTest
+    @MethodSource("provideContentCapturePolicies")
+    fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) {
+        TracingManager.contentCapturePolicy = policy
+
+        val client = instrument(createAnthropicClient())
+        val model = Model.CLAUDE_3_5_HAIKU_LATEST
+
+        val params = MessageCreateParams.builder()
+            .addUserMessage("Use a provided `hi` tool to greet Alex. you MUST use the given tool!")
+            .addTool(createTool("hi"))
+            .maxTokens(1000L)
+            .temperature(0.0)
+            .model(model)
+            .build()
+
+        client.messages().create(params)
+
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+        val trace = traces.first()
+
+        // input side
+        val prompt = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
+        val name = trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")]
+        val description = trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.description")]
+        val parameters = trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.parameters")]
+
+        if (!policy.captureInputs) {
+            assertEquals("REDACTED", prompt, "User prompt should be redacted")
+            assertEquals("REDACTED", name, "Tool name should be redacted")
+            assertEquals("REDACTED", description, "Tool description should be redacted")
+            assertEquals("REDACTED", parameters, "Tool parameters should be redacted")
+        } else {
+            assertNotEquals("REDACTED", prompt, "User prompt should NOT be redacted")
+            assertNotEquals("REDACTED", name, "Tool name should NOT be redacted")
+            assertNotEquals("REDACTED", description, "Tool description should NOT be redacted")
+            assertNotEquals("REDACTED", parameters, "Tool parameters should NOT be redacted")
+        }
+
+        // output side
+        val completion = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
+        if (completion != null) {
+            if (!policy.captureOutputs) {
+                assertEquals("REDACTED", completion, "Completion content should be redacted")
+            } else {
+                assertNotEquals("REDACTED", completion, "Completion content should NOT be redacted")
+            }
+        }
+
+        // if tool call present, verify redaction of tool call details as outputs
+        val finishReasons = trace.attributes[AttributeKey.stringArrayKey("gen_ai.response.finish_reasons")]
+        Assumptions.assumeTrue { finishReasons?.contains("tool_use") == true }
+
+        val toolName = trace.attributes[AttributeKey.stringKey("gen_ai.completion.1.tool.name")]
+        val toolArgs = trace.attributes[AttributeKey.stringKey("gen_ai.completion.1.tool.arguments")]
+        if (!policy.captureOutputs) {
+            assertEquals("REDACTED", toolName, "Tool name content should be redacted")
+            assertEquals("REDACTED", toolArgs, "Tool arguments content should be redacted")
+        } else {
+            assertNotEquals("REDACTED", toolName, "Tool name content should NOT be redacted")
+            assertNotEquals("REDACTED", toolArgs, "Tool arguments content should NOT be redacted")
+        }
+    }
     @Test
     fun `test nested instrumentation calls don't cause duplicative tracing`() {
         val client = instrument(instrument(instrument(createAnthropicClient())))
