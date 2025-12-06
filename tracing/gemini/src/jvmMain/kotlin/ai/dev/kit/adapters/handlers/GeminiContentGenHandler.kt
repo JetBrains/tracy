@@ -1,5 +1,6 @@
 package ai.dev.kit.adapters.handlers
 
+import ai.dev.kit.adapters.GeminiLLMTracingAdapter
 import ai.dev.kit.adapters.LLMTracingAdapter.Companion.PayloadType
 import ai.dev.kit.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
 import ai.dev.kit.adapters.media.MediaContent
@@ -13,6 +14,17 @@ import ai.dev.kit.http.protocol.asJson
 import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_CHOICE_COUNT
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MAX_TOKENS
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TEMPERATURE
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_K
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_P
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_ID
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_MODEL
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
 import kotlinx.serialization.json.*
 import mu.KotlinLogging
 
@@ -30,25 +42,26 @@ class GeminiContentGenHandler(
 
         body["contents"]?.let {
             for ((index, message) in it.jsonArray.withIndex()) {
-                span.setAttribute("gen_ai.prompt.$index.role", message.jsonObject["role"]?.jsonPrimitive?.content)
+                val role = message.jsonObject["role"]?.jsonPrimitive?.content
+                span.setAttribute("gen_ai.prompt.$index.role", role)
 
                 val parts = message.jsonObject["parts"]
                 val textMessage = parts?.singleTextMessageInParts()
 
                 if (textMessage != null) {
-                    span.setAttribute("gen_ai.prompt.$index.content", textMessage)
-                }
-                else {
-                    span.setAttribute("gen_ai.prompt.$index.content", parts.toString())
+                    span.setAttribute("gen_ai.prompt.$index.content", textMessage.orRedactedInput())
+                } else {
+                    span.setAttribute("gen_ai.prompt.$index.content", parts.toString().orRedactedInput())
                 }
             }
         }
 
-        // add image attachments to span media upload attributes
-        val mediaContent = parseRequestMediaContent(body)
-        if (mediaContent != null) {
-            extractor.setUploadableContentAttributes(span, field = "input", mediaContent)
-        }
+        // url ends with `[model]:[operation]`
+        val (model, operation) = request.url.pathSegments.lastOrNull()?.split(":")
+            ?.let { it.firstOrNull() to it.lastOrNull() } ?: (null to null)
+
+        model?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, model) }
+        operation?.let { span.setAttribute(GEN_AI_OPERATION_NAME, operation) }
 
         // extract tool calls
         body.jsonObject["tools"]?.let { tools ->
@@ -56,23 +69,28 @@ class GeminiContentGenHandler(
                 for ((index, tool) in tools.jsonArray.withIndex()) {
                     tool.jsonObject["functionDeclarations"]?.let {
                         for ((functionIndex, function) in it.jsonArray.withIndex()) {
-                            function.jsonObject["parameters"]?.jsonObject?.let { params ->
+                            function.jsonObject["parameters"]?.jsonObject?.let {
                                 span.setAttribute(
                                     "gen_ai.tool.$index.function.$functionIndex.type",
-                                    params["type"]?.jsonPrimitive?.content
+                                    it["type"]?.jsonPrimitive?.content
                                 )
                             }
+
+                            val name = function.jsonObject["name"]?.jsonPrimitive?.content
+                            val description = function.jsonObject["description"]?.jsonPrimitive?.content
+                            val parameters = function.jsonObject["parameters"].toString()
+
                             span.setAttribute(
                                 "gen_ai.tool.$index.function.$functionIndex.name",
-                                function.jsonObject["name"]?.jsonPrimitive?.content
+                                name?.orRedactedInput(),
                             )
                             span.setAttribute(
                                 "gen_ai.tool.$index.function.$functionIndex.description",
-                                function.jsonObject["description"]?.jsonPrimitive?.content
+                                description?.orRedactedInput(),
                             )
                             span.setAttribute(
                                 "gen_ai.tool.$index.function.$functionIndex.parameters",
-                                function.jsonObject["parameters"].toString()
+                                parameters.orRedactedInput(),
                             )
                         }
                     }
@@ -83,57 +101,51 @@ class GeminiContentGenHandler(
         // See: https://ai.google.dev/api/generate-content#v1beta.GenerationConfig
         body["generationConfig"]?.let { config ->
             config.jsonObject["candidateCount"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_CHOICE_COUNT, it.toLong())
+                span.setAttribute(GEN_AI_REQUEST_CHOICE_COUNT, it.toLong())
             }
             config.jsonObject["maxOutputTokens"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_MAX_TOKENS, it.toLong())
+                span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it.toLong())
             }
-            config.jsonObject["temperature"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_TEMPERATURE, it) }
-            config.jsonObject["topP"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_P, it) }
-            config.jsonObject["topK"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_K, it) }
+            config.jsonObject["temperature"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it) }
+            config.jsonObject["topP"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_P, it) }
+            config.jsonObject["topK"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_K, it) }
         }
 
-        span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.REQUEST)
+        span.populateUnmappedAttributes(body, GeminiLLMTracingAdapter.Companion.mappedAttributes, PayloadType.REQUEST)
     }
 
     override fun handleResponseAttributes(span: Span, response: Response) {
         // See: https://ai.google.dev/api/generate-content#v1beta.GenerateContentResponse
         val body = response.body.asJson()?.jsonObject ?: return
 
-        body["responseId"]?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
-        body["modelVersion"]?.let { span.setAttribute(GenAiIncubatingAttributes.GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
+        body["responseId"]?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
+        body["modelVersion"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
 
         body["candidates"]?.let {
             for ((index, candidate) in it.jsonArray.withIndex()) {
                 candidate.jsonObject["content"]?.let { content ->
-                    span.setAttribute(
-                        "gen_ai.completion.$index.role",
-                        content.jsonObject["role"]?.jsonPrimitive?.content
-                    )
+                    span.setAttribute("gen_ai.completion.$index.role", content.jsonObject["role"]?.jsonPrimitive?.content)
+
                     // response parts
                     val parts = content.jsonObject["parts"]
                     val textMessage = parts?.singleTextMessageInParts()
 
                     if (textMessage != null) {
-                        span.setAttribute("gen_ai.completion.$index.content", textMessage)
-                    }
-                    else {
-                        span.setAttribute("gen_ai.completion.$index.content", parts.toString())
+                        span.setAttribute("gen_ai.completion.$index.content", textMessage.orRedactedOutput())
+                    } else {
+                        span.setAttribute("gen_ai.completion.$index.content", parts.toString().orRedactedOutput())
                     }
 
                     // collect requests for a tool call
                     if (parts is JsonArray) {
                         var toolCallIndex = 0
                         for (part in parts.jsonArray) {
-                            part.jsonObject["functionCall"]?.jsonObject?.let {
-                                span.setAttribute(
-                                    "gen_ai.completion.$index.tool.$toolCallIndex.name",
-                                    it["name"]?.jsonPrimitive?.content
-                                )
-                                span.setAttribute(
-                                    "gen_ai.completion.$index.tool.$toolCallIndex.arguments",
-                                    it["args"].toString()
-                                )
+                            part.jsonObject["functionCall"]?.jsonObject?.let { part ->
+                                val name = part["name"]?.jsonPrimitive?.content
+                                val args = part["args"].toString()
+
+                                span.setAttribute("gen_ai.completion.$index.tool.$toolCallIndex.name", name?.orRedactedOutput())
+                                span.setAttribute("gen_ai.completion.$index.tool.$toolCallIndex.arguments", args.orRedactedOutput())
                                 ++toolCallIndex
                             }
                         }
@@ -147,18 +159,12 @@ class GeminiContentGenHandler(
             }
         }
 
-        // parse media content parts and set as media upload attributes
-        val mediaContent = parseResponseMediaContent(body)
-        if (mediaContent != null) {
-            extractor.setUploadableContentAttributes(span, field = "output", mediaContent)
-        }
-
         body["usageMetadata"]?.let { usage ->
             usage.jsonObject["promptTokenCount"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute(GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS, it)
+                span.setAttribute(GEN_AI_USAGE_INPUT_TOKENS, it)
             }
             usage.jsonObject["candidatesTokenCount"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute(GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS, it)
+                span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
             }
             usage.jsonObject["totalTokenCount"]?.jsonPrimitive?.intOrNull?.let {
                 span.setAttribute("gen_ai.usage.total_tokens", it.toLong())
@@ -183,7 +189,7 @@ class GeminiContentGenHandler(
             extractUsageTokenDetails(span, usage, attribute = "candidatesTokensDetails")
         }
 
-        span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
+        span.populateUnmappedAttributes(body, GeminiLLMTracingAdapter.Companion.mappedAttributes, PayloadType.RESPONSE)
     }
 
     override fun handleStreaming(span: Span, events: String) = Unit

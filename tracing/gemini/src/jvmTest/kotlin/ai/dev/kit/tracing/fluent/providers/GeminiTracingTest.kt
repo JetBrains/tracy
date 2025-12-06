@@ -1,6 +1,11 @@
 package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
+import ai.dev.kit.tracing.BaseAITracingTest
+import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.policy.ContentCapturePolicy
+import com.google.auth.oauth2.AccessToken
+import com.google.auth.oauth2.GoogleCredentials
 import com.google.genai.errors.GenAiIOException
 import com.google.genai.types.Content
 import com.google.genai.types.GenerateContentResponse
@@ -11,8 +16,12 @@ import kotlinx.coroutines.test.runTest
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
 import java.net.SocketTimeoutException
 import kotlin.test.assertEquals
@@ -32,6 +41,114 @@ import com.google.genai.types.GenerateContentConfig as GeminiGenerateContentConf
 )
 @Tag("gemini")
 class GeminiTracingTest : BaseGeminiTracingTest() {
+    @ParameterizedTest
+    @MethodSource("provideContentCapturePolicies")
+    fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) = runTest {
+        TracingManager.contentCapturePolicy = policy
+
+        val client = instrument(createGeminiClient())
+
+        val toolName = "hi"
+        val greetTool = createTool(toolName)
+
+        val model = "gemini-2.5-flash"
+        client.models.generateContent(
+            model,
+            "Use a provided `hi` tool to greet Alex. You MUST use the given tool!",
+            GeminiGenerateContentConfig.builder()
+                .temperature(0.0f)
+                .tools(greetTool)
+                .build()
+        )
+
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+        val trace = traces.first()
+
+        // input side
+        val prompt = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
+        val name = trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.name")]
+        val description = trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.description")]
+        val parameters = trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.parameters")]
+
+        if (!policy.captureInputs) {
+            assertEquals("REDACTED", prompt, "User prompt should be redacted")
+            assertEquals("REDACTED", name, "Tool name should be redacted")
+            assertEquals("REDACTED", description, "Tool description should be redacted")
+            assertEquals("REDACTED", parameters, "Tool parameters should be redacted")
+        } else {
+            assertNotEquals("REDACTED", prompt, "User prompt should NOT be redacted")
+            assertNotEquals("REDACTED", name, "Tool name should NOT be redacted")
+            assertNotEquals("REDACTED", description, "Tool description should NOT be redacted")
+            assertNotEquals("REDACTED", parameters, "Tool parameters should NOT be redacted")
+        }
+
+        // output side
+        val completion = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
+        if (!policy.captureOutputs) {
+            assertEquals("REDACTED", completion, "Completion content should be redacted")
+        } else {
+            assertNotEquals("REDACTED", completion, "Completion content should NOT be redacted")
+        }
+
+        // tool call check
+        val toolCallName = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")]
+        val toolCallArgs = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")]
+
+        Assumptions.assumeTrue { toolCallName != null && toolCallArgs != null }
+
+        if (!policy.captureOutputs) {
+            assertEquals("REDACTED", toolCallName, "Tool name content should be redacted")
+            assertEquals("REDACTED", toolCallArgs, "Tool arguments content should be redacted")
+        } else {
+            assertNotEquals("REDACTED", toolCallName, "Tool name content should NOT be redacted")
+            assertNotEquals("REDACTED", toolCallArgs, "Tool arguments content should NOT be redacted")
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideContentCapturePolicies")
+    fun `test capture policy hides sensitive data for attachments`(policy: ContentCapturePolicy) = runTest {
+        TracingManager.contentCapturePolicy = policy
+
+        val client = instrument(createGeminiClient())
+
+        val model = "gemini-2.5-flash"
+        val multiPartUserMessage = Content.builder()
+            .role("user")
+            .parts(
+                Part.fromText("Part 1: Describe what you see."),
+                Part.fromText("Part 2: And explain it briefly."),
+            )
+            .build()
+
+        client.models.generateContent(
+            model,
+            multiPartUserMessage,
+            GeminiGenerateContentConfig.builder()
+                .temperature(0.0f)
+                .build()
+        )
+
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+        val trace = traces.first()
+
+        val prompt = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
+        if (!policy.captureInputs) {
+            assertEquals("REDACTED", prompt, "User prompt should be redacted for multipart content")
+        } else {
+            assertNotEquals("REDACTED", prompt, "User prompt should NOT be redacted for multipart content")
+        }
+
+        val completion = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
+        if (!policy.captureOutputs) {
+            assertEquals("REDACTED", completion, "Assistant completion should be redacted")
+        } else {
+            assertNotEquals("REDACTED", completion, "Assistant completion should NOT be redacted")
+        }
+    }
+
     @Test
     fun `test nested instrumentation calls don't cause duplicative tracing`() = runTest {
         val client = instrument(instrument(instrument(createGeminiClient())))
