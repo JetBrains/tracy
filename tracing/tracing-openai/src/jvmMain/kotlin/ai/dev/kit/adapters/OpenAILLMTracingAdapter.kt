@@ -1,11 +1,11 @@
 package ai.dev.kit.adapters
 
-import ai.dev.kit.adapters.openai.handlers.ChatCompletionsHandler
-import ai.dev.kit.adapters.openai.handlers.images.ImagesEditsHandler
-import ai.dev.kit.adapters.openai.handlers.images.ImagesGenerationsHandler
-import ai.dev.kit.adapters.openai.handlers.OpenAIApiHandler
-import ai.dev.kit.adapters.openai.handlers.OpenAIApiUtils
-import ai.dev.kit.adapters.openai.handlers.ResponsesApiHandler
+import ai.dev.kit.adapters.handlers.ChatCompletionsHandler
+import ai.dev.kit.adapters.handlers.images.ImagesEditsHandler
+import ai.dev.kit.adapters.handlers.images.ImagesGenerationsHandler
+import ai.dev.kit.adapters.handlers.OpenAIApiHandler
+import ai.dev.kit.adapters.handlers.OpenAIApiUtils
+import ai.dev.kit.adapters.handlers.ResponsesApiHandler
 import ai.dev.kit.adapters.media.MediaContentExtractorImpl
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.RequestBody
