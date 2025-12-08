@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import java.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 
 @Tag("openai")
@@ -219,11 +221,14 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
 
     @ParameterizedTest
     @MethodSource("provideImagesForUpload")
-    fun `test image is extracted and uploaded on Langfuse`(image: MediaSource) = runTest {
+    fun `test image is extracted and uploaded on Langfuse`(image: MediaSource) = runTest(timeout = 3.minutes) {
         val model = ChatModel.GPT_4O_MINI
         val prompt = "Describe what you see in the image."
 
-        val client = instrument(createOpenAIClient())
+        val client = instrument(createOpenAIClient(
+            timeout = Duration.ofMinutes(3)
+        ))
+
         val params = ResponseCreateParams.builder()
             .input(
                 inputWith(
@@ -246,11 +251,14 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
 
     @ParameterizedTest
     @MethodSource("provideFilesForUpload")
-    fun `test PDF file is extracted and uploaded on Langfuse`(file: MediaSource) = runTest {
+    fun `test PDF file is extracted and uploaded on Langfuse`(file: MediaSource) = runTest(timeout = 3.minutes) {
         val model = ChatModel.GPT_4O_MINI
         val prompt = "Describe what you see in the file"
 
-        val client = instrument(createOpenAIClient())
+        val client = instrument(createOpenAIClient(
+            timeout = Duration.ofMinutes(3)
+        ))
+
         val params = ResponseCreateParams.builder()
             .input(
                 inputWith(
@@ -272,14 +280,17 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
     }
 
     @Test
-    fun `test two images sent simultaneously are both uploaded on Langfuse`() = runTest {
+    fun `test two images sent simultaneously are both uploaded on Langfuse`() = runTest(timeout = 3.minutes) {
         val model = ChatModel.GPT_4O_MINI
         val prompt = "Describe what you see in both images"
 
         val fileImage = MediaSource.File("image.jpg", "image/jpeg")
         val urlImage = MediaSource.Link(CAT_IMAGE_URL)
 
-        val client = instrument(createOpenAIClient())
+        val client = instrument(createOpenAIClient(
+            timeout = Duration.ofMinutes(3)
+        ))
+
         val params = ResponseCreateParams.builder()
             .input(
                 inputWith(
@@ -303,7 +314,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
     }
 
     @Test
-    fun `test several media types sent simultaneously are uploaded on Langfuse`() = runTest {
+    fun `test several media types sent simultaneously are uploaded on Langfuse`() = runTest(timeout = 3.minutes) {
         val model = ChatModel.GPT_4O
         val prompt = "Describe what you see in the media files attached"
 
@@ -311,7 +322,10 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
         val localFile = MediaSource.File("sample.pdf", "application/pdf")
         val remoteFile = MediaSource.Link(SAMPLE_PDF_FILE_URL)
 
-        val client = instrument(createOpenAIClient())
+        val client = instrument(createOpenAIClient(
+            timeout = Duration.ofMinutes(3)
+        ))
+
         val params = ResponseCreateParams.builder()
             .input(
                 inputWith(

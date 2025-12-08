@@ -66,11 +66,13 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
                     contentType = "image/png",
                     data = null,
                 )
+
             ImageGenerateParams.ResponseFormat.URL, null ->
                 MediaContentAttributeValues.Url(
                     field = "output",
                     url = null,
                 )
+
             else -> error("Unexpected response format: $responseFormat")
         }
 
@@ -80,9 +82,7 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
     }
 
     @Test
-    fun `test generation of a single JPEG image gets traced`() = runTest(
-        timeout = 3.minutes,
-    ) {
+    fun `test generation of a single JPEG image gets traced`() = runTest(timeout = 3.minutes) {
         val client = instrument(createOpenAIClient(
             url = patchedProviderUrl,
             timeout = Duration.ofMinutes(3)
@@ -200,9 +200,7 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
     }
 
     @Test
-    fun `test image generation with streaming API`() = runTest(
-        timeout = 3.minutes,
-    ) {
+    fun `test image generation with streaming API`() = runTest(timeout = 3.minutes) {
         val client = instrument(createOpenAIClient(
             url = patchedProviderUrl,
             timeout = Duration.ofMinutes(3)

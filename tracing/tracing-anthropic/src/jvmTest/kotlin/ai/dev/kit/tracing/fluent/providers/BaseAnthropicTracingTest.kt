@@ -3,6 +3,7 @@ package ai.dev.kit.tracing.fluent.providers
 import ai.dev.kit.getFieldValue
 import ai.dev.kit.setFieldValue
 import ai.dev.kit.tracing.BaseAITracingTest
+import ai.dev.kit.tracing.fluent.providers.BaseAnthropicTracingTest.Companion.ANTHROPIC_API_URL
 import com.anthropic.client.AnthropicClient
 import com.anthropic.client.okhttp.AnthropicOkHttpClient
 import com.anthropic.core.JsonObject
@@ -25,11 +26,15 @@ abstract class BaseAnthropicTracingTest : BaseAITracingTest() {
         System.getenv("ANTHROPIC_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
         ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
 
-    protected fun createAnthropicClient(): AnthropicClient {
+    protected fun createAnthropicClient(
+        url: String? = llmProviderUrl,
+        apiKey: String = llmProviderApiKey,
+        timeout: Duration = Duration.ofSeconds(60)
+    ): AnthropicClient {
         return AnthropicOkHttpClient.builder()
-            .baseUrl(llmProviderUrl)
-            .apiKey(llmProviderApiKey)
-            .timeout(Duration.ofSeconds(60))
+            .baseUrl(url)
+            .apiKey(apiKey)
+            .timeout(timeout)
             .build()
     }
 
