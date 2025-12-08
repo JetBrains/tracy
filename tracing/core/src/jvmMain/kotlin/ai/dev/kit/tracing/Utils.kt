@@ -28,17 +28,18 @@ import kotlin.coroutines.CoroutineContext
  *  - [LangfuseExporterConfig] sends spans to a Langfuse OTLP endpoint.
  *  - [WeaveExporterConfig] sends spans to a W&B Weave OTLP endpoint.
  *  - [ConsoleExporterConfig] logs spans to the console only (for local debugging).
+ * @param additionalResource optional extra [Resource] attributes merged with the default
+ *  OpenTelemetry resource. Use this to set values such as "service.name"
  *
  * @return the initialized [OpenTelemetrySdk] instance.
  */
 fun configureOpenTelemetrySdk(
-    exporterConfig: BaseExporterConfig
-): OpenTelemetrySdk {
-    val resource = Resource.getDefault().merge(
-        Resource.create(
-            Attributes.of(AttributeKey.stringKey("service.name"), "ai-development-kit")
-        )
+    exporterConfig: BaseExporterConfig,
+    additionalResource: Resource = Resource.create(
+        Attributes.of(AttributeKey.stringKey("service.name"), "unknown-service")
     )
+): OpenTelemetrySdk {
+    val resource = Resource.getDefault().merge(additionalResource)
 
     val tracerProvider = SdkTracerProvider.builder()
         .setResource(resource)
