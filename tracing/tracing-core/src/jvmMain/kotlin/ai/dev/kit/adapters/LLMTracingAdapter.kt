@@ -1,9 +1,8 @@
 package ai.dev.kit.adapters
 
-import ai.dev.kit.exporters.BaseExporterConfig.Companion.DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES
 import ai.dev.kit.http.protocol.*
-import ai.dev.kit.tracing.TracingManager
-import io.ktor.http.ContentType
+import ai.dev.kit.http.protocol.Url
+import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.sdk.trace.ReadableSpan
@@ -27,7 +26,7 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
         private val REQUIRED_CONTENT_TYPE = ContentType.Application.Json
         private val EVENT_STREAM_CONTENT_TYPE = ContentType.Text.EventStream
 
-        private const val ATTRIBUTES_NUMBER_ATTRIBUTE_KEY = "gen_ai.request.SpanAttributeNumber"
+        private const val DROPPED_ATTRIBUTES_COUNT_ATTRIBUTE_KEY = "otel.dropped_attributes_count"
 
         /**
          * Adds unmapped payload attributes from a JSON body to the given [Span].
@@ -56,7 +55,9 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
     }
 
     fun registerRequest(span: Span, request: Request): Unit = runCatching {
-        span.setAttribute(ATTRIBUTES_NUMBER_ATTRIBUTE_KEY, "0 (limit ${getMaxNumberOfSpanAttributes()})")
+        // Pre-allocate in case the span reaches the limit
+        span.setAttribute(DROPPED_ATTRIBUTES_COUNT_ATTRIBUTE_KEY, 0L)
+
         getRequestBodyAttributes(span, request)
         span.setAttribute("gen_ai.api_base", "${request.url.scheme}://${request.url.host}")
         span.setAttribute(GEN_AI_SYSTEM, genAISystem)
@@ -92,30 +93,18 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
                 span.setStatus(StatusCode.OK)
             }
 
-            val numberOfSpanAttributes = (span as? ReadableSpan)?.attributes?.size()
+            val spanData = (span as? ReadableSpan)?.toSpanData() ?: return@runCatching
+            val totalAttributesCount = spanData.totalAttributeCount
+            val keptAttributesCount = spanData.attributes.size()
 
-            numberOfSpanAttributes?.let {
-                val limit = getMaxNumberOfSpanAttributes()
-                if (it >= limit) {
-                    span.setAttribute(
-                        ATTRIBUTES_NUMBER_ATTRIBUTE_KEY, "Limit ($limit) exceeded. Adjust TracingConfig or env"
-                    )
-                } else {
-                    span.setAttribute(
-                        ATTRIBUTES_NUMBER_ATTRIBUTE_KEY, "$it (limit $limit)"
-                    )
-                }
-            }
-            return@runCatching
+            // Calculate the number of attributes that were dropped due to span limits
+            val droppedAttributesCount = (totalAttributesCount - keptAttributesCount).coerceAtLeast(0).toLong()
+
+            span.setAttribute(DROPPED_ATTRIBUTES_COUNT_ATTRIBUTE_KEY, droppedAttributesCount)
         }.getOrElse { exception ->
             span.setStatus(StatusCode.ERROR)
             span.recordException(exception)
         }
-
-    private fun getMaxNumberOfSpanAttributes() =
-        TracingManager.openTelemetrySdk?.sdkTracerProvider?.spanLimits?.maxNumberOfAttributes
-            ?: DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES
-
 
     protected open fun getResponseErrorBodyAttributes(span: Span, body: ResponseBody) {
         body.asJson()?.jsonObject["error"]?.jsonObject?.let { error ->
