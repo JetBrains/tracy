@@ -6,7 +6,6 @@ import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.sdk.internal.ExceptionAttributeResolver
 import io.opentelemetry.sdk.trace.data.ExceptionEventData
-import io.opentelemetry.sdk.trace.data.SpanData
 import io.opentelemetry.sdk.trace.data.StatusData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -22,13 +21,13 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 internal class MyTestClassWithSuspend {
-    @KotlinFlowTrace(name = "Main Span", spanType = "mySpanType")
+    @KotlinFlowTrace(name = "Main Span")
     suspend fun testFunction(paramName: Int): Int {
         delay(12)
         return paramName
     }
 
-    @KotlinFlowTrace(name = "Main Span", spanType = "mySpanType")
+    @KotlinFlowTrace(name = "Main Span")
     suspend fun testFunctionWithTag(paramName: Int): Int {
         delay(12)
         addLangfuseTagsToCurrentTrace(listOf("Tag1", "Tag2"), currentCoroutineContext())
@@ -42,7 +41,7 @@ internal class MyTestClassWithSuspend {
         return paramName
     }
 
-    @KotlinFlowTrace(name = "Secondary Span", spanType = "func")
+    @KotlinFlowTrace(name = "Secondary Span")
     suspend fun anotherTestFunction(x: String): String {
         delay(45)
         return x.reversed()
@@ -103,7 +102,7 @@ internal class MyTestClassWithSuspend {
 }
 
 internal class MyTestClassWithSuspendHard() {
-    @KotlinFlowTrace(name = "P", spanType = "P")
+    @KotlinFlowTrace(name = "P")
     suspend fun parentFunction(p: String): String {
         delay(100)
         // Calling Children
@@ -114,26 +113,26 @@ internal class MyTestClassWithSuspendHard() {
         return "$child1Result, $child2Result, $child3Result"
     }
 
-    @KotlinFlowTrace(name = "C1", spanType = "C")
+    @KotlinFlowTrace(name = "C1")
     suspend fun childFunction1(p: String): String {
         delay(50)
         return p.uppercase()
     }
 
-    @KotlinFlowTrace(name = "C2", spanType = "C")
+    @KotlinFlowTrace(name = "C2")
     suspend fun childFunction2(p: String): String {
         delay(50)
         val grandChild1Result = grandChildFunction1(p)
         return grandChild1Result
     }
 
-    @KotlinFlowTrace(name = "C3", spanType = "C")
+    @KotlinFlowTrace(name = "C3")
     suspend fun childFunction3(p: String): String {
         delay(50)
         return p.reversed()
     }
 
-    @KotlinFlowTrace(name = "G1", spanType = "G")
+    @KotlinFlowTrace(name = "G1")
     suspend fun grandChildFunction1(p: String): String {
         delay(30)
         return "G(${p.length})"
@@ -191,10 +190,6 @@ class SuspendFluentTracingTest() : BaseOpenTelemetryTracingTest() {
         assertEquals(
             trace.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS),
             result.toString()
-        )
-        assertEquals(
-            "mySpanType",
-            trace.getAttribute(FluentSpanAttributes.SPAN_TYPE)
         )
     }
 
@@ -375,7 +370,7 @@ class SuspendFluentTracingTest() : BaseOpenTelemetryTracingTest() {
         val traces = analyzeSpans()
 
         assertEquals(1, traces.size)
-        val trace = traces.firstOrNull() as? SpanData
+        val trace = traces.firstOrNull()
         assertNotNull(trace)
 
         val exceptionEvent = trace.events.single { it is ExceptionEventData }

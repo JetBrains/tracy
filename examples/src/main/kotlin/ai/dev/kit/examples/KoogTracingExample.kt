@@ -4,7 +4,6 @@ import ai.dev.kit.exporters.ConsoleExporterConfig
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
-import ai.dev.kit.tracing.fluent.SpanType
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.core.tools.annotations.LLMDescription
@@ -24,7 +23,7 @@ import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 object SortTools : ToolSet {
     @Tool
     @LLMDescription("Sorts a comma-separated list of integers in ascending order and returns the sorted list as a string.")
-    @KotlinFlowTrace(name = "Sort integers", spanType = SpanType.TOOL)
+    @KotlinFlowTrace(name = "Sort integers")
     fun sortIntegers(
         @LLMDescription("Comma-separated integers, e.g. '1,2,3,4,5'") numbers: String
     ): String = parseCsvInts(numbers).sorted().joinToString(",")

@@ -6,7 +6,6 @@ import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.sdk.internal.ExceptionAttributeResolver
 import io.opentelemetry.sdk.trace.data.ExceptionEventData
-import io.opentelemetry.sdk.trace.data.SpanData
 import io.opentelemetry.sdk.trace.data.StatusData
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -17,12 +16,12 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 internal class MyTestClass {
-    @KotlinFlowTrace(name = "Main Span", spanType = "mySpanType")
+    @KotlinFlowTrace(name = "Main Span")
     fun testFunction(paramName: Int): Int {
         return paramName
     }
 
-    @KotlinFlowTrace(name = "Main Span", spanType = "mySpanType")
+    @KotlinFlowTrace(name = "Main Span")
     fun testFunctionWithTag(paramName: Int): Int {
         addLangfuseTagsToCurrentTrace(listOf("Tag1", "Tag2"))
         return paramName
@@ -34,12 +33,12 @@ internal class MyTestClass {
         return paramName
     }
 
-    @KotlinFlowTrace(name = "Main Span", spanType = "mySpanType")
+    @KotlinFlowTrace(name = "Main Span")
     fun testFunctionWithDefaultValue(paramName: Int = 10): Int {
         return paramName
     }
 
-    @KotlinFlowTrace(name = "Secondary Span", spanType = "func")
+    @KotlinFlowTrace(name = "Secondary Span")
     fun anotherTestFunction(x: String): String {
         return x.reversed()
     }
@@ -250,7 +249,7 @@ class FluentTracingTest() : BaseOpenTelemetryTracingTest() {
         val traces = analyzeSpans()
 
         assertEquals(1, traces.size)
-        val trace = traces.firstOrNull() as? SpanData
+        val trace = traces.firstOrNull()
         assertNotNull(trace)
 
         assertEquals(StatusData.ok(), trace.status)
@@ -269,10 +268,6 @@ class FluentTracingTest() : BaseOpenTelemetryTracingTest() {
             trace.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS),
             result.toString()
         )
-        assertEquals(
-            "mySpanType",
-            trace.getAttribute(FluentSpanAttributes.SPAN_TYPE)
-        )
     }
 
 
@@ -282,7 +277,7 @@ class FluentTracingTest() : BaseOpenTelemetryTracingTest() {
 
         val traces = analyzeSpans()
         assertEquals(1, traces.size)
-        val trace = traces.firstOrNull() as? SpanData
+        val trace = traces.firstOrNull()
         assertNotNull(trace)
 
         assertEquals(StatusData.ok(), trace.status)
@@ -300,10 +295,6 @@ class FluentTracingTest() : BaseOpenTelemetryTracingTest() {
         assertEquals(
             trace.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS),
             result.toString()
-        )
-        assertEquals(
-            "mySpanType",
-            trace.getAttribute(FluentSpanAttributes.SPAN_TYPE)
         )
     }
 
@@ -368,7 +359,7 @@ class FluentTracingTest() : BaseOpenTelemetryTracingTest() {
 
         val traces = analyzeSpans()
         assertEquals(1, traces.size)
-        val trace = traces.firstOrNull() as? SpanData
+        val trace = traces.firstOrNull()
         assertNotNull(trace)
 
         val exceptionEvent = trace.events.single { it is ExceptionEventData }

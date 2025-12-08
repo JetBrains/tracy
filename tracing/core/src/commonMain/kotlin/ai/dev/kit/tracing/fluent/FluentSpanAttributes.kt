@@ -8,7 +8,6 @@ enum class FluentSpanAttributes(val key: String) {
     SOURCE_RUN("session.id"),
     SPAN_FUNCTION_NAME("code.function.name"),
     SPAN_SOURCE_NAME("source.name"),
-    SPAN_TYPE("spanType"),
     LANGFUSE_TRACE_TAGS("langfuse.trace.tags");
 }
 

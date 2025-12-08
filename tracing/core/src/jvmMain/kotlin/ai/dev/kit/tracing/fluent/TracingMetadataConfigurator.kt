@@ -20,9 +20,6 @@ actual fun configureTracingMetadata(
             FluentSpanAttributes.SPAN_SOURCE_NAME.key, method.declaringClass.name
         )
         setAttribute(
-            FluentSpanAttributes.SPAN_TYPE.key, traceAnnotation.spanType
-        )
-        setAttribute(
             FluentSpanAttributes.SPAN_FUNCTION_NAME.key, method.name
         )
     }
