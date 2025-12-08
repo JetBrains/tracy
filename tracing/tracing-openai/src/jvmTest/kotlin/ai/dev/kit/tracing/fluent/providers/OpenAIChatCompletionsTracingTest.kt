@@ -16,10 +16,9 @@ import com.openai.models.responses.ResponseCreateParams
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
-import java.util.concurrent.TimeUnit
+import java.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.jvm.optionals.getOrNull
 import kotlin.test.assertEquals
@@ -257,11 +256,13 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
     @ParameterizedTest
     @MethodSource("provideImagesForUpload")
-    fun `test image is extracted and uploaded on Langfuse`(image: MediaSource) = runTest {
+    fun `test image is extracted and uploaded on Langfuse`(image: MediaSource) = runTest(timeout = 3.minutes) {
         val model = ChatModel.GPT_4O
         val prompt = "Please describe what you see in this image."
 
-        val client = instrument(createOpenAIClient())
+        val client = instrument(createOpenAIClient(
+            timeout = Duration.ofMinutes(3)
+        ))
 
         val params = ChatCompletionCreateParams.builder()
             .model(model)
@@ -287,12 +288,14 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
     }
 
     @Test
-    fun `test audio file is extracted and uploaded on Langfuse`() = runTest {
+    fun `test audio file is extracted and uploaded on Langfuse`() = runTest(timeout = 3.minutes) {
         val model = ChatModel.GPT_4O_AUDIO_PREVIEW
         val prompt = "Tell me what is in the audio file"
         val filepath = "lofi.wav"
 
-        val client = instrument(createOpenAIClient())
+        val client = instrument(createOpenAIClient(
+            timeout = Duration.ofMinutes(3)
+        ))
 
         val params = ChatCompletionCreateParams.builder()
             .model(model)
@@ -318,7 +321,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
     }
 
     @Test
-    fun `test PDF file is extracted and uploaded on Langfuse`() = runTest {
+    fun `test PDF file is extracted and uploaded on Langfuse`() = runTest(timeout = 3.minutes) {
         val model = ChatModel.GPT_4O
         val prompt = "Please describe what you see in the PDF file."
         val media = MediaSource.File(
@@ -326,7 +329,10 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
             contentType = "application/pdf",
         )
 
-        val client = instrument(createOpenAIClient())
+        val client = instrument(createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ))
 
         val params = ChatCompletionCreateParams.builder()
             .model(model)
@@ -350,11 +356,14 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
     }
 
     @Test
-    fun `test two images sent simultaneously are both uploaded on Langfuse`() = runTest {
+    fun `test two images sent simultaneously are both uploaded on Langfuse`() = runTest(timeout = 3.minutes) {
         val model = ChatModel.GPT_4O
         val prompt = "Please describe what you see in both images."
 
-        val client = instrument(createOpenAIClient())
+        val client = instrument(createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ))
 
         val images = listOf(
             MediaSource.File(filepath = "image.jpg", contentType = "image/jpeg"),
@@ -396,12 +405,14 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
     }
 
     @Test
-    @Timeout(value = 3, unit = TimeUnit.MINUTES)
-    fun `test several media types sent simultaneously are uploaded on Langfuse`() = runTest {
+    fun `test several media types sent simultaneously are uploaded on Langfuse`() = runTest(timeout = 3.minutes) {
         val model = ChatModel.GPT_4O
         val prompt = "Please describe every media item attached"
 
-        val client = instrument(createOpenAIClient())
+        val client = instrument(createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ))
 
         val image = MediaSource.File("image.jpg", "image/jpeg")
         val file = MediaSource.File("sample.pdf", "application/pdf")
@@ -432,7 +443,9 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test single instrumented client is used for multiple endpoints`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createOpenAIClient())
+        val client = instrument(createOpenAIClient(
+            timeout = Duration.ofMinutes(3)
+        ))
 
         // I. chat completions
         val model1 = ChatModel.GPT_4O

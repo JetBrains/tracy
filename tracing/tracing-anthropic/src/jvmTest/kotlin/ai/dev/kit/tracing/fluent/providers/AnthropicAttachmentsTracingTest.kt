@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import java.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
 @Tag("anthropic")
@@ -20,7 +21,11 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
     @ParameterizedTest
     @MethodSource("provideImagesForUpload")
     fun `test attached image gets traced`(image: MediaSource) = runTest(timeout = 3.minutes) {
-        val client = instrument(createAnthropicClient())
+        val client = instrument(
+            createAnthropicClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val params = MessageCreateParams.builder()
             .addUserMessageOfBlockParams(listOf(
@@ -44,7 +49,11 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
 
     @Test
     fun `test two attached images get traced`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createAnthropicClient())
+        val client = instrument(
+            createAnthropicClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val image1 = MediaSource.File("image.jpg", "image/jpeg")
         val image2 = MediaSource.Link(CAT_IMAGE_URL)
@@ -74,7 +83,11 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
     @ParameterizedTest
     @MethodSource("provideFilesForUpload")
     fun `test attached file gets traced`(file: MediaSource) = runTest(timeout = 3.minutes) {
-        val client = instrument(createAnthropicClient())
+        val client = instrument(
+            createAnthropicClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val params = MessageCreateParams.builder()
             .addUserMessageOfBlockParams(listOf(
@@ -98,7 +111,11 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
 
     @Test
     fun `test two attached files get traced`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createAnthropicClient())
+        val client = instrument(
+            createAnthropicClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val file1 = MediaSource.File("sample.pdf", "application/pdf")
         val file2 = MediaSource.Link(SAMPLE_PDF_FILE_URL)
@@ -127,7 +144,11 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
 
     @Test
     fun `test attached file and image get traced`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createAnthropicClient())
+        val client = instrument(
+            createAnthropicClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val file = MediaSource.File("sample.pdf", "application/pdf")
         val image = MediaSource.File("image.jpg", "image/jpeg")
@@ -193,7 +214,11 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
          * See [Messages API Docs](https://platform.claude.com/docs/en/api/messages/create)
          */
 
-        val client = instrument(createAnthropicClient())
+        val client = instrument(
+            createAnthropicClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val image1 = MediaSource.File("image.jpg", "image/jpeg")
         val image2 = MediaSource.Link(CAT_IMAGE_URL)
