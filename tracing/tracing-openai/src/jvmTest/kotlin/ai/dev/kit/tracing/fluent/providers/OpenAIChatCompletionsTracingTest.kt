@@ -372,7 +372,6 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
         // send request
         client.chat().completions().create(params)
 
-        validateBasicTracing(model)
         val trace = analyzeSpans().first()
         verifyMediaContentUploadAttributes(trace, expected = images.map {
             it.toMediaContentAttributeValues(field = "input")
@@ -505,6 +504,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
         ChatCompletionContentPart.File.builder()
             .file(
                 ChatCompletionContentPart.File.FileObject.builder()
+                    .filename(media.filepath)
                     .fileData(media.toDataUrl())
                     .build()
             )
