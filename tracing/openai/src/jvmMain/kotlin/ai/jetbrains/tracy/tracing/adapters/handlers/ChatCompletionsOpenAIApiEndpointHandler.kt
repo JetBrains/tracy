@@ -87,7 +87,7 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                         val toolName = it["name"]?.jsonPrimitive?.content
                         val toolDescription = it["description"]?.jsonPrimitive?.content
                         val toolParameters = it["parameters"]?.jsonObject?.toString()
-                        val strict = it["strict"]?.jsonPrimitive?.boolean.toString()
+                        val strict = it["strict"]?.jsonPrimitive?.boolean?.toString()
 
                         span.setAttribute("gen_ai.tool.$index.name", toolName?.orRedactedInput())
                         span.setAttribute("gen_ai.tool.$index.description", toolDescription?.orRedactedInput())
