@@ -67,7 +67,7 @@ internal class ResponsesApiHandler(
         body["input"]?.let { inputs ->
             if (inputs is JsonArray) {
                 parseRequestInputAttributes(span, inputs)
-                attachMediaContentAttributes(span, field = "input", inputs)
+                attachMediaContentAttributes(span, inputs)
             } else {
                 span.setAttribute("gen_ai.prompt.0.role", "user")
                 span.setAttribute("gen_ai.prompt.0.content", inputs.toString())
@@ -98,16 +98,13 @@ internal class ResponsesApiHandler(
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.REQUEST)
     }
 
-    /**
-     * @param field must be one of: 'input', 'output' or 'metadata' (see [ai.dev.kit.exporters.otlp.MediaUploadParams.field])
-     */
-    private fun attachMediaContentAttributes(span: Span, field: String, inputs: JsonArray) {
+    private fun attachMediaContentAttributes(span: Span, inputs: JsonArray) {
         // set attributes with media attachments info into the span
         for (input in inputs) {
             val content = input.jsonObject["content"]
             if (content is JsonArray) {
                 val mediaContent = parseMediaContent(content)
-                extractor.setUploadableContentAttributes(span, field, mediaContent)
+                extractor.setUploadableContentAttributes(span, field = "input", mediaContent)
             }
         }
     }
