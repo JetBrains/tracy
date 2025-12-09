@@ -233,8 +233,8 @@ TRACY_CAPTURE_OUTPUT=true|false
 3. Override the default programmatically in code:
 ```kotlin
 TracingManager.contentCapturePolicy = ContentCapturePolicy(
-    captureInput = true,
-    captureOutput = true,
+    captureInputs = true,
+    captureOutputs = true,
 )
 
 // use tracing below
