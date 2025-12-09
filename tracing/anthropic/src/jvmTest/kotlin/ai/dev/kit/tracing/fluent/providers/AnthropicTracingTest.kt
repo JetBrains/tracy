@@ -49,7 +49,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         val toolName = "hi"
         val model = Model.CLAUDE_3_5_HAIKU_LATEST
         val params = MessageCreateParams.builder()
-            .addUserMessage("Use a provided `hi` tool to greet the user. Use the name USER.")
+            .addUserMessage("Call the `hi` tool with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool call.")
             .addTool(createTool(toolName))
             .maxTokens(1000L)
             .temperature(0.0)
@@ -98,7 +98,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
 
         val model = Model.CLAUDE_3_5_HAIKU_LATEST
         val paramsBuilder = MessageCreateParams.builder()
-            .addUserMessage("Use a provided `hi` tool to hi the user. Use the name USER.")
+            .addUserMessage("Call the `hi` tool with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool call.")
             .addTool(greetTool)
             .maxTokens(1000L)
             .temperature(0.0)
@@ -184,7 +184,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
 
         val model = Model.CLAUDE_3_5_HAIKU_LATEST
         val paramsBuilder = MessageCreateParams.builder()
-            .addUserMessage("Use the provided tools to greet the user, then say goodbye to him. Use the name USER. You MUST use the tools!")
+            .addUserMessage("Call the `hi` tool with the argument `name` set to 'USER' and `goodbye` with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool calls.")
             .addTool(greetTool)
             .addTool(goodbyeTool)
             .maxTokens(1000L)

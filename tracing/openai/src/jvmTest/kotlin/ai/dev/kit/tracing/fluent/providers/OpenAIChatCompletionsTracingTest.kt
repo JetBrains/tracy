@@ -89,7 +89,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
         val greetTool = createChatCompletionTool(toolName)
 
         val params = ChatCompletionCreateParams.builder()
-            .addUserMessage("Use a given `hi` tool to greet two people: USER1 and USER2. You MUST do this with the given tool!")
+            .addUserMessage("Call the `hi` tool with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool call.")
             .addTool(greetTool)
             .model(ChatModel.GPT_4O_MINI)
             .temperature(0.0)
@@ -112,7 +112,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
         // See example at:
         // https://github.com/openai/openai-java/blob/main/openai-java-example/src/main/java/com/openai/example/FunctionCallingRawExample.java
         val paramsBuilder = ChatCompletionCreateParams.builder()
-            .addUserMessage("Use a given `hi` tool to greet the user. Use the name USER. You MUST do this with the given tool!")
+            .addUserMessage("Call the `hi` tool with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool call.")
             .addTool(greetTool)
             .model(ChatModel.GPT_4O_MINI)
             .temperature(0.0)
@@ -152,7 +152,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
         val goodbyeTool = createChatCompletionTool(goodbyeToolName)
 
         val paramsBuilder = ChatCompletionCreateParams.builder()
-            .addUserMessage("Use the provided tools to greet the user, then say goodbye to him. Use the name USER. You MUST use the tools!")
+            .addUserMessage("Call the `hi` tool with the argument `name` set to 'USER' and `goodbye` with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool calls.")
             .addTool(greetTool)
             .addTool(goodbyeTool)
             .model(ChatModel.GPT_4O_MINI)

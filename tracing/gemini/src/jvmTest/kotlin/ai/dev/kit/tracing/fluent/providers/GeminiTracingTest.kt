@@ -123,7 +123,7 @@ class GeminiTracingTest : BaseAITracingTest() {
         val model = "gemini-2.5-flash"
         val response = client.models.generateContent(
             model,
-            "Generate greeting via a tool provided to you. Use the name USER. You MUST use the tool named '${toolName}' for this!",
+            "Call the `hi` tool with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool call.",
             GeminiGenerateContentConfig.builder()
                 .temperature(0.0f)
                 .tools(greetTool)
@@ -167,7 +167,7 @@ class GeminiTracingTest : BaseAITracingTest() {
         // Step 1: Initial user message
         val userMessage = Content.builder()
             .role("user")
-            .parts(Part.fromText("Generate greeting via a tool provided to you. Use the name USER. You MUST call the tool exactly once!"))
+            .parts(Part.fromText("Call the `hi` tool with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool call."))
             .build()
 
         // Step 2: Get AI response (which should contain a function call)
@@ -253,7 +253,7 @@ class GeminiTracingTest : BaseAITracingTest() {
 
         val userMessage = Content.builder()
             .role("user")
-            .parts(Part.fromText("Use the provided tools to greet the user, then say goodbye to him. Use the name USER. You MUST use the tools!"))
+            .parts(Part.fromText("Call the `hi` tool with the argument `name` set to 'USER' and `goodbye` with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool calls."))
             .build()
 
         val firstResponse = client.models.generateContent(

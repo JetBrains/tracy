@@ -57,7 +57,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
         val greetTool = createFunctionTool(toolName)
 
         val params = ResponseCreateParams.builder()
-            .input("Use a given `hi` tool to greet two people: USER1 and USER2. You MUST do this with the given tool!")
+            .input("Call the `hi` tool with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool call.")
             .addTool(greetTool)
             .model(ChatModel.GPT_4O_MINI)
             .temperature(0.0)
@@ -77,7 +77,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
         val toolName = "hi"
         val greetTool = createFunctionTool(toolName)
 
-        val userPrompt = "Use the provided `hi` tool to greet the user. Use the name USER. You MUST use the tool!"
+        val userPrompt = "Call the `hi` tool with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool call."
 
         val paramsBuilderFirst = ResponseCreateParams.builder()
             .model(ChatModel.GPT_4O_MINI)
@@ -131,7 +131,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
         val goodbyeToolName = "goodbye"
         val goodbyeTool = createFunctionTool(goodbyeToolName)
 
-        val userPrompt = "Use the provided tools to greet the user, then say goodbye to him. Use the name USER. You MUST use the tools!"
+        val userPrompt = "Call the `hi` tool with the argument `name` set to 'USER' and `goodbye` with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool calls."
 
         val paramsBuilderFirst = ResponseCreateParams.builder()
             .model(ChatModel.GPT_4O_MINI)
