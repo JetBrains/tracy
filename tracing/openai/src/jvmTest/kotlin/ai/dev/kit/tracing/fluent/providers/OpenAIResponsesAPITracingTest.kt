@@ -17,8 +17,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.time.Duration
-import kotlin.time.Duration.Companion.minutes
+import java.time.Duration
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.minutes
 
 
 @Tag("openai")
@@ -277,7 +278,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
     }
 
     @Test
-    fun `test user text messages and attached image get traced`() = runTest {
+    fun `test user text messages and attached image get traced`() = runTest(timeout = 3.minutes) {
         val model = ChatModel.GPT_4O_MINI
         val prelude = "You are given an image."
         val prompt = "Describe what you see in the image."
@@ -287,7 +288,10 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
             contentType = "image/jpeg",
         )
 
-        val client = instrument(createOpenAIClient())
+        val client = instrument(createOpenAIClient(
+            timeout = Duration.ofMinutes(3)
+        ))
+
         val params = ResponseCreateParams.builder()
             .input(
                 // text -> image -> text
