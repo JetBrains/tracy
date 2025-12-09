@@ -104,7 +104,7 @@ abstract class BaseAITracingTest : BaseOpenTelemetryTracingTest() {
 
     protected fun readResource(filepath: String): InputStream {
         return javaClass.classLoader.getResourceAsStream(filepath)
-            ?: error("File not found")
+            ?: error("File '$filepath' not found")
     }
 
     companion object {
