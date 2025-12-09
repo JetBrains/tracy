@@ -117,7 +117,7 @@ fun ContentType.Companion.parseSafe(mimeType: String): ContentType? {
     return try {
         ContentType.parse(mimeType)
     }
-    catch (err: Exception) {
+    catch (_: Exception) {
         null
     }
 }
