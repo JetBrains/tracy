@@ -56,10 +56,10 @@ class GeminiContentGenHandler(
                 for ((index, tool) in tools.jsonArray.withIndex()) {
                     tool.jsonObject["functionDeclarations"]?.let {
                         for ((functionIndex, function) in it.jsonArray.withIndex()) {
-                            function.jsonObject["parameters"]?.jsonObject?.let {
+                            function.jsonObject["parameters"]?.jsonObject?.let { params ->
                                 span.setAttribute(
                                     "gen_ai.tool.$index.function.$functionIndex.type",
-                                    it["type"]?.jsonPrimitive?.content
+                                    params["type"]?.jsonPrimitive?.content
                                 )
                             }
                             span.setAttribute(
