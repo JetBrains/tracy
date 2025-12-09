@@ -225,7 +225,12 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
                 mapOf("additionalBodyPropertyKey" to JsonValue.from("additionalBodyPropertyValue"))
             )
 
-        client.chat().completions().create(paramsBuilder.build())
+        try {
+            // OpenAI API endpoint throws 400 Bad Request on unconventional properties;
+            // unlike Langfuse, which ignores them
+            client.chat().completions().create(paramsBuilder.build())
+        } catch (_: Exception) {}
+
         validateAdditionalAttributes()
     }
 
