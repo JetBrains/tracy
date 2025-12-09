@@ -16,31 +16,22 @@ data class ContentCapturePolicy(
          * Creates a policy using system properties or environment variables when present.
          * Precedence: system properties > env vars > defaults.
          *
-         * System properties:
-         *  - tracy.tracing.capture.input
-         *  - tracy.tracing.capture.output
-         *
          * Environment variables:
          *  - TRACY_CAPTURE_INPUT
          *  - TRACY_CAPTURE_OUTPUT
          */
         fun fromEnvironment(): ContentCapturePolicy {
-            fun readBool(sysKey: String, envKey: String, default: Boolean): Boolean {
-                val sys = System.getProperty(sysKey)?.trim()
+            fun readBool(envKey: String, default: Boolean): Boolean {
                 val env = System.getenv(envKey)?.trim()
-
-                val raw = sys ?: env
-                return raw?.let { toBooleanLenient(it) } ?: default
+                return env?.let { toBooleanLenient(it) } ?: default
             }
 
             return ContentCapturePolicy(
                 captureInputs = readBool(
-                    sysKey = "tracy.tracing.capture.input",
                     envKey = "TRACY_CAPTURE_INPUT",
                     default = DEFAULT_CAPTURE_INPUTS,
                 ),
                 captureOutputs = readBool(
-                    sysKey = "tracy.tracing.capture.output",
                     envKey = "TRACY_CAPTURE_OUTPUT",
                     default = DEFAULT_CAPTURE_OUTPUTS,
                 ),
