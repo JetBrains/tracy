@@ -60,14 +60,10 @@ internal class ResponsesApiHandler(
             span.setAttribute("gen_ai.request.text", it.toString())
         }
 
-        var promptIndex = 0
-
         body["instructions"]?.jsonPrimitive?.let {
             span.setAttribute("gen_ai.prompt.0.content", it.toString())
             span.setAttribute("gen_ai.prompt.0.role", "system")
-            promptIndex++
         }
-
         body["input"]?.let { inputs ->
             if (inputs is JsonArray) {
                 parseRequestInputAttributes(span, inputs)
