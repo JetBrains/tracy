@@ -9,7 +9,9 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
+import java.time.Duration
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.minutes
 import com.google.genai.types.GenerateContentConfig as GeminiGenerateContentConfig
 
 
@@ -23,8 +25,10 @@ import com.google.genai.types.GenerateContentConfig as GeminiGenerateContentConf
 @Tag("gemini")
 class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
     @Test
-    fun `test generated image get traced`() = runTest {
-        val client = instrument(createGeminiClient())
+    fun `test generated image get traced`() = runTest(timeout = 3.minutes) {
+        val client = instrument(createGeminiClient(
+            timeout = Duration.ofMinutes(3)
+        ))
 
         val model = "gemini-2.5-flash-image"
         val params = GeminiGenerateContentConfig.builder()
@@ -51,8 +55,10 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
     }
 
     @Test
-    fun `test generated image and attached reference get traced`() = runTest {
-        val client = instrument(createGeminiClient())
+    fun `test generated image and attached reference get traced`() = runTest(timeout = 3.minutes) {
+        val client = instrument(createGeminiClient(
+            timeout = Duration.ofMinutes(3)
+        ))
 
         val model = "gemini-2.5-flash-image"
         val params = GeminiGenerateContentConfig.builder()
@@ -87,8 +93,10 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
     }
 
     @Test
-    fun `test image generated in chat gets traced`() = runTest {
-        val client = instrument(createGeminiClient())
+    fun `test image generated in chat gets traced`() = runTest(timeout = 3.minutes) {
+        val client = instrument(createGeminiClient(
+            timeout = Duration.ofMinutes(3)
+        ))
 
         val model = "gemini-2.5-flash-image"
         val params = GeminiGenerateContentConfig.builder()
@@ -112,8 +120,10 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
     }
 
     @Test
-    fun `test images generated in multi-turn chat generation get traced`() = runTest {
-        val client = instrument(createGeminiClient())
+    fun `test images generated in multi-turn chat generation get traced`() = runTest(timeout = 3.minutes) {
+        val client = instrument(createGeminiClient(
+            timeout = Duration.ofMinutes(3)
+        ))
 
         val model = "gemini-2.5-flash-image"
         val params = GeminiGenerateContentConfig.builder()
@@ -149,8 +159,10 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
     }
 
     @Test
-    fun `test image generated with high-resolution gets traced`() = runTest {
-        val client = instrument(createGeminiClient())
+    fun `test image generated with high-resolution gets traced`() = runTest(timeout = 3.minutes) {
+        val client = instrument(createGeminiClient(
+            timeout = Duration.ofMinutes(3)
+        ))
 
         val model = "gemini-2.5-flash-image"
         val params = GeminiGenerateContentConfig.builder()
@@ -181,8 +193,10 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
     }
 
     @Test
-    fun `test attached audio file gets traced`() = runTest {
-        val client = instrument(createGeminiClient())
+    fun `test attached audio file gets traced`() = runTest(timeout = 3.minutes) {
+        val client = instrument(createGeminiClient(
+            timeout = Duration.ofMinutes(3)
+        ))
 
         val model = "gemini-2.5-flash"
         val params = GeminiGenerateContentConfig.builder()
@@ -210,8 +224,10 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
     }
 
     @Test
-    fun `test images generated with Imagen API get traced`() = runTest {
-        val client = instrument(createGeminiClient())
+    fun `test images generated with Imagen API get traced`() = runTest(timeout = 3.minutes) {
+        val client = instrument(createGeminiClient(
+            timeout = Duration.ofMinutes(3)
+        ))
 
         val model = "imagen-4.0-generate-001"
         val params = GenerateImagesConfig.builder()
@@ -239,8 +255,10 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
     }
 
     @Test
-    fun `test image editing API gets traced`() = runTest {
-        val client = instrument(createGeminiClient())
+    fun `test image editing API gets traced`() = runTest(timeout = 3.minutes) {
+        val client = instrument(createGeminiClient(
+            timeout = Duration.ofMinutes(3)
+        ))
 
         val model = "imagen-3.0-capability-001"
         val params = EditImageConfig.builder()
@@ -310,8 +328,10 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
     }
 
     @Test
-    fun `test image upscaling API gets traced`() = runTest {
-        val client = instrument(createGeminiClient())
+    fun `test image upscaling API gets traced`() = runTest(timeout = 3.minutes) {
+        val client = instrument(createGeminiClient(
+            timeout = Duration.ofMinutes(3)
+        ))
 
         val model = "imagen-4.0-upscale-preview"
         val outputMimeType = "image/jpeg"

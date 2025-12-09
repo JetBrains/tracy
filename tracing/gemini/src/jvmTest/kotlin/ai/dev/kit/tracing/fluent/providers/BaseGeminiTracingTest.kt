@@ -23,7 +23,7 @@ abstract class BaseGeminiTracingTest : BaseAITracingTest() {
         validateBasicTracing(llmProviderUrl!!, model)
     }
 
-    protected fun createGeminiClient(): GeminiClient {
+    protected fun createGeminiClient(timeout: Duration = Duration.ofMinutes(1)): GeminiClient {
         val projectId = "jetbrains-grazie"
         val location = "us-central1"
 
@@ -46,6 +46,7 @@ abstract class BaseGeminiTracingTest : BaseAITracingTest() {
                 GeminiHttpOptions.builder()
                     .baseUrl("$llmProviderUrl/vertex_ai")
                     // TODO: fix?
+                    .timeout(timeout.toMillis().toInt())
                     .headers(mapOf("x-litellm-api-key" to "Bearer $llmProviderApiKey"))
                     .timeout(Duration.ofSeconds(60).toMillis().toInt())
                     .build()
