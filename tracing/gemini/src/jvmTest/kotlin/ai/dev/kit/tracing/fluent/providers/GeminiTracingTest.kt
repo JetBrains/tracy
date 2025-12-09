@@ -95,7 +95,7 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
         val toolCallName = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")]
         val toolCallArgs = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")]
 
-        Assumptions.assumeTrue { toolCallName != null && toolCallArgs != null }
+        Assumptions.assumeTrue(toolCallName != null && toolCallArgs != null)
 
         if (!policy.captureOutputs) {
             assertEquals("REDACTED", toolCallName, "Tool name content should be redacted")
