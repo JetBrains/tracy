@@ -152,10 +152,19 @@ internal class ResponsesApiHandler(
                                     .first { it.jsonObject["type"]?.jsonPrimitive?.content == "output_text" }
                                     .jsonObject
 
-                                message["text"]?.jsonPrimitive?.content?.let { span.setAttribute("gen_ai.completion.$index.content", it) }
-                                message["annotations"]?.let { span.setAttribute("gen_ai.completion.$index.annotations", it.toString()) }
-                            }
-                            else {
+                                message["text"]?.jsonPrimitive?.content?.let {
+                                    span.setAttribute(
+                                        "gen_ai.completion.$index.content",
+                                        it
+                                    )
+                                }
+                                message["annotations"]?.let {
+                                    span.setAttribute(
+                                        "gen_ai.completion.$index.annotations",
+                                        it.toString()
+                                    )
+                                }
+                            } else {
                                 // set the entire array as completion content
                                 span.setAttribute("gen_ai.completion.$index.content", content.toString())
                             }
@@ -163,6 +172,7 @@ internal class ResponsesApiHandler(
                             span.setAttribute("gen_ai.completion.$index.content", content.toString())
                         }
                     }
+
                     else -> {
                         // any other types, including 'function_call' and 'reasoning'
                         // See output types: https://platform.openai.com/docs/api-reference/responses/object#responses-object-output
@@ -219,45 +229,58 @@ internal class ResponsesApiHandler(
      * See the [schema](https://platform.openai.com/docs/api-reference/responses/create#responses_create-input)
      */
     private fun parseRequestInputAttributes(span: Span, inputs: JsonArray) {
-        for ((index, input) in inputs.jsonArray.withIndex()) {
+        for ((index, input) in inputs.withIndex()) {
             // See: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input
             when (val type = input.jsonObject["type"]?.jsonPrimitive?.content) {
-               "message" -> {
-                   // this message can be either:
-                   //   1. Input message: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input-input_item_list-item-input_message
-                   //   2. Output message: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input-input_item_list-item-output_message
-                   // the difference is in the `role` and `content` fields
+                "message" -> {
+                    // this message can be either:
+                    //   1. Input message: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input-input_item_list-item-input_message
+                    //   2. Output message: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input-input_item_list-item-output_message
+                    // the difference is in the `role` and `content` fields
 
-                   // install primitive keys common for both input and output messages
-                   val fields = listOf("id", "role", "status", "type")
-                   for (field in fields) {
-                       input.jsonObject[field]?.jsonPrimitive?.content?.let { value ->
-                           val key = when (field) {
-                               "type" -> "input_type"
-                               else -> field
-                           }
-                           span.setAttribute("gen_ai.prompt.$index.$key", value)
-                       }
-                   }
+                    // install primitive keys common for both input and output messages
+                    val fields = listOf("id", "role", "status", "type")
+                    for (field in fields) {
+                        input.jsonObject[field]?.jsonPrimitive?.content?.let { value ->
+                            val key = when (field) {
+                                "type" -> "input_type"
+                                else -> field
+                            }
+                            span.setAttribute("gen_ai.prompt.$index.$key", value)
+                        }
+                    }
 
-                   val content = input.jsonObject["content"]
-                   if (content is JsonArray) {
-                       // if there is a single message that has a type of `input_text`, then install it as prompt content;
-                       // otherwise, set the entire array instead.
-                       if (content.size == 1 && content.count { it.jsonObject["type"]?.jsonPrimitive?.content == "input_text" } == 1) {
-                           val message = content.first { it.jsonObject["type"]?.jsonPrimitive?.content == "input_text" }.jsonObject
+                    val content = input.jsonObject["content"]
+                    if (content is JsonArray) {
+                        // if there is a single message that has a type of `input_text`, then install it as prompt content;
+                        // otherwise, set the entire array instead.
+                        if (content.size == 1 && content.count { it.jsonObject["type"]?.jsonPrimitive?.content == "input_text" } == 1) {
+                            val message = content
+                                .first { it.jsonObject["type"]?.jsonPrimitive?.content == "input_text" }
+                                .jsonObject
 
-                           message["text"]?.jsonPrimitive?.content?.let { span.setAttribute("gen_ai.prompt.$index.content", it) }
-                           message["type"]?.jsonPrimitive?.content?.let { span.setAttribute("gen_ai.prompt.$index.content_type", it) }
-                       } else {
-                           // set the entire array as prompt content
-                           span.setAttribute("gen_ai.prompt.$index.content", content.toString())
-                       }
+                            message["text"]?.jsonPrimitive?.content?.let {
+                                span.setAttribute(
+                                    "gen_ai.prompt.$index.content",
+                                    it
+                                )
+                            }
+                            message["type"]?.jsonPrimitive?.content?.let {
+                                span.setAttribute(
+                                    "gen_ai.prompt.$index.content_type",
+                                    it
+                                )
+                            }
+                        } else {
+                            // set the entire array as prompt content
+                            span.setAttribute("gen_ai.prompt.$index.content", content.toString())
+                        }
 
-                   } else if (content != null) {
-                       span.setAttribute("gen_ai.prompt.$index.content", content.toString())
-                   }
-               }
+                    } else if (content != null) {
+                        span.setAttribute("gen_ai.prompt.$index.content", content.toString())
+                    }
+                }
+
                 else -> {
                     // any other types, including 'function_call_output' and 'reasoning'
                     // See input types: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input-input_item_list-item
