@@ -7,6 +7,7 @@ import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.loadFileAsBase64Encoded
 import ai.dev.kit.tracing.toDataUrl
 import ai.dev.kit.tracing.toMediaContentAttributeValues
+import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.*
 import com.openai.models.embeddings.EmbeddingCreateParams
@@ -14,6 +15,7 @@ import com.openai.models.embeddings.EmbeddingModel
 import io.opentelemetry.api.common.AttributeKey
 import com.openai.models.responses.ResponseCreateParams
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -38,6 +40,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
             .model(model).temperature(1.1).build()
         client.chat().completions().create(params)
 
+        Thread.sleep(3000)
         validateBasicTracing(model)
     }
 
@@ -211,6 +214,10 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI chat completions additional attributes`() = runTest {
+        // this test is only possible on a LiteLLM pass-through.
+        // OpenAI API endpoint throws 400 Bad Request on unconventional properties, unlike LiteLLM, which ignores them
+        Assumptions.assumeTrue { llmProviderUrl.startsWith("https://litellm.labs.jb.gg") }
+
         val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
 
         val paramsBuilder = ChatCompletionCreateParams.builder()
@@ -225,11 +232,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
                 mapOf("additionalBodyPropertyKey" to JsonValue.from("additionalBodyPropertyValue"))
             )
 
-        try {
-            // OpenAI API endpoint throws 400 Bad Request on unconventional properties;
-            // unlike Langfuse, which ignores them
-            client.chat().completions().create(paramsBuilder.build())
-        } catch (_: Exception) {}
+        client.chat().completions().create(paramsBuilder.build())
 
         validateAdditionalAttributes()
     }
