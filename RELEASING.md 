@@ -16,11 +16,11 @@ It handles automatic patch bumps, manual version input, tagging, committing, and
 
 #### Workflow Inputs
 
-| Input Name        | Description                                                                          | Required | Default                                                                                                                                                                                 |
-|-------------------|--------------------------------------------------------------------------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `manual_version`  | Optional manual version (X.Y.Z). If provided, the patch will **not** auto-increment. | No       | `''`                                                                                                                                                                                    |
-| `publishing_file` | File containing the version constant to read.                                        | Yes      | `publishing/src/main/kotlin/SpacePublishingPlugin.kt`                                                                                                                                   |
-| `files_to_update` | Space-separated list of files where the version should be updated.                   | Yes      | `README.md` `CONTRIBUTING.md` `publishing/src/main/kotlin/SpacePublishingPlugin.kt` `plugin/gradle-tracy-plugin/src/main/kotlin/ai/dev/kit/trace/gradle/AiDevKitTraceGradlePlugin.kt` |
+| Input Name        | Description                                                                          | Required | Default                                                                                                                                                                                                   |
+|-------------------|--------------------------------------------------------------------------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `manual_version`  | Optional manual version (X.Y.Z). If provided, the patch will **not** auto-increment. | No       | `''`                                                                                                                                                                                                      |
+| `publishing_file` | File containing the version constant to read.                                        | Yes      | `publishing/src/main/kotlin/SpacePublishingPlugin.kt`                                                                                                                                                     |
+| `files_to_update` | Space-separated list of files where the version should be updated.                   | Yes      | `README.md` `CONTRIBUTING.md` `gradle.properties` `publishing/src/main/kotlin/SpacePublishingPlugin.kt` `plugin/gradle-tracy-plugin/src/main/kotlin/ai/dev/kit/trace/gradle/AiDevKitTraceGradlePlugin.kt` |
 
 ---
 
