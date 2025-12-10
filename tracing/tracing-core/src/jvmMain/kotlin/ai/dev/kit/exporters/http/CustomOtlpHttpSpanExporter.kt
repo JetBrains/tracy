@@ -5,13 +5,11 @@ import io.opentelemetry.exporter.internal.http.HttpExporterBuilder
 import io.opentelemetry.exporter.internal.http.HttpSender
 import io.opentelemetry.exporter.internal.marshal.Marshaler
 import io.opentelemetry.exporter.internal.otlp.traces.SpanReusableDataMarshaler
+import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter
 import io.opentelemetry.sdk.common.CompletableResultCode
 import io.opentelemetry.sdk.common.export.MemoryMode
 import io.opentelemetry.sdk.trace.data.SpanData
 import io.opentelemetry.sdk.trace.export.SpanExporter
-import io.opentelemetry.sdk.internal.StandardComponentId
-import io.opentelemetry.sdk.common.InternalTelemetryVersion
-import java.util.function.Supplier
 import mu.KotlinLogging
 import java.util.function.Consumer
 
@@ -26,12 +24,12 @@ import java.util.function.Consumer
  * - HTTP 403: Valid credentials but insufficient permissions
  * - HTTP 404: Wrong endpoint URL or path
  *
- * @param builder The [HttpExporterBuilder] used to construct the delegate exporter
+ * @param exporter The [OtlpHttpSpanExporter] instance from which an [HttpExporterBuilder] instance is extracted
  * @param memoryMode The memory mode for span marshaling
  * @param endpointUrl The target endpoint URL for diagnostic messages
  */
 class CustomOtlpHttpSpanExporter(
-    builder: HttpExporterBuilder<Marshaler>,
+    exporter: OtlpHttpSpanExporter,
     memoryMode: MemoryMode,
     private val endpointUrl: String,
 ) : SpanExporter {
@@ -39,15 +37,22 @@ class CustomOtlpHttpSpanExporter(
     private val marshaler: SpanReusableDataMarshaler
 
     init {
-        // Wrap the HttpSender with our diagnostic version before building
-        val originalSender = builder.build()
+        // wrap the HttpSender with our diagnostic version before building
+        val exporterClass = OtlpHttpSpanExporter::class.java
+        val originalDelegate = exporterClass.getDeclaredField("delegate")
+            .also { it.isAccessible = true }
+            .get(exporter) as HttpExporter<Marshaler>
+
         val diagnosticSender = DiagnosticHttpSender(
-            delegate = extractHttpSender(originalSender),
-            endpointUrl = endpointUrl
+            delegate = extractHttpSender(originalDelegate),
+            endpointUrl = endpointUrl,
         )
 
-        // Build a new HttpExporter with our diagnostic sender
-        delegate = createHttpExporterWithSender(builder, diagnosticSender)
+        // install our own http sender into the delegate
+        patchHttpExporterWithSender(originalDelegate, diagnosticSender)
+
+        // install member fields
+        delegate = originalDelegate
         marshaler = SpanReusableDataMarshaler(memoryMode, delegate::export)
     }
 
@@ -71,53 +76,15 @@ class CustomOtlpHttpSpanExporter(
     /**
      * Create a new [HttpExporter] with a custom [HttpSender] using reflection.
      */
-    private fun createHttpExporterWithSender(
-        builder: HttpExporterBuilder<Marshaler>,
+    private fun patchHttpExporterWithSender(
+        delegate: HttpExporter<Marshaler>,
         httpSender: HttpSender,
-    ): HttpExporter<Marshaler> {
-        /*
-        // build a temporary exporter to get the builder's internal state
-        val tempExporter = builder.build()
-
-        // extract the necessary fields from the temp exporter
-        val componentIdField = HttpExporter::class.java.getDeclaredField("type").also {
-            it.isAccessible = true
-        }
-        val exporterMetricsField = HttpExporter::class.java.getDeclaredField("exporterMetrics").also {
-            it.isAccessible = true
-        }
-        */
-
-        // access builder's internal fields to recreate the HttpExporter constructor parameters
-        val builderClass = HttpExporterBuilder::class.java
-
-        val componentId = builderClass.getDeclaredField("componentId")
-            .also { it.isAccessible = true }.get(builder)
-
-        val meterProviderSupplier = builderClass.getDeclaredField("meterProviderSupplier")
-            .also { it.isAccessible = true }.get(builder)
-
-        val internalTelemetryVersion = builderClass.getDeclaredField("internalTelemetryVersion").also { it.isAccessible = true }.get(builder)
-
-        val endpoint = builderClass.getDeclaredField("endpoint")
-            .also { it.isAccessible = true }.get(builder) as String
-
-        // create a new HttpExporter with our custom sender
-        val constructor = HttpExporter::class.java.getDeclaredConstructor(
-            StandardComponentId::class.java,
-            HttpSender::class.java,
-            Supplier::class.java,
-            InternalTelemetryVersion::class.java,
-            String::class.java,
-        ).also { it.isAccessible = true }
-
-        return constructor.newInstance(
-            componentId,
-            httpSender,
-            meterProviderSupplier,
-            internalTelemetryVersion,
-            endpoint,
-        ) as HttpExporter<Marshaler>
+    ) {
+        // replace delegate's http sender with the provided one
+        val httpExporterClass = HttpExporter::class.java
+        httpExporterClass.getDeclaredField("httpSender")
+            .also { it.isAccessible = true }
+            .set(delegate, httpSender)
     }
 }
 
@@ -141,9 +108,17 @@ private class DiagnosticHttpSender(
         onSuccess: Consumer<HttpSender.Response>,
         onError: Consumer<Throwable>
     ) {
+        println("WARNING ENABLED: ${logger.isWarnEnabled}")
+        println("INFO ENABLED: ${logger.isInfoEnabled}")
+        println("ERROR ENABLED: ${logger.isErrorEnabled}")
+        println("DEBUG ENABLED: ${logger.isDebugEnabled}")
+
         // wrap the success callback to intercept responses
         val diagnosticOnSuccess = Consumer<HttpSender.Response> { response ->
             val statusCode = response.statusCode()
+
+            println("RESPONSE STATUS CODE: $statusCode (status msg: ${response.statusMessage()})")
+
             // provide diagnostic logging for specific error codes
             when (statusCode) {
                 401 -> logger.warn { buildDiagnosticMessage401() }
