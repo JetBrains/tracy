@@ -277,8 +277,8 @@ internal class ResponsesApiHandler(
                 else -> {
                     // any other types, including 'function_call_output' and 'reasoning'
                     // See input types: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input-input_item_list-item
+                    val functionCallTypes = listOf("function_call", "function_call_output")
                     for ((k, v) in input.jsonObject.entries) {
-                        val functionCallTypes = listOf("function_call", "function_call_output")
                         val key = when {
                             // prefix `function_call`/`function_call_output` with "tool_"
                             (type in functionCallTypes) && k == "type" -> "tool_call_type"
