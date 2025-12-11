@@ -142,7 +142,7 @@ internal class ResponsesApiHandler(
                             // otherwise, set the entire array instead.
                             if (content.size == 1 && content.first().jsonObject["type"]?.jsonPrimitive?.contentOrNull == "output_text") {
                                 val message = content
-                                    .first { it.jsonObject["type"]?.jsonPrimitive?.content == "output_text" }
+                                    .first { it.jsonObject["type"]?.jsonPrimitive?.contentOrNull == "output_text" }
                                     .jsonObject
 
                                 message["text"]?.jsonPrimitive?.content?.let {
@@ -249,7 +249,7 @@ internal class ResponsesApiHandler(
                         // otherwise, set the entire array instead.
                         if (content.size == 1 && content.first().jsonObject["type"]?.jsonPrimitive?.content == "input_text") {
                             val message = content
-                                .first { it.jsonObject["type"]?.jsonPrimitive?.content == "input_text" }
+                                .first { it.jsonObject["type"]?.jsonPrimitive?.contentOrNull == "input_text" }
                                 .jsonObject
 
                             message["text"]?.jsonPrimitive?.content?.let {

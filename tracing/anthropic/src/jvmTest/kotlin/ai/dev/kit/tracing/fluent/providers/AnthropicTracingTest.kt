@@ -10,6 +10,7 @@ import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_FINISH_REASONS
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -245,7 +246,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
             try {
                 val jsonContent = Json.parseToJsonElement(content)
                 val arr = jsonContent.jsonArray
-                arr.count { it.jsonObject["type"]?.jsonPrimitive?.content == "tool_result" }
+                arr.count { it.jsonObject["type"]?.jsonPrimitive?.contentOrNull == "tool_result" }
             } catch (_: Exception) {
                 0
             }
