@@ -34,10 +34,10 @@ class AiDevKitTraceGradlePlugin : KotlinCompilerPluginSupportPlugin {
     override fun getPluginArtifact(): SubpluginArtifact {
         val kotlinVersion = getKotlinPluginVersion(logger)
         val pluginVersion = findPluginVersion(kotlinVersion)
-        logger.debug("Resolved ai-dev-kit-tracing-compiler-plugin-$pluginVersion for Kotlin compiler $kotlinVersion")
+        logger.debug("Resolved tracy-compiler-plugin-$pluginVersion for Kotlin compiler $kotlinVersion")
         return SubpluginArtifact(
             groupId = "com.jetbrains",
-            artifactId = "ai-dev-kit-tracing-compiler-plugin-$pluginVersion",
+            artifactId = "tracy-compiler-plugin-$pluginVersion",
             version = VERSION
         )
     }

@@ -138,7 +138,7 @@ You can use it to:
                     Examples:
                     - 2.1.19 -> 2.1.0
                     - 2.1.23 -> 2.1.20 -->
-                    <artifactId>ai-dev-kit-tracing-compiler-plugin-2.1.0-jvm</artifactId>
+                    <artifactId>tracy-compiler-plugin-2.1.0-jvm</artifactId>
                     <version>0.0.24</version>
                   </dependency>
               </dependencies>
@@ -436,7 +436,7 @@ Configuration for exporting OpenTelemetry traces to a file in either JSON or pla
 
 - **[`plugin`](plugin)** — contains the Kotlin compiler plugins for annotation-based fluent tracing.  
   It includes multiple Kotlin Compiler Plugin (KCP) implementations for different Kotlin versions.  
-  The [`gradle-tracing-plugin`](plugin/gradle-tracing-plugin) module automatically selects the appropriate KCP version
+  The [`gradle-tracy-plugin`](plugin/gradle-tracy-plugin) module automatically selects the appropriate KCP version
   for your Kotlin compiler and applies it to your Gradle project.
 - **[`publishing`](publishing)** — provides a Gradle plugin used for modules that need to be published.  
   It defines the `ai-dev-kit` version and includes Kotlin DSL logic for publishing artifacts to Space Maven
