@@ -1,4 +1,4 @@
-package ai.dev.kit.exporters.http
+package ai.dev.kit.exporters.otlp
 
 import ai.dev.kit.exporters.BaseExporterConfig
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter
@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit
  *  Can be created on [https://wandb.ai/authorize].
  *  If not provided, it is retrieved from the `WEAVE_API_KEY` environment variable.
  *
- * @see [HttpExporterConfig] for HTTP-specific exporter configuration.
+ * @see [OtlpBaseExporterConfig] for OTLP-specific exporter configuration.
  * @see [BaseExporterConfig] for inherited properties such as attribute limits, console logging, and exporter timeout.
  * @see [Weave OpenTelemetry Docs](https://weave-docs.wandb.ai/guides/tracking/otel/)
  */
@@ -37,14 +37,19 @@ class WeaveExporterConfig(
     traceToConsole: Boolean = false,
     maxNumberOfSpanAttributes: Int? = null,
     maxSpanAttributeValueLength: Int? = null,
-) : HttpExporterConfig(exporterTimeoutSeconds, traceToConsole, maxNumberOfSpanAttributes, maxSpanAttributeValueLength) {
-    val resolvedBaseUrl: String = baseUrl ?: System.getenv("WEAVE_URL") ?: WEAVE_BASE_URL
+) : OtlpBaseExporterConfig(
+    url = baseUrl ?: System.getenv("WEAVE_URL") ?: WEAVE_BASE_URL,
+    exporterTimeoutSeconds = exporterTimeoutSeconds,
+    traceToConsole = traceToConsole,
+    maxNumberOfSpanAttributes = maxNumberOfSpanAttributes,
+    maxSpanAttributeValueLength = maxSpanAttributeValueLength
+) {
     private val resolvedEntity: String = resolveRequiredEnvVar(entity, "WEAVE_ENTITY")
     private val resolvedProjectName: String = resolveRequiredEnvVar(projectName, "WEAVE_PROJECT_NAME")
     private val resolvedApiKey: String = resolveRequiredEnvVar(apiKey, "WEAVE_API_KEY")
 
     override fun createSpanExporter(): SpanExporter {
-        return OtlpHttpSpanExporter.builder().setEndpoint("$resolvedBaseUrl/otel/v1/traces")
+        return OtlpHttpSpanExporter.builder().setEndpoint("$url/otel/v1/traces")
             .setTimeout(exporterTimeoutSeconds, TimeUnit.SECONDS)
             .addHeader("project_id", "$resolvedEntity/$resolvedProjectName")
             .addHeader("Authorization", "Basic ${basicAuthHeader()}")

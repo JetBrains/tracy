@@ -2,8 +2,8 @@ package ai.dev.kit.tracing
 
 import ai.dev.kit.exporters.BaseExporterConfig
 import ai.dev.kit.exporters.ConsoleExporterConfig
-import ai.dev.kit.exporters.http.LangfuseExporterConfig
-import ai.dev.kit.exporters.http.WeaveExporterConfig
+import ai.dev.kit.exporters.otlp.LangfuseExporterConfig
+import ai.dev.kit.exporters.otlp.WeaveExporterConfig
 import ai.dev.kit.tracing.fluent.FluentSpanAttributes
 import ai.dev.kit.tracing.fluent.processor.Span
 import ai.dev.kit.tracing.fluent.processor.currentSpanContext

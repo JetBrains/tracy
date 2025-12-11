@@ -393,7 +393,7 @@ val sdk = configureOpenTelemetrySdk(
 
 Once the SDK is configured, initialize tracing with `TracingManager.setSdk(sdk)`.
 
-#### [Langfuse Configuration](tracing/core/src/jvmMain/kotlin/ai/dev/kit/exporters/http/LangfuseExporterConfig.kt)
+#### [Langfuse Configuration](tracing/core/src/jvmMain/kotlin/ai/dev/kit/exporters/otlp/LangfuseExporterConfig.kt)
 
 | Property                      | Environment Variable              | Required | Default Value                                              |
 |-------------------------------|-----------------------------------|----------|------------------------------------------------------------|
@@ -407,7 +407,7 @@ Once the SDK is configured, initialize tracing with `TracingManager.setSdk(sdk)`
 
 [Langfuse Setup Example](examples/src/main/kotlin/ai/dev/kit/examples/backends/LangfuseExample.kt)
 
-#### [Weave Configuration](tracing/core/src/jvmMain/kotlin/ai/dev/kit/exporters/http/WeaveExporterConfig.kt)
+#### [Weave Configuration](tracing/core/src/jvmMain/kotlin/ai/dev/kit/exporters/otlp/WeaveExporterConfig.kt)
 
 | Property                      | Environment Variable              | Required | Default Value                                      |
 |-------------------------------|-----------------------------------|----------|----------------------------------------------------|
@@ -431,6 +431,11 @@ only. [Console Setup Example](examples/src/main/kotlin/ai/dev/kit/examples/Traci
 
 Configuration for exporting OpenTelemetry traces to a file in either JSON or plain text format.
 [File Setup Example](examples/src/main/kotlin/ai/dev/kit/examples/FileTracingExample.kt)
+
+#### [Otlp Http Configuration](tracing/core/src/jvmMain/kotlin/ai/dev/kit/exporters/otlp/OtlpHttpExporterConfig.kt)
+
+Export spans to any OTLP HTTP-compatible collector (e.g. Jaeger).
+[Jaeger Setup Example](examples/src/main/kotlin/ai/dev/kit/examples/backends/JaegerExporterExample.kt)
 
 ### Project Structure
 
