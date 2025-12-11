@@ -344,7 +344,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
     }
 
     @Test
-    fun `test user prompt is sent as several distinct messages`() = runTest {
+    fun `test single message with multiple text content parts gets traced`() = runTest {
         val model = ChatModel.GPT_4O_MINI
         val prelude = "I want you to do two things:"
         val thing1 = "1. Count from 0 to 10 in a single sentence."
