@@ -3,6 +3,7 @@ package ai.dev.kit.exporters.otlp
 import ai.dev.kit.adapters.media.SupportedMediaContentTypes
 import ai.dev.kit.adapters.media.UploadableMediaContentAttributeKeys
 import ai.dev.kit.exporters.BaseExporterConfig
+import ai.dev.kit.exporters.http.CustomOtlpHttpSpanExporter
 import ai.dev.kit.exporters.otlp.LangfuseExporterConfig.Companion.LANGFUSE_BASE_URL
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -14,6 +15,7 @@ import io.ktor.serialization.kotlinx.json.*
 import io.opentelemetry.context.Context
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter
 import io.opentelemetry.sdk.common.CompletableResultCode
+import io.opentelemetry.sdk.common.export.MemoryMode
 import io.opentelemetry.sdk.trace.ReadWriteSpan
 import io.opentelemetry.sdk.trace.ReadableSpan
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder
@@ -74,11 +76,19 @@ class LangfuseExporterConfig(
     }
 
     override fun createSpanExporter(): SpanExporter {
-        return OtlpHttpSpanExporter.builder()
-            .setEndpoint("$url/api/public/otel/v1/traces")
+        val endpoint = "$url/api/public/otel/v1/traces"
+
+        val exporter = OtlpHttpSpanExporter.builder()
+            .setEndpoint(endpoint)
             .setTimeout(exporterTimeoutSeconds, TimeUnit.SECONDS)
             .addHeader("Authorization", "Basic $resolvedBasicAuthHeader")
             .build()
+
+        return CustomOtlpHttpSpanExporter(
+            exporter = exporter,
+            memoryMode = MemoryMode.REUSABLE_DATA,
+            endpointUrl = endpoint,
+        )
     }
 
     override fun basicAuthHeader(): String {

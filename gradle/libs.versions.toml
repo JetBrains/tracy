@@ -48,6 +48,7 @@ kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", v
 opentelemetry = { module = "io.opentelemetry:opentelemetry-api", version.ref = "opentelemetry" }
 opentelemetry-sdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "opentelemetry" }
 opentelemetry-kotlin = { module = "io.opentelemetry:opentelemetry-extension-kotlin", version.ref = "opentelemetry" }
+opentelemetry-exporter-otlp-common = { module = "io.opentelemetry:opentelemetry-exporter-otlp-common", version.ref = "opentelemetry" }
 opentelemetry-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp", version.ref = "opentelemetry" }
 opentelemetry-exporter-logging = { module = "io.opentelemetry:opentelemetry-exporter-logging", version.ref = "opentelemetry" }
 opentelemetry-exporter-logging-otlp = { module = "io.opentelemetry:opentelemetry-exporter-logging-otlp", version.ref = "opentelemetry" }
