@@ -38,7 +38,6 @@ internal class MyTestClassWithSuspend {
     suspend fun testFunctionThrows(paramName: Int): Int {
         delay(42)
         throw RuntimeException("Test exception")
-        return paramName
     }
 
     @KotlinFlowTrace(name = "Secondary Span")

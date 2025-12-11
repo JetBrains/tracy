@@ -30,7 +30,6 @@ internal class MyTestClass {
     @KotlinFlowTrace(name = "Throws")
     fun testFunctionThrows(paramName: Int): Int {
         throw RuntimeException("Test exception")
-        return paramName
     }
 
     @KotlinFlowTrace(name = "Main Span")
