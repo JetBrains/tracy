@@ -1,19 +1,14 @@
 package ai.dev.kit.tracing.fluent.providers
 
 import ai.dev.kit.clients.instrument
+import ai.dev.kit.tracing.*
 import com.openai.core.JsonValue
-import ai.dev.kit.tracing.MediaSource
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.loadFileAsBase64Encoded
-import ai.dev.kit.tracing.toDataUrl
-import ai.dev.kit.tracing.toMediaContentAttributeValues
-import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.*
 import com.openai.models.embeddings.EmbeddingCreateParams
 import com.openai.models.embeddings.EmbeddingModel
-import io.opentelemetry.api.common.AttributeKey
 import com.openai.models.responses.ResponseCreateParams
+import io.opentelemetry.api.common.AttributeKey
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Tag
@@ -21,12 +16,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.time.Duration
-import kotlin.time.Duration.Companion.minutes
 import kotlin.jvm.optionals.getOrNull
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.minutes
 
 @Tag("openai")
 class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
