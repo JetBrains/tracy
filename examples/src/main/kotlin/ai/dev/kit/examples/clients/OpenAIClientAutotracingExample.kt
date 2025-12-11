@@ -25,6 +25,8 @@ import com.openai.models.chat.completions.ChatCompletionCreateParams
  */
 fun main() {
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
+    TracingManager.traceSensitiveContent()
+
     val apiToken = System.getenv("OPENAI_API_KEY") ?: error("Environment variable 'OPENAI_API_KEY' is not set")
     val client = OpenAIOkHttpClient.builder().apiKey(apiToken).build()
     val instrumentedClient = instrument(client)

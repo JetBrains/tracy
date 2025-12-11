@@ -25,6 +25,8 @@ import com.anthropic.models.messages.Model
  */
 fun main() {
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
+    TracingManager.traceSensitiveContent()
+
     val apiToken = System.getenv("ANTHROPIC_API_KEY") ?: error("Environment variable 'ANTHROPIC_API_KEY' is not set")
     val anthropicClient = AnthropicOkHttpClient.builder().apiKey(apiToken).build()
     val instrumentedClient = instrument(anthropicClient)
