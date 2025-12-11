@@ -26,9 +26,8 @@ class KotlinFlowTraceInheritanceTest : BaseOpenTelemetryTracingTest() {
 
         assertEquals(1, traces.size)
         val trace = traces.first()
-        assertEquals(
-            "withPropagation",
-            trace.getAttribute(FluentSpanAttributes.SPAN_FUNCTION_NAME)
+        assertTrue(
+            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)?.endsWith("TestClassPropagationImpl.withPropagation") ?: false
         )
         assertEquals(StatusData.ok(), trace.status)
         assertEquals(
@@ -57,9 +56,8 @@ class KotlinFlowTraceInheritanceTest : BaseOpenTelemetryTracingTest() {
 
         assertEquals(1, traces.size)
         val trace = traces.first()
-        assertEquals(
-            "fromInterface",
-            trace.getAttribute(FluentSpanAttributes.SPAN_FUNCTION_NAME)
+        assertTrue(
+            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)?.endsWith("TestClassPropagationInterfaceImpl.fromInterface") ?: false
         )
         assertEquals(
             trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS),
@@ -83,9 +81,8 @@ class KotlinFlowTraceInheritanceTest : BaseOpenTelemetryTracingTest() {
 
         assertEquals(1, traces.size)
         val trace = traces.first()
-        assertEquals(
-            "directlyAnnotated",
-            trace.getAttribute(FluentSpanAttributes.SPAN_FUNCTION_NAME)
+        assertTrue(
+            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)?.endsWith("TestClassDirectlyAnnotated.directlyAnnotated") ?: false
         )
         assertEquals(
             trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS),
@@ -130,9 +127,8 @@ class KotlinFlowTraceInheritanceTest : BaseOpenTelemetryTracingTest() {
             trace,
             "Final implementation should still be traced due to interface propagation"
         )
-        assertEquals(
-            "deepMethod",
-            trace.getAttribute(FluentSpanAttributes.SPAN_FUNCTION_NAME)
+        assertTrue(
+            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)?.endsWith("TestClassDeepImpl.deepMethod") ?: false
         )
         assertEquals(
             trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS),
@@ -159,9 +155,8 @@ class KotlinFlowTraceInheritanceTest : BaseOpenTelemetryTracingTest() {
             trace,
             "Final implementation should still be traced due to interface propagation"
         )
-        assertEquals(
-            "deepMethod",
-            trace.getAttribute(FluentSpanAttributes.SPAN_FUNCTION_NAME)
+        assertTrue(
+            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)?.endsWith("TestClassDeeperDeepImpl.deepMethod") ?: false
         )
         assertEquals(
             trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS),

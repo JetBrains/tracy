@@ -175,12 +175,8 @@ class SuspendFluentTracingTest() : BaseOpenTelemetryTracingTest() {
         assertEquals(1, traces.size)
         val trace = assertNotNull(traces.firstOrNull())
         assertEquals(StatusData.ok(), trace.status)
-        assertEquals(
-            "testFunction",
-            trace.getAttribute(FluentSpanAttributes.SPAN_FUNCTION_NAME)
-        )
         assertTrue(
-            trace.getAttribute(FluentSpanAttributes.SPAN_SOURCE_NAME)?.endsWith("MyTestClassWithSuspend") ?: false
+            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)?.endsWith("MyTestClassWithSuspend.testFunction") ?: false
         )
         assertEquals(
             trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS),
@@ -316,12 +312,8 @@ class SuspendFluentTracingTest() : BaseOpenTelemetryTracingTest() {
             childTrace.traceId
         )
         assertEquals(
-            parentTrace.getAttribute(FluentSpanAttributes.SPAN_FUNCTION_NAME),
-            childTrace.getAttribute(FluentSpanAttributes.SPAN_FUNCTION_NAME)
-        )
-        assertEquals(
-            parentTrace.getAttribute(FluentSpanAttributes.SPAN_SOURCE_NAME),
-            childTrace.getAttribute(FluentSpanAttributes.SPAN_SOURCE_NAME)
+            parentTrace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME),
+            childTrace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)
         )
     }
 
