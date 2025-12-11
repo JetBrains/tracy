@@ -14,7 +14,7 @@ data class ContentCapturePolicy(
 
         /**
          * Creates a policy using system properties or environment variables when present.
-         * Precedence: system properties > env vars > defaults.
+         * Precedence: env vars > defaults.
          *
          * Environment variables:
          *  - TRACY_CAPTURE_INPUT

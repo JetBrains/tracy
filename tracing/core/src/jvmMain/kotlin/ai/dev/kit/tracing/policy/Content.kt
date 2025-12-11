@@ -71,12 +71,10 @@ fun String.orRedactedInput(): String = this.orRedactedInput(TracingManager.conte
  * @return Either [this] string or "REDACTED".
  */
 fun String.orRedactedInput(policy: ContentCapturePolicy): String {
-    val content = if (policy.captureInputs) {
-        this
-    } else {
-        "REDACTED"
+    return when (policy.captureInputs) {
+        true -> this
+        false -> "REDACTED"
     }
-    return content
 }
 
 /**
@@ -95,10 +93,8 @@ fun String.orRedactedOutput() = this.orRedactedOutput(TracingManager.contentCapt
  * @return Either [this] string or "REDACTED".
  */
 fun String.orRedactedOutput(policy: ContentCapturePolicy): String {
-    val content = if (policy.captureOutputs) {
-        this
-    } else {
-        "REDACTED"
+    return when (policy.captureOutputs) {
+        true -> this
+        false -> "REDACTED"
     }
-    return content
 }
