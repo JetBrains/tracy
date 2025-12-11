@@ -35,7 +35,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
     @ParameterizedTest
     @MethodSource("provideContentCapturePolicies")
     fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) {
-        TracingManager.contentCapturePolicy = policy
+        TracingManager.withCapturingPolicy(policy)
 
         val client = instrument(createAnthropicClient())
         val model = Model.CLAUDE_3_5_HAIKU_LATEST

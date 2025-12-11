@@ -57,7 +57,7 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
     fun `test capture policy hides sensitive data for attachments`(policy: ContentCapturePolicy) = runTest(
         timeout = 3.minutes
     ) {
-        TracingManager.contentCapturePolicy = policy
+        TracingManager.withCapturingPolicy(policy)
 
         val client = instrument(createAnthropicClient())
 

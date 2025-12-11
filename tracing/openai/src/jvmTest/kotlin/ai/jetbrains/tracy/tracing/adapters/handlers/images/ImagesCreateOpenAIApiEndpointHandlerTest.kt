@@ -291,7 +291,7 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     @ParameterizedTest
     @MethodSource("provideContentCapturePolicies")
     fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) = runTest(timeout = 3.minutes) {
-        TracingManager.contentCapturePolicy = policy
+        TracingManager.withCapturingPolicy(policy)
 
         val client = instrument(createOpenAIClient(
             url = patchedProviderUrl,

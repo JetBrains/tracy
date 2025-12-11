@@ -225,14 +225,16 @@ You may enable tracing of both input and output independently by following eithe
 TRACY_CAPTURE_INPUT=true|false
 TRACY_CAPTURE_OUTPUT=true|false
 ```
-2. Override the default programmatically in code:
+2. Override the defaults programmatically in code:
 ```kotlin
-TracingManager.contentCapturePolicy = ContentCapturePolicy(
+// Call a helper method:
+TracingManager.traceSensitiveContent()
+
+// Or equivalently:
+TracingManager.withCapturingPolicy(ContentCapturePolicy(
     captureInputs = true,
     captureOutputs = true,
-)
-
-// use tracing below
+))
 ```
 
 #### Tracing Examples
