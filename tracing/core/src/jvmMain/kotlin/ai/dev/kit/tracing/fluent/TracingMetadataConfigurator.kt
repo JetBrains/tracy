@@ -17,10 +17,7 @@ actual fun configureTracingMetadata(
             traceAnnotation.getSpanMetadataCustomizer().formatInputAttributes(method, args)
         )
         setAttribute(
-            FluentSpanAttributes.SPAN_SOURCE_NAME.key, method.declaringClass.name
-        )
-        setAttribute(
-            FluentSpanAttributes.SPAN_FUNCTION_NAME.key, method.name
+            FluentSpanAttributes.CODE_FUNCTION_NAME.key, "${method.declaringClass.name}.${method.name}"
         )
     }
 }

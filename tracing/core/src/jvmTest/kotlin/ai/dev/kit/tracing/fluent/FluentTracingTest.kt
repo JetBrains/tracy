@@ -253,12 +253,8 @@ class FluentTracingTest() : BaseOpenTelemetryTracingTest() {
         assertNotNull(trace)
 
         assertEquals(StatusData.ok(), trace.status)
-        assertEquals(
-            "testFunction",
-            trace.getAttribute(FluentSpanAttributes.SPAN_FUNCTION_NAME)
-        )
         assertTrue(
-            trace.getAttribute(FluentSpanAttributes.SPAN_SOURCE_NAME)?.endsWith("MyTestClass") ?: false
+            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)?.endsWith("MyTestClass.testFunction") ?: false
         )
         assertEquals(
             trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS),
@@ -281,12 +277,8 @@ class FluentTracingTest() : BaseOpenTelemetryTracingTest() {
         assertNotNull(trace)
 
         assertEquals(StatusData.ok(), trace.status)
-        assertEquals(
-            "testFunctionWithDefaultValue",
-            trace.getAttribute(FluentSpanAttributes.SPAN_FUNCTION_NAME)
-        )
         assertTrue(
-            trace.getAttribute(FluentSpanAttributes.SPAN_SOURCE_NAME)?.endsWith("MyTestClass") ?: false
+            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)?.endsWith("MyTestClass.testFunctionWithDefaultValue") ?: false
         )
         assertEquals(
             trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS),
