@@ -108,22 +108,16 @@ private class DiagnosticHttpSender(
         onSuccess: Consumer<HttpSender.Response>,
         onError: Consumer<Throwable>
     ) {
-        println("WARNING ENABLED: ${logger.isWarnEnabled}")
-        println("INFO ENABLED: ${logger.isInfoEnabled}")
-        println("ERROR ENABLED: ${logger.isErrorEnabled}")
-        println("DEBUG ENABLED: ${logger.isDebugEnabled}")
-
         // wrap the success callback to intercept responses
         val diagnosticOnSuccess = Consumer<HttpSender.Response> { response ->
             val statusCode = response.statusCode()
 
-            println("RESPONSE STATUS CODE: $statusCode (status msg: ${response.statusMessage()})")
-
             // provide diagnostic logging for specific error codes
+            val status = response.statusMessage()
             when (statusCode) {
-                401 -> logger.warn { buildDiagnosticMessage401() }
-                403 -> logger.warn { buildDiagnosticMessage403() }
-                404 -> logger.warn { buildDiagnosticMessage404() }
+                401 -> logger.warn { buildDiagnosticMessage401(status) }
+                403 -> logger.warn { buildDiagnosticMessage403(status) }
+                404 -> logger.warn { buildDiagnosticMessage404(status) }
             }
             // continue with the original callback (which will log the standard error)
             onSuccess.accept(response)
@@ -134,12 +128,14 @@ private class DiagnosticHttpSender(
 
     override fun shutdown(): CompletableResultCode = delegate.shutdown()
 
-    private fun buildDiagnosticMessage401(): String = """
+    private fun buildDiagnosticMessage401(statusMessage: String): String = """
         |
         |════════════════════════════════════════════════════════════════════════════════
         |  AUTHENTICATION ERROR (HTTP 401)
         |════════════════════════════════════════════════════════════════════════════════
         |  Target endpoint: $endpointUrl
+        |  
+        |  Response status message: $statusMessage
         |
         |  Possible causes:
         |  1. Invalid API credentials (public/secret key):
@@ -162,7 +158,7 @@ private class DiagnosticHttpSender(
         |════════════════════════════════════════════════════════════════════════════════
     """.trimMargin()
 
-    private fun buildDiagnosticMessage403(): String = """
+    private fun buildDiagnosticMessage403(statusMessage: String): String = """
         |
         |════════════════════════════════════════════════════════════════════════════════
         |  AUTHORIZATION ERROR (HTTP 403)
@@ -170,6 +166,7 @@ private class DiagnosticHttpSender(
         |  Target endpoint: $endpointUrl
         |
         |  Your credentials are valid but don't have permission to access this resource.
+        |  Response status message: $statusMessage
         |
         |  Possible causes:
         |  - API key doesn't have sufficient permissions
@@ -181,7 +178,7 @@ private class DiagnosticHttpSender(
         |════════════════════════════════════════════════════════════════════════════════
     """.trimMargin()
 
-    private fun buildDiagnosticMessage404(): String = """
+    private fun buildDiagnosticMessage404(statusMessage: String): String = """
         |
         |════════════════════════════════════════════════════════════════════════════════
         |  ENDPOINT NOT FOUND (HTTP 404)
@@ -189,6 +186,7 @@ private class DiagnosticHttpSender(
         |  Target endpoint: $endpointUrl
         |
         |  The server cannot find the requested resource.
+        |  Response status message: $statusMessage
         |
         |  Possible causes:
         |  - Incorrect endpoint URL or path
