@@ -86,7 +86,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
         val client = instrument(createOpenAIClient())
 
-        val greetTool = createTool("hi")
+        val greetTool = createChatCompletionTool("hi")
         val model = ChatModel.GPT_4O_MINI
 
         val params = ChatCompletionCreateParams.builder()
