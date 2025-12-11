@@ -23,7 +23,7 @@ data class ContentCapturePolicy(
         fun fromEnvironment(): ContentCapturePolicy {
             fun readBool(envKey: String, default: Boolean): Boolean {
                 val env = System.getenv(envKey)?.trim()
-                return env?.let { toBooleanLenient(it) } ?: default
+                return env?.lowercase()?.toBoolean() ?: default
             }
 
             return ContentCapturePolicy(
@@ -37,12 +37,5 @@ data class ContentCapturePolicy(
                 ),
             )
         }
-
-        private fun toBooleanLenient(value: String): Boolean =
-            when (value.lowercase()) {
-                "true", "1", "yes", "y", "on" -> true
-                "false", "0", "no", "n", "off" -> false
-                else -> false
-            }
     }
 }
