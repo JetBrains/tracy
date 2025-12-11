@@ -1,7 +1,7 @@
 package ai.dev.kit.adapters.handlers
 
-import ai.dev.kit.adapters.GeminiLLMTracingAdapter
 import ai.dev.kit.adapters.LLMTracingAdapter.Companion.PayloadType
+import ai.dev.kit.tracing.policy.orRedactedInput
 import ai.dev.kit.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
 import ai.dev.kit.adapters.media.MediaContent
 import ai.dev.kit.adapters.media.MediaContentExtractor
@@ -11,10 +11,11 @@ import ai.dev.kit.common.parseSafe
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.asJson
-import ai.dev.kit.tracing.policy.orRedactedInput
+import ai.dev.kit.tracing.policy.ContentKind
+import ai.dev.kit.tracing.policy.contentTracingAllowed
+import ai.dev.kit.tracing.policy.orRedactedOutput
 import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_CHOICE_COUNT
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MAX_TOKENS
@@ -52,7 +53,7 @@ class GeminiContentGenHandler(
                 if (textMessage != null) {
                     span.setAttribute("gen_ai.prompt.$index.content", textMessage.orRedactedInput())
                 } else {
-                    span.setAttribute("gen_ai.prompt.$index.content", parts.toString().orRedactedInput())
+                    span.setAttribute("gen_ai.prompt.$index.content", parts?.toString()?.orRedactedInput())
                 }
             }
         }
@@ -60,6 +61,13 @@ class GeminiContentGenHandler(
         // url ends with `[model]:[operation]`
         val (model, operation) = request.url.pathSegments.lastOrNull()?.split(":")
             ?.let { it.firstOrNull() to it.lastOrNull() } ?: (null to null)
+
+        if (contentTracingAllowed(ContentKind.INPUT)) {
+            val mediaContent = parseRequestMediaContent(body)
+            if (mediaContent != null) {
+                extractor.setUploadableContentAttributes(span, field = "input", mediaContent)
+            }
+        }
 
         model?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, model) }
         operation?.let { span.setAttribute(GEN_AI_OPERATION_NAME, operation) }
@@ -157,6 +165,13 @@ class GeminiContentGenHandler(
                     "gen_ai.completion.$index.finish_reason",
                     candidate.jsonObject["finishReason"]?.jsonPrimitive?.content
                 )
+            }
+        }
+
+        if (contentTracingAllowed(ContentKind.OUTPUT)) {
+            val mediaContent = parseResponseMediaContent(body)
+            if (mediaContent != null) {
+                extractor.setUploadableContentAttributes(span, field = "output", mediaContent)
             }
         }
 
