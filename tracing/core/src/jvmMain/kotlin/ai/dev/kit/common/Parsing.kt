@@ -116,8 +116,7 @@ fun String.isValidUrl(): Boolean {
 fun ContentType.Companion.parseSafe(mimeType: String): ContentType? {
     return try {
         ContentType.parse(mimeType)
-    }
-    catch (_: Exception) {
+    } catch (_: Exception) {
         null
     }
 }
