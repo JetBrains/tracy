@@ -40,7 +40,6 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
             .model(model).temperature(1.1).build()
         client.chat().completions().create(params)
 
-        Thread.sleep(3000)
         validateBasicTracing(model)
     }
 
@@ -233,7 +232,6 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
             )
 
         client.chat().completions().create(paramsBuilder.build())
-
         validateAdditionalAttributes()
     }
 

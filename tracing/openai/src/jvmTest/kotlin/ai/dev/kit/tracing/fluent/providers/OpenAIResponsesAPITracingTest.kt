@@ -173,11 +173,6 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
             )
 
         client.responses().create(paramsBuilderSecond.build())
-
-        val traces = analyzeSpans()
-        println("traces count: ${traces.size}")
-        println("traces\n$traces")
-
         validateMultipleToolCallResponseWithInput()
     }
 
@@ -225,7 +220,6 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
             )
 
         client.responses().create(paramsBuilder.build())
-
         validateAdditionalAttributes()
     }
 
