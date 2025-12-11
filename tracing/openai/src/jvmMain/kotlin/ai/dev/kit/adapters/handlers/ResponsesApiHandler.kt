@@ -140,7 +140,7 @@ internal class ResponsesApiHandler(
                         if (content is JsonArray) {
                             // if there is a single message that has a type of `output_text`, then install it as completion content;
                             // otherwise, set the entire array instead.
-                            if (content.size == 1 && content.count { it.jsonObject["type"]?.jsonPrimitive?.content == "output_text" } == 1) {
+                            if (content.size == 1 && content.first().jsonObject["type"]?.jsonPrimitive?.contentOrNull == "output_text") {
                                 val message = content
                                     .first { it.jsonObject["type"]?.jsonPrimitive?.content == "output_text" }
                                     .jsonObject
@@ -247,7 +247,7 @@ internal class ResponsesApiHandler(
                     if (content is JsonArray) {
                         // if there is a single message that has a type of `input_text`, then install it as prompt content;
                         // otherwise, set the entire array instead.
-                        if (content.size == 1 && content.count { it.jsonObject["type"]?.jsonPrimitive?.content == "input_text" } == 1) {
+                        if (content.size == 1 && content.first().jsonObject["type"]?.jsonPrimitive?.content == "input_text") {
                             val message = content
                                 .first { it.jsonObject["type"]?.jsonPrimitive?.content == "input_text" }
                                 .jsonObject
