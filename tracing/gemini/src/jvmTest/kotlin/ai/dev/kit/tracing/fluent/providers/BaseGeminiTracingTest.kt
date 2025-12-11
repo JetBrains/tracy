@@ -48,7 +48,6 @@ abstract class BaseGeminiTracingTest : BaseAITracingTest() {
                     // TODO: fix?
                     .timeout(timeout.toMillis().toInt())
                     .headers(mapOf("x-litellm-api-key" to "Bearer $llmProviderApiKey"))
-                    .timeout(Duration.ofSeconds(60).toMillis().toInt())
                     .build()
             )
             .build()
