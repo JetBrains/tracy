@@ -37,12 +37,12 @@ You can use it to:
     }
     
     dependencies {
-        implementation("com.jetbrains:ai-dev-kit-core:0.0.24")
+        implementation("com.jetbrains:tracy-core:0.0.24")
         // Clients Auto Tracing
-        implementation("com.jetbrains:ai-dev-kit-anthropic:0.0.24")
-        implementation("com.jetbrains:ai-dev-kit-gemini:0.0.24")
-        implementation("com.jetbrains:ai-dev-kit-ktor:0.0.24")
-        implementation("com.jetbrains:ai-dev-kit-openai:0.0.24")
+        implementation("com.jetbrains:tracy-anthropic:0.0.24")
+        implementation("com.jetbrains:tracy-gemini:0.0.24")
+        implementation("com.jetbrains:tracy-ktor:0.0.24")
+        implementation("com.jetbrains:tracy-openai:0.0.24")
     }
     ```
 2. Make sure that you have `maven("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")` in
@@ -75,12 +75,12 @@ You can use it to:
     }
     
     dependencies {
-        implementation 'com.jetbrains:ai-dev-kit-core:0.0.24'
+        implementation 'com.jetbrains:tracy-core:0.0.24'
         // Clients Auto Tracing
-        implementation 'com.jetbrains:ai-dev-kit-anthropic:0.0.24'
-        implementation 'com.jetbrains:ai-dev-kit-gemini:0.0.24'
-        implementation 'com.jetbrains:ai-dev-kit-ktor:0.0.24'
-        implementation 'com.jetbrains:ai-dev-kit-openai:0.0.24'
+        implementation 'com.jetbrains:tracy-anthropic:0.0.24'
+        implementation 'com.jetbrains:tracy-gemini:0.0.24'
+        implementation 'com.jetbrains:tracy-ktor:0.0.24'
+        implementation 'com.jetbrains:tracy-openai:0.0.24'
     }
     ```
 2. Make sure that you have `maven("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")` in
@@ -148,28 +148,28 @@ You can use it to:
     <dependencies>
         <dependency>
           <groupId>com.jetbrains</groupId>
-          <artifactId>ai-dev-kit-core-jvm</artifactId>
+          <artifactId>tracy-core-jvm</artifactId>
           <version>0.0.24</version>
         </dependency>
           <!-- Clients Auto Tracing -->
         <dependency>
             <groupId>com.jetbrains</groupId>
-            <artifactId>ai-dev-kit-anthropic-jvm</artifactId>
+            <artifactId>tracy-anthropic-jvm</artifactId>
             <version>0.0.24</version>
         </dependency>
         <dependency>
             <groupId>com.jetbrains</groupId>
-            <artifactId>ai-dev-kit-gemini-jvm</artifactId>
+            <artifactId>tracy-gemini-jvm</artifactId>
             <version>0.0.24</version>
         </dependency>
         <dependency>
             <groupId>com.jetbrains</groupId>
-            <artifactId>ai-dev-kit-ktor-jvm</artifactId>
+            <artifactId>tracy-ktor-jvm</artifactId>
             <version>0.0.24</version>
         </dependency>
         <dependency>
             <groupId>com.jetbrains</groupId>
-            <artifactId>ai-dev-kit-openai-jvm</artifactId>
+            <artifactId>tracy-openai-jvm</artifactId>
             <version>0.0.24</version>
         </dependency>
     </dependencies>
@@ -179,14 +179,14 @@ You can use it to:
     ```xml
     <repositories>
         <repository>
-            <id>ai-dev-kit</id>
+            <id>tracy</id>
             <url>https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit</url>
         </repository>
     </repositories>
     
     <pluginRepositories>
         <pluginRepository>
-            <id>ai-dev-kit-plugins</id>
+            <id>tracy-plugins</id>
             <url>https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit</url>
         </pluginRepository>
     </pluginRepositories>
@@ -439,9 +439,9 @@ Configuration for exporting OpenTelemetry traces to a file in either JSON or pla
   The [`gradle-tracy-plugin`](plugin/gradle-tracy-plugin) module automatically selects the appropriate KCP version
   for your Kotlin compiler and applies it to your Gradle project.
 - **[`publishing`](publishing)** — provides a Gradle plugin used for modules that need to be published.  
-  It defines the `ai-dev-kit` version and includes Kotlin DSL logic for publishing artifacts to Space Maven
+  It defines the `tracy` version and includes Kotlin DSL logic for publishing artifacts to Space Maven
   repositories.
-- **[`examples`](examples)** — contains runnable examples demonstrating how to use various `ai-dev-kit` features.
+- **[`examples`](examples)** — contains runnable examples demonstrating how to use various `tracy` features.
   capabilities.
 - **[`tracing`](tracing)**
     - **[`core`](tracing/core)** — the foundational module providing tracing abstractions, annotations,

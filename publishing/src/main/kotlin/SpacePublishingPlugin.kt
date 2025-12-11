@@ -14,7 +14,7 @@ class SpacePublishingPlugin : Plugin<Project> {
          * Do not rename or remove `VERSION`, or the workflow will fail.
          */
         private const val VERSION = "0.0.24"
-        private const val PROJECT_PREFIX = "ai-dev-kit-"
+        private const val PROJECT_PREFIX = "tracy-"
     }
 
     override fun apply(project: Project) {

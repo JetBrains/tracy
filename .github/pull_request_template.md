@@ -37,7 +37,7 @@ Delete this section if not applicable.
 - [ ] The pull request uses **`main (TODO)`** as the base branch
 
 ### Development checklist
-- [ ] I have read the [Contributing Guidelines](https://github.com/JetBrains/ai-dev-kit/blob/main/CONTRIBUTING.md)
+- [ ] I have read the [Contributing Guidelines](https://github.com/JetBrains/tracy/blob/main/CONTRIBUTING.md)
 - [ ] Tests for the changes have been added
 - [ ] All new and existing tests pass
 - [ ] Documentation has been added or updated

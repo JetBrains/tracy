@@ -1,4 +1,4 @@
-rootProject.name = "ai-dev-kit"
+rootProject.name = "tracy"
 
 pluginManagement {
     includeBuild("publishing")
