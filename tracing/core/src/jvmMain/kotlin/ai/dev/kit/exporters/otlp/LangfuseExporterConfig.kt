@@ -3,7 +3,6 @@ package ai.dev.kit.exporters.otlp
 import ai.dev.kit.adapters.media.SupportedMediaContentTypes
 import ai.dev.kit.adapters.media.UploadableMediaContentAttributeKeys
 import ai.dev.kit.exporters.BaseExporterConfig
-import ai.dev.kit.exporters.http.CustomOtlpHttpSpanExporter
 import ai.dev.kit.exporters.otlp.LangfuseExporterConfig.Companion.LANGFUSE_BASE_URL
 import io.ktor.client.*
 import io.ktor.client.call.*

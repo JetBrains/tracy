@@ -1,4 +1,4 @@
-package ai.dev.kit.exporters.http
+package ai.dev.kit.exporters.otlp
 
 import io.opentelemetry.exporter.internal.http.HttpExporter
 import io.opentelemetry.exporter.internal.http.HttpExporterBuilder
@@ -30,7 +30,7 @@ import java.util.function.Consumer
  * @param memoryMode The memory mode for span marshaling
  * @param endpointUrl The target endpoint URL for diagnostic messages
  */
-class CustomOtlpHttpSpanExporter(
+internal class CustomOtlpHttpSpanExporter(
     exporter: OtlpHttpSpanExporter,
     memoryMode: MemoryMode,
     private val endpointUrl: String,

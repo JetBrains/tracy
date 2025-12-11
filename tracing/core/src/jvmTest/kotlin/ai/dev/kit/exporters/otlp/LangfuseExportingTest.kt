@@ -1,4 +1,4 @@
-package ai.dev.kit.exporters.http
+package ai.dev.kit.exporters.otlp
 
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
