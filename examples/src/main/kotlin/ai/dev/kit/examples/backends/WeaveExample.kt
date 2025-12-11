@@ -1,6 +1,6 @@
 package ai.dev.kit.examples.backends
 
-import ai.dev.kit.exporters.http.WeaveExporterConfig
+import ai.dev.kit.exporters.otlp.WeaveExporterConfig
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.configureOpenTelemetrySdk
 
@@ -22,6 +22,6 @@ import ai.dev.kit.tracing.configureOpenTelemetrySdk
 fun main() {
     TracingManager.setSdk(configureOpenTelemetrySdk(WeaveExporterConfig()))
     printName("Bob")
-    println("See trace details in the console.")
+    println("See trace details in W&B.")
     TracingManager.flushTraces()
 }

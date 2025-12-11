@@ -1,6 +1,6 @@
 package ai.dev.kit.eval.providers.langfuse
 
-import ai.dev.kit.exporters.http.LangfuseExporterConfig
+import ai.dev.kit.exporters.otlp.LangfuseExporterConfig
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -44,7 +44,7 @@ internal class KotlinLangfuseClient private constructor(
         internal fun setupCredentials(
             langfuseExporterConfig: LangfuseExporterConfig
         ) = KotlinLangfuseClient(
-            baseUrl = langfuseExporterConfig.resolvedBaseUrl,
+            baseUrl = langfuseExporterConfig.url,
             authHeader = langfuseExporterConfig.basicAuthHeader(),
         )
     }

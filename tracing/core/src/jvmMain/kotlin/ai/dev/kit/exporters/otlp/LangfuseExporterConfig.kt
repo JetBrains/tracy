@@ -1,8 +1,9 @@
-package ai.dev.kit.exporters.http
+package ai.dev.kit.exporters.otlp
 
 import ai.dev.kit.adapters.media.SupportedMediaContentTypes
 import ai.dev.kit.adapters.media.UploadableMediaContentAttributeKeys
-import ai.dev.kit.exporters.http.LangfuseExporterConfig.Companion.LANGFUSE_BASE_URL
+import ai.dev.kit.exporters.BaseExporterConfig
+import ai.dev.kit.exporters.otlp.LangfuseExporterConfig.Companion.LANGFUSE_BASE_URL
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -19,9 +20,6 @@ import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder
 import io.opentelemetry.sdk.trace.SpanProcessor
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
 import io.opentelemetry.sdk.trace.export.SpanExporter
-import kotlinx.coroutines.*
-import kotlinx.serialization.Serializable
-import mu.KotlinLogging
 import java.security.MessageDigest
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
@@ -29,6 +27,9 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.*
+import kotlinx.serialization.Serializable
+import mu.KotlinLogging
 
 /**
  * Configuration for exporting OpenTelemetry traces to [Langfuse](https://langfuse.com) via OTLP HTTP.
@@ -44,8 +45,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @param langfuseSecretKey Required Langfuse secret API key.
  *  If not provided, it is retrieved from the `LANGFUSE_SECRET_KEY` environment variable.
  *
- * @see [HttpExporterConfig] for HTTP-specific exporter configuration.
- * @see [ai.dev.kit.exporters.BaseExporterConfig] for inherited properties such as attribute limits and console logging.
+ * @see [OtlpBaseExporterConfig] for OTLP-specific exporter configuration.
+ * @see [BaseExporterConfig] for inherited properties such as attribute limits and console logging.
  * @see [Langfuse OpenTelemetry Docs](https://langfuse.com/docs/opentelemetry/get-started)
  */
 
@@ -57,8 +58,13 @@ class LangfuseExporterConfig(
     traceToConsole: Boolean = false,
     maxNumberOfSpanAttributes: Int? = null,
     maxSpanAttributeValueLength: Int? = null,
-) : HttpExporterConfig(exporterTimeoutSeconds, traceToConsole, maxNumberOfSpanAttributes, maxSpanAttributeValueLength) {
-    val resolvedBaseUrl: String = langfuseUrl ?: System.getenv("LANGFUSE_URL") ?: LANGFUSE_BASE_URL
+) : OtlpBaseExporterConfig(
+    url = langfuseUrl ?: System.getenv("LANGFUSE_URL") ?: LANGFUSE_BASE_URL,
+    exporterTimeoutSeconds = exporterTimeoutSeconds,
+    traceToConsole = traceToConsole,
+    maxNumberOfSpanAttributes = maxNumberOfSpanAttributes,
+    maxSpanAttributeValueLength = maxSpanAttributeValueLength
+) {
     private val resolvedPublicKey: String = resolveRequiredEnvVar(langfusePublicKey, "LANGFUSE_PUBLIC_KEY")
     private val resolvedSecretKey: String = resolveRequiredEnvVar(langfuseSecretKey, "LANGFUSE_SECRET_KEY")
     private val resolvedBasicAuthHeader: String by lazy { basicAuthHeader() }
@@ -69,7 +75,7 @@ class LangfuseExporterConfig(
 
     override fun createSpanExporter(): SpanExporter {
         return OtlpHttpSpanExporter.builder()
-            .setEndpoint("$resolvedBaseUrl/api/public/otel/v1/traces")
+            .setEndpoint("$url/api/public/otel/v1/traces")
             .setTimeout(exporterTimeoutSeconds, TimeUnit.SECONDS)
             .addHeader("Authorization", "Basic $resolvedBasicAuthHeader")
             .build()
@@ -87,7 +93,7 @@ class LangfuseExporterConfig(
 
         val mediaContentUploadingSpanProcessor = MediaContentUploadingSpanProcessor(
             scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + uploadExceptionHandler),
-            langfuseUrl = resolvedBaseUrl,
+            langfuseUrl = url,
             langfuseBasicAuth = resolvedBasicAuthHeader
         )
 

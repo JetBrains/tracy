@@ -1,6 +1,6 @@
 package ai.dev.kit.examples.backends
 
-import ai.dev.kit.exporters.http.LangfuseExporterConfig
+import ai.dev.kit.exporters.otlp.LangfuseExporterConfig
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace

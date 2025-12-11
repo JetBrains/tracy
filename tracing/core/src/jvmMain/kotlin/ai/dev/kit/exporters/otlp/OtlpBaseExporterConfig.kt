@@ -1,4 +1,4 @@
-package ai.dev.kit.exporters.http
+package ai.dev.kit.exporters.otlp
 
 import ai.dev.kit.exporters.BaseExporterConfig
 
@@ -11,7 +11,8 @@ import ai.dev.kit.exporters.BaseExporterConfig
  * @see [BaseExporterConfig] for configuration of maximum span attributes,
  * maximum attribute value length, and optional console logging.
  */
-abstract class HttpExporterConfig(
+abstract class OtlpBaseExporterConfig(
+    val url: String,
     val exporterTimeoutSeconds: Long = DEFAULT_EXPORTER_TIMEOUT,
     traceToConsole: Boolean = false,
     maxNumberOfSpanAttributes: Int? = null,
@@ -29,5 +30,5 @@ abstract class HttpExporterConfig(
     /**
      * Returns the HTTP Basic Authentication header value for this exporter.
      */
-    abstract fun basicAuthHeader(): String
+    open fun basicAuthHeader(): String? = null
 }

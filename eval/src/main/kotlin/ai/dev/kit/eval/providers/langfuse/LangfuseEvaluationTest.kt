@@ -1,7 +1,7 @@
 package ai.dev.kit.eval.providers.langfuse
 
 import ai.dev.kit.eval.utils.*
-import ai.dev.kit.exporters.http.LangfuseExporterConfig
+import ai.dev.kit.exporters.otlp.LangfuseExporterConfig
 
 /**
  * A base abstract class for conducting evaluation tests on AI functionality.
