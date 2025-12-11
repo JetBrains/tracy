@@ -96,6 +96,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
             assertNotEquals("REDACTED", toolArgs, "Tool arguments content should NOT be redacted")
         }
     }
+
     @Test
     fun `test nested instrumentation calls don't cause duplicative tracing`() {
         val client = instrument(instrument(instrument(createAnthropicClient())))

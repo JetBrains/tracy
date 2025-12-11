@@ -1,11 +1,11 @@
 package ai.jetbrains.tracy.tracing.adapters.handlers
 
-import ai.jetbrains.tracy.tracing.clients.instrument
 import ai.dev.kit.tracing.*
+import ai.dev.kit.tracing.policy.ContentCapturePolicy
 import ai.jetbrains.tracy.tracing.adapters.BaseOpenAITracingTest
 import ai.jetbrains.tracy.tracing.adapters.containsToolCall
 import ai.jetbrains.tracy.tracing.adapters.name
-import ai.dev.kit.tracing.policy.ContentCapturePolicy
+import ai.jetbrains.tracy.tracing.clients.instrument
 import com.openai.core.JsonValue
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.*
@@ -14,19 +14,15 @@ import com.openai.models.embeddings.EmbeddingModel
 import com.openai.models.responses.ResponseCreateParams
 import io.opentelemetry.api.common.AttributeKey
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.time.Duration
-import kotlin.time.Duration.Companion.minutes
 import kotlin.jvm.optionals.getOrNull
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.minutes
 
 @Tag("openai")
 class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
@@ -256,7 +252,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         assertTrue(result.model().startsWith(ChatModel.GPT_4O_MINI.asString()))
         val content = result.choices().first().message().content().getOrNull()
         assertNotNull(content)
-        assertTrue(content.isNotEmpty())
+        assertTrue(content!!.isNotEmpty())
     }
 
     @Test
@@ -320,9 +316,10 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
         client.embeddings().create(params)
         val traces = analyzeSpans()
-        val trace = traces.firstOrNull()
+        assertEquals(1, traces.size)
+        val trace = traces.first()
 
-        val responseData = trace?.attributes?.get(AttributeKey.stringKey("tracy.response.data"))
+        val responseData = trace.attributes?.get(AttributeKey.stringKey("tracy.response.data"))
         assertFalse(responseData.isNullOrEmpty())
 
         val responseObject = trace.attributes?.get(AttributeKey.stringKey("tracy.response.object"))
