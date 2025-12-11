@@ -26,13 +26,13 @@ abstract class BaseOpenTelemetryTracingTest {
     fun setupTelemetry() {
         val testTracing = initOpenTelemetry()
         TracingManager.setSdk(testTracing.openTelemetrySdk)
-        // Enable sensitive content capture for tests to keep existing assertions valid
-        TracingManager.traceSensitiveContent()
         spanExporter = testTracing.spanExporter
     }
 
     @BeforeTest
     fun enableTracingBeforeTest() {
+        // Enable sensitive content capture for tests to keep existing assertions valid
+        TracingManager.traceSensitiveContent()
         TracingManager.isTracingEnabled = true
     }
 
