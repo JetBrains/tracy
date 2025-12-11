@@ -296,12 +296,10 @@ private class FilteredSpanData(delegate: SpanData) : DelegatingSpanData(delegate
                 return attributes
             }
 
-            val builder = attributes.toBuilder()
-            // filter out unwanted keys
-            for (key in keysToRemove) {
-                builder.remove(key)
-            }
-            return builder.build()
+            return attributes.toBuilder().apply {
+                // filter out unwanted keys
+                keysToRemove.forEach { remove(it) }
+            }.build()
         }
     }
 }
