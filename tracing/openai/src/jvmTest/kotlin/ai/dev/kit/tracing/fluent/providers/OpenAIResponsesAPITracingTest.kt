@@ -8,6 +8,7 @@ import com.openai.core.JsonValue
 import com.openai.models.ChatModel
 import com.openai.models.responses.*
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -172,7 +173,6 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
             )
 
         client.responses().create(paramsBuilderSecond.build())
-
         validateMultipleToolCallResponseWithInput()
     }
 
@@ -200,6 +200,10 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI responses API additional attributes`() = runTest {
+        // this test is only possible on a LiteLLM pass-through.
+        // OpenAI API endpoint throws 400 Bad Request on unconventional properties, unlike LiteLLM, which ignores them
+        Assumptions.assumeTrue { llmProviderUrl.startsWith("https://litellm.labs.jb.gg") }
+
         val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
 
         val paramsBuilder = ResponseCreateParams.builder()
