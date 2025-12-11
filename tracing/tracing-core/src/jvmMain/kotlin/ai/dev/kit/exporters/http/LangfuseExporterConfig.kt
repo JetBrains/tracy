@@ -13,6 +13,7 @@ import io.ktor.serialization.kotlinx.json.*
 import io.opentelemetry.context.Context
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter
 import io.opentelemetry.sdk.common.CompletableResultCode
+import io.opentelemetry.sdk.common.export.MemoryMode
 import io.opentelemetry.sdk.trace.ReadWriteSpan
 import io.opentelemetry.sdk.trace.ReadableSpan
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder
@@ -68,11 +69,19 @@ class LangfuseExporterConfig(
     }
 
     override fun createSpanExporter(): SpanExporter {
-        return OtlpHttpSpanExporter.builder()
-            .setEndpoint("$resolvedBaseUrl/api/public/otel/v1/traces")
+        val endpoint = "$resolvedBaseUrl/api/public/otel/v1/traces"
+
+        val exporter = OtlpHttpSpanExporter.builder()
+            .setEndpoint(endpoint)
             .setTimeout(exporterTimeoutSeconds, TimeUnit.SECONDS)
             .addHeader("Authorization", "Basic $resolvedBasicAuthHeader")
             .build()
+
+        return CustomOtlpHttpSpanExporter(
+            exporter = exporter,
+            memoryMode = MemoryMode.REUSABLE_DATA,
+            endpointUrl = endpoint,
+        )
     }
 
     override fun basicAuthHeader(): String {

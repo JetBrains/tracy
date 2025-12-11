@@ -24,6 +24,8 @@ import java.util.function.Consumer
  * - HTTP 403: Valid credentials but insufficient permissions
  * - HTTP 404: Wrong endpoint URL or path
  *
+ * See the implementation of [OtlpHttpSpanExporter]
+ *
  * @param exporter The [OtlpHttpSpanExporter] instance from which an [HttpExporterBuilder] instance is extracted
  * @param memoryMode The memory mode for span marshaling
  * @param endpointUrl The target endpoint URL for diagnostic messages
