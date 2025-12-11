@@ -1,6 +1,6 @@
 package ai.dev.kit.tracing.fluent
 
-import ai.dev.kit.adapters.OpenAILLMTracingAdapter
+import ai.jetbrains.tracy.tracing.adapters.OpenAILLMTracingAdapter
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseAITracingTest
 import ai.dev.kit.tracing.TracingManager

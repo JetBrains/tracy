@@ -1,7 +1,10 @@
-package ai.dev.kit.tracing.fluent.providers
+package ai.jetbrains.tracy.tracing.adapters.handlers
 
-import ai.dev.kit.clients.instrument
+import ai.jetbrains.tracy.tracing.clients.instrument
 import ai.dev.kit.tracing.*
+import ai.jetbrains.tracy.tracing.adapters.BaseOpenAITracingTest
+import ai.jetbrains.tracy.tracing.adapters.containsToolCall
+import ai.jetbrains.tracy.tracing.adapters.name
 import com.openai.core.JsonValue
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.*
@@ -16,17 +19,15 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.time.Duration
-import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.minutes
 import kotlin.jvm.optionals.getOrNull
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.minutes
 
 @Tag("openai")
-class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
+class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     @Test
     fun `test OpenAI chat completions auto tracing`() = runTest {
         val model = ChatModel.GPT_4O_MINI
@@ -45,7 +46,7 @@ class OpenAIChatCompletionsTracingTest : BaseOpenAITracingTest() {
         val client = instrument(
             instrument(
                 instrument(
-                    ai.dev.kit.tracing.autologging.createOpenAIClient(llmProviderUrl, llmProviderApiKey)
+                    ai.jetbrains.tracy.tracing.clients.createOpenAIClient(llmProviderUrl, llmProviderApiKey)
                 )
             )
         )

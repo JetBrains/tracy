@@ -1,7 +1,8 @@
-package ai.dev.kit.tracing.fluent.providers
+package ai.jetbrains.tracy.tracing.adapters.handlers.images
 
-import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.MediaContentAttributeValues
+import ai.jetbrains.tracy.tracing.clients.instrument
+import ai.jetbrains.tracy.tracing.adapters.BaseOpenAITracingTest
 import com.openai.models.images.ImageGenerateParams
 import com.openai.models.images.ImageModel
 import io.opentelemetry.api.common.AttributeKey
@@ -19,7 +20,7 @@ import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.minutes
 
 @Tag("openai")
-class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
+class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     @ParameterizedTest
     @MethodSource("provideResponseFormats")
     fun `test generate image with different response formats`(
@@ -27,16 +28,18 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
     ) = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
-        val client = instrument(createOpenAIClient(
-            url = patchedProviderUrl,
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createOpenAIClient(
+                url = patchedProviderUrl,
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val prompt = "generate an image of dog and cat sitting next to each other"
-        val model = ImageModel.DALL_E_2
+        val model = ImageModel.Companion.DALL_E_2
         val size = ImageGenerateParams.Size._256X256
 
-        val params = ImageGenerateParams.builder()
+        val params = ImageGenerateParams.Companion.builder()
             .prompt(prompt)
             .responseFormat(responseFormat)
             .model(model)
@@ -76,24 +79,28 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
             else -> error("Unexpected response format: $responseFormat")
         }
 
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            expectedImage,
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                expectedImage,
+            )
+        )
     }
 
     @Test
     fun `test generation of a single JPEG image gets traced`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createOpenAIClient(
-            url = patchedProviderUrl,
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createOpenAIClient(
+                url = patchedProviderUrl,
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val prompt = "generate an image of a cute cat"
-        val model = ImageModel.GPT_IMAGE_1
+        val model = ImageModel.Companion.GPT_IMAGE_1
         val size = ImageGenerateParams.Size._1024X1024
         val format = ImageGenerateParams.OutputFormat.JPEG
 
-        val params = ImageGenerateParams.builder()
+        val params = ImageGenerateParams.Companion.builder()
             .prompt(prompt)
             .model(model)
             .outputFormat(format)
@@ -119,25 +126,29 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
             data = null,
         )
 
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            expectedImage,
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                expectedImage,
+            )
+        )
     }
 
     @Test
     fun `test generation of multiple images gets traced`() = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
-        val client = instrument(createOpenAIClient(
-            url = patchedProviderUrl,
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createOpenAIClient(
+                url = patchedProviderUrl,
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val prompt = "generate an image of a cute cat"
-        val model = ImageModel.DALL_E_2
+        val model = ImageModel.Companion.DALL_E_2
         val size = ImageGenerateParams.Size._256X256
 
-        val params = ImageGenerateParams.builder()
+        val params = ImageGenerateParams.Companion.builder()
             .prompt(prompt)
             .model(model)
             .size(size)
@@ -160,24 +171,28 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
             url = null,
         )
 
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            expectedImage, expectedImage, expectedImage
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                expectedImage, expectedImage, expectedImage
+            )
+        )
     }
 
     @Test
     fun `test invalid param 'n=0' gets traced as an error`() = runTest {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
-        val client = instrument(createOpenAIClient(
-            url = patchedProviderUrl,
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createOpenAIClient(
+                url = patchedProviderUrl,
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val prompt = "generate an image of a cute cat"
-        val model = ImageModel.DALL_E_2
+        val model = ImageModel.Companion.DALL_E_2
 
-        val params = ImageGenerateParams.builder()
+        val params = ImageGenerateParams.Companion.builder()
             .prompt(prompt)
             .model(model)
             .size(ImageGenerateParams.Size._256X256)
@@ -186,7 +201,8 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
 
         try {
             client.images().generate(params)
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
 
         validateBasicImageTracing(prompt, model)
 
@@ -201,17 +217,19 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test image generation with streaming API`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createOpenAIClient(
-            url = patchedProviderUrl,
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createOpenAIClient(
+                url = patchedProviderUrl,
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val prompt = "generate an image where a knife cuts a glass watermelon"
-        val model = ImageModel.GPT_IMAGE_1
+        val model = ImageModel.Companion.GPT_IMAGE_1
         val size = ImageGenerateParams.Size._1024X1024
         val partialImagesCount = 2
 
-        val params = ImageGenerateParams.builder()
+        val params = ImageGenerateParams.Companion.builder()
             .prompt(prompt)
             .model(model)
             .partialImages(partialImagesCount.toLong())
@@ -260,9 +278,11 @@ class OpenAIImageGenerationTracingTest : BaseOpenAITracingTest() {
             data = null,
         )
 
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            expectedImage, expectedImage, expectedImage
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                expectedImage, expectedImage, expectedImage
+            )
+        )
     }
 
     fun provideResponseFormats(): Stream<Arguments> {

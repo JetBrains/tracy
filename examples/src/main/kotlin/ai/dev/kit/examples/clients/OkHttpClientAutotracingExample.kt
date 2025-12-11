@@ -2,7 +2,7 @@ package ai.dev.kit.examples.clients
 
 import ai.dev.kit.clients.OpenTelemetryAnthropicLogger
 import ai.dev.kit.clients.OpenTelemetryGeminiLogger
-import ai.dev.kit.clients.OpenTelemetryOpenAILogger
+import ai.jetbrains.tracy.tracing.clients.OpenAIOpenTelemetryOkHttpInterceptor
 import ai.dev.kit.exporters.ConsoleExporterConfig
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.TracingManager
@@ -21,7 +21,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
  *
  * This example demonstrates how to:
  * - Initialize tracing using [TracingManager] with [ConsoleExporterConfig].
- * - Instrument a [OkHttpClient] using [OpenTelemetryOpenAILogger] to automatically capture trace data.
+ * - Instrument a [OkHttpClient] using [OpenAIOpenTelemetryOkHttpInterceptor] to automatically capture trace data.
  * - Perform an OpenAI API request with trace data automatically captured.
  * - Call [TracingManager.flushTraces] before exiting to ensure all trace data is exported.
  *
@@ -31,7 +31,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * Run the example. Span will appear in the console output.
  *
  * Note: The AI Dev Kit provides multiple provider-specific tracing loggers,
- * including [OpenTelemetryOpenAILogger], [OpenTelemetryGeminiLogger], and [OpenTelemetryAnthropicLogger].
+ * including [OpenAIOpenTelemetryOkHttpInterceptor], [OpenTelemetryGeminiLogger], and [OpenTelemetryAnthropicLogger].
  * Choose the adapter that matches the provider your client uses.
  */
 fun main() {
@@ -48,7 +48,7 @@ fun main() {
         put("temperature", JsonPrimitive(1.0))
     }
     val client = OkHttpClient()
-    val instrumentedClient = instrument(client, OpenTelemetryOpenAILogger())
+    val instrumentedClient = instrument(client, OpenAIOpenTelemetryOkHttpInterceptor())
     val requestBody = Json { prettyPrint = true }
         .encodeToString(requestBodyJson)
         .toRequestBody("application/json".toMediaType())
