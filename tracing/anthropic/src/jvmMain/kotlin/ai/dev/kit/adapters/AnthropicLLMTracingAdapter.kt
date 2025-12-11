@@ -61,10 +61,15 @@ class AnthropicLLMTracingAdapter(): LLMTracingAdapter(genAISystem = GenAiSystemI
         body["tools"]?.let {
             if (it is JsonArray) {
                 for ((index, tool) in it.jsonArray.withIndex()) {
-                    span.setAttribute("gen_ai.tool.$index.name", tool.jsonObject["name"]?.jsonPrimitive?.content?.orRedactedInput())
-                    span.setAttribute("gen_ai.tool.$index.description", tool.jsonObject["description"]?.jsonPrimitive?.content?.orRedactedInput())
-                    span.setAttribute("gen_ai.tool.$index.type", tool.jsonObject["type"]?.jsonPrimitive?.content)
-                    span.setAttribute("gen_ai.tool.$index.parameters", tool.jsonObject["input_schema"].toString().orRedactedInput())
+                    val name = tool.jsonObject["name"]?.jsonPrimitive?.contentOrNull
+                    val description = tool.jsonObject["description"]?.jsonPrimitive?.contentOrNull
+                    val type = tool.jsonObject["type"]?.jsonPrimitive?.contentOrNull
+                    val parameters = tool.jsonObject["input_schema"]?.toString()
+
+                    span.setAttribute("gen_ai.tool.$index.name", name?.orRedactedInput())
+                    span.setAttribute("gen_ai.tool.$index.description", description?.orRedactedInput())
+                    span.setAttribute("gen_ai.tool.$index.type", type)
+                    span.setAttribute("gen_ai.tool.$index.parameters", parameters?.orRedactedInput())
                 }
             }
         }

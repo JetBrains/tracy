@@ -11,6 +11,7 @@ import ai.dev.kit.common.parseSafe
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.asJson
+import ai.dev.kit.tracing.policy.orRedactedInput
 import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes
@@ -76,9 +77,9 @@ class GeminiContentGenHandler(
                                 )
                             }
 
-                            val name = function.jsonObject["name"]?.jsonPrimitive?.content
-                            val description = function.jsonObject["description"]?.jsonPrimitive?.content
-                            val parameters = function.jsonObject["parameters"].toString()
+                            val name = function.jsonObject["name"]?.jsonPrimitive?.contentOrNull
+                            val description = function.jsonObject["description"]?.jsonPrimitive?.contentOrNull
+                            val parameters = function.jsonObject["parameters"]?.toString()
 
                             span.setAttribute(
                                 "gen_ai.tool.$index.function.$functionIndex.name",
@@ -90,7 +91,7 @@ class GeminiContentGenHandler(
                             )
                             span.setAttribute(
                                 "gen_ai.tool.$index.function.$functionIndex.parameters",
-                                parameters.orRedactedInput(),
+                                parameters?.orRedactedInput(),
                             )
                         }
                     }
@@ -111,7 +112,7 @@ class GeminiContentGenHandler(
             config.jsonObject["topK"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_K, it) }
         }
 
-        span.populateUnmappedAttributes(body, GeminiLLMTracingAdapter.Companion.mappedAttributes, PayloadType.REQUEST)
+        span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.REQUEST)
     }
 
     override fun handleResponseAttributes(span: Span, response: Response) {
@@ -189,7 +190,7 @@ class GeminiContentGenHandler(
             extractUsageTokenDetails(span, usage, attribute = "candidatesTokensDetails")
         }
 
-        span.populateUnmappedAttributes(body, GeminiLLMTracingAdapter.Companion.mappedAttributes, PayloadType.RESPONSE)
+        span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
     }
 
     override fun handleStreaming(span: Span, events: String) = Unit

@@ -81,7 +81,7 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
             if (tools is JsonArray) {
                 for ((index, tool) in tools.jsonArray.withIndex()) {
                     val toolType = tool.jsonObject["type"]?.jsonPrimitive?.content
-                    span.setAttribute("gen_ai.tool.$index.type", toolType?.orRedactedInput())
+                    span.setAttribute("gen_ai.tool.$index.type", toolType)
 
                     tool.jsonObject["function"]?.jsonObject?.let {
                         val toolName = it["name"]?.jsonPrimitive?.content

@@ -100,13 +100,13 @@ internal class ResponsesOpenAIApiEndpointHandler(
                     val toolType = tool.jsonObject["type"]?.jsonPrimitive?.contentOrNull
                     val toolName = tool.jsonObject["name"]?.jsonPrimitive?.contentOrNull
                     val toolDescription = tool.jsonObject["description"]?.jsonPrimitive?.contentOrNull
-                    val toolParameters = tool.jsonObject["parameters"]?.jsonObject.toString()
+                    val toolParameters = tool.jsonObject["parameters"]?.jsonObject?.toString()
                     val strict = tool.jsonObject["strict"]?.jsonPrimitive?.boolean?.toString()
 
                     span.setAttribute("gen_ai.tool.$index.type", toolType)
                     span.setAttribute("gen_ai.tool.$index.name", toolName?.orRedactedInput())
                     span.setAttribute("gen_ai.tool.$index.description", toolDescription?.orRedactedInput())
-                    span.setAttribute("gen_ai.tool.$index.parameters", toolParameters.orRedactedInput())
+                    span.setAttribute("gen_ai.tool.$index.parameters", toolParameters?.orRedactedInput())
                     span.setAttribute("gen_ai.tool.$index.strict", strict)
                 }
             }

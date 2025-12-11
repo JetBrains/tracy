@@ -235,7 +235,7 @@ TracingManager.contentCapturePolicy = ContentCapturePolicy(
 // use tracing below
 ```
 
-#### Examples Tracing
+#### Tracing Examples
 
 Below is a minimal OpenAI example. For others, check the examples directory:
 
