@@ -17,7 +17,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(project(":tracing:tracing-core"))
+                api(project(":tracing:core"))
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
             }
@@ -25,14 +25,15 @@ kotlin {
 
         jvmMain {
             dependencies {
-                implementation(libs.anthropic)
+                implementation(libs.kotlin.reflect)
+                implementation(libs.ktor.client)
+                implementation(libs.ktor.client.cio)
                 implementation(libs.okhttp)
                 implementation(libs.opentelemetry)
                 implementation(libs.opentelemetry.kotlin)
                 implementation(libs.opentelemetry.sdk)
                 implementation(libs.opentelemetry.semconv.incubating)
                 implementation(libs.kotlin.logging)
-                implementation(libs.ktor.client)
             }
         }
 
@@ -41,8 +42,15 @@ kotlin {
                 implementation(libs.kotlin.test)
                 implementation(libs.junit.params)
                 implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.ktor.client.mock)
+                implementation(libs.ktor.client.negotiation)
+                implementation(libs.ktor.serialization.json)
                 implementation(libs.opentelemetry.sdk.testing)
-                implementation(project(":tracing:tracing-test-utils"))
+                implementation(project(":tracing:test-utils"))
+                implementation(project(":tracing:openai"))
+                implementation(project(":tracing:anthropic"))
+                implementation(project(":tracing:gemini"))
+                implementation(libs.openai)
             }
         }
     }

@@ -1,3 +1,3 @@
-# Module tracing-openai
+# Module anthropic
 
 TODO: add description if needed

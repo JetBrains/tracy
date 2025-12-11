@@ -14,11 +14,11 @@ dependencies {
     implementation(libs.openai)
     implementation(libs.opentelemetry.kotlin)
     implementation(project(":eval"))
-    implementation(project(":tracing:tracing-anthropic"))
-    implementation(project(":tracing:tracing-core"))
-    implementation(project(":tracing:tracing-gemini"))
-    implementation(project(":tracing:tracing-ktor"))
-    implementation(project(":tracing:tracing-openai"))
+    implementation(project(":tracing:anthropic"))
+    implementation(project(":tracing:core"))
+    implementation(project(":tracing:gemini"))
+    implementation(project(":tracing:ktor"))
+    implementation(project(":tracing:openai"))
     testImplementation(libs.kotlin.test)
 }
 

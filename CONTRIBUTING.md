@@ -97,7 +97,7 @@ To run tests from a specific module:
 For example, to run JVM tests from the tracing core (with annotation-base functionality):
 
 ```bash
-./gradlew :tracing:tracing-core:allTests
+./gradlew :tracing:core:allTests
 ```
 
 ### Running a specific test class
@@ -111,7 +111,7 @@ To run a specific test class:
 For example:
 
 ```bash
-./gradlew :tracing:tracing-core:jvmTest --tests "ai.dev.kit.tracing.fluent.FluentTracingTest"
+./gradlew :tracing:core:jvmTest --tests "ai.dev.kit.tracing.fluent.FluentTracingTest"
 ```
 
 ### Skipping tests for specific LLM providers

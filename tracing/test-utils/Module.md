@@ -1,3 +1,3 @@
-# Module tracing-test-utils
+# Module test-utils
 
 TODO: add description if needed

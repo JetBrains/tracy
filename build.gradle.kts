@@ -39,11 +39,11 @@ tasks.register("publishContentModules") {
 }
 
 dependencies {
-    dokka(project(":tracing:tracing-anthropic"))
-    dokka(project(":tracing:tracing-core"))
-    dokka(project(":tracing:tracing-gemini"))
-    dokka(project(":tracing:tracing-ktor"))
-    dokka(project(":tracing:tracing-openai"))
-    dokka(project(":tracing:tracing-test-utils"))
+    dokka(project(":tracing:anthropic"))
+    dokka(project(":tracing:core"))
+    dokka(project(":tracing:gemini"))
+    dokka(project(":tracing:ktor"))
+    dokka(project(":tracing:openai"))
+    dokka(project(":tracing:test-utils"))
 }
 

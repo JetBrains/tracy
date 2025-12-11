@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
 plugins {
     kotlin("multiplatform")
     alias(libs.plugins.kotlin.serialization)
+    id("ai.dev.kit.space.publishing")
     id("ai.kotlin.dokka")
 }
 
@@ -16,7 +17,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(project(":tracing:tracing-core"))
+                implementation(project(":tracing:core"))
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
             }
@@ -24,20 +25,24 @@ kotlin {
 
         jvmMain {
             dependencies {
-                implementation(libs.gemini)
+                implementation(libs.anthropic)
                 implementation(libs.okhttp)
                 implementation(libs.opentelemetry)
                 implementation(libs.opentelemetry.kotlin)
                 implementation(libs.opentelemetry.sdk)
-                implementation(libs.opentelemetry.sdk.testing)
                 implementation(libs.opentelemetry.semconv.incubating)
-                implementation(libs.opentelemetry.exporter.otlp)
-                implementation(libs.opentelemetry.exporter.logging)
-                implementation(libs.kotlin.test)
-                implementation(libs.junit)
-                implementation(libs.junit.params)
-                implementation(libs.kotlinx.coroutines)
+                implementation(libs.kotlin.logging)
                 implementation(libs.ktor.client)
+            }
+        }
+
+        jvmTest {
+            dependencies {
+                implementation(libs.kotlin.test)
+                implementation(libs.junit.params)
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.opentelemetry.sdk.testing)
+                implementation(project(":tracing:test-utils"))
             }
         }
     }

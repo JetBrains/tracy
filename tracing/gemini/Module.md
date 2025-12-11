@@ -1,3 +1,3 @@
-# Module tracing-ktor
+# Module gemini
 
 TODO: add description if needed

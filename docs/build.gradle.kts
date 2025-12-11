@@ -14,12 +14,12 @@ kotlin {
 }
 
 dependencies {
-    implementation(project(":tracing:tracing-core"))
-    implementation(project(":tracing:tracing-anthropic"))
-    implementation(project(":tracing:tracing-gemini"))
-    implementation(project(":tracing:tracing-openai"))
-    implementation(project(":tracing:tracing-ktor"))
-    implementation(project(":tracing:tracing-test-utils"))
+    implementation(project(":tracing:core"))
+    implementation(project(":tracing:anthropic"))
+    implementation(project(":tracing:gemini"))
+    implementation(project(":tracing:openai"))
+    implementation(project(":tracing:ktor"))
+    implementation(project(":tracing:test-utils"))
     implementation(libs.opentelemetry.exporter.otlp)
     implementation(libs.opentelemetry.exporter.logging)
     implementation(libs.anthropic)

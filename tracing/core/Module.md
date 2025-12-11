@@ -1,3 +1,3 @@
-# Module tracing-gemini
+# Module core
 
 TODO: add description if needed

@@ -37,12 +37,12 @@ You can use it to:
     }
     
     dependencies {
-        implementation("com.jetbrains:ai-dev-kit-tracing-core:0.0.24")
+        implementation("com.jetbrains:ai-dev-kit-core:0.0.24")
         // Clients Auto Tracing
-        implementation("com.jetbrains:ai-dev-kit-tracing-anthropic:0.0.24")
-        implementation("com.jetbrains:ai-dev-kit-tracing-gemini:0.0.24")
-        implementation("com.jetbrains:ai-dev-kit-tracing-ktor:0.0.24")
-        implementation("com.jetbrains:ai-dev-kit-tracing-openai:0.0.24")
+        implementation("com.jetbrains:ai-dev-kit-anthropic:0.0.24")
+        implementation("com.jetbrains:ai-dev-kit-gemini:0.0.24")
+        implementation("com.jetbrains:ai-dev-kit-ktor:0.0.24")
+        implementation("com.jetbrains:ai-dev-kit-openai:0.0.24")
     }
     ```
 2. Make sure that you have `maven("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")` in
@@ -75,12 +75,12 @@ You can use it to:
     }
     
     dependencies {
-        implementation 'com.jetbrains:ai-dev-kit-tracing-core:0.0.24'
+        implementation 'com.jetbrains:ai-dev-kit-core:0.0.24'
         // Clients Auto Tracing
-        implementation 'com.jetbrains:ai-dev-kit-tracing-anthropic:0.0.24'
-        implementation 'com.jetbrains:ai-dev-kit-tracing-gemini:0.0.24'
-        implementation 'com.jetbrains:ai-dev-kit-tracing-ktor:0.0.24'
-        implementation 'com.jetbrains:ai-dev-kit-tracing-openai:0.0.24'
+        implementation 'com.jetbrains:ai-dev-kit-anthropic:0.0.24'
+        implementation 'com.jetbrains:ai-dev-kit-gemini:0.0.24'
+        implementation 'com.jetbrains:ai-dev-kit-ktor:0.0.24'
+        implementation 'com.jetbrains:ai-dev-kit-openai:0.0.24'
     }
     ```
 2. Make sure that you have `maven("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")` in
@@ -148,28 +148,28 @@ You can use it to:
     <dependencies>
         <dependency>
           <groupId>com.jetbrains</groupId>
-          <artifactId>ai-dev-kit-tracing-core-jvm</artifactId>
+          <artifactId>ai-dev-kit-core-jvm</artifactId>
           <version>0.0.24</version>
         </dependency>
           <!-- Clients Auto Tracing -->
         <dependency>
             <groupId>com.jetbrains</groupId>
-            <artifactId>ai-dev-kit-tracing-anthropic-jvm</artifactId>
+            <artifactId>ai-dev-kit-anthropic-jvm</artifactId>
             <version>0.0.24</version>
         </dependency>
         <dependency>
             <groupId>com.jetbrains</groupId>
-            <artifactId>ai-dev-kit-tracing-gemini-jvm</artifactId>
+            <artifactId>ai-dev-kit-gemini-jvm</artifactId>
             <version>0.0.24</version>
         </dependency>
         <dependency>
             <groupId>com.jetbrains</groupId>
-            <artifactId>ai-dev-kit-tracing-ktor-jvm</artifactId>
+            <artifactId>ai-dev-kit-ktor-jvm</artifactId>
             <version>0.0.24</version>
         </dependency>
         <dependency>
             <groupId>com.jetbrains</groupId>
-            <artifactId>ai-dev-kit-tracing-openai-jvm</artifactId>
+            <artifactId>ai-dev-kit-openai-jvm</artifactId>
             <version>0.0.24</version>
         </dependency>
     </dependencies>
@@ -270,7 +270,7 @@ example: [OpenAI Client Auto Tracing Example](examples/src/main/kotlin/ai/dev/ki
 ### Annotation-Based Tracing
 
 You can trace regular functions (not only client calls) using the [
-`@KotlinFlowTrace`](tracing/tracing-core/src/commonMain/kotlin/ai/dev/kit/tracing/fluent/KotlinFlowTrace.kt)
+`@KotlinFlowTrace`](tracing/core/src/commonMain/kotlin/ai/dev/kit/tracing/fluent/KotlinFlowTrace.kt)
 annotation.  
 Make sure to apply the `ai.dev.kit.trace` plugin in your build.  
 The Kotlin compiler plugin automatically instruments annotated functions, capturing execution details such as start and
@@ -309,7 +309,7 @@ demonstration of hierarchical tracing.
 
 Tracing annotation is automatically propagated through interfaces and class hierarchies.  
 If a method in an interface or superclass is annotated with [
-`@KotlinFlowTrace`](tracing/tracing-core/src/commonMain/kotlin/ai/dev/kit/tracing/fluent/KotlinFlowTrace.kt), all
+`@KotlinFlowTrace`](tracing/core/src/commonMain/kotlin/ai/dev/kit/tracing/fluent/KotlinFlowTrace.kt), all
 overriding or implementing methods
 inherit tracing behavior automatically, even if the annotation is not explicitly declared again.  
 This approach ensures consistent and reusable tracing across an entire inheritance chain without code duplication.
@@ -321,10 +321,10 @@ complete example.
 #### Customizing Tracing Behavior
 
 The tracing system offers flexible customization through the [
-`SpanMetadataCustomizer`](tracing/tracing-core/src/commonMain/kotlin/ai/dev/kit/tracing/fluent/handlers/SpanMetadataCustomizer.kt)
+`SpanMetadataCustomizer`](tracing/core/src/commonMain/kotlin/ai/dev/kit/tracing/fluent/handlers/SpanMetadataCustomizer.kt)
 interface.
 To use it, you must implement the interface as a Kotlin `object` and link it to a traced function via the [
-`@KotlinFlowTrace`](tracing/tracing-core/src/commonMain/kotlin/ai/dev/kit/tracing/fluent/KotlinFlowTrace.kt) annotation.
+`@KotlinFlowTrace`](tracing/core/src/commonMain/kotlin/ai/dev/kit/tracing/fluent/KotlinFlowTrace.kt) annotation.
 This ensures that the metadata customizer is a singleton and can be efficiently reused at runtime.
 With a custom `SpanMetadataCustomizer`, you can define:
 
@@ -341,7 +341,7 @@ See an example implementation in [
 You can enrich your traces with contextual metadata by adding **custom tags**.  
 Tags help categorize and filter traces based on your business logic. For example, by user type, feature, or
 environment. Use the [
-`addLangfuseTagsToCurrentTrace`](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/Utils.kt) function to attach
+`addLangfuseTagsToCurrentTrace`](tracing/core/src/jvmMain/kotlin/ai/dev/kit/tracing/Utils.kt) function to attach
 tags dynamically within any traced function.  
 These tags appear in Langfuse or other tracing tools, making it easier to group and analyze trace data.
 
@@ -393,7 +393,7 @@ val sdk = configureOpenTelemetrySdk(
 
 Once the SDK is configured, initialize tracing with `TracingManager.setSdk(sdk)`.
 
-#### [Langfuse Configuration](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/exporters/http/LangfuseExporterConfig.kt)
+#### [Langfuse Configuration](tracing/core/src/jvmMain/kotlin/ai/dev/kit/exporters/http/LangfuseExporterConfig.kt)
 
 | Property                      | Environment Variable              | Required | Default Value                                              |
 |-------------------------------|-----------------------------------|----------|------------------------------------------------------------|
@@ -407,7 +407,7 @@ Once the SDK is configured, initialize tracing with `TracingManager.setSdk(sdk)`
 
 [Langfuse Setup Example](examples/src/main/kotlin/ai/dev/kit/examples/backends/LangfuseExample.kt)
 
-#### [Weave Configuration](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/exporters/http/WeaveExporterConfig.kt)
+#### [Weave Configuration](tracing/core/src/jvmMain/kotlin/ai/dev/kit/exporters/http/WeaveExporterConfig.kt)
 
 | Property                      | Environment Variable              | Required | Default Value                                      |
 |-------------------------------|-----------------------------------|----------|----------------------------------------------------|
@@ -422,12 +422,12 @@ Once the SDK is configured, initialize tracing with `TracingManager.setSdk(sdk)`
 
 [Weave Setup Example](examples/src/main/kotlin/ai/dev/kit/examples/backends/WeaveExample.kt)
 
-#### [Console Configuration](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/exporters/ConsoleExporterConfig.kt)
+#### [Console Configuration](tracing/core/src/jvmMain/kotlin/ai/dev/kit/exporters/ConsoleExporterConfig.kt)
 
 Configuration for exporting OpenTelemetry traces to console
 only. [Console Setup Example](examples/src/main/kotlin/ai/dev/kit/examples/TracingExample.kt)
 
-#### [File Configuration](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/exporters/FileExporterConfig.kt)
+#### [File Configuration](tracing/core/src/jvmMain/kotlin/ai/dev/kit/exporters/FileExporterConfig.kt)
 
 Configuration for exporting OpenTelemetry traces to a file in either JSON or plain text format.
 [File Setup Example](examples/src/main/kotlin/ai/dev/kit/examples/FileTracingExample.kt)
@@ -444,12 +444,12 @@ Configuration for exporting OpenTelemetry traces to a file in either JSON or pla
 - **[`examples`](examples)** — contains runnable examples demonstrating how to use various `ai-dev-kit` features.
   capabilities.
 - **[`tracing`](tracing)**
-    - **[`tracing-core`](tracing/tracing-core)** — the foundational module providing tracing abstractions, annotations,
+    - **[`core`](tracing/core)** — the foundational module providing tracing abstractions, annotations,
       and OpenTelemetry integration. Manual tracing. Tracing integration for `OkHttp` client
-    - **[`tracing-openai`](tracing/tracing-openai)** — tracing integration for the `OpenAI` client.
-    - **[`tracing-gemini`](tracing/tracing-gemini)** — tracing integration for the `Gemini` client.
-    - **[`tracing-anthropic`](tracing/tracing-anthropic)** — tracing integration for the `Anthropic` client.
-    - **[`tracing-test-utils`](tracing/tracing-test-utils)** — shared utilities for testing tracing functionality across
+    - **[`openai`](tracing/openai)** — tracing integration for the `OpenAI` client.
+    - **[`gemini`](tracing/gemini)** — tracing integration for the `Gemini` client.
+    - **[`anthropic`](tracing/anthropic)** — tracing integration for the `Anthropic` client.
+    - **[`test-utils`](tracing/test-utils)** — shared utilities for testing tracing functionality across
       modules.
 
 ### Limitations
@@ -460,7 +460,7 @@ However, some concurrency models such as `runBlocking` and raw threads create ne
 
 - **`runBlocking` inside suspend functions:**  
   Use [
-  `currentSpanContextElement(...)`](tracing/tracing-core/src/jvmMain/kotlin/ai/dev/kit/tracing/fluent/processor/Utils.kt)
+  `currentSpanContextElement(...)`](tracing/core/src/jvmMain/kotlin/ai/dev/kit/tracing/fluent/processor/Utils.kt)
   to ensure child spans remain linked to their parent.  
   Without it, spans become detached and appear as separate traces.
 

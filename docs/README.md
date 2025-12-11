@@ -213,7 +213,7 @@ python3 -m http.server --bind 127.0.0.1
 ## Build javadoc.jar
 To create javadoc.jar run *dokkaHtmlJar* or *dokkaJavadocJar* in the scope of some module:
 ```bash
-./gradlew :tracing:tracing-core:dokkaHtmlJar
+./gradlew :tracing:core:dokkaHtmlJar
 ```
 
 This will pack Dokka or Javadoc HTML documentation into `javadoc.jar` file in the `<module>/build/libs` directory.

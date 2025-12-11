@@ -1,3 +1,3 @@
-# Module tracing-core
+# Module ktor
 
 TODO: add description if needed
