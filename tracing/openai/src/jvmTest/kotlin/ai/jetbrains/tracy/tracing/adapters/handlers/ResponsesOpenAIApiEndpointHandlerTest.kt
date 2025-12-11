@@ -1,9 +1,11 @@
-package ai.dev.kit.tracing.fluent.providers
+package ai.jetbrains.tracy.tracing.adapters.handlers
 
-import ai.dev.kit.clients.instrument
+import ai.jetbrains.tracy.tracing.clients.instrument
 import ai.dev.kit.tracing.MediaSource
 import ai.dev.kit.tracing.toDataUrl
 import ai.dev.kit.tracing.toMediaContentAttributeValues
+import ai.jetbrains.tracy.tracing.adapters.BaseOpenAITracingTest
+import ai.jetbrains.tracy.tracing.adapters.containsToolCall
 import com.openai.core.JsonValue
 import com.openai.models.ChatModel
 import com.openai.models.responses.*
@@ -22,7 +24,7 @@ import kotlin.time.Duration.Companion.minutes
 
 
 @Tag("openai")
-class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
+class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     @Test
     fun `test OpenAI responses API auto tracing`() = runTest {
         val model = ChatModel.GPT_4O_MINI
@@ -370,7 +372,7 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
         val prompt = "Describe what you see in the image."
 
         val image = MediaSource.File(
-            filepath = "./image.jpg",
+            filepath = "image.jpg",
             contentType = "image/jpeg",
         )
 

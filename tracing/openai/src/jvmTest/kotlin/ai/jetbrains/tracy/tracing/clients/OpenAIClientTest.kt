@@ -1,6 +1,5 @@
-package ai.dev.kit.tracing.autologging
+package ai.jetbrains.tracy.tracing.clients
 
-import ai.dev.kit.clients.instrument
 import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.fluent.processor.withSpan
@@ -25,7 +24,7 @@ import kotlin.test.assertTrue
 
 @Tag("openai")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class TracingTest : BaseOpenTelemetryTracingTest() {
+class OpenAIClientTest : BaseOpenTelemetryTracingTest() {
     /**
      * When no value is provided, defaults to [PRODUCTION_URL].
      */

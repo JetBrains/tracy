@@ -1,11 +1,12 @@
-package ai.dev.kit.adapters
+package ai.jetbrains.tracy.tracing.adapters
 
-import ai.dev.kit.adapters.handlers.ChatCompletionsHandler
-import ai.dev.kit.adapters.handlers.images.ImagesEditsHandler
-import ai.dev.kit.adapters.handlers.images.ImagesGenerationsHandler
-import ai.dev.kit.adapters.handlers.OpenAIApiHandler
-import ai.dev.kit.adapters.handlers.OpenAIApiUtils
-import ai.dev.kit.adapters.handlers.ResponsesApiHandler
+import ai.dev.kit.adapters.LLMTracingAdapter
+import ai.jetbrains.tracy.tracing.adapters.handlers.ChatCompletionsOpenAIApiEndpointHandler
+import ai.jetbrains.tracy.tracing.adapters.handlers.images.ImagesCreateEditOpenAIApiEndpointHandler
+import ai.jetbrains.tracy.tracing.adapters.handlers.images.ImagesCreateOpenAIApiEndpointHandler
+import ai.jetbrains.tracy.tracing.adapters.handlers.OpenAIApiEndpointHandler
+import ai.jetbrains.tracy.tracing.adapters.handlers.OpenAIApiUtils
+import ai.jetbrains.tracy.tracing.adapters.handlers.ResponsesOpenAIApiEndpointHandler
 import ai.dev.kit.adapters.media.MediaContentExtractorImpl
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.RequestBody
@@ -44,8 +45,11 @@ private enum class OpenAIApiType(val route: String) {
     }
 }
 
+/**
+ * Processes OpenAI API calls and extracts relevant information as span attributes.
+ */
 class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.OPENAI) {
-    private val handlers = ConcurrentHashMap<OpenAIApiType, OpenAIApiHandler>()
+    private val handlers = ConcurrentHashMap<OpenAIApiType, OpenAIApiEndpointHandler>()
 
     override fun getRequestBodyAttributes(span: Span, request: Request) {
         val handler = handlerFor(request.url)
@@ -83,28 +87,28 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
      * Determines the appropriate handler for an OpenAI API based on the given URL.
      *
      * @param endpoint The URL used to detect the API type and determine the corresponding handler.
-     * @return An instance of [OpenAIApiHandler] that is capable of handling requests for the detected API type.
+     * @return An instance of [OpenAIApiEndpointHandler] that is capable of handling requests for the detected API type.
      */
-    private fun handlerFor(endpoint: Url): OpenAIApiHandler {
+    private fun handlerFor(endpoint: Url): OpenAIApiEndpointHandler {
         val apiType = OpenAIApiType.detect(endpoint)
         val extractor = MediaContentExtractorImpl()
 
         val handler = when (apiType) {
             OpenAIApiType.CHAT_COMPLETIONS -> handlers.getOrPut(OpenAIApiType.CHAT_COMPLETIONS) {
-                ChatCompletionsHandler(extractor)
+                ChatCompletionsOpenAIApiEndpointHandler(extractor)
             }
             OpenAIApiType.RESPONSES_API -> handlers.getOrPut(OpenAIApiType.RESPONSES_API) {
-                ResponsesApiHandler(extractor)
+                ResponsesOpenAIApiEndpointHandler(extractor)
             }
             OpenAIApiType.IMAGES_GENERATIONS -> handlers.getOrPut(OpenAIApiType.IMAGES_GENERATIONS) {
-                ImagesGenerationsHandler(extractor)
+                ImagesCreateOpenAIApiEndpointHandler(extractor)
             }
             OpenAIApiType.IMAGES_EDITS -> handlers.getOrPut(OpenAIApiType.IMAGES_EDITS) {
-                ImagesEditsHandler(extractor)
+                ImagesCreateEditOpenAIApiEndpointHandler(extractor)
             }
             null -> handlers.getOrPut(OpenAIApiType.CHAT_COMPLETIONS) {
                 logger.warn { "Unknown OpenAI API detected. Defaulting to 'chat completion'." }
-                ChatCompletionsHandler(extractor)
+                ChatCompletionsOpenAIApiEndpointHandler(extractor)
             }
         }
         return handler

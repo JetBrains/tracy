@@ -1,4 +1,4 @@
-package ai.dev.kit.adapters.handlers
+package ai.jetbrains.tracy.tracing.adapters.handlers
 
 import ai.dev.kit.adapters.LLMTracingAdapter.Companion.PayloadType
 import ai.dev.kit.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
@@ -21,8 +21,8 @@ import mu.KotlinLogging
 /**
  * Handler for OpenAI Chat Completions API
  */
-internal class ChatCompletionsHandler(
-    private val extractor: MediaContentExtractor) : OpenAIApiHandler {
+internal class ChatCompletionsOpenAIApiEndpointHandler(
+    private val extractor: MediaContentExtractor) : OpenAIApiEndpointHandler {
 
     companion object {
         // https://platform.openai.com/docs/api-reference/chat/create

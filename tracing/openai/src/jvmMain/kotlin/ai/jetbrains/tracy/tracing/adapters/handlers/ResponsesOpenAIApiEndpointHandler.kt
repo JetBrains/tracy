@@ -1,4 +1,4 @@
-package ai.dev.kit.adapters.handlers
+package ai.jetbrains.tracy.tracing.adapters.handlers
 
 import ai.dev.kit.adapters.LLMTracingAdapter.Companion.PayloadType
 import ai.dev.kit.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
@@ -18,9 +18,9 @@ import kotlinx.serialization.json.*
 /**
  * Handler for OpenAI Responses API
  */
-internal class ResponsesApiHandler(
+internal class ResponsesOpenAIApiEndpointHandler(
     private val extractor: MediaContentExtractor
-) : OpenAIApiHandler {
+) : OpenAIApiEndpointHandler {
     override fun handleRequestAttributes(span: Span, request: Request) {
         val body = request.body.asJson()?.jsonObject ?: return
         OpenAIApiUtils.setCommonRequestAttributes(span, request)
