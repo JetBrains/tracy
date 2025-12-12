@@ -83,7 +83,7 @@ class LangfuseExporterConfig(
             .addHeader("Authorization", "Basic $resolvedBasicAuthHeader")
             .build()
 
-        return CustomOtlpHttpSpanExporter(
+        return ErrorDiagnosingOtlpHttpSpanExporter(
             exporter = exporter,
             memoryMode = MemoryMode.REUSABLE_DATA,
             endpointUrl = endpoint,

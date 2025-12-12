@@ -13,6 +13,6 @@ class LangfuseExportingTest {
     fun `test custom OTLP span exporter gets created normally`() = runTest {
         val config = LangfuseExporterConfig()
         val exporter = assertDoesNotThrow { config.createSpanExporter() }
-        assertIs<CustomOtlpHttpSpanExporter>(exporter)
+        assertIs<ErrorDiagnosingOtlpHttpSpanExporter>(exporter)
     }
 }

@@ -31,8 +31,10 @@ import java.util.function.Consumer
  * @param exporter The [OtlpHttpSpanExporter] instance from which an [HttpExporterBuilder] instance is extracted
  * @param memoryMode The memory mode for span marshaling
  * @param endpointUrl The target endpoint URL for diagnostic messages
+ *
+ * @see OtlpHttpSpanExporter
  */
-internal class CustomOtlpHttpSpanExporter(
+internal class ErrorDiagnosingOtlpHttpSpanExporter(
     exporter: OtlpHttpSpanExporter,
     memoryMode: MemoryMode,
     private val endpointUrl: String,
@@ -67,7 +69,7 @@ internal class CustomOtlpHttpSpanExporter(
     override fun shutdown(): CompletableResultCode = delegate.shutdown()
 
     /**
-     * Extract the [HttpSender] from a built [HttpExporter] using reflection.
+     * Extract the [HttpSender] from the given [HttpExporter] using reflection.
      * This is necessary because [HttpExporter] doesn't expose its sender.
      */
     private fun extractHttpSender(httpExporter: HttpExporter<Marshaler>): HttpSender {
@@ -78,7 +80,8 @@ internal class CustomOtlpHttpSpanExporter(
     }
 
     /**
-     * Create a new [HttpExporter] with a custom [HttpSender] using reflection.
+     * Replace [HttpSender] member field of the provided [HttpExporter] instance
+     * with the given [httpSender] using reflection.
      */
     private fun patchHttpExporterWithSender(
         delegate: HttpExporter<Marshaler>,
@@ -233,16 +236,16 @@ private class DiagnosticHttpSender(
         |════════════════════════════════════════════════════════════════════════════════
         |  Target endpoint: $endpointUrl
         |
-        |  Failed to export traces to Langfuse ($endpointUrl): request timed out.
+        |  Failed to export traces to $endpointUrl: request timed out.
         |
         |  Possible causes:
         |  - Network connectivity issues or firewall blocking the connection
-        |  - The Langfuse server is slow to respond or under heavy load
+        |  - The server is slow to respond or under heavy load
         |  - The endpoint URL is incorrect and the request is hanging
         |
         |  Troubleshooting steps:
         |  - Check your network connection and firewall settings
-        |  - Verify the endpoint URL is correct: `LANGFUSE_URL` environment variable
+        |  - When using Langfuse, verify the endpoint URL is correct: `LANGFUSE_URL` environment variable
         |  - Test connectivity: `curl -I $endpointUrl --max-time 10`
         |  - Consider increasing the timeout configuration if the server is consistently slow
         |  - Check your proxy settings
@@ -265,17 +268,17 @@ private class DiagnosticHttpSender(
         |  Target endpoint: $endpointUrl
         |  Hostname: $hostname
         |
-        |  Failed to export traces: the provided hostname '$hostname' in `LANGFUSE_URL` cannot be reached or resolved.
+        |  Failed to export traces: the provided hostname '$hostname' cannot be reached or resolved.
         |
         |  Possible causes:
         |  - The hostname in the URL does not exist or has a typo
         |  - DNS resolution failure - your system cannot resolve the hostname to an IP address
-        |  - The Langfuse instance is down or no longer available
+        |  - The server instance is down or no longer available
         |  - Network or DNS configuration issues
         |
         |  Troubleshooting steps:
-        |  - Verify the hostname is correct in your `LANGFUSE_URL` environment variable
-        |  - Check for typos in the URL (e.g., 'langfuse-xxx.labs.jb.gg')
+        |  - Verify the hostname is correct; when using Langfuse, see your `LANGFUSE_URL` environment variable
+        |  - Check for typos in the URL (e.g., with Langfuse: 'langfuse-xxx.labs.jb.gg')
         |  - Test DNS resolution: `nslookup $hostname` or `ping $hostname`
         |  - For `cloud.langfuse.com`: ensure you have internet connectivity
         |  - For self-hosted: verify the server is running and accessible
