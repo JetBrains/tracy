@@ -249,7 +249,7 @@ class ErrorDiagnosingOtlpHttpSpanExporterTest {
             .setTimeout(5, TimeUnit.SECONDS)
             .build()
         
-        return ErrorDiagnosingOtlpHttpSpanExporter(
+        return ErrorDiagnosingOtlpHttpSpanExporter.create(
             exporter = baseExporter,
             memoryMode = MemoryMode.REUSABLE_DATA,
             endpointUrl = endpoint
