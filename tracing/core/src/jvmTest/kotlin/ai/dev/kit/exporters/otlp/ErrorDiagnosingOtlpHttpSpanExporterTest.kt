@@ -64,19 +64,16 @@ class ErrorDiagnosingOtlpHttpSpanExporterTest {
         val spanData = createTestSpanData()
 
         // Act
-        val result = exporter.export(listOf(spanData))
-        result.join(5000, TimeUnit.MILLISECONDS)
+        exporter.export(listOf(spanData))
+            .join(5000, TimeUnit.MILLISECONDS)
 
         // Assert
-        val logEvents = logAppender.list
-        val warningLogs = logEvents.filter { it.level == Level.WARN }
-        
+        val warningLogs = logAppender.list.filter { it.level == Level.WARN }
         assertTrue(warningLogs.isNotEmpty(), "Expected warning logs for HTTP 401")
         
         val diagnosticLog = warningLogs.firstOrNull { 
             it.formattedMessage.contains("AUTHENTICATION ERROR (HTTP 401)")
         }
-        
         assertNotNull(diagnosticLog, "Expected diagnostic message for HTTP 401")
         assertTrue(
             diagnosticLog.formattedMessage.contains("Invalid API credentials"),
@@ -101,13 +98,11 @@ class ErrorDiagnosingOtlpHttpSpanExporterTest {
         val spanData = createTestSpanData()
 
         // Act
-        val result = exporter.export(listOf(spanData))
-        result.join(5000, TimeUnit.MILLISECONDS)
+        exporter.export(listOf(spanData))
+            .join(5000, TimeUnit.MILLISECONDS)
 
         // Assert
-        val logEvents = logAppender.list
-        val warningLogs = logEvents.filter { it.level == Level.WARN }
-        
+        val warningLogs = logAppender.list.filter { it.level == Level.WARN }
         assertTrue(warningLogs.isNotEmpty(), "Expected warning logs for HTTP 403")
         
         val diagnosticLog = warningLogs.firstOrNull { 
@@ -134,13 +129,11 @@ class ErrorDiagnosingOtlpHttpSpanExporterTest {
         val spanData = createTestSpanData()
 
         // Act
-        val result = exporter.export(listOf(spanData))
-        result.join(5000, TimeUnit.MILLISECONDS)
+        exporter.export(listOf(spanData))
+            .join(5000, TimeUnit.MILLISECONDS)
 
         // Assert
-        val logEvents = logAppender.list
-        val warningLogs = logEvents.filter { it.level == Level.WARN }
-        
+        val warningLogs = logAppender.list.filter { it.level == Level.WARN }
         assertTrue(warningLogs.isNotEmpty(), "Expected warning logs for HTTP 404")
         
         val diagnosticLog = warningLogs.firstOrNull { 
@@ -171,12 +164,11 @@ class ErrorDiagnosingOtlpHttpSpanExporterTest {
         val spanData = createTestSpanData()
 
         // Act
-        val result = exporter.export(listOf(spanData))
-        result.join(5000, TimeUnit.MILLISECONDS)
+        exporter.export(listOf(spanData))
+            .join(5000, TimeUnit.MILLISECONDS)
 
         // Assert - no diagnostic error/warning logs should be present
-        val logEvents = logAppender.list
-        val diagnosticLogs = logEvents.filter { 
+        val diagnosticLogs = logAppender.list.filter {
             it.formattedMessage.contains("════════════════════════════════") ||
             it.formattedMessage.contains("AUTHENTICATION ERROR") ||
             it.formattedMessage.contains("AUTHORIZATION ERROR") ||
@@ -202,12 +194,11 @@ class ErrorDiagnosingOtlpHttpSpanExporterTest {
         val spanData = createTestSpanData()
 
         // Act
-        val result = exporter.export(listOf(spanData))
-        result.join(5000, TimeUnit.MILLISECONDS)
+        exporter.export(listOf(spanData))
+            .join(5000, TimeUnit.MILLISECONDS)
 
         // Assert
-        val logEvents = logAppender.list
-        val warningLogs = logEvents.filter { it.level == Level.WARN }
+        val warningLogs = logAppender.list.filter { it.level == Level.WARN }
         
         val diagnosticLog = warningLogs.firstOrNull { 
             it.formattedMessage.contains("AUTHENTICATION ERROR (HTTP 401)")
@@ -233,12 +224,11 @@ class ErrorDiagnosingOtlpHttpSpanExporterTest {
         val spanData = createTestSpanData()
 
         // Act
-        val result = exporter.export(listOf(spanData))
-        result.join(5000, TimeUnit.MILLISECONDS)
+        exporter.export(listOf(spanData))
+            .join(5000, TimeUnit.MILLISECONDS)
 
         // Assert - Server errors (5xx) should not trigger diagnostic messages
-        val logEvents = logAppender.list
-        val diagnosticLogs = logEvents.filter { 
+        val diagnosticLogs = logAppender.list.filter {
             it.formattedMessage.contains("════════════════════════════════")
         }
         
