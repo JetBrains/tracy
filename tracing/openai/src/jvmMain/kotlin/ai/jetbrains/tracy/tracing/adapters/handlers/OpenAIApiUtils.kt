@@ -1,5 +1,6 @@
 package ai.jetbrains.tracy.tracing.adapters.handlers
 
+import ai.dev.kit.adapters.handlers.EndpointApiHandler
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.asJson
@@ -16,14 +17,8 @@ import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * Base interface for OpenAI API handlers
- *
- * TODO: move to core
  */
-internal interface OpenAIApiEndpointHandler {
-    fun handleRequestAttributes(span: Span, request: Request)
-    fun handleResponseAttributes(span: Span, response: Response)
-    fun handleStreaming(span: Span, events: String)
-}
+internal interface OpenAIApiEndpointHandler : EndpointApiHandler
 
 /**
  * Common utilities for OpenAI API handling
