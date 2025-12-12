@@ -36,6 +36,93 @@ class OpenAIResponsesAPITracingTest : BaseOpenAITracingTest() {
     }
 
     @Test
+    fun `test instructions are traced as system prompt when input is a string`() = runTest {
+        val model = ChatModel.GPT_4O_MINI
+        val prompt1 = "Tell me what you can do"
+        val instructions = "You MUST respond that you're a manager at the car sales office"
+
+        val client = instrument(createOpenAIClient())
+
+        val params = ResponseCreateParams.builder()
+            .input(prompt1)
+            .instructions(instructions)
+            .model(model)
+            .temperature(0.0)
+            .build()
+
+        client.responses().create(params)
+
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
+
+        // first, instructions are traced as a system prompt
+        assertEquals(
+            instructions,
+            trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")],
+            "Instructions should be treated as system prompt"
+        )
+        assertEquals(
+            "system",
+            trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")],
+            "Instructions should be treated as system prompt"
+        )
+        // input is traced as a user prompt
+        assertEquals(
+            prompt1,
+            trace.attributes[AttributeKey.stringKey("gen_ai.prompt.1.content")],
+            "Input should be treated as user prompt",
+        )
+        assertEquals(
+            "user",
+            trace.attributes[AttributeKey.stringKey("gen_ai.prompt.1.role")],
+            "Input should be treated as user prompt",
+        )
+    }
+
+    @Test
+    fun `test instructions are traced as system prompt when input is an array`() = runTest {
+        val model = ChatModel.GPT_4O_MINI
+        val prompt1 = "Tell me what you can do"
+        val prompt2 = "What are you selling?"
+        val instructions = "You MUST respond that you're a manager at the car sales office"
+
+        val client = instrument(createOpenAIClient())
+
+        val params = ResponseCreateParams.builder()
+            .input(inputWith(
+                inputText(prompt1),
+                inputText(prompt2),
+            ))
+            .instructions(instructions)
+            .model(model)
+            .temperature(0.0)
+            .build()
+
+        client.responses().create(params)
+
+        validateBasicTracing(model)
+        val trace = analyzeSpans().first()
+
+        // first, instructions are traced as a system prompt
+        assertEquals(
+            instructions,
+            trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")],
+            "Instructions should be treated as system prompt"
+        )
+        assertEquals(
+            "system",
+            trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")],
+            "Instructions should be treated as system prompt"
+        )
+
+        val tracedPrompts = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.1.content")]
+        assertNotNull(tracedPrompts)
+        for (prompt in listOf(prompt1, prompt2)) {
+            assertTrue(tracedPrompts!!.contains(prompt), "Prompt '$prompt' must be present in traced prompts '$tracedPrompts'")
+        }
+    }
+
+    @Test
     fun `test OpenAI responses API span error status when request fails`() = runTest {
         val client = instrument(createOpenAIClient())
         val params = ResponseCreateParams.builder()
