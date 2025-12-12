@@ -1,7 +1,7 @@
 package ai.dev.kit.exporters.otlp
 
-import io.opentelemetry.exporter.internal.http.HttpExporterBuilder
 import io.opentelemetry.exporter.internal.http.HttpExporter
+import io.opentelemetry.exporter.internal.http.HttpExporterBuilder
 import io.opentelemetry.exporter.internal.http.HttpSender
 import io.opentelemetry.exporter.internal.marshal.Marshaler
 import io.opentelemetry.exporter.internal.otlp.traces.SpanReusableDataMarshaler
@@ -25,42 +25,11 @@ import java.util.function.Consumer
  * - HTTP 401: Invalid API key/credentials or wrong endpoint URL
  * - HTTP 403: Valid credentials but insufficient permissions
  * - HTTP 404: Wrong endpoint URL or path
- *
- * See the implementation of [OtlpHttpSpanExporter]
- *
- * @param exporter The [OtlpHttpSpanExporter] instance from which an [HttpExporterBuilder] instance is extracted
- * @param memoryMode The memory mode for span marshaling
- * @param endpointUrl The target endpoint URL for diagnostic messages
- *
- * @see OtlpHttpSpanExporter
  */
-internal class ErrorDiagnosingOtlpHttpSpanExporter(
-    exporter: OtlpHttpSpanExporter,
-    memoryMode: MemoryMode,
-    private val endpointUrl: String,
+internal class ErrorDiagnosingOtlpHttpSpanExporter private constructor(
+    private val delegate: HttpExporter<*>,
+    private val marshaler: SpanReusableDataMarshaler,
 ) : SpanExporter {
-    private val delegate: HttpExporter<Marshaler>
-    private val marshaler: SpanReusableDataMarshaler
-
-    init {
-        // wrap the HttpSender with our diagnostic version before building
-        val exporterClass = OtlpHttpSpanExporter::class.java
-        val originalDelegate = exporterClass.getDeclaredField("delegate")
-            .also { it.isAccessible = true }
-            .get(exporter) as HttpExporter<Marshaler>
-
-        val diagnosticSender = DiagnosticHttpSender(
-            delegate = extractHttpSender(originalDelegate),
-            endpointUrl = endpointUrl,
-        )
-
-        // install our own http sender into the delegate
-        patchHttpExporterWithSender(originalDelegate, diagnosticSender)
-
-        // install member fields
-        delegate = originalDelegate
-        marshaler = SpanReusableDataMarshaler(memoryMode, delegate::export)
-    }
 
     override fun export(spans: Collection<SpanData>): CompletableResultCode = marshaler.export(spans)
 
@@ -68,30 +37,91 @@ internal class ErrorDiagnosingOtlpHttpSpanExporter(
 
     override fun shutdown(): CompletableResultCode = delegate.shutdown()
 
-    /**
-     * Extract the [HttpSender] from the given [HttpExporter] using reflection.
-     * This is necessary because [HttpExporter] doesn't expose its sender.
-     */
-    private fun extractHttpSender(httpExporter: HttpExporter<Marshaler>): HttpSender {
-        val field = HttpExporter::class.java.getDeclaredField("httpSender").also {
-            it.isAccessible = true
-        }
-        return field.get(httpExporter) as HttpSender
-    }
+    companion object {
+        private val logger = KotlinLogging.logger {}
 
-    /**
-     * Replace [HttpSender] member field of the provided [HttpExporter] instance
-     * with the given [httpSender] using reflection.
-     */
-    private fun patchHttpExporterWithSender(
-        delegate: HttpExporter<Marshaler>,
-        httpSender: HttpSender,
-    ) {
-        // replace delegate's http sender with the provided one
-        val httpExporterClass = HttpExporter::class.java
-        httpExporterClass.getDeclaredField("httpSender")
-            .also { it.isAccessible = true }
-            .set(delegate, httpSender)
+        /**
+         *
+         * See the implementation of [OtlpHttpSpanExporter]
+         *
+         * @param exporter The [OtlpHttpSpanExporter] instance from which an [HttpExporterBuilder] instance is extracted
+         * @param memoryMode The memory mode for span marshaling
+         * @param endpointUrl The target endpoint URL for diagnostic messages
+         *
+         * @see OtlpHttpSpanExporter
+         */
+        fun create(
+            exporter: OtlpHttpSpanExporter,
+            endpointUrl: String,
+            memoryMode: MemoryMode = MemoryMode.REUSABLE_DATA,
+        ): SpanExporter {
+            // wrap the HttpSender with our diagnostic version before building
+            val exporterClass = OtlpHttpSpanExporter::class.java
+            val originalDelegate = exporterClass.getDeclaredField("delegate")
+                .also { it.isAccessible = true }
+                .get(exporter)
+
+            if (originalDelegate == null || originalDelegate !is HttpExporter<*>) {
+                return exporter
+            }
+
+            val diagnosticSender = extractHttpSender(originalDelegate).let { sender ->
+                if (sender != null) {
+                    DiagnosticHttpSender(delegate = sender, endpointUrl)
+                } else {
+                    null
+                }
+            }
+
+            if (diagnosticSender != null) {
+                // install our own http sender into the delegate
+                patchHttpExporterWithSender(originalDelegate, diagnosticSender)
+            } else {
+                // the original delegate will be used directly
+                logger.warn { "Failed to install diagnostic sender, falling back to default error logging." }
+            }
+
+            return ErrorDiagnosingOtlpHttpSpanExporter(
+                delegate = originalDelegate,
+                marshaler = SpanReusableDataMarshaler(
+                    memoryMode,
+                    (originalDelegate as HttpExporter<Marshaler>)::export,
+                ),
+            )
+        }
+
+        /**
+         * Extract the [HttpSender] from the given [HttpExporter] using reflection.
+         * This is necessary because [HttpExporter] doesn't expose its sender.
+         */
+        private fun extractHttpSender(httpExporter: HttpExporter<*>): HttpSender? {
+            val field = HttpExporter::class.java.getDeclaredField("httpSender").also {
+                it.isAccessible = true
+            }
+            val value = field.get(httpExporter)
+            return when {
+                value == null || value !is HttpSender -> {
+                    logger.error { "Failed to extract HttpSender from HttpExporter" }
+                    null
+                }
+                else -> value
+            }
+        }
+
+        /**
+         * Replace [HttpSender] member field of the provided [HttpExporter] instance
+         * with the given [httpSender] using reflection.
+         */
+        private fun patchHttpExporterWithSender(
+            delegate: HttpExporter<*>,
+            httpSender: HttpSender,
+        ) {
+            // replace delegate's http sender with the provided one
+            val httpExporterClass = HttpExporter::class.java
+            httpExporterClass.getDeclaredField("httpSender")
+                .also { it.isAccessible = true }
+                .set(delegate, httpSender)
+        }
     }
 }
 
