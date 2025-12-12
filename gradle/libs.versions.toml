@@ -40,6 +40,7 @@ ktor-client-negotiation = { module = "io.ktor:ktor-client-content-negotiation-jv
 ktor-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json-jvm", version.ref = "ktor" }
 
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okhttp" }
 openai = { module = "com.openai:openai-java", version.ref = "openai" }
 gemini = { module = "com.google.genai:google-genai", version.ref = "gemini" }
 anthropic = { module = "com.anthropic:anthropic-java", version.ref = "anthropic" }
