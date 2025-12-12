@@ -22,39 +22,9 @@ import kotlinx.serialization.json.jsonPrimitive
  * @param genAISystem The name of the Generative AI system that this adapter represents.
  */
 abstract class LLMTracingAdapter(private val genAISystem: String) {
-    companion object {
-        private val REQUIRED_CONTENT_TYPE = ContentType.Application.Json
-        private val EVENT_STREAM_CONTENT_TYPE = ContentType.Text.EventStream
-
-        private const val DROPPED_ATTRIBUTES_COUNT_ATTRIBUTE_KEY = "otel.dropped_attributes_count"
-
-        /**
-         * Adds unmapped payload attributes from a JSON body to the given [Span].
-         *
-         * @param body the request or response body
-         * @param mappedAttributes a list of attribute keys that have already been
-         *  handled and should be skipped when populating unmapped attributes
-         */
-        fun Span.populateUnmappedAttributes(
-            body: JsonObject,
-            mappedAttributes: List<String>,
-            payloadType: PayloadType
-        ) {
-            body.entries.forEach { (key, value) ->
-                if (key !in (mappedAttributes)) {
-                    val attributeKey = "tracy.${payloadType.value}.$key"
-                    setAttribute(attributeKey, value.toString())
-                }
-            }
-        }
-
-        enum class PayloadType(val value: String) {
-            REQUEST("request"),
-            RESPONSE("response")
-        }
-    }
-
     fun registerRequest(span: Span, request: Request): Unit = runCatching {
+        span.updateName(getSpanName(request))
+
         // Pre-allocate in case the span reaches the limit
         span.setAttribute(DROPPED_ATTRIBUTES_COUNT_ATTRIBUTE_KEY, 0L)
 
@@ -118,6 +88,39 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
     protected abstract fun getRequestBodyAttributes(span: Span, request: Request)
     protected abstract fun getResponseBodyAttributes(span: Span, response: Response)
 
+    abstract fun getSpanName(request: Request): String
     abstract fun isStreamingRequest(request: Request): Boolean
     abstract fun handleStreaming(span: Span, url: Url, events: String)
+
+    companion object {
+        private val REQUIRED_CONTENT_TYPE = ContentType.Application.Json
+        private val EVENT_STREAM_CONTENT_TYPE = ContentType.Text.EventStream
+
+        private const val DROPPED_ATTRIBUTES_COUNT_ATTRIBUTE_KEY = "otel.dropped_attributes_count"
+
+        /**
+         * Adds unmapped payload attributes from a JSON body to the given [Span].
+         *
+         * @param body the request or response body
+         * @param mappedAttributes a list of attribute keys that have already been
+         *  handled and should be skipped when populating unmapped attributes
+         */
+        fun Span.populateUnmappedAttributes(
+            body: JsonObject,
+            mappedAttributes: List<String>,
+            payloadType: PayloadType
+        ) {
+            body.entries.forEach { (key, value) ->
+                if (key !in (mappedAttributes)) {
+                    val attributeKey = "tracy.${payloadType.value}.$key"
+                    setAttribute(attributeKey, value.toString())
+                }
+            }
+        }
+
+        enum class PayloadType(val value: String) {
+            REQUEST("request"),
+            RESPONSE("response")
+        }
+    }
 }

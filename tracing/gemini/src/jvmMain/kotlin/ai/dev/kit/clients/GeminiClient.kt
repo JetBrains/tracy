@@ -2,7 +2,6 @@ package ai.dev.kit.clients
 
 import ai.dev.kit.OpenTelemetryOkHttpInterceptor
 import ai.dev.kit.adapters.GeminiLLMTracingAdapter
-import ai.dev.kit.adapters.media.MediaContentExtractorImpl
 import ai.dev.kit.patchInterceptors
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -12,7 +11,7 @@ import com.google.genai.Client as GeminiClient
 fun instrument(client: GeminiClient): GeminiClient {
     return patchClient(
         client,
-        interceptor = OpenTelemetryGeminiLogger()
+        interceptor = OpenTelemetryOkHttpInterceptor(adapter = GeminiLLMTracingAdapter())
     )
 }
 
@@ -38,11 +37,3 @@ private fun patchClient(client: GeminiClient, interceptor: Interceptor): GeminiC
 
     return client
 }
-
-/**
- * For request and response schemas, see: [Gemini Docs](https://ai.google.dev/api/generate-content)
- */
-class OpenTelemetryGeminiLogger :
-    OpenTelemetryOkHttpInterceptor("Gemini-generation", adapter = GeminiLLMTracingAdapter(
-        extractor = MediaContentExtractorImpl()
-    ))

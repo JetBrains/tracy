@@ -25,9 +25,12 @@ import okhttp3.Request as OkHttpRequest
 import okhttp3.Response as OkHttpResponse
 import okhttp3.ResponseBody as OkHttpResponseBody
 
-fun instrument(client: OkHttpClient, interceptor: OpenTelemetryOkHttpInterceptor): OkHttpClient {
+fun instrument(client: OkHttpClient, adapter: LLMTracingAdapter): OkHttpClient {
     val clientBuilder = client.newBuilder()
+
+    val interceptor = OpenTelemetryOkHttpInterceptor(adapter)
     patchInterceptorsInplace(clientBuilder.interceptors(), interceptor)
+
     return clientBuilder.build()
 }
 
@@ -98,9 +101,12 @@ fun setFieldValue(instance: Any, fieldName: String, value: Any?) {
     throw NoSuchFieldException("Field '$fieldName' not found in ${instance.javaClass.name}")
 }
 
-
-abstract class OpenTelemetryOkHttpInterceptor(
-    private val spanName: String,
+/**
+ * Intercepts OkHttp calls and traces them using the provided [adapter].
+ *
+ * TODO: extract to a separate `OkHttp` module.
+ */
+class OpenTelemetryOkHttpInterceptor(
     private val adapter: LLMTracingAdapter,
 ) : Interceptor {
     companion object {
@@ -114,7 +120,7 @@ abstract class OpenTelemetryOkHttpInterceptor(
 
         val tracer = TracingManager.tracer
 
-        val span = tracer.spanBuilder(spanName).startSpan()
+        val span = tracer.spanBuilder("").startSpan()
         var isStreamingRequest = false
 
         span.makeCurrent().use { _ ->

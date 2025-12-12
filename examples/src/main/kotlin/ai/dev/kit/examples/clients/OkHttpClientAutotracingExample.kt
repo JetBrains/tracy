@@ -1,12 +1,10 @@
 package ai.dev.kit.examples.clients
 
-import ai.dev.kit.clients.OpenTelemetryAnthropicLogger
-import ai.dev.kit.clients.OpenTelemetryGeminiLogger
-import ai.jetbrains.tracy.tracing.clients.OpenAIOpenTelemetryOkHttpInterceptor
 import ai.dev.kit.exporters.ConsoleExporterConfig
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.tracing.adapters.OpenAILLMTracingAdapter
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
@@ -48,7 +46,7 @@ fun main() {
         put("temperature", JsonPrimitive(1.0))
     }
     val client = OkHttpClient()
-    val instrumentedClient = instrument(client, OpenAIOpenTelemetryOkHttpInterceptor())
+    val instrumentedClient = instrument(client, OpenAILLMTracingAdapter())
     val requestBody = Json { prettyPrint = true }
         .encodeToString(requestBodyJson)
         .toRequestBody("application/json".toMediaType())

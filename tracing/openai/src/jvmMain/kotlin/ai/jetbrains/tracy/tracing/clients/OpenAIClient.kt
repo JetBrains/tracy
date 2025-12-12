@@ -16,12 +16,6 @@ import com.openai.client.OpenAIClient
 fun instrument(client: OpenAIClient): OpenAIClient {
     return patchOpenAICompatibleClient(
         client = client,
-        interceptor = OpenAIOpenTelemetryOkHttpInterceptor()
+        interceptor = OpenTelemetryOkHttpInterceptor(adapter = OpenAILLMTracingAdapter())
     )
 }
-
-/**
- * TODO: remove from the public API
- */
-class OpenAIOpenTelemetryOkHttpInterceptor :
-    OpenTelemetryOkHttpInterceptor("OpenAI-generation", adapter = OpenAILLMTracingAdapter())
