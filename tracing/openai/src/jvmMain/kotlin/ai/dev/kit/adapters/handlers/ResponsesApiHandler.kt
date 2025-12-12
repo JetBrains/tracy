@@ -60,17 +60,29 @@ internal class ResponsesApiHandler(
             span.setAttribute("gen_ai.request.text", it.toString())
         }
 
-        body["instructions"]?.jsonPrimitive?.let {
-            span.setAttribute("gen_ai.prompt.0.content", it.toString())
+        // because of inserting instructions property as the first prompt,
+        // other input properties will have a position shifted by one
+        val instructionsInsertedAsFirstPrompt: Boolean = body["instructions"]?.jsonPrimitive?.let {
+            span.setAttribute("gen_ai.prompt.0.content", it.contentOrNull)
             span.setAttribute("gen_ai.prompt.0.role", "system")
-        }
+            true
+        } ?: false
+
         body["input"]?.let { inputs ->
-            if (inputs is JsonArray) {
-                parseRequestInputAttributes(span, inputs)
-                attachMediaContentAttributes(span, inputs)
-            } else {
-                span.setAttribute("gen_ai.prompt.0.role", "user")
-                span.setAttribute("gen_ai.prompt.0.content", inputs.toString())
+            when (inputs) {
+                is JsonArray -> {
+                    parseRequestInputAttributes(span, inputs, instructionsInsertedAsFirstPrompt)
+                    attachMediaContentAttributes(span, inputs)
+                }
+                else -> {
+                    val index = if (instructionsInsertedAsFirstPrompt) 1 else 0
+                    val content = when (inputs) {
+                        is JsonPrimitive -> inputs.contentOrNull
+                        else -> inputs.toString()
+                    }
+                    span.setAttribute("gen_ai.prompt.$index.role", "user")
+                    span.setAttribute("gen_ai.prompt.$index.content", content)
+                }
             }
         }
 
@@ -219,10 +231,23 @@ internal class ResponsesApiHandler(
     /**
      * Parses input field of the request when it is of an array type.
      *
+     * [instructionsInsertedAsFirstPrompt] indicates whether the "instructions" property
+     * is present in the request.
+     * If so, we shift all properties to be inserted into the span by one position,
+     * i.e., indexing starts with 1 instead of 0.
+     *
      * See the [schema](https://platform.openai.com/docs/api-reference/responses/create#responses_create-input)
      */
-    private fun parseRequestInputAttributes(span: Span, inputs: JsonArray) {
+    private fun parseRequestInputAttributes(
+        span: Span,
+        inputs: JsonArray,
+        instructionsInsertedAsFirstPrompt: Boolean,
+    ) {
+        val offset = if (instructionsInsertedAsFirstPrompt) 1 else 0
+
         for ((index, input) in inputs.withIndex()) {
+            val position = index + offset
+
             // See: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input
             when (val type = input.jsonObject["type"]?.jsonPrimitive?.content) {
                 "message" -> {
@@ -239,7 +264,7 @@ internal class ResponsesApiHandler(
                                 "type" -> "input_type"
                                 else -> field
                             }
-                            span.setAttribute("gen_ai.prompt.$index.$key", value)
+                            span.setAttribute("gen_ai.prompt.$position.$key", value)
                         }
                     }
 
@@ -253,24 +278,21 @@ internal class ResponsesApiHandler(
                                 .jsonObject
 
                             message["text"]?.jsonPrimitive?.content?.let {
-                                span.setAttribute(
-                                    "gen_ai.prompt.$index.content",
-                                    it
-                                )
+                                span.setAttribute("gen_ai.prompt.$position.content", it)
                             }
                             message["type"]?.jsonPrimitive?.content?.let {
-                                span.setAttribute(
-                                    "gen_ai.prompt.$index.content_type",
-                                    it
-                                )
+                                span.setAttribute("gen_ai.prompt.$position.content_type", it)
                             }
                         } else {
                             // set the entire array as prompt content
-                            span.setAttribute("gen_ai.prompt.$index.content", content.toString())
+                            span.setAttribute("gen_ai.prompt.$position.content", content.toString())
                         }
-
                     } else if (content != null) {
-                        span.setAttribute("gen_ai.prompt.$index.content", content.toString())
+                        val value = when (content) {
+                            is JsonPrimitive -> content.contentOrNull
+                            else -> content.toString()
+                        }
+                        span.setAttribute("gen_ai.prompt.$position.content", value)
                     }
                 }
 
@@ -294,7 +316,7 @@ internal class ResponsesApiHandler(
                             v is JsonPrimitive -> v.content
                             else -> v.toString()
                         }
-                        span.setAttribute("gen_ai.prompt.$index.$key", value)
+                        span.setAttribute("gen_ai.prompt.$position.$key", value)
                     }
                 }
             }
@@ -326,27 +348,23 @@ internal class ResponsesApiHandler(
                 val mediaPart = when (type) {
                     "input_image" -> {
                         val url = part.jsonObject["image_url"]?.jsonPrimitive?.content ?: continue
-                        if (url.isValidUrl()) {
-                            MediaContentPart(Resource.Url(url))
-                        } else if (url.startsWith("data:")) {
-                            MediaContentPart(Resource.DataUrl(url))
-                        } else {
-                            null
+                        when {
+                            url.isValidUrl() -> MediaContentPart(Resource.Url(url))
+                            url.startsWith("data:") -> MediaContentPart(Resource.DataUrl(url))
+                            else -> null
                         }
                     }
-
-                    "input_file" -> {
-                        if ("file_url" in part.jsonObject) {
+                    "input_file" -> when {
+                        "file_url" in part.jsonObject -> {
                             val url = part.jsonObject["file_url"]?.jsonPrimitive?.content ?: continue
                             if (url.isValidUrl()) MediaContentPart(Resource.Url(url)) else null
-                        } else if ("file_data" in part.jsonObject) {
+                        }
+                        "file_data" in part.jsonObject -> {
                             val dataUrl = part.jsonObject["file_data"]?.jsonPrimitive?.content ?: continue
                             MediaContentPart(Resource.DataUrl(dataUrl))
-                        } else {
-                            null
                         }
+                        else -> null
                     }
-
                     else -> null
                 }
 
