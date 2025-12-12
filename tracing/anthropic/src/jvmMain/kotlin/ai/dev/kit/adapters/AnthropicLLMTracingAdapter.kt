@@ -11,13 +11,12 @@ import ai.dev.kit.http.protocol.asJson
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import ai.dev.kit.adapters.LLMTracingAdapter.Companion.PayloadType
+import ai.dev.kit.adapters.media.MediaContentExtractorImpl
 import kotlinx.serialization.json.*
 import mu.KotlinLogging
 import io.ktor.http.ContentType
 
-class AnthropicLLMTracingAdapter(
-    private val extractor: MediaContentExtractor
-): LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.ANTHROPIC) {
+class AnthropicLLMTracingAdapter(): LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.ANTHROPIC) {
     override fun getRequestBodyAttributes(span: Span, request: Request) {
         val body = request.body.asJson()?.jsonObject ?: return
 
@@ -143,6 +142,8 @@ class AnthropicLLMTracingAdapter(
 
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
     }
+
+    override fun getSpanName(request: Request) = "Anthropic-generation"
 
     // streaming is not supported
     override fun isStreamingRequest(request: Request) = false
@@ -278,6 +279,8 @@ class AnthropicLLMTracingAdapter(
         return resources
     }
     companion object {
+        private val extractor: MediaContentExtractor = MediaContentExtractorImpl()
+
         // https://docs.claude.com/en/api/messages
         private val mappedRequestAttributes: List<String> = listOf(
             "temperature",

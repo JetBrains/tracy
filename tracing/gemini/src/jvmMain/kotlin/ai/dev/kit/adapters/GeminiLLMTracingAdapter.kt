@@ -4,15 +4,14 @@ import ai.dev.kit.adapters.handlers.GeminiApiHandler
 import ai.dev.kit.adapters.handlers.GeminiContentGenHandler
 import ai.dev.kit.adapters.handlers.GeminiImagenHandler
 import ai.dev.kit.adapters.media.MediaContentExtractor
+import ai.dev.kit.adapters.media.MediaContentExtractorImpl
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.Url
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 
-class GeminiLLMTracingAdapter(
-    private val extractor: MediaContentExtractor
-) : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.GEMINI) {
+class GeminiLLMTracingAdapter() : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.GEMINI) {
     override fun getRequestBodyAttributes(span: Span, request: Request) {
         val (model, operation) = request.url.modelAndOperation()
 
@@ -27,6 +26,8 @@ class GeminiLLMTracingAdapter(
         val handler = selectHandler(response.url)
         handler.handleResponseAttributes(span, response)
     }
+
+    override fun getSpanName(request: Request) = "Gemini-generation"
 
     // streaming is not supported
     override fun isStreamingRequest(request: Request) = false
@@ -49,5 +50,9 @@ class GeminiLLMTracingAdapter(
     private fun Url.isImagenUrl(): Boolean {
         val (model, operation) = this.modelAndOperation()
         return (model?.startsWith("imagen") == true) && (operation == "predict")
+    }
+
+    private companion object {
+        private val extractor: MediaContentExtractor = MediaContentExtractorImpl()
     }
 }

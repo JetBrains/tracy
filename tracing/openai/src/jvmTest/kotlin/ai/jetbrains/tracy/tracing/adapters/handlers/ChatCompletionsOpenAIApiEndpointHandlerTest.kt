@@ -46,7 +46,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val client = instrument(
             instrument(
                 instrument(
-                    ai.jetbrains.tracy.tracing.clients.createOpenAIClient(llmProviderUrl, llmProviderApiKey)
+                    createOpenAIClient(llmProviderUrl, llmProviderApiKey)
                 )
             )
         )

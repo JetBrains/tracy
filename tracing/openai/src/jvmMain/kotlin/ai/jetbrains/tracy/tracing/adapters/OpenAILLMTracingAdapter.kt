@@ -62,6 +62,8 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
         handler.handleResponseAttributes(span, response)
     }
 
+    override fun getSpanName(request: Request) = "OpenAI-generation"
+
     override fun isStreamingRequest(request: Request): Boolean {
         return when (request.body) {
             is RequestBody.DataForm -> {

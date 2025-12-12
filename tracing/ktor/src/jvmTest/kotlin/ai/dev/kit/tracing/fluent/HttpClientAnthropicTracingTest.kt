@@ -1,7 +1,6 @@
 package ai.dev.kit.tracing.fluent
 
 import ai.dev.kit.adapters.AnthropicLLMTracingAdapter
-import ai.dev.kit.adapters.media.MediaContentExtractorImpl
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseAITracingTest
 import io.ktor.client.*
@@ -28,11 +27,9 @@ class HttpClientAnthropicAITracingTest : BaseAITracingTest() {
         System.getenv("ANTHROPIC_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
         ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
 
-    private val extractor = MediaContentExtractorImpl()
-
     @Test
     fun `test nested instrumentation calls don't cause duplicative tracing`() = runTest {
-        val adapter = AnthropicLLMTracingAdapter(extractor)
+        val adapter = AnthropicLLMTracingAdapter()
 
         val client: HttpClient = instrument(
             instrument(
@@ -75,7 +72,7 @@ class HttpClientAnthropicAITracingTest : BaseAITracingTest() {
 
     @Test
     fun `test Ktor HttpClient auto tracing for Anthropic`() = runTest {
-        val client: HttpClient = instrument(HttpClient(), AnthropicLLMTracingAdapter(extractor))
+        val client: HttpClient = instrument(HttpClient(), AnthropicLLMTracingAdapter())
 
         val model = "claude-sonnet-4-20250514"
         val promptMessage = "Hello, world!"

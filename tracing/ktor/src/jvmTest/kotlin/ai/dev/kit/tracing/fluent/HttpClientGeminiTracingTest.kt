@@ -1,7 +1,6 @@
 package ai.dev.kit.tracing.fluent
 
 import ai.dev.kit.adapters.GeminiLLMTracingAdapter
-import ai.dev.kit.adapters.media.MediaContentExtractorImpl
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseAITracingTest
 import io.ktor.client.*
@@ -35,9 +34,7 @@ class HttpClientGeminiTracingTest : BaseAITracingTest() {
     )
     @Test
     fun `test Ktor HttpClient auto tracing for Gemini`() = runTest {
-        val client: HttpClient = instrument(HttpClient(), adapter = GeminiLLMTracingAdapter(
-            extractor = MediaContentExtractorImpl()
-        ))
+        val client: HttpClient = instrument(HttpClient(), adapter = GeminiLLMTracingAdapter())
 
         val model = "gemini-2.5-flash"
         val promptMessage = "Explain how AI works in a few words"

@@ -200,7 +200,7 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
                 ImageEditParams.Body.builder()
                     .prompt(prompt)
                     .image(
-                        contentType.images(images.map { it.filepath })
+                        images(images.map { it.filepath }, contentType)
                     )
                     .outputFormat(ImageEditParams.OutputFormat.PNG)
                     .model(model)
@@ -254,7 +254,7 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
                 ImageEditParams.Body.builder()
                     .prompt(prompt)
                     .image(
-                        contentType.images(images.map { it.filepath })
+                        images(images.map { it.filepath }, contentType)
                     )
                     .outputFormat(ImageEditParams.OutputFormat.PNG)
                     .model(model)
@@ -306,7 +306,7 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             .build()
     }
 
-    private fun String.images(filepaths: List<String>): MultipartField<ImageEditParams.Image> {
+    private fun images(filepaths: List<String>, string: String): MultipartField<ImageEditParams.Image> {
         val images = buildList {
             for (filepath in filepaths) {
                 val image = readResource(filepath)
@@ -315,7 +315,7 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         }
         return MultipartField.builder<ImageEditParams.Image>()
             .value(ImageEditParams.Image.ofInputStreams(images))
-            .contentType(this)
+            .contentType(string)
             .filename(filepaths.first())
             .build()
     }
