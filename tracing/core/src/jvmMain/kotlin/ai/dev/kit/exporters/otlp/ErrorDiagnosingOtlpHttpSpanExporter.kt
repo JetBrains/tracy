@@ -286,7 +286,10 @@ private class DiagnosticHttpSender(
         // Extract hostname from URL for clearer error message
         val hostname = try {
             endpointUrl.substringAfter("://").substringBefore("/")
-        } catch (_: Exception) {
+        } catch (err: Exception) {
+            logger.trace(err) {
+                "Failed to extract hostname from endpointUrl: $endpointUrl. Using full endpointUrl as hostname."
+            }
             endpointUrl
         }
 
