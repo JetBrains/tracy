@@ -1,7 +1,7 @@
 package ai.dev.kit.exporters.otlp
 
-import io.opentelemetry.exporter.internal.http.HttpExporter
 import io.opentelemetry.exporter.internal.http.HttpExporterBuilder
+import io.opentelemetry.exporter.internal.http.HttpExporter
 import io.opentelemetry.exporter.internal.http.HttpSender
 import io.opentelemetry.exporter.internal.marshal.Marshaler
 import io.opentelemetry.exporter.internal.otlp.traces.SpanReusableDataMarshaler
@@ -11,6 +11,8 @@ import io.opentelemetry.sdk.common.export.MemoryMode
 import io.opentelemetry.sdk.trace.data.SpanData
 import io.opentelemetry.sdk.trace.export.SpanExporter
 import mu.KotlinLogging
+import java.io.InterruptedIOException
+import java.net.UnknownHostException
 import java.util.function.Consumer
 
 /**
@@ -113,7 +115,6 @@ private class DiagnosticHttpSender(
         // wrap the success callback to intercept responses
         val diagnosticOnSuccess = Consumer<HttpSender.Response> { response ->
             val statusCode = response.statusCode()
-
             // provide diagnostic logging for specific error codes
             val status = response.statusMessage()
             when (statusCode) {
@@ -121,11 +122,30 @@ private class DiagnosticHttpSender(
                 403 -> logger.warn { buildDiagnosticMessage403(status) }
                 404 -> logger.warn { buildDiagnosticMessage404(status) }
             }
-            // continue with the original callback (which will log the standard error)
+            // continue with the original callback
             onSuccess.accept(response)
         }
+        // wrap the failing callback to intercept responses
+        val diagnosticsOnError = Consumer<Throwable> { error ->
+            when (error) {
+                // corresponds to a timeout exception
+                is InterruptedIOException -> logger.error { buildDiagnosticMessageTimeout() }
+                is UnknownHostException -> logger.error { buildDiagnosticMessageUnknownHost() }
+                else -> {
+                    logger.error("""
+                        | Failed to export traces.
+                        | Error message: '${error.message}'
+                        | The stacktrace:
+                        | ${error.stackTraceToString()}
+                    """.trimMargin())
+                }
+            }
+            // continue with the original callback
+            onError.accept(error)
+        }
+
         // delegate to the original sender with our wrapped callback
-        delegate.send(marshaler, contentLength, diagnosticOnSuccess, onError)
+        delegate.send(marshaler, contentLength, diagnosticOnSuccess, diagnosticsOnError)
     }
 
     override fun shutdown(): CompletableResultCode = delegate.shutdown()
@@ -205,4 +225,61 @@ private class DiagnosticHttpSender(
         |  - Ensure the path includes `/api/public/otel/v1/traces`
         |════════════════════════════════════════════════════════════════════════════════
     """.trimMargin()
+
+    private fun buildDiagnosticMessageTimeout(): String = """
+        |
+        |════════════════════════════════════════════════════════════════════════════════
+        |  REQUEST TIMEOUT
+        |════════════════════════════════════════════════════════════════════════════════
+        |  Target endpoint: $endpointUrl
+        |
+        |  Failed to export traces to Langfuse ($endpointUrl): request timed out.
+        |
+        |  Possible causes:
+        |  - Network connectivity issues or firewall blocking the connection
+        |  - The Langfuse server is slow to respond or under heavy load
+        |  - The endpoint URL is incorrect and the request is hanging
+        |
+        |  Troubleshooting steps:
+        |  - Check your network connection and firewall settings
+        |  - Verify the endpoint URL is correct: `LANGFUSE_URL` environment variable
+        |  - Test connectivity: `curl -I $endpointUrl --max-time 10`
+        |  - Consider increasing the timeout configuration if the server is consistently slow
+        |  - Check your proxy settings
+        |════════════════════════════════════════════════════════════════════════════════
+    """.trimMargin()
+
+    private fun buildDiagnosticMessageUnknownHost(): String {
+        // Extract hostname from URL for clearer error message
+        val hostname = try {
+            endpointUrl.substringAfter("://").substringBefore("/")
+        } catch (_: Exception) {
+            endpointUrl
+        }
+
+        return """
+        |
+        |════════════════════════════════════════════════════════════════════════════════
+        |  UNKNOWN HOST ERROR
+        |════════════════════════════════════════════════════════════════════════════════
+        |  Target endpoint: $endpointUrl
+        |  Hostname: $hostname
+        |
+        |  Failed to export traces: the provided hostname '$hostname' in `LANGFUSE_URL` cannot be reached or resolved.
+        |
+        |  Possible causes:
+        |  - The hostname in the URL does not exist or has a typo
+        |  - DNS resolution failure - your system cannot resolve the hostname to an IP address
+        |  - The Langfuse instance is down or no longer available
+        |  - Network or DNS configuration issues
+        |
+        |  Troubleshooting steps:
+        |  - Verify the hostname is correct in your `LANGFUSE_URL` environment variable
+        |  - Check for typos in the URL (e.g., 'langfuse-xxx.labs.jb.gg')
+        |  - Test DNS resolution: `nslookup $hostname` or `ping $hostname`
+        |  - For `cloud.langfuse.com`: ensure you have internet connectivity
+        |  - For self-hosted: verify the server is running and accessible
+        |════════════════════════════════════════════════════════════════════════════════
+    """.trimMargin()
+    }
 }
