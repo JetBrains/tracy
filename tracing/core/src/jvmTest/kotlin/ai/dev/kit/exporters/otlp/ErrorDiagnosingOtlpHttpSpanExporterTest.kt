@@ -33,7 +33,7 @@ class ErrorDiagnosingOtlpHttpSpanExporterTest {
 
     @BeforeEach
     fun setup() {
-        // Start mock web server
+        // Start a mock web server
         mockWebServer = MockWebServer()
         mockWebServer.start()
 
