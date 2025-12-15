@@ -23,7 +23,7 @@ import mu.KotlinLogging
  */
 class GeminiContentGenHandler(
     private val extractor: MediaContentExtractor
-) : GeminiApiHandler {
+) : EndpointApiHandler {
     override fun handleRequestAttributes(span: Span, request: Request) {
         // See: https://ai.google.dev/api/caching#Content
         val body = request.body.asJson()?.jsonObject ?: return

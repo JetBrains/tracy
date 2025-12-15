@@ -1,5 +1,6 @@
 package ai.jetbrains.tracy.tracing.adapters.handlers.images
 
+import ai.dev.kit.adapters.handlers.EndpointApiHandler
 import ai.dev.kit.adapters.media.MediaContentExtractor
 import ai.jetbrains.tracy.tracing.adapters.handlers.OpenAIApiEndpointHandler
 import ai.jetbrains.tracy.tracing.adapters.handlers.asString

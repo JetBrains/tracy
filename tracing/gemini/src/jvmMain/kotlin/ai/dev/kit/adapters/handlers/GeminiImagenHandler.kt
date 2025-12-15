@@ -26,7 +26,7 @@ import mu.KotlinLogging
  */
 class GeminiImagenHandler(
     private val extractor: MediaContentExtractor
-) : GeminiApiHandler {
+) : EndpointApiHandler {
     override fun handleRequestAttributes(span: Span, request: Request) {
         val body = request.body.asJson()?.jsonObject ?: return
 

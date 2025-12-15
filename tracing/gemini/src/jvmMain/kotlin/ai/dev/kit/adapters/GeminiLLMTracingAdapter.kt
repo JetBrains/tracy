@@ -1,6 +1,6 @@
 package ai.dev.kit.adapters
 
-import ai.dev.kit.adapters.handlers.GeminiApiHandler
+import ai.dev.kit.adapters.handlers.EndpointApiHandler
 import ai.dev.kit.adapters.handlers.GeminiContentGenHandler
 import ai.dev.kit.adapters.handlers.GeminiImagenHandler
 import ai.dev.kit.adapters.media.MediaContentExtractor
@@ -36,7 +36,7 @@ class GeminiLLMTracingAdapter() : LLMTracingAdapter(genAISystem = GenAiSystemInc
         handler.handleStreaming(span, events)
     }
 
-    private fun selectHandler(url: Url): GeminiApiHandler = when {
+    private fun selectHandler(url: Url): EndpointApiHandler = when {
         url.isImagenUrl() -> GeminiImagenHandler(extractor)
         else -> GeminiContentGenHandler(extractor)
     }
