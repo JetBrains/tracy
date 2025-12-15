@@ -246,6 +246,8 @@ internal class ResponsesApiHandler(
         val offset = if (instructionsInsertedAsFirstPrompt) 1 else 0
 
         for ((index, input) in inputs.withIndex()) {
+            // when instructions were inserted, indices of other input messages
+            // should be shifted by 1 ahead
             val position = index + offset
 
             // See: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input
