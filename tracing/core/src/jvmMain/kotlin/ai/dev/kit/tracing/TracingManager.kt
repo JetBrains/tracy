@@ -1,5 +1,6 @@
 package ai.dev.kit.tracing
 
+import ai.dev.kit.config.BuildConfig
 import ai.dev.kit.exporters.BaseExporterConfig
 import ai.dev.kit.tracing.TracingManager.setSdk
 import io.opentelemetry.api.OpenTelemetry
@@ -64,7 +65,7 @@ object TracingManager {
                 return NOOP_TRACER
             }
             openTelemetrySdk?.let { sdk ->
-                return sdk.getTracer(AI_DEVELOPMENT_KIT_TRACER)
+                return sdk.getTracer(AI_DEVELOPMENT_KIT_TRACER, BuildConfig.VERSION)
             }
             // First access when SDK missing and tracing enabled: warn, then use no‑op
             if (hasLoggedMissingSdk.compareAndSet(false, true)) {

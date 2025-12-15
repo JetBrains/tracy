@@ -14,7 +14,7 @@ on:
       files_to_update:
         description: 'Files where version should be updated'
         required: true
-        default: 'README.md CONTRIBUTING.md publishing/src/main/kotlin/SpacePublishingPlugin.kt plugin/gradle-tracy-plugin/src/main/kotlin/ai/dev/kit/trace/gradle/AiDevKitTraceGradlePlugin.kt'
+        default: 'README.md CONTRIBUTING.md gradle.properties publishing/src/main/kotlin/SpacePublishingPlugin.kt plugin/gradle-tracy-plugin/src/main/kotlin/ai/dev/kit/trace/gradle/AiDevKitTraceGradlePlugin.kt'
 
 permissions:
   contents: write
