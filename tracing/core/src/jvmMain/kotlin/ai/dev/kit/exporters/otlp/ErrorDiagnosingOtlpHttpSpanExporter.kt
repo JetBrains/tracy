@@ -62,6 +62,7 @@ internal class ErrorDiagnosingOtlpHttpSpanExporter private constructor(
                 .get(exporter)
 
             if (originalDelegate == null || originalDelegate !is HttpExporter<*>) {
+                logger.warn { "Failed to extract HttpExporter from OtlpHttpSpanExporter" }
                 return exporter
             }
 
