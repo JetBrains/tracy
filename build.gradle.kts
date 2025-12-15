@@ -25,18 +25,28 @@ subprojects {
     }
 }
 
-tasks.register("publishContentModules") {
-    group = "publishing"
-    description =
-        "Publishes all modules that apply the ai.jetbrains.tracy.space.publishing plugin"
-    val publishTasks = subprojects.filter { subproject ->
-        subproject.plugins.hasPlugin("ai.jetbrains.tracy.space.publishing")
-    }.mapNotNull { subproject ->
-        subproject.tasks.findByName("publish")
+fun registerContentPublishTask(taskName: String, publishType: String, pluginTask: String) {
+    tasks.register(taskName) {
+        group = "publishing"
+        description = "Publishes all modules that apply the ai.jetbrains.tracy.space.publishing plugin ($publishType)"
+        val publishTasks = subprojects
+            .filter { it.plugins.hasPlugin("ai.jetbrains.tracy.space.publishing") }
+            .mapNotNull { it.tasks.findByName(publishType) }
+        val pluginPublishTask = gradle.includedBuild("plugin").task(":$pluginTask")
+        dependsOn(publishTasks + pluginPublishTask)
     }
-    val pluginPublishTasks = gradle.includedBuild("plugin").task(":publishTracingPlugin")
-    dependsOn(publishTasks + pluginPublishTasks)
 }
+
+registerContentPublishTask(
+    taskName = "publishContentModules",
+    publishType = "publish",
+    pluginTask = "publishTracingPlugin"
+)
+registerContentPublishTask(
+    taskName = "publishContentModulesToMavenLocal",
+    publishType = "publishToMavenLocal",
+    pluginTask = "publishTracingPluginToMavenLocal"
+)
 
 dependencies {
     dokka(project(":tracing:anthropic"))

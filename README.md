@@ -536,6 +536,26 @@ However, some concurrency models such as `runBlocking` and raw threads create ne
 See the [`ContextPropagationExample.kt`](examples/src/main/kotlin/ai/jetbrains/tracy/examples/ContextPropagationExample.kt) for
 a complete example.
 
+## Publishing
+
+This project uses **Gradle composite builds**.  
+Because of that, running plain `publish` or `publishToMavenLocal` is **not enough**. Included builds are not published
+automatically.
+
+Use these tasks instead:
+
+* **Publish to remote Maven**
+  ```bash
+  ./gradlew publishContentModules
+  ```
+
+* **Publish to Maven Local**
+    ```bash
+    ./gradlew publishContentModulesToMavenLocal
+    ```
+
+These tasks publish all modules, compiler plugins (all Kotlin versions), and the Gradle plugin.
+
 ### Versioning
 
 The AI Dev Kit follows semantic versioning:
