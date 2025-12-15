@@ -24,6 +24,5 @@ class ConsoleExporterConfig(
     override fun createSpanExporter(): SpanExporter = when (format) {
         OutputFormat.PLAIN_TEXT -> LoggingSpanExporter.create()
         OutputFormat.JSON -> OtlpJsonLoggingSpanExporter.create()
-        else -> throw IllegalArgumentException("Unsupported console output format: $format")
     }
 }
