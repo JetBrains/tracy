@@ -2,6 +2,7 @@ package ai.dev.kit.tracing
 
 import ai.dev.kit.exporters.BaseExporterConfig
 import ai.dev.kit.exporters.ConsoleExporterConfig
+import ai.dev.kit.exporters.ExporterCommonSettings
 import ai.dev.kit.exporters.otlp.LangfuseExporterConfig
 import ai.dev.kit.exporters.otlp.WeaveExporterConfig
 import ai.dev.kit.tracing.fluent.FluentSpanAttributes
@@ -21,7 +22,7 @@ import kotlin.coroutines.CoroutineContext
  * This method sets up a [SdkTracerProvider] with:
  *  - Span processors for the given configuration.
  *  - Span limits.
- *  - A shutdown hook to flush and shut down traces gracefully.
+ *  - A shutdown hook to flush and shut down traces gracefully if [ExporterCommonSettings.flushOnShutdown] is true.
  *
  * @param exporterConfig the exporter configuration defining how spans should be exported.
  *  Examples include:
@@ -50,10 +51,12 @@ fun configureOpenTelemetrySdk(
 
     val openTelemetry = OpenTelemetrySdk.builder().setTracerProvider(tracerProvider).build()
 
-    Runtime.getRuntime().addShutdownHook(Thread {
-        openTelemetry.sdkTracerProvider.forceFlush().join(5, TimeUnit.SECONDS)
-        openTelemetry.sdkTracerProvider.shutdown()
-    })
+    if (exporterConfig.settings.flushOnShutdown) {
+        Runtime.getRuntime().addShutdownHook(Thread {
+            openTelemetry.sdkTracerProvider.forceFlush().join(5, TimeUnit.SECONDS)
+            openTelemetry.sdkTracerProvider.shutdown()
+        })
+    }
 
     return openTelemetry
 }

@@ -15,21 +15,19 @@ import java.util.logging.*
  * @param filepath The file path where traces should be written (e.g., `tracing.log` or `traces.jsonl`).
  * @param append Whether to append to the file if it exists, or create a new file.
  * @param format The format in which to log traces to the file or console.
- * @param traceToConsole If true, also logs spans to the console for debugging.
- *        Default: false.
+ * @param settings User-provided common settings controlling batching, console logging,
+ *  shutdown behavior, and span attribute limits.
  *
- * @see [BaseExporterConfig] for configuration of maximum span attributes,
- * maximum attribute value length, and optional console logging.
+ * @see [ExporterCommonSettings]
+ * @see [BaseExporterConfig]
  * @see [OtlpFileSpanExporter]
  */
 class FileExporterConfig(
     val filepath: String,
     val append: Boolean,
     val format: OutputFormat = OutputFormat.PLAIN_TEXT,
-    traceToConsole: Boolean = false,
-    maxNumberOfSpanAttributes: Int? = null,
-    maxSpanAttributeValueLength: Int? = null
-) : BaseExporterConfig(traceToConsole, maxNumberOfSpanAttributes, maxSpanAttributeValueLength) {
+    settings: ExporterCommonSettings = ExporterCommonSettings(),
+) : BaseExporterConfig(settings) {
     override fun createSpanExporter(): SpanExporter = OtlpFileSpanExporter.create(this)
 }
 

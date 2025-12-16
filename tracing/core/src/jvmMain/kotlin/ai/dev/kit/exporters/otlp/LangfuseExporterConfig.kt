@@ -3,6 +3,7 @@ package ai.dev.kit.exporters.otlp
 import ai.dev.kit.adapters.media.SupportedMediaContentTypes
 import ai.dev.kit.adapters.media.UploadableMediaContentAttributeKeys
 import ai.dev.kit.exporters.BaseExporterConfig
+import ai.dev.kit.exporters.ExporterCommonSettings
 import ai.dev.kit.exporters.otlp.LangfuseExporterConfig.Companion.LANGFUSE_BASE_URL
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -47,7 +48,10 @@ import mu.KotlinLogging
  *  If not provided, it is retrieved from the `LANGFUSE_PUBLIC_KEY` environment variable.
  * @param langfuseSecretKey Required Langfuse secret API key.
  *  If not provided, it is retrieved from the `LANGFUSE_SECRET_KEY` environment variable.
+ * @param settings User-provided common settings controlling batching, console logging,
+ *  shutdown behavior, and span attribute limits.
  *
+ * @see [ExporterCommonSettings]
  * @see [OtlpBaseExporterConfig] for OTLP-specific exporter configuration.
  * @see [BaseExporterConfig] for inherited properties such as attribute limits and console logging.
  * @see [Langfuse OpenTelemetry Docs](https://langfuse.com/docs/opentelemetry/get-started)
@@ -58,15 +62,11 @@ class LangfuseExporterConfig(
     langfusePublicKey: String? = null,
     langfuseSecretKey: String? = null,
     exporterTimeoutSeconds: Long = DEFAULT_EXPORTER_TIMEOUT,
-    traceToConsole: Boolean = false,
-    maxNumberOfSpanAttributes: Int? = null,
-    maxSpanAttributeValueLength: Int? = null,
+    settings: ExporterCommonSettings = ExporterCommonSettings(),
 ) : OtlpBaseExporterConfig(
     url = langfuseUrl ?: System.getenv("LANGFUSE_URL") ?: LANGFUSE_BASE_URL,
     exporterTimeoutSeconds = exporterTimeoutSeconds,
-    traceToConsole = traceToConsole,
-    maxNumberOfSpanAttributes = maxNumberOfSpanAttributes,
-    maxSpanAttributeValueLength = maxSpanAttributeValueLength
+    settings = settings
 ) {
     private val resolvedPublicKey: String = resolveRequiredEnvVar(langfusePublicKey, "LANGFUSE_PUBLIC_KEY")
     private val resolvedSecretKey: String = resolveRequiredEnvVar(langfuseSecretKey, "LANGFUSE_SECRET_KEY")
@@ -112,7 +112,7 @@ class LangfuseExporterConfig(
             )
         )
 
-        if (traceToConsole) {
+        if (settings.traceToConsole) {
             sdkTracerBuilder.addConsoleLoggingSpanProcessor()
         }
     }

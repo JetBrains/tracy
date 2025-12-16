@@ -1,5 +1,7 @@
 package ai.dev.kit.exporters
 
+import ai.dev.kit.exporters.ExporterCommonSettings.Companion.DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES
+import ai.dev.kit.exporters.ExporterCommonSettings.Companion.DEFAULT_SPAN_ATTRIBUTE_VALUE_LENGTH
 import io.opentelemetry.exporter.logging.LoggingSpanExporter
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder
 import io.opentelemetry.sdk.trace.SpanLimits
@@ -16,28 +18,19 @@ import java.util.concurrent.TimeUnit
  *  - Configuring [SpanLimits] for spans, based on maximum attributes and attribute length.
  *  - Optionally logging spans to the console using a [LoggingSpanExporter] for local debugging.
  *
- * @property traceToConsole If `true`, a [SimpleSpanProcessor] is added to log spans
- *  to the console. This is primarily useful for development and debugging.
- *  Default: `false`.
- * @param maxNumberOfSpanAttributes Maximum number of attributes allowed per span.
- *  Defaults to the `MAX_NUMBER_OF_SPAN_ATTRIBUTES` environment variable,
- *  or [DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES] if the environment variable is not set.
- * @param maxSpanAttributeValueLength Maximum allowed length for attribute values.
- *  Defaults to the `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` environment variable,
- *  or [DEFAULT_SPAN_ATTRIBUTE_VALUE_LENGTH] if the environment variable is not set.
+ * @property settings User-provided common settings controlling batching, console logging,
+ *  shutdown behavior, and span attribute limits.
  *
+ * @see [ExporterCommonSettings]
  * @see [SpanExporter]
- * @see [LoggingSpanExporter]
  * @see [SpanLimits]
  */
 abstract class BaseExporterConfig(
-    protected val traceToConsole: Boolean = false,
-    maxNumberOfSpanAttributes: Int? = null,
-    maxSpanAttributeValueLength: Int? = null
+    val settings: ExporterCommonSettings
 ) {
-    protected val resolvedMaxAttributes: Int = maxNumberOfSpanAttributes
+    protected val resolvedMaxAttributes: Int = settings.maxNumberOfSpanAttributes
         ?: resolveEnvInt("MAX_NUMBER_OF_SPAN_ATTRIBUTES", DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES)
-    protected val resolvedMaxAttributeLength: Int = maxSpanAttributeValueLength
+    protected val resolvedMaxAttributeLength: Int = settings.maxSpanAttributeValueLength
         ?: resolveEnvInt("MAX_SPAN_ATTRIBUTE_VALUE_LENGTH", DEFAULT_SPAN_ATTRIBUTE_VALUE_LENGTH)
 
     init {
@@ -57,7 +50,7 @@ abstract class BaseExporterConfig(
      * for this exporter configuration.
      *
      * - Adds a [BatchSpanProcessor] for the exporter returned by [createSpanExporter], if present.
-     * - Adds a [SimpleSpanProcessor] logging spans to console if [traceToConsole] is true.
+     * - Adds a [SimpleSpanProcessor] logging spans to console if [ExporterCommonSettings.traceToConsole] is true.
      *
      * @param sdkTracerBuilder the [SdkTracerProviderBuilder] to configure
      */
@@ -65,11 +58,12 @@ abstract class BaseExporterConfig(
         createSpanExporter()?.let { exporter ->
             sdkTracerBuilder.addSpanProcessor(
                 BatchSpanProcessor.builder(exporter)
-                    .setScheduleDelay(5, TimeUnit.SECONDS)
+                    .setScheduleDelay(settings.flushIntervalSeconds, TimeUnit.MILLISECONDS)
+                    .setMaxExportBatchSize(settings.flushThreshold)
                     .build()
             )
         }
-        if (traceToConsole) {
+        if (settings.traceToConsole) {
             sdkTracerBuilder.addConsoleLoggingSpanProcessor()
         }
     }
@@ -100,9 +94,6 @@ abstract class BaseExporterConfig(
     }
 
     companion object {
-        const val DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES = 256
-        const val DEFAULT_SPAN_ATTRIBUTE_VALUE_LENGTH = 8192
-
         internal fun resolveEnvInt(envKey: String, default: Int): Int =
             System.getenv(envKey)?.toInt() ?: default
 

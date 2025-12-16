@@ -1,6 +1,8 @@
 package ai.dev.kit.exporters.otlp
 
 import ai.dev.kit.exporters.BaseExporterConfig
+import ai.dev.kit.exporters.ExporterCommonSettings
+import ai.dev.kit.exporters.otlp.OtlpBaseExporterConfig.Companion.DEFAULT_EXPORTER_TIMEOUT
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter
 import io.opentelemetry.sdk.trace.export.SpanExporter
 import java.util.*
@@ -23,9 +25,14 @@ import java.util.concurrent.TimeUnit
  * @param apiKey Required W&B API key.
  *  Can be created on [https://wandb.ai/authorize].
  *  If not provided, it is retrieved from the `WEAVE_API_KEY` environment variable.
+ * @param exporterTimeoutSeconds Timeout in seconds for span exporter.
+ *  Must be positive. Defaults to [DEFAULT_EXPORTER_TIMEOUT].
+ * @param settings User-provided common settings controlling batching, console logging,
+ *  shutdown behavior, and span attribute limits.
  *
  * @see [OtlpBaseExporterConfig] for OTLP-specific exporter configuration.
  * @see [BaseExporterConfig] for inherited properties such as attribute limits, console logging, and exporter timeout.
+ * @see [ExporterCommonSettings]
  * @see [Weave OpenTelemetry Docs](https://weave-docs.wandb.ai/guides/tracking/otel/)
  */
 class WeaveExporterConfig(
@@ -34,15 +41,11 @@ class WeaveExporterConfig(
     projectName: String? = null,
     apiKey: String? = null,
     exporterTimeoutSeconds: Long = DEFAULT_EXPORTER_TIMEOUT,
-    traceToConsole: Boolean = false,
-    maxNumberOfSpanAttributes: Int? = null,
-    maxSpanAttributeValueLength: Int? = null,
+    settings: ExporterCommonSettings = ExporterCommonSettings(),
 ) : OtlpBaseExporterConfig(
     url = baseUrl ?: System.getenv("WEAVE_URL") ?: WEAVE_BASE_URL,
     exporterTimeoutSeconds = exporterTimeoutSeconds,
-    traceToConsole = traceToConsole,
-    maxNumberOfSpanAttributes = maxNumberOfSpanAttributes,
-    maxSpanAttributeValueLength = maxSpanAttributeValueLength
+    settings = settings
 ) {
     private val resolvedEntity: String = resolveRequiredEnvVar(entity, "WEAVE_ENTITY")
     private val resolvedProjectName: String = resolveRequiredEnvVar(projectName, "WEAVE_PROJECT_NAME")
