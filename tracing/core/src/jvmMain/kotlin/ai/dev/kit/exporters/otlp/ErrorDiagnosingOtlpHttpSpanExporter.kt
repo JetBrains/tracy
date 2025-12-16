@@ -199,13 +199,13 @@ private class DiagnosticHttpSender(
         |     → Ensure credentials are correctly configured in your exporter configuration
         |
         |  2. Incorrect endpoint URL:
-        |     → Check your `LANGFUSE_URL` environment variable
+        |     → Check your LANGFUSE_URL environment variable
         |     → Default: https://cloud.langfuse.com
         |     → For self-hosted: verify your custom URL is correct
         |
         |  3. Credentials not matching the endpoint:
         |     → Ensure you're using credentials for the correct Langfuse instance
-        |     → Self-hosted credentials won't work with `cloud.langfuse.com` and vice versa
+        |     → Self-hosted credentials won't work with cloud.langfuse.com and vice versa
         |
         |  Troubleshooting steps:
         |  - Check if credentials are set
@@ -246,7 +246,7 @@ private class DiagnosticHttpSender(
         |
         |  Possible causes:
         |  - Incorrect endpoint URL or path
-        |  - Missing `/api/public/otel/v1/traces` path component
+        |  - Missing /api/public/otel/v1/traces path component
         |  - Wrong base URL (e.g., using HTTP instead of HTTPS)
         |
         |  Expected URL format:
@@ -254,9 +254,9 @@ private class DiagnosticHttpSender(
         |  - Self-hosted: https://your-domain.com/api/public/otel/v1/traces
         |
         |  Troubleshooting steps:
-        |  - Verify `LANGFUSE_URL` environment variable
+        |  - Verify LANGFUSE_URL environment variable
         |  - Check Langfuse documentation for the correct endpoint URL
-        |  - Ensure the path includes `/api/public/otel/v1/traces`
+        |  - Ensure the path includes /api/public/otel/v1/traces
         |════════════════════════════════════════════════════════════════════════════════
     """.trimMargin()
 
@@ -276,7 +276,7 @@ private class DiagnosticHttpSender(
         |
         |  Troubleshooting steps:
         |  - Check your network connection and firewall settings
-        |  - When using Langfuse, verify the endpoint URL is correct: `LANGFUSE_URL` environment variable
+        |  - When using Langfuse, verify the endpoint URL is correct: LANGFUSE_URL environment variable
         |  - Test connectivity: `curl -I $endpointUrl --max-time 10`
         |  - Consider increasing the timeout configuration if the server is consistently slow
         |  - Check your proxy settings
@@ -302,7 +302,7 @@ private class DiagnosticHttpSender(
         |  Target endpoint: $endpointUrl
         |  Hostname: $hostname
         |
-        |  Failed to export traces: the provided hostname '$hostname' cannot be reached or resolved.
+        |  Failed to export traces: the provided hostname $hostname cannot be reached or resolved.
         |
         |  Possible causes:
         |  - The hostname in the URL does not exist or has a typo
@@ -311,10 +311,10 @@ private class DiagnosticHttpSender(
         |  - Network or DNS configuration issues
         |
         |  Troubleshooting steps:
-        |  - Verify the hostname is correct; when using Langfuse, see your `LANGFUSE_URL` environment variable
+        |  - Verify the hostname is correct; when using Langfuse, see your LANGFUSE_URL environment variable
         |  - Check for typos in the URL (e.g., with Langfuse: 'langfuse-xxx.labs.jb.gg')
         |  - Test DNS resolution: `nslookup $hostname` or `ping $hostname`
-        |  - For `cloud.langfuse.com`: ensure you have internet connectivity
+        |  - For cloud.langfuse.com: ensure you have internet connectivity
         |  - For self-hosted: verify the server is running and accessible
         |════════════════════════════════════════════════════════════════════════════════
     """.trimMargin()
