@@ -142,8 +142,8 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
             )
         }
 
-        //consume the response
-        response.bodyAsChannel()
+            //consume the response
+            consumeResponses(response)
 
         val traces = analyzeSpans()
 
@@ -532,7 +532,7 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
                     { "role": "user", "content": "$userRequest" }
                 ],
                 "model": "$model",
-                "stream": true
+                "stream": "$acceptStream"
             }
             """.trimIndent()
             )
@@ -540,7 +540,7 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
     }
 
     private suspend fun consumeResponses(vararg responses: HttpResponse) {
-        responses.forEach { it.bodyAsChannel() }
+        responses.forEach { it.bodyAsChannel().readRemaining().readText() }
     }
 
     private fun validateTracesContent(expectedPrompts: List<String>) {

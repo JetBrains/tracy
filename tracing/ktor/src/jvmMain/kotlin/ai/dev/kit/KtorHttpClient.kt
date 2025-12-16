@@ -1,16 +1,12 @@
 package ai.dev.kit
 
 import ai.dev.kit.adapters.LLMTracingAdapter
-import ai.dev.kit.http.protocol.Request
-import ai.dev.kit.http.protocol.RequestBody
-import ai.dev.kit.http.protocol.Response
-import ai.dev.kit.http.protocol.ResponseBody
-import ai.dev.kit.http.protocol.toProtocolUrl
+import ai.dev.kit.http.protocol.*
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.fluent.processor.Span
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
-import io.ktor.client.statement.request
+import io.ktor.client.statement.*
 import io.ktor.client.utils.*
 import io.ktor.http.*
 import io.ktor.util.*
@@ -18,10 +14,9 @@ import io.ktor.utils.io.*
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.io.Buffer
 import kotlinx.io.InternalIoApi
-import kotlinx.io.readString
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.Serializable
@@ -101,17 +96,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                     ?: return@onResponse
                 if (isStreamingRequest) return@onResponse
                 val body = try {
-                    // peek the response body to avoid consuming the underlying channel
-                    val responseString = run {
-                        // NOTE: we must first peek and only then await.
-                        // otherwise there are cases when an empty body gets peeked
-                        val peeked = response.rawContent.readBuffer.peek()
-                        response.rawContent.awaitContent(Int.MAX_VALUE)
-                        peeked.request(Long.MAX_VALUE)
-                        val buffer = Buffer()
-                        buffer.write(peeked, peeked.buffer.size)
-                        buffer.readString()
-                    }
+                    val responseString = response.bodyAsText()
                     Json.parseToJsonElement(responseString).jsonObject
                 } catch (exception: Exception) {
                     logger.trace("Error while parsing response body", exception)
@@ -160,7 +145,11 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 val tracingChannel = ByteChannel(autoFlush = true)
                 val capturedText = StringBuilder()
 
-                CoroutineScope(response.coroutineContext).launch(start = CoroutineStart.UNDISPATCHED) {
+                val parentJob = response.coroutineContext[Job]
+                val scopeCtx =
+                    if (parentJob?.isActive == true) response.coroutineContext else response.coroutineContext + Job()
+
+                CoroutineScope(scopeCtx).launch(start = CoroutineStart.UNDISPATCHED) {
                     try {
                         val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                         while (!originalBody.isClosedForRead) {
