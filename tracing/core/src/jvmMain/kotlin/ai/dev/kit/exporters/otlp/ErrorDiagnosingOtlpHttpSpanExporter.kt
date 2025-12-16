@@ -21,6 +21,9 @@ import java.util.function.Consumer
  * This exporter wraps the standard OpenTelemetry HTTP exporter and provides
  * better error messages when authentication or configuration issues occur.
  *
+ * The implementation is similar with the implementation of [OtlpHttpSpanExporter].
+ * Have a look at its sources and methods' Javadocs to better understand how it works.
+ *
  * Common issues diagnosed:
  * - HTTP 401: Invalid API key/credentials or wrong endpoint URL
  * - HTTP 403: Valid credentials but insufficient permissions
@@ -82,6 +85,7 @@ internal class ErrorDiagnosingOtlpHttpSpanExporter private constructor(
                 logger.warn { "Failed to install diagnostic sender, falling back to default error logging." }
             }
 
+            @Suppress("UNCHECKED_CAST")
             return ErrorDiagnosingOtlpHttpSpanExporter(
                 delegate = originalDelegate,
                 marshaler = SpanReusableDataMarshaler(
@@ -284,7 +288,7 @@ private class DiagnosticHttpSender(
     """.trimMargin()
 
     private fun buildDiagnosticMessageUnknownHost(): String {
-        // Extract hostname from URL for clearer error message
+        // Extract the hostname from URL for a clearer error message
         val hostname = try {
             endpointUrl.substringAfter("://").substringBefore("/")
         } catch (err: Exception) {
