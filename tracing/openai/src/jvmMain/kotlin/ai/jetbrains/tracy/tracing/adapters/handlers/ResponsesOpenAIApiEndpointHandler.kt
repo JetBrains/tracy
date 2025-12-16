@@ -11,7 +11,10 @@ import ai.dev.kit.common.isValidUrl
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.asJson
-import ai.dev.kit.tracing.policy.*
+import ai.dev.kit.tracing.policy.ContentKind
+import ai.dev.kit.tracing.policy.contentTracingAllowed
+import ai.dev.kit.tracing.policy.orRedactedInput
+import ai.dev.kit.tracing.policy.orRedactedOutput
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
@@ -201,7 +204,7 @@ internal class ResponsesOpenAIApiEndpointHandler(
                                 v is JsonPrimitive -> v.content
                                 else -> v.toString()
                             }
-                            span.setAttribute("gen_ai.completion.$index.$key", value)
+                            span.setAttribute("gen_ai.completion.$index.$key", value.orRedactedOutput())
                         }
                     }
                 }
