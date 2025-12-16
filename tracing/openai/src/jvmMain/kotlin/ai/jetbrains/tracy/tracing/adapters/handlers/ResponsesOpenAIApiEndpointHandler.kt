@@ -2,6 +2,7 @@ package ai.jetbrains.tracy.tracing.adapters.handlers
 
 import ai.dev.kit.adapters.LLMTracingAdapter.Companion.PayloadType
 import ai.dev.kit.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
+import ai.dev.kit.adapters.handlers.EndpointApiHandler
 import ai.dev.kit.adapters.media.MediaContent
 import ai.dev.kit.adapters.media.MediaContentExtractor
 import ai.dev.kit.adapters.media.MediaContentPart
@@ -20,7 +21,7 @@ import kotlinx.serialization.json.*
  */
 internal class ResponsesOpenAIApiEndpointHandler(
     private val extractor: MediaContentExtractor
-) : OpenAIApiEndpointHandler {
+) : EndpointApiHandler {
     override fun handleRequestAttributes(span: Span, request: Request) {
         val body = request.body.asJson()?.jsonObject ?: return
         OpenAIApiUtils.setCommonRequestAttributes(span, request)

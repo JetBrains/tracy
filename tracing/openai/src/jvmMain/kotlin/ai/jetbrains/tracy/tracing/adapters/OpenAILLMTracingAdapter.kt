@@ -1,10 +1,10 @@
 package ai.jetbrains.tracy.tracing.adapters
 
 import ai.dev.kit.adapters.LLMTracingAdapter
+import ai.dev.kit.adapters.handlers.EndpointApiHandler
 import ai.jetbrains.tracy.tracing.adapters.handlers.ChatCompletionsOpenAIApiEndpointHandler
 import ai.jetbrains.tracy.tracing.adapters.handlers.images.ImagesCreateEditOpenAIApiEndpointHandler
 import ai.jetbrains.tracy.tracing.adapters.handlers.images.ImagesCreateOpenAIApiEndpointHandler
-import ai.jetbrains.tracy.tracing.adapters.handlers.OpenAIApiEndpointHandler
 import ai.jetbrains.tracy.tracing.adapters.handlers.OpenAIApiUtils
 import ai.jetbrains.tracy.tracing.adapters.handlers.ResponsesOpenAIApiEndpointHandler
 import ai.dev.kit.adapters.media.MediaContentExtractorImpl
@@ -49,7 +49,7 @@ private enum class OpenAIApiType(val route: String) {
  * Processes OpenAI API calls and extracts relevant information as span attributes.
  */
 class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.OPENAI) {
-    private val handlers = ConcurrentHashMap<OpenAIApiType, OpenAIApiEndpointHandler>()
+    private val handlers = ConcurrentHashMap<OpenAIApiType, EndpointApiHandler>()
 
     override fun getRequestBodyAttributes(span: Span, request: Request) {
         val handler = handlerFor(request.url)
@@ -89,9 +89,9 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
      * Determines the appropriate handler for an OpenAI API based on the given URL.
      *
      * @param endpoint The URL used to detect the API type and determine the corresponding handler.
-     * @return An instance of [OpenAIApiEndpointHandler] that is capable of handling requests for the detected API type.
+     * @return An instance of [EndpointApiHandler] that is capable of handling requests for the detected API type.
      */
-    private fun handlerFor(endpoint: Url): OpenAIApiEndpointHandler {
+    private fun handlerFor(endpoint: Url): EndpointApiHandler {
         val apiType = OpenAIApiType.detect(endpoint)
         val extractor = MediaContentExtractorImpl()
 
