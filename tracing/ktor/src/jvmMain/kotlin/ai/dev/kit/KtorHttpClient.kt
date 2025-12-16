@@ -146,6 +146,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 val capturedText = StringBuilder()
 
                 val parentJob = response.coroutineContext[Job]
+                // response Job can be already completed; don’t inherit it
                 val scopeCtx =
                     if (parentJob?.isActive == true) response.coroutineContext else response.coroutineContext + Job()
 
