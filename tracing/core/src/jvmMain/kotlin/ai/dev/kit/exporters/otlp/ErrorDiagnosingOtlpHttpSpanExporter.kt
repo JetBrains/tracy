@@ -44,14 +44,18 @@ internal class ErrorDiagnosingOtlpHttpSpanExporter private constructor(
         private val logger = KotlinLogging.logger {}
 
         /**
+         * Creates an instance of [ErrorDiagnosingOtlpHttpSpanExporter] from the given [OtlpHttpSpanExporter].
          *
-         * See the implementation of [OtlpHttpSpanExporter]
+         * This function extracts [OtlpHttpSpanExporter.delegate] of type [HttpExporter] from the given [exporter]
+         * and replaces its underlying [HttpExporter.httpSender] with a custom [DiagnosticHttpSender] instance,
+         * which enriches logging with helpful diagnostic messages for common errors.
          *
-         * @param exporter The [OtlpHttpSpanExporter] instance from which an [HttpExporterBuilder] instance is extracted
-         * @param memoryMode The memory mode for span marshaling
+         * @param exporter The [OtlpHttpSpanExporter] instance from which a [OtlpHttpSpanExporter.delegate] instance is extracted
          * @param endpointUrl The target endpoint URL for diagnostic messages
+         * @param memoryMode The memory mode for span marshaling
          *
          * @see OtlpHttpSpanExporter
+         * @see DiagnosticHttpSender
          */
         fun create(
             exporter: OtlpHttpSpanExporter,
