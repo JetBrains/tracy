@@ -44,13 +44,17 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
             val isStreamingRequest = body["stream"]?.jsonPrimitive?.boolean == true
 
             if (response.contentType != null) {
-                if (response.contentType.match(REQUIRED_CONTENT_TYPE)) {
-                    getResponseBodyAttributes(span, response)
-                } else if (isStreamingRequest && response.contentType.match(EVENT_STREAM_CONTENT_TYPE)) {
-                    span.setAttribute("gen_ai.response.streaming", true)
-                    span.setAttribute("gen_ai.completion.content.type", response.contentType.toString())
-                } else {
-                    span.setAttribute("gen_ai.completion.content.type", response.contentType.toString())
+                when {
+                    response.contentType.match(REQUIRED_CONTENT_TYPE) -> {
+                        getResponseBodyAttributes(span, response)
+                    }
+                    isStreamingRequest && response.contentType.match(EVENT_STREAM_CONTENT_TYPE) -> {
+                        span.setAttribute("gen_ai.response.streaming", true)
+                        span.setAttribute("gen_ai.completion.content.type", response.contentType.toString())
+                    }
+                    else -> {
+                        span.setAttribute("gen_ai.completion.content.type", response.contentType.toString())
+                    }
                 }
             }
 

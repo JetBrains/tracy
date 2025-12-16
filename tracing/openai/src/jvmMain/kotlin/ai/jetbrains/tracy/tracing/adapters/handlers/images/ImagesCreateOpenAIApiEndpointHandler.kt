@@ -6,6 +6,7 @@ import ai.jetbrains.tracy.tracing.adapters.handlers.asString
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.asJson
+import ai.dev.kit.tracing.policy.orRedactedInput
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
 import kotlinx.serialization.json.Json
@@ -18,20 +19,20 @@ import kotlinx.serialization.json.jsonPrimitive
  * See [Image Generation API](https://platform.openai.com/docs/api-reference/images/create)
  */
 internal class ImagesCreateOpenAIApiEndpointHandler(
-    private val extractor: MediaContentExtractor) : EndpointApiHandler {
+    private val extractor: MediaContentExtractor
+) : EndpointApiHandler {
     override fun handleRequestAttributes(span: Span, request: Request) {
         val body = request.body.asJson()?.jsonObject ?: return
 
-        body["prompt"]?.let { span.setAttribute("gen_ai.prompt.0.content", it.jsonPrimitive.content) }
+        body["prompt"]?.let { span.setAttribute("gen_ai.prompt.0.content", it.jsonPrimitive.content.orRedactedInput()) }
         body["model"]?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it.jsonPrimitive.content) }
 
         val manuallyParsedKeys = listOf("prompt", "model")
-
         for ((key, value) in body.entries) {
             if (key in manuallyParsedKeys) {
                 continue
             }
-            span.setAttribute("gen_ai.request.$key", value.asString)
+            span.setAttribute("gen_ai.request.$key", value.asString.orRedactedInput())
         }
     }
 
@@ -46,7 +47,7 @@ internal class ImagesCreateOpenAIApiEndpointHandler(
             }
             val data = Json.parseToJsonElement(line.removePrefix("data:").trim()).jsonObject
 
-            handleStreamingImage(
+            handleStreamedImage(
                 span, data, extractor,
                 completedType = "image_generation.completed",
                 partialImageType = "image_generation.partial_image",

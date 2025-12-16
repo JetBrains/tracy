@@ -3,6 +3,8 @@ package ai.jetbrains.tracy.tracing.adapters.handlers.images
 import ai.dev.kit.tracing.MediaContentAttributeValues
 import ai.jetbrains.tracy.tracing.clients.instrument
 import ai.jetbrains.tracy.tracing.adapters.BaseOpenAITracingTest
+import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.policy.ContentCapturePolicy
 import com.openai.models.images.ImageGenerateParams
 import com.openai.models.images.ImageModel
 import io.opentelemetry.api.common.AttributeKey
@@ -18,6 +20,7 @@ import java.time.Duration
 import java.util.stream.Stream
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.minutes
+import kotlin.test.assertNotEquals
 
 @Tag("openai")
 class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
@@ -283,6 +286,56 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
                 expectedImage, expectedImage, expectedImage
             )
         )
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideContentCapturePolicies")
+    fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) = runTest(timeout = 3.minutes) {
+        TracingManager.withCapturingPolicy(policy)
+
+        val client = instrument(createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ))
+
+        val promptMessage = "generate an image of a cat"
+        val model = ImageModel.DALL_E_2
+        val params = ImageGenerateParams.builder()
+            .prompt(promptMessage)
+            .model(model)
+            .size(ImageGenerateParams.Size._256X256)
+            .n(1)
+            .build()
+
+        client.images().generate(params)
+
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+        val trace = traces.first()
+
+        val prompt = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
+        if (!policy.captureInputs) {
+            assertEquals("REDACTED", prompt, "Prompt should be redacted")
+        } else {
+            assertNotEquals("REDACTED", prompt, "Prompt should NOT be redacted")
+        }
+
+        val completion = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
+        if (!policy.captureOutputs) {
+            assertEquals("REDACTED", completion, "Completion content should be redacted")
+        } else {
+            assertNotEquals("REDACTED", completion, "Completion content should NOT be redacted")
+        }
+
+        val uploads = buildList {
+            if (policy.captureOutputs) {
+                add(MediaContentAttributeValues.Url(
+                    field = "output",
+                    url = null,
+                ))
+            }
+        }
+        verifyMediaContentUploadAttributes(trace, expected = uploads)
     }
 
     fun provideResponseFormats(): Stream<Arguments> {

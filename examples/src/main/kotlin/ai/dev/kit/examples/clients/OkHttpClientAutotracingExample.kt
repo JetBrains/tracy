@@ -34,6 +34,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
  */
 fun main() {
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
+    TracingManager.traceSensitiveContent()
+
     val apiToken = System.getenv("OPENAI_API_KEY") ?: error("Environment variable 'OPENAI_API_KEY' is not set")
     val requestBodyJson = buildJsonObject {
         put("model", JsonPrimitive("gpt-4o-mini"))

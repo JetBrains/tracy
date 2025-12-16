@@ -11,6 +11,11 @@ import ai.dev.kit.common.isValidUrl
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.asJson
+import ai.dev.kit.tracing.policy.ContentKind
+import ai.dev.kit.tracing.policy.contentTracingAllowed
+import ai.dev.kit.tracing.policy.orRedacted
+import ai.dev.kit.tracing.policy.orRedactedInput
+import ai.dev.kit.tracing.policy.orRedactedOutput
 import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
@@ -53,10 +58,13 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
         body["messages"]?.let {
             for ((index, message) in it.jsonArray.withIndex()) {
                 val role = message.jsonObject["role"]?.jsonPrimitive?.content
+                val kind = kindByRole(role)
+
                 span.setAttribute("gen_ai.prompt.$index.role", role)
 
                 // content may be of different schemas
-                attachRequestContent(span, index, message.jsonObject["content"])
+                val messageContent = message.jsonObject["content"]
+                attachRequestContent(span, index, kind, messageContent)
 
                 // when a tool result is encountered
                 if (role?.lowercase() == "tool") {
@@ -72,12 +80,19 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
         body["tools"]?.let { tools ->
             if (tools is JsonArray) {
                 for ((index, tool) in tools.jsonArray.withIndex()) {
-                    span.setAttribute("gen_ai.tool.$index.type", tool.jsonObject["type"]?.jsonPrimitive?.content)
+                    val toolType = tool.jsonObject["type"]?.jsonPrimitive?.content
+                    span.setAttribute("gen_ai.tool.$index.type", toolType)
+
                     tool.jsonObject["function"]?.jsonObject?.let {
-                        span.setAttribute("gen_ai.tool.$index.name", it["name"]?.jsonPrimitive?.content)
-                        span.setAttribute("gen_ai.tool.$index.description", it["description"]?.jsonPrimitive?.content)
-                        span.setAttribute("gen_ai.tool.$index.parameters", it["parameters"]?.jsonObject?.toString())
-                        span.setAttribute("gen_ai.tool.$index.strict", it["strict"]?.jsonPrimitive?.boolean.toString())
+                        val toolName = it["name"]?.jsonPrimitive?.content
+                        val toolDescription = it["description"]?.jsonPrimitive?.content
+                        val toolParameters = it["parameters"]?.jsonObject?.toString()
+                        val strict = it["strict"]?.jsonPrimitive?.boolean?.toString()
+
+                        span.setAttribute("gen_ai.tool.$index.name", toolName?.orRedactedInput())
+                        span.setAttribute("gen_ai.tool.$index.description", toolDescription?.orRedactedInput())
+                        span.setAttribute("gen_ai.tool.$index.parameters", toolParameters?.orRedactedInput())
+                        span.setAttribute("gen_ai.tool.$index.strict", strict)
                     }
                 }
             }
@@ -100,6 +115,7 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
     private fun attachRequestContent(
         span: Span,
         index: Int,
+        kind: ContentKind,
         content: JsonElement?,
     ) {
         if (content == null) {
@@ -108,26 +124,27 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
         }
 
         // See content types: https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages-user-message-content
-        val result: String = if (content is JsonPrimitive) {
-            content.jsonPrimitive.content
+        val result: String = when (content) {
+            is JsonPrimitive -> content.jsonPrimitive.content
+            is JsonArray -> {
+                // install upload media attributes only when tracing is allowed
+                if (contentTracingAllowed(kind)) {
+                    // array that contains entries of either image, audio, file or normal text
+                    val mediaContent = parseMediaContent(content)
+                    extractor.setUploadableContentAttributes(span, field = "input", mediaContent)
+                }
+                content.jsonArray.toString()
+            }
+            else -> content.toString()
         }
-        else if (content is JsonArray) {
-            // array that contains entries of either image, audio, file or normal text
-            val mediaContent = parseMediaContent(content)
-            extractor.setUploadableContentAttributes(span, field = "input", mediaContent)
-            content.jsonArray.toString()
-        }
-        else {
-            content.toString()
-        }
-        span.setAttribute("gen_ai.prompt.$index.content", result)
+        span.setAttribute("gen_ai.prompt.$index.content", result.orRedacted(kind))
     }
 
     override fun handleResponseAttributes(span: Span, response: Response) {
         val body = response.body.asJson()?.jsonObject ?: return
 
-        body["choices"]?.let {
-            for ((index, choice) in it.jsonArray.withIndex()) {
+        body["choices"]?.let { choices ->
+            for ((index, choice) in choices.jsonArray.withIndex()) {
                 val index = choice.jsonObject["index"]?.jsonPrimitive?.intOrNull ?: index
 
                 span.setAttribute(
@@ -136,18 +153,18 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                 )
 
                 choice.jsonObject["message"]?.jsonObject?.let { message ->
-                    span.setAttribute(
-                        "gen_ai.completion.$index.role",
-                        message.jsonObject["role"]?.jsonPrimitive?.content
-                    )
-                    span.setAttribute("gen_ai.completion.$index.content", message.jsonObject["content"]?.toString())
+                    val role = message.jsonObject["role"]?.jsonPrimitive?.content
+                    val content = message.jsonObject["content"]?.toString()
+
+                    span.setAttribute("gen_ai.completion.$index.role", role)
+                    span.setAttribute("gen_ai.completion.$index.content", content?.orRedactedOutput())
 
                     // See: https://platform.openai.com/docs/api-reference/chat/object
-                    message.jsonObject["tool_calls"]?.let {
+                    message.jsonObject["tool_calls"]?.let { toolCalls ->
                         // sometimes, this prop is explicitly set to null, hence, being JsonNull.
                         // therefore, we check for the required array type
-                        if (it is JsonArray) {
-                            for ((toolCallIndex, toolCall) in it.jsonArray.withIndex()) {
+                        if (toolCalls is JsonArray) {
+                            for ((toolCallIndex, toolCall) in toolCalls.jsonArray.withIndex()) {
                                 span.setAttribute(
                                     "gen_ai.completion.$index.tool.$toolCallIndex.call.id",
                                     toolCall.jsonObject["id"]?.jsonPrimitive?.content
@@ -158,14 +175,11 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                                 )
 
                                 toolCall.jsonObject["function"]?.jsonObject?.let {
-                                    span.setAttribute(
-                                        "gen_ai.completion.$index.tool.$toolCallIndex.name",
-                                        it["name"]?.jsonPrimitive?.content
-                                    )
-                                    span.setAttribute(
-                                        "gen_ai.completion.$index.tool.$toolCallIndex.arguments",
-                                        it["arguments"]?.jsonPrimitive?.content
-                                    )
+                                    val name = it["name"]?.jsonPrimitive?.content
+                                    val arguments = it["arguments"]?.jsonPrimitive?.content
+
+                                    span.setAttribute("gen_ai.completion.$index.tool.$toolCallIndex.name", name?.orRedactedOutput())
+                                    span.setAttribute("gen_ai.completion.$index.tool.$toolCallIndex.arguments", arguments?.orRedactedOutput())
                                 }
                             }
                         }
@@ -190,19 +204,31 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
         var role: String? = null
         val out = buildString {
             for (line in events.lineSequence()) {
-                if (!line.startsWith("data:")) continue
+                if (!line.startsWith("data:")) {
+                    continue
+                }
                 val data = line.removePrefix("data:").trim()
 
-                val e = runCatching { Json.parseToJsonElement(data).jsonObject }.getOrNull() ?: continue
-                val choice = e["choices"]?.jsonArray?.firstOrNull()?.jsonObject ?: continue
+                val event = runCatching {
+                    Json.parseToJsonElement(data).jsonObject
+                }.getOrNull() ?: continue
+
+                val choice = event["choices"]?.jsonArray?.firstOrNull()?.jsonObject ?: continue
                 val delta = choice["delta"]?.jsonObject ?: continue
 
-                if (role == null) role = delta["role"]?.jsonPrimitive?.content
+                if (role == null) {
+                    role = delta["role"]?.jsonPrimitive?.content
+                }
                 delta["content"]?.jsonPrimitive?.content?.let { append(it) }
             }
         }
-        if (out.isNotEmpty()) span.setAttribute("gen_ai.completion.0.content", out)
+
+        if (out.isNotEmpty()) {
+            val kind = kindByRole(role)
+            span.setAttribute("gen_ai.completion.0.content", out.orRedacted(kind))
+        }
         role?.let { span.setAttribute("gen_ai.completion.0.role", it) }
+
         return@runCatching
     }.getOrElse { exception ->
         span.setStatus(StatusCode.ERROR)
@@ -219,6 +245,17 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
         usage["completion_tokens"]?.jsonPrimitive?.intOrNull?.let {
             span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
         }
+    }
+
+    /**
+     * Given a role, define what content kind matches it, either input or output.
+     */
+    private fun kindByRole(role: String?): ContentKind = when (role) {
+        // role may be:
+        //   1. input: developer/system/user
+        "developer", "system", "user" -> ContentKind.INPUT
+        //   2. output: assistant/tool/function
+        else -> ContentKind.OUTPUT
     }
 
     /**

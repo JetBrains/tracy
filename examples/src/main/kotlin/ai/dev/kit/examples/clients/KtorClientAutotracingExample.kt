@@ -38,6 +38,8 @@ import kotlinx.serialization.json.buildJsonObject
  */
 suspend fun main() {
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
+    TracingManager.traceSensitiveContent()
+
     val apiToken = System.getenv("OPENAI_API_KEY") ?: error("Environment variable 'OPENAI_API_KEY' is not set")
     val client = HttpClient {
         install(ContentNegotiation) {

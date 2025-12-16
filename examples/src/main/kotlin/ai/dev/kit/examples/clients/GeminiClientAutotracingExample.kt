@@ -23,6 +23,8 @@ import com.google.genai.types.GenerateContentConfig
  */
 fun main() {
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
+    TracingManager.traceSensitiveContent()
+
     val apiToken = System.getenv("GEMINI_API_KEY") ?: error("Environment variable 'GEMINI_API_KEY' is not set")
     val geminiClient = Client.builder().apiKey(apiToken).build()
     val instrumentedClient = instrument(geminiClient)

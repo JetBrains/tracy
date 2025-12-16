@@ -7,6 +7,9 @@ import ai.dev.kit.adapters.media.Resource
 import ai.jetbrains.tracy.tracing.adapters.handlers.asString
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.asJson
+import ai.dev.kit.tracing.policy.ContentKind
+import ai.dev.kit.tracing.policy.contentTracingAllowed
+import ai.dev.kit.tracing.policy.orRedactedOutput
 import io.ktor.http.ContentType
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.Span
@@ -40,20 +43,21 @@ internal fun handleImageGenerationResponseAttributes(
     body["data"]?.jsonArray?.let { data ->
         // collect AI response content
         for ((index, image) in data.withIndex()) {
-            span.setAttribute("gen_ai.completion.$index.content", image.asString)
+            span.setAttribute("gen_ai.completion.$index.content", image.asString.orRedactedOutput())
         }
         // install media content for further upload
         val format = body["output_format"]?.jsonPrimitive?.content ?: defaultImageFormat
         val contentType = "image/$format"
 
-        val mediaContent = parseMediaContent(data, contentType)
-        extractor.setUploadableContentAttributes(span, field = "output", mediaContent)
+        if (contentTracingAllowed(ContentKind.OUTPUT)) {
+            val mediaContent = parseMediaContent(data, contentType)
+            extractor.setUploadableContentAttributes(span, field = "output", mediaContent)
+        }
     }
 
     body["usage"]?.jsonObject?.let { setUsageAttributes(span, it) }
 
     val manuallyParsedKeys = listOf("data", "usage")
-
     for ((key, value) in body.entries) {
         if (key in manuallyParsedKeys) {
             continue
@@ -62,7 +66,7 @@ internal fun handleImageGenerationResponseAttributes(
     }
 }
 
-internal fun handleStreamingImage(
+internal fun handleStreamedImage(
     span: Span,
     data: JsonObject,
     extractor: MediaContentExtractor,
@@ -78,13 +82,12 @@ internal fun handleStreamingImage(
             val content = Json.parseToJsonElement("""
                 {"b64_json": "$base64"}
             """.trimIndent())
-            span.setAttribute("gen_ai.completion.0.content", content.asString)
+            span.setAttribute("gen_ai.completion.0.content", content.asString.orRedactedOutput())
 
             data["usage"]?.jsonObject?.let { setUsageAttributes(span, it) }
 
-            val manuallyParsedKeys = listOf("b64_json", "usage")
-
             // insert other attributes
+            val manuallyParsedKeys = listOf("b64_json", "usage")
             for ((key, value) in data.entries) {
                 if (key !in manuallyParsedKeys) {
                     span.setAttribute("gen_ai.response.$key", value.asString)
@@ -95,28 +98,30 @@ internal fun handleStreamingImage(
             val partialImageIndex = data["partial_image_index"]?.jsonPrimitive?.intOrNull ?: return
             // insert attributes in `gen_ai.completion.partial_image.[index].*`
             for ((key, value) in data.entries) {
-                span.setAttribute("gen_ai.completion.partial_image.$partialImageIndex.$key", value.asString)
+                span.setAttribute(
+                    "gen_ai.completion.partial_image.$partialImageIndex.$key",
+                    value.asString.orRedactedOutput()
+                )
             }
         }
     }
 
     // install media content for further upload
-    val base64 = data["b64_json"]?.jsonPrimitive?.content ?: return
-    val format = data["output_format"]?.jsonPrimitive?.content ?: defaultImageFormat
-    val contentType = try {
-        ContentType.parse("image/$format")
-    } catch (err: Exception) {
-        logger.trace("Failed to parse content type: 'image/$format'. Skipping this content part", err)
-        null
-    } ?: return
+    if (contentTracingAllowed(ContentKind.OUTPUT)) {
+        val base64 = data["b64_json"]?.jsonPrimitive?.content ?: return
+        val format = data["output_format"]?.jsonPrimitive?.content ?: defaultImageFormat
+        val contentType = try {
+            ContentType.parse("image/$format")
+        } catch (err: Exception) {
+            logger.trace("Failed to parse content type: 'image/$format'. Skipping this content part", err)
+            null
+        } ?: return
 
-    val content = MediaContent(
-        parts = listOf(
+        val content = MediaContent(parts = listOf(
             MediaContentPart(Resource.Base64(base64, contentType))
-        )
-    )
-
-    extractor.setUploadableContentAttributes(span, field = "output", content)
+        ))
+        extractor.setUploadableContentAttributes(span, field = "output", content)
+    }
 }
 
 private fun parseMediaContent(data: JsonArray, contentType: String): MediaContent {

@@ -1,10 +1,11 @@
 package ai.jetbrains.tracy.tracing.adapters.handlers
 
-import ai.jetbrains.tracy.tracing.clients.instrument
 import ai.dev.kit.tracing.*
+import ai.dev.kit.tracing.policy.ContentCapturePolicy
 import ai.jetbrains.tracy.tracing.adapters.BaseOpenAITracingTest
 import ai.jetbrains.tracy.tracing.adapters.containsToolCall
 import ai.jetbrains.tracy.tracing.adapters.name
+import ai.jetbrains.tracy.tracing.clients.instrument
 import com.openai.core.JsonValue
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.*
@@ -13,18 +14,15 @@ import com.openai.models.embeddings.EmbeddingModel
 import com.openai.models.responses.ResponseCreateParams
 import io.opentelemetry.api.common.AttributeKey
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.time.Duration
-import kotlin.time.Duration.Companion.minutes
 import kotlin.jvm.optionals.getOrNull
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.minutes
 
 @Tag("openai")
 class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
@@ -79,6 +77,65 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         }
 
         validateErrorStatus()
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideContentCapturePolicies")
+    fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) = runTest {
+        TracingManager.withCapturingPolicy(policy)
+
+        val client = instrument(createOpenAIClient())
+
+        val greetTool = createChatCompletionTool("hi")
+        val model = ChatModel.GPT_4O_MINI
+
+        val params = ChatCompletionCreateParams.builder()
+            .addUserMessage("Use a given `hi` tool to greet a person named Alex. You MUST use the given tool!")
+            .addTool(greetTool)
+            .model(model)
+            .temperature(0.0)
+            .build()
+
+        client.chat().completions().create(params)
+
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+        val trace = traces.first()
+
+        // user prompt
+        val prompt = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
+        // tool definition
+        val name = trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")]
+        val description = trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.description")]
+        val parameters = trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.parameters")]
+
+        if (!policy.captureInputs) {
+            assertEquals("REDACTED", prompt, "User prompt should be redacted")
+            assertEquals("REDACTED", name, "Tool name should be redacted")
+            assertEquals("REDACTED", description, "Tool description should be redacted")
+            assertEquals("REDACTED", parameters, "Tool parameters should be redacted")
+        } else {
+            assertNotEquals("REDACTED", prompt, "User prompt should NOT be redacted")
+            assertNotEquals("REDACTED", name, "Tool name should NOT be redacted")
+            assertNotEquals("REDACTED", description, "Tool description should NOT be redacted")
+            assertNotEquals("REDACTED", parameters, "Tool parameters should NOT be redacted")
+        }
+
+        // assume that AI called the given tool
+        Assumptions.assumeTrue(
+            trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.finish_reason")] == "tool_calls"
+        )
+
+        val calledToolName = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")]
+        val calledToolArgs = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")]
+
+        if (!policy.captureOutputs) {
+            assertEquals("REDACTED", calledToolName, "Name of the called tool should be redacted")
+            assertEquals("REDACTED", calledToolArgs, "Arguments of the called tool should be redacted")
+        } else {
+            assertNotEquals("REDACTED", calledToolName, "Name of the called tool should NOT be redacted")
+            assertNotEquals("REDACTED", calledToolArgs, "Arguments of the called tool should NOT be redacted")
+        }
     }
 
     @Test
@@ -195,7 +252,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         assertTrue(result.model().startsWith(ChatModel.GPT_4O_MINI.asString()))
         val content = result.choices().first().message().content().getOrNull()
         assertNotNull(content)
-        assertTrue(content.isNotEmpty())
+        assertTrue(content!!.isNotEmpty())
     }
 
     @Test
@@ -259,9 +316,10 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
         client.embeddings().create(params)
         val traces = analyzeSpans()
-        val trace = traces.firstOrNull()
+        assertEquals(1, traces.size)
+        val trace = traces.first()
 
-        val responseData = trace?.attributes?.get(AttributeKey.stringKey("tracy.response.data"))
+        val responseData = trace.attributes?.get(AttributeKey.stringKey("tracy.response.data"))
         assertFalse(responseData.isNullOrEmpty())
 
         val responseObject = trace.attributes?.get(AttributeKey.stringKey("tracy.response.object"))
