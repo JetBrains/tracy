@@ -85,7 +85,6 @@ class LangfuseExporterConfig(
 
         return ErrorDiagnosingOtlpHttpSpanExporter.create(
             exporter = exporter,
-            memoryMode = MemoryMode.REUSABLE_DATA,
             endpointUrl = endpoint,
         )
     }

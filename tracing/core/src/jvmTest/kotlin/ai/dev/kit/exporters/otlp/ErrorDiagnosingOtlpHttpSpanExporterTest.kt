@@ -251,7 +251,6 @@ class ErrorDiagnosingOtlpHttpSpanExporterTest {
         
         return ErrorDiagnosingOtlpHttpSpanExporter.create(
             exporter = baseExporter,
-            memoryMode = MemoryMode.REUSABLE_DATA,
             endpointUrl = endpoint
         )
     }
