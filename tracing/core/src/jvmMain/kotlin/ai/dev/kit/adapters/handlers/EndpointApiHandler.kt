@@ -5,7 +5,7 @@ import ai.dev.kit.http.protocol.Response
 import io.opentelemetry.api.trace.Span
 
 /**
- * Internal interface for endpoint API handlers used within adapters
+ * Interface for endpoint API handlers used within adapters
  */
 interface EndpointApiHandler {
     fun handleRequestAttributes(span: Span, request: Request)
