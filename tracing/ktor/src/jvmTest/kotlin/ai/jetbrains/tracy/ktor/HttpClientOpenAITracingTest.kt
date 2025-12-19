@@ -7,6 +7,7 @@ import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
 import io.ktor.client.*
 import io.ktor.client.engine.mock.*
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -29,6 +30,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.minutes
 
 @Tag("openai")
 class HttpClientOpenAITracingTest : BaseAITracingTest() {
@@ -368,10 +370,13 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
         testName: String,
         endpoint: String,
         requestBody: String,
-    ) = runTest {
+    ) = runTest(timeout = 3.minutes) {
         val client: HttpClient = instrument(HttpClient(), llmTracingAdapter)
 
         val response = client.post(endpoint) {
+            timeout {
+                requestTimeoutMillis = 3.minutes.inWholeMilliseconds
+            }
             addAuthHeaders()
             setBody(requestBody)
         }
