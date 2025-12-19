@@ -60,7 +60,7 @@ class HttpClientAnthropicAITracingTest : BaseAITracingTest() {
         }
 
         val traces = analyzeSpans()
-        assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
         val trace = traces.first()
 
         assertEquals(StatusCode.OK, trace.status.statusCode)
@@ -99,11 +99,8 @@ class HttpClientAnthropicAITracingTest : BaseAITracingTest() {
         }
 
         val traces = analyzeSpans()
-
-        // assert expectations on a trace
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
+        assertTracesCount(1, traces)
+        val trace = traces.first()
 
         assertEquals(StatusCode.OK, trace.status.statusCode)
 

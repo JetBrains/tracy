@@ -82,10 +82,8 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
 
     protected fun validateToolCall() {
         val traces = analyzeSpans()
-
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
+        assertTracesCount(1, traces)
+        val trace = traces.first()
 
         assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
         assertEquals("function", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.type")])
@@ -103,8 +101,8 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
 
     protected fun validateToolCallResponse() {
         val traces = analyzeSpans()
+        assertTracesCount(2, traces)
 
-        assertEquals(2, traces.size)
         // contains AI's request for a tool call
         val toolCallRequestTrace = traces.firstOrNull()
         // contains an answer to a tool call
@@ -125,7 +123,7 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
 
     protected fun validateMultipleToolCallResponseWithInput() {
         val traces = analyzeSpans()
-        assertEquals(2, traces.size)
+        assertTracesCount(2, traces)
 
         val toolCallRequestTrace = traces.first()
         val toolCallResponseTrace = traces.last()
@@ -205,7 +203,7 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
 
     protected fun validateStreaming(output: String) {
         val traces = analyzeSpans()
-        assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
         val trace = traces.first()
 
         val contentType = trace.attributes[AttributeKey.stringKey("gen_ai.completion.content.type")]

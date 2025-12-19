@@ -350,7 +350,7 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         client.responses().create(params)
 
         val traces = analyzeSpans()
-        assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
         val trace = traces.first()
 
         // input side

@@ -310,7 +310,7 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         client.images().generate(params)
 
         val traces = analyzeSpans()
-        assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
         val trace = traces.first()
 
         val prompt = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
@@ -348,7 +348,7 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     private fun validateBasicImageTracing(prompt: String, model: ImageModel) {
         val traces = analyzeSpans()
-        Assertions.assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
         val trace = traces.first()
 
         Assertions.assertEquals(prompt, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])

@@ -86,7 +86,7 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
         client.messages().create(params)
 
         val traces = analyzeSpans()
-        assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
         val trace = traces.first()
 
         val prompt = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
@@ -137,8 +137,11 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
 
         client.messages().create(params)
 
+        val traces = analyzeSpans()
+        assertTracesCount(1, traces)
+        val trace = traces.first()
+
         validateBasicTracing(model)
-        val trace = analyzeSpans().first()
 
         verifyMediaContentUploadAttributes(
             trace, expected = listOf(
@@ -171,8 +174,11 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
 
         client.messages().create(params)
 
+        val traces = analyzeSpans()
+        assertTracesCount(1, traces)
+        val trace = traces.first()
+
         validateBasicTracing(model)
-        val trace = analyzeSpans().first()
 
         verifyMediaContentUploadAttributes(
             trace, expected = listOf(
@@ -207,8 +213,11 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
 
         client.messages().create(params)
 
+        val traces = analyzeSpans()
+        assertTracesCount(1, traces)
+        val trace = traces.first()
+
         validateBasicTracing(model)
-        val trace = analyzeSpans().first()
 
         verifyMediaContentUploadAttributes(
             trace, expected = listOf(
@@ -244,8 +253,11 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
 
         client.messages().create(params)
 
+        val traces = analyzeSpans()
+        assertTracesCount(1, traces)
+        val trace = traces.first()
+
         validateBasicTracing(model)
-        val trace = analyzeSpans().first()
 
         verifyMediaContentUploadAttributes(
             trace, expected = listOf(
@@ -337,8 +349,11 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
 
         client.messages().create(params)
 
+        val traces = analyzeSpans()
+        assertTracesCount(1, traces)
+        val trace = traces.first()
+
         validateBasicTracing(model)
-        val trace = analyzeSpans().first()
 
         verifyMediaContentUploadAttributes(
             trace, expected = listOf(

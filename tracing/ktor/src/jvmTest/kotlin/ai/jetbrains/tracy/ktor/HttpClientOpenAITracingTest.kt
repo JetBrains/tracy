@@ -66,10 +66,8 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
         }
 
         val traces = analyzeSpans()
-
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
+        assertTracesCount(1, traces)
+        val trace = traces.first()
 
         assertEquals(StatusCode.OK, trace.status.statusCode)
 
@@ -145,10 +143,8 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
         response.bodyAsChannel()
 
         val traces = analyzeSpans()
-
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
+        assertTracesCount(1, traces)
+        val trace = traces.first()
 
         val content = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
         assertFalse(content.isNullOrEmpty())
@@ -265,10 +261,8 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
         }
 
         val traces = analyzeSpans()
-
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
+        assertTracesCount(1, traces)
+        val trace = traces.first()
 
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
         assertEquals(baseUrl, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
@@ -352,10 +346,8 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
         }
 
         val traces = analyzeSpans()
-
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
+        assertTracesCount(1, traces)
+        val trace = traces.first()
 
         assertEquals(StatusCode.OK, trace.status.statusCode)
         assertEquals(baseUrl, trace.attributes[AttributeKey.stringKey("gen_ai.api_base")])
@@ -385,10 +377,8 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
         }
 
         val traces = analyzeSpans()
-
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
+        assertTracesCount(1, traces)
+        val trace = traces.first()
 
         val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
 
@@ -544,7 +534,8 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
 
     private fun validateTracesContent(expectedPrompts: List<String>) {
         val traces = analyzeSpans()
-        assertEquals(expectedPrompts.size, traces.size)
+        assertTracesCount(expectedPrompts.size, traces)
+
         expectedPrompts.zip(traces).forEach { (expected, trace) ->
             assertEquals(
                 expected,

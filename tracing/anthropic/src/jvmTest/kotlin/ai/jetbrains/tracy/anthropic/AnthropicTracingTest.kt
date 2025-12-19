@@ -51,7 +51,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         client.messages().create(params)
 
         val traces = analyzeSpans()
-        assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
         val trace = traces.first()
 
         // input side
@@ -111,7 +111,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         client.messages().create(params)
 
         val traces = analyzeSpans()
-        assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
     }
 
     @Test
@@ -133,10 +133,8 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         flushTracesAndAssumeToolCalled(response, toolName, Message::containsToolCall)
 
         val traces = analyzeSpans()
-
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
+        assertTracesCount(1, traces)
+        val trace = traces.first()
 
         // Check tool definitions in the request
         assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
@@ -213,7 +211,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
 
         // NOTE: the first trace will contain text/event-stream content type, hence it isn't traced fully
         val traces = analyzeSpans()
-        assertEquals(2, traces.size)
+        assertTracesCount(2, traces)
 
         val traceWithToolCallResult = traces.lastOrNull()
         assertNotNull(traceWithToolCallResult)
@@ -307,7 +305,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         client.messages().create(paramsBuilder.build())
 
         val traces = analyzeSpans()
-        assertEquals(3, traces.size)
+        assertTracesCount(3, traces)
 
         val finalTrace = traces.last()
 
@@ -341,10 +339,8 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         client.messages().create(params)
 
         val traces = analyzeSpans()
-
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
+        assertTracesCount(1, traces)
+        val trace = traces.first()
 
         assertEquals(
             llmProviderUrl,

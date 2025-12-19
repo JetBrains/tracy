@@ -99,7 +99,7 @@ fun <T> topLevelReturnGenericParam(paramName: T): T {
     return paramName
 }
 
-class FluentTracingTest() : BaseOpenTelemetryTracingTest() {
+class FluentTracingTest : BaseOpenTelemetryTracingTest() {
     @Test
     fun `test trace creation`() = runTest {
         MyTestClass().testFunction(1)

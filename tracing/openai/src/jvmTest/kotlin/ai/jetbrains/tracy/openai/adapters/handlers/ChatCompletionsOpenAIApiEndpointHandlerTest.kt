@@ -60,7 +60,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         client.chat().completions().create(params)
 
         val traces = analyzeSpans()
-        assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
         validateBasicTracing(model)
     }
 
@@ -103,7 +103,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         client.chat().completions().create(params)
 
         val traces = analyzeSpans()
-        assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
         val trace = traces.first()
 
         // user prompt
@@ -251,8 +251,8 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val result = client.chat().completions().create(params)
 
         val traces = analyzeSpans()
+        assertTracesCount(0, traces)
 
-        assertEquals(0, traces.size)
         assertTrue(result.model().startsWith(ChatModel.GPT_4O_MINI.asString()))
         val content = result.choices().first().message().content().getOrNull()
         assertNotNull(content)
@@ -320,7 +320,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
         client.embeddings().create(params)
         val traces = analyzeSpans()
-        assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
         val trace = traces.first()
 
         val responseData = trace.attributes?.get(AttributeKey.stringKey("tracy.response.data"))
