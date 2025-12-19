@@ -49,13 +49,25 @@ sealed class MediaContentAttributeValues(val type: SupportedMediaContentTypes) {
     data class Url(
         val field: String,
         val url: String?
-    ) : MediaContentAttributeValues(SupportedMediaContentTypes.URL)
+    ) : MediaContentAttributeValues(SupportedMediaContentTypes.URL) {
+        override fun toString(): String {
+            return "Url(field=$field, url=$url)"
+        }
+    }
 
     data class Data(
         val field: String,
         val contentType: String,
         val data: String?,
-    ) : MediaContentAttributeValues(SupportedMediaContentTypes.BASE64)
+    ) : MediaContentAttributeValues(SupportedMediaContentTypes.BASE64) {
+        override fun toString(): String {
+            val trimmedData = when (data) {
+                null -> "null"
+                else -> data.take(12) + "..."
+            }
+            return "Data(field=$field, contentType=$contentType, data=$trimmedData)"
+        }
+    }
 }
 
 fun loadFileAsBase64Encoded(filepath: String): String {

@@ -21,7 +21,7 @@ import io.opentelemetry.api.common.AttributeKey
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Assumptions
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -291,8 +291,9 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
                     e.isCompleted() -> e.asCompleted().b64Json()
                     else -> null
                 }
-                Assumptions.assumeTrue(b64Json != null) {
-                    "Events must contain $partialImagesCount partial images and one final image"
+                assumeTrue(b64Json != null) {
+                    "One of events has no image data: $e. Two partial images and one final one expected " +
+                    "(see `partial_images` parameter guarantees: https://platform.openai.com/docs/api-reference/images/create#images_create-partial_images)"
                 }
                 add(MediaContentAttributeValues.Data(
                     field = "output",
@@ -302,8 +303,14 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             }
         }
 
-        assertEquals(3, expectedImages.size) {
-            "Events must contain $partialImagesCount partial images and one final image"
+        // assuming `partial_images` guarantees are held:
+        //  1. 2 partial images generated
+        //  2. 1 final image generated
+        // see: https://platform.openai.com/docs/api-reference/images/create#images_create-partial_images
+        assumeTrue(expectedImages.size == 3) {
+            "Events are assumed to contain $partialImagesCount partial images and one final image, " +
+            "got ${expectedImages.joinToString { it.toString() }} " +
+            "(see `partial_images` parameter guarantees: https://platform.openai.com/docs/api-reference/images/create#images_create-partial_images)"
         }
 
         validateBasicImageTracing(prompt, model)
