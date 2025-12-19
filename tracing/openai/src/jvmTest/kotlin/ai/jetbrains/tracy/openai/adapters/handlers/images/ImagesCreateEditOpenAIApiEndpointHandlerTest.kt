@@ -7,14 +7,21 @@ import ai.jetbrains.tracy.test.utils.toMediaContentAttributeValues
 import ai.jetbrains.tracy.openai.clients.instrument
 import ai.jetbrains.tracy.openai.adapters.BaseOpenAITracingTest
 import ai.jetbrains.tracy.core.tracing.policy.ContentCapturePolicy
+import ai.dev.kit.tracing.MediaContentAttributeValues
+import ai.dev.kit.tracing.MediaSource
+import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.policy.ContentCapturePolicy
+import ai.dev.kit.tracing.toMediaContentAttributeValues
+import ai.jetbrains.tracy.tracing.adapters.BaseOpenAITracingTest
+import ai.jetbrains.tracy.tracing.clients.instrument
 import com.openai.core.MultipartField
 import com.openai.models.images.ImageEditParams
 import com.openai.models.images.ImageModel
 import io.opentelemetry.api.common.AttributeKey
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -248,8 +255,11 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val model = ImageModel.GPT_IMAGE_1
         val prompt = "Merge two images!"
         val contentType = "image/png"
-        val partialImagesCount = 2
         val size = ImageEditParams.Size._1024X1024
+        // See the description of this parameter:
+        // https://platform.openai.com/docs/api-reference/images/create#images_create-partial_images
+        // there will be 2 partial images and 1 final image as an output
+        val partialImagesCount = 2
 
         val image1 = MediaSource.File("cat-n-dog-1.png", contentType)
         val image2 = MediaSource.File("cat-n-dog-2.png", contentType)
@@ -270,12 +280,36 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             .partialImages(partialImagesCount.toLong())
             .build()
 
-        client.images().editStreaming(params).use { events ->
+        val events = client.images().editStreaming(params).use { events ->
             events.stream().toList()
         }
 
+        val expectedImages = buildList {
+            for (e in events) {
+                val b64Json = when {
+                    e.isPartialImage() -> e.asPartialImage().b64Json()
+                    e.isCompleted() -> e.asCompleted().b64Json()
+                    else -> null
+                }
+                Assumptions.assumeTrue(b64Json != null) {
+                    "Events must contain $partialImagesCount partial images and one final image"
+                }
+                add(MediaContentAttributeValues.Data(
+                    field = "output",
+                    contentType = contentType,
+                    data = b64Json,
+                ))
+            }
+        }
+
+        assertEquals(3, expectedImages.size) {
+            "Events must contain $partialImagesCount partial images and one final image"
+        }
+
         validateBasicImageTracing(prompt, model)
-        val trace = analyzeSpans().first()
+        val traces = analyzeSpans()
+        assertEquals(1, traces.size)
+        val trace = traces.first()
 
         assertEquals(
             size.asString(),
@@ -285,20 +319,13 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             partialImagesCount.toString(),
             trace.attributes[AttributeKey.stringKey("gen_ai.request.partial_images")]
         )
-        Assertions.assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")].isNullOrEmpty())
-
-        val expectedImage = MediaContentAttributeValues.Data(
-            field = "output",
-            contentType = contentType,
-            data = null,
-        )
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")].isNullOrEmpty())
 
         verifyMediaContentUploadAttributes(
             trace, expected = listOf(
                 image1.toMediaContentAttributeValues(field = "input"),
                 image2.toMediaContentAttributeValues(field = "input"),
-                expectedImage,
-            )
+            ) + expectedImages
         )
     }
 
