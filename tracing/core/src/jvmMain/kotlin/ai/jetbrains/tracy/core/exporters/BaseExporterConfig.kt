@@ -60,7 +60,7 @@ abstract class BaseExporterConfig(
         createSpanExporter()?.let { exporter ->
             sdkTracerBuilder.addSpanProcessor(
                 BatchSpanProcessor.builder(exporter)
-                    .setScheduleDelay(settings.flushIntervalSeconds, TimeUnit.MILLISECONDS)
+                    .setScheduleDelay(settings.flushIntervalMs, TimeUnit.MILLISECONDS)
                     .setMaxExportBatchSize(settings.flushThreshold)
                     .build()
             )
@@ -109,6 +109,8 @@ abstract class BaseExporterConfig(
  * The format in which to log traces in the console.
  */
 enum class OutputFormat {
+    /* Human-readable plain text output */
     PLAIN_TEXT,
+    /* OTLP JSON format following OpenTelemetry specification */
     JSON,
 }

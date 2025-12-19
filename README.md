@@ -481,10 +481,10 @@ Once the SDK is configured, initialize tracing with `TracingManager.setSdk(sdk)`
 | `langfuseUrl`                 | `LANGFUSE_URL`                    | false    | [`https://cloud.langfuse.com`](https://cloud.langfuse.com) |
 | `langfusePublicKey`           | `LANGFUSE_PUBLIC_KEY`             | true     | -                                                          |
 | `langfuseSecretKey`           | `LANGFUSE_SECRET_KEY`             | true     | -                                                          |
-| `traceToConsole`              | `TRACE_TO_CONSOLE`                | false    | `false`                                                    |
-| `exporterTimeout`             | `EXPORTER_TIMEOUT`                | false    | `10`                                                       |
+| `traceToConsole`              | -                                 | false    | `false`                                                    |
+| `exporterTimeoutSeconds`             | -                                 | false    | `10`                                                       |
 | `maxNumberOfSpanAttributes`   | `MAX_NUMBER_OF_SPAN_ATTRIBUTES`   | false    | `256`                                                      |
-| `maxSpanAttributeValueLength` | `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` | false    | `8192`                                                     |
+| `maxSpanAttributeValueLength` | `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` | false    | `Int.MAX_VALUE`                                                     |
 
 [Langfuse Setup Example](examples/src/main/kotlin/ai/jetbrains/tracy/examples/backends/LangfuseExample.kt)
 
@@ -492,14 +492,14 @@ Once the SDK is configured, initialize tracing with `TracingManager.setSdk(sdk)`
 
 | Property                      | Environment Variable              | Required | Default Value                                      |
 |-------------------------------|-----------------------------------|----------|----------------------------------------------------|
-| `weaveOtelBaseUrl`            | `WEAVE_URL`                       | false    | [`https://trace.wandb.ai`](https://trace.wandb.ai) |
+| `weaveUrl`            | `WEAVE_URL`                       | false    | [`https://trace.wandb.ai`](https://trace.wandb.ai) |
 | `weaveEntity`                 | `WEAVE_ENTITY`                    | true     | -                                                  |
 | `weaveProjectName`            | `WEAVE_PROJECT_NAME`              | true     | -                                                  |
 | `weaveApiKey`                 | `WEAVE_API_KEY`                   | true     | -                                                  |
-| `traceToConsole`              | `TRACE_TO_CONSOLE`                | false    | `false`                                            |
-| `exporterTimeout`             | `EXPORTER_TIMEOUT`                | false    | `10`                                               |
+| `traceToConsole`              | -                                 | false    | `false`                                            |
+| `exporterTimeoutSeconds`             | -o                                | false    | `10`                                               |
 | `maxNumberOfSpanAttributes`   | `MAX_NUMBER_OF_SPAN_ATTRIBUTES`   | false    | `256`                                              |
-| `maxSpanAttributeValueLength` | `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` | false    | `8192`                                             |
+| `maxSpanAttributeValueLength` | `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` | false    | `Int.MAX_VALUE`                                             |
 
 [Weave Setup Example](examples/src/main/kotlin/ai/jetbrains/tracy/examples/backends/WeaveExample.kt)
 

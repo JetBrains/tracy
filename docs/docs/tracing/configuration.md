@@ -6,6 +6,15 @@ Tracy offers flexible configuration options to control how traces are collected 
 
 The [`TracingManager`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/index.html?query=object%20TracingManager) is the central configuration point for the library.
 
+| Method/Property | Description |
+|-----------------|-------------|
+| `setSdk(sdk: OpenTelemetrySdk)` | Sets the OpenTelemetry SDK instance |
+| `isTracingEnabled: Boolean` | Runtime toggle for tracing (defaults to `IS_TRACY_ENABLED` env var) |
+| `flushTraces(timeoutSeconds: Long = 5)` | Forces flushing of pending spans |
+| `shutdownTracing(timeoutSeconds: Long = 5)` | Shuts down the OpenTelemetry SDK |
+| `traceSensitiveContent()` | Enables capturing of inputs and outputs |
+| `withCapturingPolicy(policy: ContentCapturePolicy)` | Sets custom content capture policy |
+
 ### Enabling/Disabling Tracing
 
 You can enable or disable tracing at runtime:
@@ -19,7 +28,7 @@ By default, it checks the **`IS_TRACY_ENABLED`** environment variable.
 
 ### Setting the SDK
 
-Before any spans can be exported, you must set an OpenTelemetry SDK instance:
+Before any spans can be exported, you must set an OpenTelemetry SDK instance. For detailed SDK configuration options, see [SDK Configuration](../otel-config/sdk-configuration.md).
 
 ````kotlin
 val sdk = configureOpenTelemetrySdk(ConsoleExporterConfig())
@@ -76,39 +85,28 @@ TracingManager.withCapturingPolicy(
 -->
 <!--- KNIT example-configuration-01.kt -->
 
+
 ## Exporters
 
-Tracy supports multiple backends out of the box. For detailed configuration of each backend, please refer to the [Supported Backends](../supported-backends.md) page.
+Tracy supports multiple backends out of the box. For detailed configuration, see [Exporters](../otel-config/exporters.md).
 
-Common exporters include:
+- [**Langfuse**](../otel-config/exporters.md#langfuse): Dedicated LLM observability platform.
+- [**Weave (Weights & Biases)**](../otel-config/exporters.md#weave-weights--biases): For experiment tracking and evaluation.
+- [**OTLP HTTP**](../otel-config/exporters.md#otlp-http): Export to any OpenTelemetry-compliant backend (Jaeger, Grafana Tempo, etc.).
+- [**Console**](../otel-config/exporters.md#console): Great for development and debugging.
+- [**File**](../otel-config/exporters.md#file): Export traces to a local JSON or plain text file.
 
-- [**Langfuse**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.exporters.otlp/-langfuse-exporter-config/index.html): Dedicated LLM observability.
-- [**Weave (Weights & Biases)**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.exporters.otlp/-weave-exporter-config/index.html): For experiment tracking and evaluation.
-- [**Console**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.exporters/-console-exporter-config/index.html): Great for development.
-- [**File**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.exporters/-file-exporter-config/index.html): Export traces to a local JSON or plain text file.
-- **OTLP**: Export to any OpenTelemetry-compliant backend (e.g., Jaeger, Honeycomb; see [`OtlpHttpExporterConfig`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.exporters.otlp/-otlp-http-exporter-config/index.html), [`OtlpGrpcExporterConfig`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.exporters.otlp/-otlp-grpc-exporter-config/index.html)).
+## Flushing and Shutdown
 
-Example of configuring a File exporter:
-
-<!--- INCLUDE
-import ai.jetbrains.tracy.core.exporters.FileExporterConfig
-import ai.jetbrains.tracy.core.exporters.OutputFormat
-import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
--->
-```kotlin
-val config = FileExporterConfig(
-    filepath = "traces.json",
-    append = true,
-    format = OutputFormat.JSON
-)
-val sdk = configureOpenTelemetrySdk(config)
-```
-<!--- KNIT example-configuration-02.kt -->
-
-## Flushing Traces
-
-Since many exporters use batching to improve performance, it's important to flush remaining traces before the application exits:
+Since many exporters use batching to improve performance, it's important to flush remaining traces before the application exits using [`flushTraces()`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/flush-traces.html) or [`shutdownTracing()`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/shutdown-tracing.html):
 
 ```kotlin
+// Flush pending spans (waits up to 5 seconds by default)
 TracingManager.flushTraces()
+
+// Or with custom timeout
+TracingManager.flushTraces(timeoutSeconds = 10)
+
+// For graceful shutdown (flushes and releases resources)
+TracingManager.shutdownTracing()
 ```
