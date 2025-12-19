@@ -27,6 +27,7 @@ import okio.Buffer
 import okio.BufferedSource
 import okio.ForwardingSource
 import okio.buffer
+import java.nio.charset.Charset
 import okhttp3.Request as OkHttpRequest
 import okhttp3.Response as OkHttpResponse
 import okhttp3.ResponseBody as OkHttpResponseBody
@@ -136,6 +137,8 @@ class OpenTelemetryOkHttpInterceptor(
 
                 if (bodyContent != null) {
                     val mediaType = request.body?.contentType()
+                    println("bodyContent:\n${bodyContent.toString(Charset.defaultCharset())}")
+
                     val req = bodyContent.asRequestBody(mediaType)?.let {
                         Request(
                             contentType = mediaType?.toContentType(),
@@ -249,33 +252,6 @@ class OpenTelemetryOkHttpInterceptor(
         }
 
         return originalResponse.newBuilder().body(tracingBody).build()
-    }
-
-    private fun ByteArray.asRequestBody(mediaType: MediaType?): RequestBody? {
-        val bytes = this
-        // check for the content type regardless of the parameters
-        return when (mediaType?.toContentType()?.withoutParameters()) {
-            ContentType.Application.Json -> {
-                val json = try {
-                    Json.parseToJsonElement(
-                        bytes.toString(mediaType.charset() ?: Charsets.UTF_8)
-                    ).jsonObject
-                } catch (err: Exception) {
-                    logger.trace("Error while parsing response body", err)
-                    null
-                } ?: return null
-
-                RequestBody.Json(json)
-            }
-
-            ContentType.MultiPart.FormData -> {
-                val parser = MultipartFormDataParser()
-                val formData = parser.parse(mediaType, bytes)
-                RequestBody.DataForm(formData)
-            }
-
-            else -> null
-        }
     }
 
     private fun OkHttpRequest.withCopiedBodyContent(): Pair<ByteArray?, OkHttpRequest> {

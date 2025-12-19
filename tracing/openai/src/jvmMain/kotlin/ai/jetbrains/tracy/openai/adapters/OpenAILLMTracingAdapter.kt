@@ -77,6 +77,7 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
                 val body = request.body.asJson()?.jsonObject ?: return false
                  body["stream"]?.jsonPrimitive?.boolean ?: false
             }
+            RequestBody.Empty -> false
         }
     }
 

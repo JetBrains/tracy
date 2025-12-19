@@ -1,14 +1,19 @@
 package ai.jetbrains.tracy.ktor
 
+import ai.jetbrains.tracy.core.http.parsers.MultipartFormDataParser
+import ai.jetbrains.tracy.core.tracing.TracingManager
 import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
 import ai.jetbrains.tracy.test.utils.BaseAITracingTest
-import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.test.utils.MediaContentAttributeValues
+import ai.jetbrains.tracy.test.utils.MediaSource
+import ai.jetbrains.tracy.test.utils.toMediaContentAttributeValues
 import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
 import io.ktor.client.*
 import io.ktor.client.engine.mock.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
@@ -18,6 +23,8 @@ import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TEMPERATURE
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.readByteArray
+import kotlinx.io.readString
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import org.junit.jupiter.api.Tag
@@ -35,12 +42,6 @@ import kotlin.time.Duration.Companion.minutes
 @Tag("openai")
 class HttpClientOpenAITracingTest : BaseAITracingTest() {
     private val llmTracingAdapter = OpenAILLMTracingAdapter()
-
-    private fun HttpRequestBuilder.addAuthHeaders(acceptStream: Boolean = false) {
-        header("Authorization", "Bearer $llmProviderApiKey")
-        header("Content-Type", "application/json")
-        if (acceptStream) header("Accept", "text/event-stream")
-    }
 
     @ParameterizedTest
     @MethodSource("provideTestParameters")
@@ -400,6 +401,199 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
         assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")].isNullOrEmpty())
     }
 
+    @Test
+    fun `test streaming requests`() = runTest {
+        val client = instrument(HttpClient(), adapter = llmTracingAdapter)
+
+        val model = "gpt-4o-mini"
+
+        val firstRequest = "first request"
+        val secondRequest = "second request"
+
+        val resp1 = client.postChatCompletion(model, firstRequest, acceptStream = true)
+        val resp2 = client.postChatCompletion(model, secondRequest, acceptStream = true)
+
+        consumeResponses(resp1, resp2)
+
+        validateTracesContent(listOf(firstRequest, secondRequest))
+    }
+
+    @Test
+    fun `test non-streaming requests`() = runTest {
+        val client = instrument(HttpClient(), adapter = llmTracingAdapter)
+
+        val model = "gpt-4o-mini"
+
+        val firstRequest = "first request"
+        val secondRequest = "second request"
+
+        val resp1 = client.postChatCompletion(model, firstRequest)
+        val resp2 = client.postChatCompletion(model, secondRequest)
+
+        consumeResponses(resp1, resp2)
+
+        validateTracesContent(listOf(firstRequest, secondRequest))
+    }
+
+    @Test
+    fun `test mixed stream and non-stream requests`() = runTest {
+        val client = instrument(HttpClient(), adapter = llmTracingAdapter)
+
+        val model = "gpt-4o-mini"
+
+        val firstRequest = "first request"
+        val secondRequest = "second request"
+
+        val resp1 = client.postChatCompletion(model, firstRequest) // regular
+        val resp2 = client.postChatCompletion(model, secondRequest, acceptStream = true)
+
+        consumeResponses(resp1, resp2)
+
+        validateTracesContent(listOf(firstRequest, secondRequest))
+    }
+
+    @Test
+    fun test() = runTest {
+        val model = "gpt-image-1"
+        val prompt = "Remove all dogs from the image"
+        val image = MediaSource.File("image.jpg", "image/jpeg")
+
+        val b = MultiPartFormDataContent(
+            formData {
+                val plainText = ContentType.Text.Plain.withCharset(Charsets.UTF_8).toString()
+
+                append("\"model\"", model, Headers.build {
+                    append(HttpHeaders.ContentType, plainText)
+                })
+                append("\"prompt\"", prompt, Headers.build {
+                    append(HttpHeaders.ContentType, plainText)
+                })
+                // image
+                append("\"image\"", readResource(image.filepath).readBytes(), Headers.build {
+                    append(HttpHeaders.ContentType, image.contentType)
+                    append(
+                        HttpHeaders.ContentDisposition,
+                        "filename=\"${image.filepath.substringAfterLast("/")}\""
+                    )
+                })
+            }
+        )
+
+        val ch = ByteChannel()
+        b.writeTo(ch)
+        val bytes = ch.readRemaining().readByteArray()
+
+        val p = MultipartFormDataParser()
+        val data = p.parse(ContentType.MultiPart.FormData, bytes)
+
+        println(data)
+    }
+
+    @Test
+    fun `test image edits endpoint with multipart form data gets traced`() = runTest(timeout = 3.minutes) {
+        val client = instrument(HttpClient {
+            install(io.ktor.client.plugins.HttpTimeout) {
+                requestTimeoutMillis = 3.minutes.inWholeMilliseconds
+            }
+        }, adapter = llmTracingAdapter)
+
+        val model = "gpt-image-1"
+        val prompt = "Remove all dogs from the image"
+        val image = MediaSource.File("image.jpg", "image/jpeg")
+
+        val response = client.post("$baseUrl/v1/images/edits") {
+            header("Authorization", "Bearer $llmProviderApiKey")
+            contentType(ContentType.MultiPart.FormData)
+            setBody(MultiPartFormDataContent(
+                formData {
+                    val plainText = ContentType.Text.Plain.withCharset(Charsets.UTF_8).toString()
+
+                    append("\"model\"", model, Headers.build {
+                        append(HttpHeaders.ContentType, plainText)
+                    })
+                    append("\"prompt\"", prompt, Headers.build {
+                        append(HttpHeaders.ContentType, plainText)
+                    })
+                    // image
+                    append("\"image\"", readResource(image.filepath).readBytes(), Headers.build {
+                        append(HttpHeaders.ContentType, image.contentType)
+                        append(
+                            HttpHeaders.ContentDisposition,
+                            "filename=\"${image.filepath.substringAfterLast("/")}\""
+                        )
+                    })
+                }
+            ))
+        }
+
+        val traces = analyzeSpans()
+        assertTracesCount(1, traces)
+        val trace = traces.first()
+
+        for (attr in trace.attributes.asMap()) {
+            println("${attr.key}=${attr.value.toString().substring(0, 500.coerceAtMost(attr.value.toString().length))}")
+        }
+
+        val tracedPrompt = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
+        assertEquals(prompt, tracedPrompt)
+
+        val tracedModel = trace.attributes[AttributeKey.stringKey("gen_ai.request.model")]
+        assertEquals(model, tracedModel)
+
+        val expected = MediaContentAttributeValues.Data(
+            field = "output",
+            contentType = "image/png",
+            data = response.bodyAsChannel().readRemaining().readString(),
+        )
+
+        verifyMediaContentUploadAttributes(trace, expected = listOf(
+            image.toMediaContentAttributeValues("input"),
+            expected,
+        ))
+    }
+
+    private suspend fun HttpClient.postChatCompletion(
+        model: String,
+        userRequest: String,
+        acceptStream: Boolean = false
+    ): HttpResponse {
+        return post("$baseUrl/v1/chat/completions") {
+            addAuthHeaders(acceptStream = acceptStream)
+            setBody(
+                """
+            {
+                "messages": [
+                    { "role": "user", "content": "$userRequest" }
+                ],
+                "model": "$model",
+                "stream": true
+            }
+            """.trimIndent()
+            )
+        }
+    }
+
+    private suspend fun consumeResponses(vararg responses: HttpResponse) {
+        responses.forEach { it.bodyAsChannel() }
+    }
+
+    private fun validateTracesContent(expectedPrompts: List<String>) {
+        val traces = analyzeSpans()
+        assertEquals(expectedPrompts.size, traces.size)
+        expectedPrompts.zip(traces).forEach { (expected, trace) ->
+            assertEquals(
+                expected,
+                trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
+            )
+        }
+    }
+
+    private fun HttpRequestBuilder.addAuthHeaders(acceptStream: Boolean = false) {
+        header("Authorization", "Bearer $llmProviderApiKey")
+        header("Content-Type", "application/json")
+        if (acceptStream) header("Accept", "text/event-stream")
+    }
+
     companion object {
         private val llmProviderUrl: String = System.getenv("LLM_PROVIDER_URL") ?: PRODUCTION_URL
         private val llmProviderApiKey =
@@ -510,94 +704,6 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
                 """.trimIndent()
             ),
         )
-    }
-
-    private suspend fun HttpClient.postChatCompletion(
-        model: String,
-        userRequest: String,
-        acceptStream: Boolean = false
-    ): HttpResponse {
-        return post("$baseUrl/v1/chat/completions") {
-            addAuthHeaders(acceptStream = acceptStream)
-            setBody(
-                """
-            {
-                "messages": [
-                    { "role": "user", "content": "$userRequest" }
-                ],
-                "model": "$model",
-                "stream": true
-            }
-            """.trimIndent()
-            )
-        }
-    }
-
-    private suspend fun consumeResponses(vararg responses: HttpResponse) {
-        responses.forEach { it.bodyAsChannel() }
-    }
-
-    private fun validateTracesContent(expectedPrompts: List<String>) {
-        val traces = analyzeSpans()
-        assertTracesCount(expectedPrompts.size, traces)
-
-        expectedPrompts.zip(traces).forEach { (expected, trace) ->
-            assertEquals(
-                expected,
-                trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
-            )
-        }
-    }
-
-    @Test
-    fun `test streaming requests`() = runTest {
-        val client = instrument(HttpClient(), adapter = llmTracingAdapter)
-
-        val model = "gpt-4o-mini"
-
-        val firstRequest = "first request"
-        val secondRequest = "second request"
-
-        val resp1 = client.postChatCompletion(model, firstRequest, acceptStream = true)
-        val resp2 = client.postChatCompletion(model, secondRequest, acceptStream = true)
-
-        consumeResponses(resp1, resp2)
-
-        validateTracesContent(listOf(firstRequest, secondRequest))
-    }
-
-    @Test
-    fun `test non-streaming requests`() = runTest {
-        val client = instrument(HttpClient(), adapter = llmTracingAdapter)
-
-        val model = "gpt-4o-mini"
-
-        val firstRequest = "first request"
-        val secondRequest = "second request"
-
-        val resp1 = client.postChatCompletion(model, firstRequest)
-        val resp2 = client.postChatCompletion(model, secondRequest)
-
-        consumeResponses(resp1, resp2)
-
-        validateTracesContent(listOf(firstRequest, secondRequest))
-    }
-
-    @Test
-    fun `test mixed stream and non-stream requests`() = runTest {
-        val client = instrument(HttpClient(), adapter = llmTracingAdapter)
-
-        val model = "gpt-4o-mini"
-
-        val firstRequest = "first request"
-        val secondRequest = "second request"
-
-        val resp1 = client.postChatCompletion(model, firstRequest) // regular
-        val resp2 = client.postChatCompletion(model, secondRequest, acceptStream = true)
-
-        consumeResponses(resp1, resp2)
-
-        validateTracesContent(listOf(firstRequest, secondRequest))
     }
 }
 

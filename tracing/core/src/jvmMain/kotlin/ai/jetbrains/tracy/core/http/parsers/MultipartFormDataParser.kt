@@ -21,14 +21,14 @@ class MultipartFormDataParser {
     /**
      * Parses a multipart/form-data HTTP request body from the given content type and buffer.
      * This method extracts the MIME-formatted parts from the provided buffer,
-     * expecting the given [mediaType] to be of `multipart/form-data`.
+     * expecting the given [contentType] to be of `multipart/form-data`.
      *
-     * @param mediaType The media type of the input data, used to properly parse the content.
+     * @param contentType The content type of the input data, used to properly parse the content.
      * @param bytes An array containing the `multipart/form-data` content to be parsed.
      * @throws IllegalArgumentException if the provided content type is not multipart/form-data.
      */
-    fun parse(mediaType: MediaType, bytes: ByteArray): FormData {
-        checkContentType(mediaType)
+    fun parse(contentType: ContentType, bytes: ByteArray): FormData {
+        checkContentType(contentType)
 
         val parser = MimeStreamParser(MimeConfig.DEFAULT)
         val handler = MultipartContentHandler()
@@ -36,11 +36,11 @@ class MultipartFormDataParser {
 
         // use headless parsing since we don't have full MIME headers,
         // we need to prepend the Content-Type header for the parser
-        val headerPrefix = "Content-Type: $mediaType\r\n\r\n"
+        val headerPrefix = "Content-Type: $contentType\r\n\r\n"
 
         val combinedStream = SequenceInputStream(
             ByteArrayInputStream(headerPrefix.toByteArray()),
-            bytes.inputStream()
+            bytes.inputStream(),
         )
 
         parser.parse(combinedStream)
@@ -52,14 +52,27 @@ class MultipartFormDataParser {
      *
      * @see MultipartFormDataParser.parse
      */
-    fun parse(mediaType: MediaType, buffer: Buffer) = parse(mediaType, buffer.readByteArray())
+    fun parse(mediaType: MediaType, bytes: ByteArray) = parse(
+        mediaType.toContentType(),
+        bytes,
+    )
+
+    /**
+     * An overload of [MultipartFormDataParser.parse]
+     *
+     * @see MultipartFormDataParser.parse
+     */
+    fun parse(mediaType: MediaType, buffer: Buffer) = parse(
+        mediaType.toContentType(),
+        buffer.readByteArray(),
+    )
 
     companion object {
-        private fun checkContentType(mediaType: MediaType) {
-            val contentType = mediaType.toContentType().withoutParameters()
+        private fun checkContentType(contentType: ContentType) {
+            val contentType = contentType.withoutParameters()
 
             if (!ContentType.MultiPart.FormData.match(contentType)) {
-                throw IllegalArgumentException("Content type must be ${ContentType.MultiPart.FormData}, got $mediaType.")
+                throw IllegalArgumentException("Content type must be ${ContentType.MultiPart.FormData}, got $contentType.")
             }
         }
     }
@@ -116,6 +129,7 @@ private class MultipartContentHandler : AbstractContentHandler() {
 
     override fun field(field: Field) {
         val fieldName = field.name.lowercase()
+        println("fieldName: $fieldName")
 
         when (fieldName) {
             "content-disposition" -> {

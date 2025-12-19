@@ -8,19 +8,34 @@ import ai.jetbrains.tracy.core.http.protocol.ResponseBody
 import ai.jetbrains.tracy.core.http.protocol.toProtocolUrl
 import ai.jetbrains.tracy.core.tracing.TracingManager
 import ai.jetbrains.tracy.core.fluent.processor.Span
+import ai.dev.kit.adapters.LLMTracingAdapter
+import ai.dev.kit.http.protocol.Request
+import ai.dev.kit.http.protocol.RequestBody
+import ai.dev.kit.http.protocol.Response
+import ai.dev.kit.http.protocol.ResponseBody
+import ai.dev.kit.http.protocol.asFormData
+import ai.dev.kit.http.protocol.asRequestBody
+import ai.dev.kit.http.protocol.toProtocolUrl
+import ai.dev.kit.tracing.TracingManager
+import ai.dev.kit.tracing.fluent.processor.Span
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.statement.request
 import io.ktor.client.utils.*
 import io.ktor.http.*
+import io.ktor.http.content.PartData
 import io.ktor.util.*
 import io.ktor.utils.io.*
+import io.ktor.utils.io.charsets.Charset
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 import kotlinx.io.Buffer
 import kotlinx.io.InternalIoApi
+import kotlinx.io.readByteArray
 import kotlinx.io.readString
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
@@ -66,25 +81,53 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 val span = tracer.spanBuilder("http-client-span").startSpan()
                 span.makeCurrent().use {
                     request.attributes.put(httpSpanKey, span)
-                    val body = try {
+
+                    val contentType = request.contentType()
+                    val bodyContent = request.copyBodyContent()
+
+                    val a = bodyContent!!.toString(contentType?.charset() ?: Charset.defaultCharset())
+                    println("contenttype: ${contentType == ContentType.MultiPart.FormData}")
+                    println("contentbbb:\n'''\n$a\n'''")
+
+                    val requestBody = when {
+                        bodyContent != null && contentType != null -> bodyContent.asRequestBody(contentType)
+                        else -> {
+                            logger.warn("Either body or content type are null, defaulting to empty request body")
+                            null
+                        }
+                    } ?: RequestBody.Empty
+
+                    /*val body = try {
+                        val reqBody = request.body
                         val bodyType = request.bodyType?.type
+
+                        println("bodyType: ${bodyType}, body: ${request.body}")
                         when {
-                            request.body is EmptyContent -> JsonObject(emptyMap())
+                            reqBody is EmptyContent -> JsonObject(emptyMap())
+                            reqBody is MultiPartFormDataContent -> {
+                                val ch = ByteChannel()
+                                reqBody.writeTo(ch)
+
+                                ch.readRemaining().readByteArray()
+
+                                JsonObject(emptyMap())
+
+                            }
                             (bodyType != null) && bodyType.hasAnnotation<Serializable>() -> {
-                                serializeToJson(request.body)?.let { Json.parseToJsonElement(it).jsonObject }
+                                serializeToJson(reqBody)?.let { Json.parseToJsonElement(it).jsonObject }
                                     ?: JsonObject(emptyMap())
                             }
-
-                            else -> Json.parseToJsonElement(request.body.toString()).jsonObject
+                            else -> Json.parseToJsonElement(reqBody.toString()).jsonObject
                         }
-                    } catch (_: Exception) {
+                    } catch (err: Exception) {
+                        logger.trace("Error while parsing request body, defaulting to empty JSON object", err)
                         JsonObject(emptyMap())
-                    }
+                    }*/
 
                     val req = Request(
                         url = request.url.toProtocolUrl(),
-                        body = RequestBody.Json(body),
-                        contentType = request.contentType(),
+                        body = requestBody, // RequestBody.Json(body),
+                        contentType = contentType,
                     )
 
                     request.attributes.put(isStreamingRequestKey, value = adapter.isStreamingRequest(req))
@@ -208,6 +251,22 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
             }
         } catch (_: Exception) {
             null
+        }
+    }
+
+    private suspend fun HttpRequestBuilder.copyBodyContent(): ByteArray? {
+        return when (val body = this.body) {
+            is MultiPartFormDataContent -> {
+                val bytes = body.let {
+                    val ch = ByteChannel()
+                    it.writeTo(ch)
+                    ch.readRemaining().readByteArray()
+                }
+                bytes
+            }
+            is RequestBody.Json -> body.json.toString().toByteArray()
+            is EmptyContent -> null
+            else -> null
         }
     }
 

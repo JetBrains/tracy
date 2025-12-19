@@ -1,10 +1,16 @@
 package ai.jetbrains.tracy.core.http.protocol
 
+import ai.dev.kit.http.parsers.MultipartFormDataParser
 import ai.jetbrains.tracy.core.http.parsers.FormData
 import io.ktor.http.ContentType
+import io.ktor.http.charset
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonObject
+import mu.KotlinLogging
 import okhttp3.MediaType
 
+private val logger = KotlinLogging.logger {}
 
 /**
  * Represents an HTTP request with its associated properties.
@@ -34,6 +40,7 @@ data class Request(
 sealed class RequestBody {
     data class Json(val json: JsonElement) : RequestBody()
     data class DataForm(val data: FormData) : RequestBody()
+    object Empty : RequestBody()
 }
 
 fun MediaType.toContentType(): ContentType = ContentType.parse(this.toString())
@@ -48,6 +55,50 @@ fun RequestBody.asJson(): JsonElement? {
 fun RequestBody.asFormData(): FormData? {
     return when (this) {
         is RequestBody.DataForm -> this.data
+        else -> null
+    }
+}
+
+/**
+ * Converts a [ByteArray] into a [RequestBody] based on the provided [mediaType].
+ *
+ * This method interprets the byte array input as either JSON or multipart form data,
+ * depending on the specified [mediaType]. If the [mediaType] is recognized as
+ * `application/json`, the method attempts to parse the byte array into a JSON object.
+ * For `multipart/form-data`, it parses the byte array into a form data structure.
+ *
+ * @param mediaType The media type of the data. Used to determine how to interpret the byte array.
+ *                  Can be null if no content type is specified.
+ * @return A [RequestBody] instance representing the parsed content, or null if
+ *         the [mediaType] is unsupported or parsing fails.
+ */
+fun ByteArray.asRequestBody(mediaType: MediaType?): RequestBody? = mediaType?.toContentType()
+    ?.let {
+        asRequestBody(it)
+    }
+
+fun ByteArray.asRequestBody(contentType: ContentType): RequestBody? {
+    val bytes = this
+    // check for the content type regardless of the parameters
+    return when (contentType.withoutParameters()) {
+        ContentType.Application.Json -> {
+            val json = try {
+                Json.parseToJsonElement(
+                    bytes.toString(contentType.charset() ?: Charsets.UTF_8)
+                ).jsonObject
+            } catch (err: Exception) {
+                logger.trace("Error while parsing response body", err)
+                null
+            } ?: return null
+
+            RequestBody.Json(json)
+        }
+        ContentType.MultiPart.FormData -> {
+            val parser = MultipartFormDataParser()
+            val formData = parser.parse(contentType, bytes)
+            RequestBody.DataForm(formData)
+        }
+
         else -> null
     }
 }
