@@ -11,11 +11,10 @@ nav:
           - Function Tracing: tracing/annotations.md
           - Manual Tracing: tracing/manual.md
           - Advanced Topics: tracing/advanced.md
-      - Supported Backends: supported-backends.md
-#      - Key concepts: key-concepts.md
-#      - Getting started:
-#          - Single-run agents: single-run-agents.md
-#          - Functional agents: functional-agents.md
+      - OpenTelemetry Configuration:
+          - Overview: otel-config/index.md
+          - SDK Configuration: otel-config/sdk-configuration.md
+          - Exporters: otel-config/exporters.md
 
 markdown_extensions:
   - pymdownx.highlight:

@@ -11,8 +11,8 @@ import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor
  * @property traceToConsole If `true`, a [SimpleSpanProcessor] is added to log spans
  *  to the console. This is primarily useful for development and debugging.
  *  Default: `false`.
- * @property flushIntervalSeconds Delay between batch export attempts, in milliseconds.
- *  Default: [DEFAULT_FLUSH_INTERVAL_SECONDS].
+ * @property flushIntervalMs Delay between batch export attempts, in milliseconds.
+ *  Default: [DEFAULT_FLUSH_INTERVAL_MS].
  * @property flushThreshold Maximum number of spans per export batch.
  *  Default: [DEFAULT_FLUSH_THRESHOLD].
  * @property flushOnShutdown If `true`, attempts to flush spans on shutdown.
@@ -27,7 +27,7 @@ import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor
  */
 data class ExporterCommonSettings(
     val traceToConsole: Boolean = false,
-    val flushIntervalSeconds: Long = DEFAULT_FLUSH_INTERVAL_SECONDS,
+    val flushIntervalMs: Long = DEFAULT_FLUSH_INTERVAL_MS,
     val flushThreshold: Int = DEFAULT_FLUSH_THRESHOLD,
     val flushOnShutdown: Boolean = true,
     val maxNumberOfSpanAttributes: Int? = null,
@@ -36,7 +36,7 @@ data class ExporterCommonSettings(
     companion object {
         const val DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES = 256
         const val DEFAULT_SPAN_ATTRIBUTE_VALUE_LENGTH = Int.MAX_VALUE
-        const val DEFAULT_FLUSH_INTERVAL_SECONDS = 5L
+        const val DEFAULT_FLUSH_INTERVAL_MS = 5L
         const val DEFAULT_FLUSH_THRESHOLD = 512
     }
 }

@@ -13,15 +13,15 @@ import java.util.concurrent.TimeUnit
  * This class provides all necessary settings to create a [SpanExporter] that sends spans
  * to a Weave OTLP endpoint using HTTP with Basic Authentication.
  *
- * @param baseUrl Optional base URL of the Weave OTLP endpoint.
+ * @param weaveUrl Optional base URL of the Weave OTLP endpoint.
  *  If not set, it will be retrieved from the `WEAVE_URL` environment variable.
  *  Defaults to [WEAVE_BASE_URL].
- * @param entity Required W&B entity (team/org) name.
+ * @param weaveEntity Required W&B entity (team/org) name.
  *  Can be found on your W&B dashboard at [https://wandb.ai/home] under *Teams*.
  *  If not provided, it is retrieved from the `WEAVE_ENTITY` environment variable.
- * @param projectName Required W&B project name.
+ * @param weaveProjectName Required W&B project name.
  *  If not provided, it is retrieved from the `WEAVE_PROJECT_NAME` environment variable.
- * @param apiKey Required W&B API key.
+ * @param weaveApiKey Required W&B API key.
  *  Can be created on [https://wandb.ai/authorize].
  *  If not provided, it is retrieved from the `WEAVE_API_KEY` environment variable.
  * @param exporterTimeoutSeconds Timeout in seconds for span exporter.
@@ -35,20 +35,20 @@ import java.util.concurrent.TimeUnit
  * @see [Weave OpenTelemetry Docs](https://weave-docs.wandb.ai/guides/tracking/otel/)
  */
 class WeaveExporterConfig(
-    baseUrl: String? = null,
-    entity: String? = null,
-    projectName: String? = null,
-    apiKey: String? = null,
+    weaveUrl: String? = null,
+    weaveEntity: String? = null,
+    weaveProjectName: String? = null,
+    weaveApiKey: String? = null,
     exporterTimeoutSeconds: Long = DEFAULT_EXPORTER_TIMEOUT,
     settings: ExporterCommonSettings = ExporterCommonSettings(),
 ) : OtlpBaseExporterConfig(
-    url = baseUrl ?: System.getenv("WEAVE_URL") ?: WEAVE_BASE_URL,
+    url = weaveUrl ?: System.getenv("WEAVE_URL") ?: WEAVE_BASE_URL,
     exporterTimeoutSeconds = exporterTimeoutSeconds,
     settings = settings
 ) {
-    private val resolvedEntity: String = resolveRequiredEnvVar(entity, "WEAVE_ENTITY")
-    private val resolvedProjectName: String = resolveRequiredEnvVar(projectName, "WEAVE_PROJECT_NAME")
-    private val resolvedApiKey: String = resolveRequiredEnvVar(apiKey, "WEAVE_API_KEY")
+    private val resolvedEntity: String = resolveRequiredEnvVar(weaveEntity, "WEAVE_ENTITY")
+    private val resolvedProjectName: String = resolveRequiredEnvVar(weaveProjectName, "WEAVE_PROJECT_NAME")
+    private val resolvedApiKey: String = resolveRequiredEnvVar(weaveApiKey, "WEAVE_API_KEY")
 
     override fun createSpanExporter(): SpanExporter {
         return OtlpHttpSpanExporter.builder().setEndpoint("$url/otel/v1/traces")

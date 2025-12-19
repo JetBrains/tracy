@@ -1,0 +1,81 @@
+# SDK Configuration
+
+This page explains how to configure the OpenTelemetry SDK for Tracy.
+
+## Configuring the OpenTelemetry SDK
+
+The [`configureOpenTelemetrySdk()`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/configure-open-telemetry-sdk.html) function initializes the OpenTelemetry SDK with the provided exporter configuration.
+
+| Parameter | Type                                                                                                                   | Required | Default | Description |
+|-----------|------------------------------------------------------------------------------------------------------------------------|----------|---------|-------------|
+| `exporterConfig` | [`BaseExporterConfig`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.exporters/-base-exporter-config/index.html) | Yes | - | The exporter configuration (Langfuse, Weave, Console, File, or OTLP HTTP) |
+| `additionalResource` | [`Resource`](https://opentelemetry.io/docs/specs/otel/overview/#resources)                                                                                                         | No | `service.name = "unknown-service"` | Additional OpenTelemetry resource attributes |
+
+### Setting Service Name
+
+You can customize the [service name](https://opentelemetry.io/docs/specs/semconv/registry/attributes/service/#service-name), [service version](https://opentelemetry.io/docs/specs/semconv/registry/attributes/service/#service-version), and other [resource attributes](https://opentelemetry.io/docs/specs/semconv/registry/attributes/service/):
+<!--- INCLUDE
+import ai.dev.kit.exporters.otlp.LangfuseExporterConfig
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
+import io.opentelemetry.api.common.AttributeKey
+import io.opentelemetry.api.common.Attributes
+import io.opentelemetry.sdk.resources.Resource
+
+fun main() {
+-->
+<!--- SUFFIX
+}
+-->
+```kotlin
+val sdk = configureOpenTelemetrySdk(
+    exporterConfig = LangfuseExporterConfig(),
+    additionalResource = Resource.create(
+        Attributes.of(
+            AttributeKey.stringKey("service.name"), "my-ai-application",
+            AttributeKey.stringKey("service.version"), "1.0.0"
+        )
+    )
+)
+```
+<!--- KNIT example-otel-exporters-02.kt -->
+
+
+## Common Exporter Settings
+
+All exporter configurations accept an [`ExporterCommonSettings`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.exporters/-exporter-common-settings/index.html) object that controls common behavior:
+
+| Property | Type | Default | Environment Variable | Description |
+|----------|------|---------|---------------------|-------------|
+| `traceToConsole` | `Boolean` | `false` | - | Additionally log spans to console for debugging |
+| `flushIntervalMs` | `Long` | `5` | - | Delay between batch export attempts (in milliseconds) |
+| `flushThreshold` | `Int` | `512` | - | Maximum number of spans per export batch |
+| `flushOnShutdown` | `Boolean` | `true` | - | Flush pending spans when JVM shuts down |
+| `maxNumberOfSpanAttributes` | `Int?` | `256` | `MAX_NUMBER_OF_SPAN_ATTRIBUTES` | Maximum number of attributes per span |
+| `maxSpanAttributeValueLength` | `Int?` | `Int.MAX_VALUE` | `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` | Maximum length for attribute values |
+
+### Example with Custom Settings
+
+<!--- INCLUDE
+import ai.dev.kit.exporters.ExporterCommonSettings
+import ai.dev.kit.exporters.otlp.LangfuseExporterConfig
+import ai.dev.kit.tracing.configureOpenTelemetrySdk
+
+fun main() {
+-->
+<!--- SUFFIX
+}
+-->
+```kotlin
+val sdk = configureOpenTelemetrySdk(
+    LangfuseExporterConfig(
+        settings = ExporterCommonSettings(
+            traceToConsole = true,           // Also log to console
+            flushIntervalMs = 10,            // Flush every 10 milliseconds
+            flushThreshold = 256,            // Batch size of 256 spans
+            flushOnShutdown = true,          // Flush on JVM shutdown
+            maxNumberOfSpanAttributes = 512, // Allow more attributes
+        )
+    )
+)
+```
+<!--- KNIT example-otel-exporters-03.kt -->

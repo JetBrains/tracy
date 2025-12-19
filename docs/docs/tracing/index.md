@@ -21,7 +21,7 @@ The Tracing API is divided into three main categories:
 
 To start tracing, you need to:
 
-1.  Configure the OpenTelemetry SDK with a desired exporter.
+1.  Configure the OpenTelemetry SDK with a desired [exporter](../otel-config/exporters.md).
 2.  Set the SDK in the [`TracingManager`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/index.html?query=object%20TracingManager).
 3.  Instrument your clients or annotate your functions.
 4.  Flush traces before your application exits.

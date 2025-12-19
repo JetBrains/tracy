@@ -1,0 +1,4 @@
+/* Prevent table cell content from wrapping */
+.md-typeset table:not([class]) td {
+    white-space: nowrap;
+}
