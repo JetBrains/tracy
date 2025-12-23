@@ -7,13 +7,6 @@ import ai.jetbrains.tracy.test.utils.toMediaContentAttributeValues
 import ai.jetbrains.tracy.openai.clients.instrument
 import ai.jetbrains.tracy.openai.adapters.BaseOpenAITracingTest
 import ai.jetbrains.tracy.core.tracing.policy.ContentCapturePolicy
-import ai.dev.kit.tracing.MediaContentAttributeValues
-import ai.dev.kit.tracing.MediaSource
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.policy.ContentCapturePolicy
-import ai.dev.kit.tracing.toMediaContentAttributeValues
-import ai.jetbrains.tracy.tracing.adapters.BaseOpenAITracingTest
-import ai.jetbrains.tracy.tracing.clients.instrument
 import com.openai.core.MultipartField
 import com.openai.models.images.ImageEditParams
 import com.openai.models.images.ImageModel
@@ -118,7 +111,7 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val trace = analyzeSpans().first()
 
         // check mask properties attached
-        Assertions.assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.request.mask.content")].isNullOrEmpty())
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.request.mask.content")].isNullOrEmpty())
         assertEquals(
             alohaMask.contentType,
             trace.attributes[AttributeKey.stringKey("gen_ai.request.mask.contentType")]
