@@ -49,11 +49,7 @@ sealed class MediaContentAttributeValues(val type: SupportedMediaContentTypes) {
     data class Url(
         val field: String,
         val url: String?
-    ) : MediaContentAttributeValues(SupportedMediaContentTypes.URL) {
-        override fun toString(): String {
-            return "Url(field=$field, url=$url)"
-        }
-    }
+    ) : MediaContentAttributeValues(SupportedMediaContentTypes.URL)
 
     data class Data(
         val field: String,
