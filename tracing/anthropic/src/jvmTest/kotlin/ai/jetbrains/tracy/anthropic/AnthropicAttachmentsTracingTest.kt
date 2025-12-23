@@ -137,11 +137,8 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
 
         client.messages().create(params)
 
-        val traces = analyzeSpans()
-        assertTracesCount(1, traces)
-        val trace = traces.first()
-
         validateBasicTracing(model)
+        val trace = analyzeSpans().first()
 
         verifyMediaContentUploadAttributes(
             trace, expected = listOf(
@@ -174,11 +171,8 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
 
         client.messages().create(params)
 
-        val traces = analyzeSpans()
-        assertTracesCount(1, traces)
-        val trace = traces.first()
-
         validateBasicTracing(model)
+        val trace = analyzeSpans().first()
 
         verifyMediaContentUploadAttributes(
             trace, expected = listOf(
@@ -213,11 +207,8 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
 
         client.messages().create(params)
 
-        val traces = analyzeSpans()
-        assertTracesCount(1, traces)
-        val trace = traces.first()
-
         validateBasicTracing(model)
+        val trace = analyzeSpans().first()
 
         verifyMediaContentUploadAttributes(
             trace, expected = listOf(
@@ -253,11 +244,8 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
 
         client.messages().create(params)
 
-        val traces = analyzeSpans()
-        assertTracesCount(1, traces)
-        val trace = traces.first()
-
         validateBasicTracing(model)
+        val trace = analyzeSpans().first()
 
         verifyMediaContentUploadAttributes(
             trace, expected = listOf(
@@ -349,11 +337,8 @@ class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
 
         client.messages().create(params)
 
-        val traces = analyzeSpans()
-        assertTracesCount(1, traces)
-        val trace = traces.first()
-
         validateBasicTracing(model)
+        val trace = analyzeSpans().first()
 
         verifyMediaContentUploadAttributes(
             trace, expected = listOf(
