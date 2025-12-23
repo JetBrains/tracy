@@ -1,5 +1,6 @@
 package ai.dev.kit.examples.backends
 
+import ai.dev.kit.exporters.otlp.OtlpGrpcExporterConfig
 import ai.dev.kit.exporters.otlp.OtlpHttpExporterConfig
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.configureOpenTelemetrySdk
@@ -19,9 +20,19 @@ import ai.dev.kit.tracing.fluent.KotlinFlowTrace
  *   ```
  *   See the full quickstart here: [Jaeger Getting Started](https://www.jaegertracing.io/docs/2.13/getting-started/)
  *
+ * By default, this example uses OTLP over HTTP.
+ * If you prefer OTLP over gRPC, use [OtlpGrpcExporterConfig] instead, for example:
+ *
+ * ```
+ * configureOpenTelemetrySdk(
+ *     OtlpGrpcExporterConfig(url = "http://localhost:4317")
+ * )
+ * ```
+ *
  * Run the example. Spans will be exported to Jaeger.
  *
  * @see OtlpHttpExporterConfig
+ * @see OtlpGrpcExporterConfig
  */
 fun main() {
     TracingManager.setSdk(
