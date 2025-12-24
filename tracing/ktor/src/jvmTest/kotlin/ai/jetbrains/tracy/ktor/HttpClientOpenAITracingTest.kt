@@ -554,10 +554,6 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
         assertTracesCount(1, traces)
         val trace = traces.first()
 
-        for (attr in trace.attributes.asMap()) {
-            println("${attr.key}=${attr.value.toString().substring(0, 500.coerceAtMost(attr.value.toString().length))}")
-        }
-
         val tracedPrompt = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
         assertEquals(prompt, tracedPrompt)
 
