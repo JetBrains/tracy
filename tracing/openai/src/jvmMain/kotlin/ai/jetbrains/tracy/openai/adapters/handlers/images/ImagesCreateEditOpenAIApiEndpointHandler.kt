@@ -55,8 +55,6 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
                 continue
             }
 
-            println("name: ${part.name}")
-
             when(part.name) {
                 "prompt" -> {
                     span.setAttribute("gen_ai.prompt.0.content", content.orRedactedInput())

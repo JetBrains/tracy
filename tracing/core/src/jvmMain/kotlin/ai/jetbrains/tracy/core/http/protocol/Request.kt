@@ -35,11 +35,11 @@ data class Request(
  * types of data that can be transmitted as the body of an HTTP request.
  *
  * - [Json]: Represents a JSON body containing structured data.
- * - [DataForm]: Represents form-data typically used in multipart requests.
+ * - [FormData]: Represents form-data typically used in multipart requests.
  */
 sealed class RequestBody {
     data class Json(val json: JsonElement) : RequestBody()
-    data class DataForm(val data: FormData) : RequestBody()
+    data class FormData(val data: ai.dev.kit.http.parsers.FormData) : RequestBody()
     object Empty : RequestBody()
 }
 
@@ -54,7 +54,7 @@ fun RequestBody.asJson(): JsonElement? {
 
 fun RequestBody.asFormData(): FormData? {
     return when (this) {
-        is RequestBody.DataForm -> this.data
+        is RequestBody.FormData -> this.data
         else -> null
     }
 }
@@ -96,9 +96,8 @@ fun ByteArray.asRequestBody(contentType: ContentType): RequestBody? {
         ContentType.MultiPart.FormData -> {
             val parser = MultipartFormDataParser()
             val formData = parser.parse(contentType, bytes)
-            RequestBody.DataForm(formData)
+            RequestBody.FormData(formData)
         }
-
         else -> null
     }
 }

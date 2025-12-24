@@ -126,7 +126,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
 
                     val req = Request(
                         url = request.url.toProtocolUrl(),
-                        body = requestBody, // RequestBody.Json(body),
+                        body = requestBody,
                         contentType = contentType,
                     )
 

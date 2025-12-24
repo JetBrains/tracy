@@ -66,7 +66,7 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
 
     override fun isStreamingRequest(request: Request): Boolean {
         return when (request.body) {
-            is RequestBody.DataForm -> {
+            is RequestBody.FormData -> {
                 val data = request.body.asFormData() ?: return false
                 data.parts.filter { it.name == "stream" }.any {
                     val value = it.content.toString(it.contentType?.charset() ?: Charsets.UTF_8)

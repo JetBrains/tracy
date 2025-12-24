@@ -9,6 +9,7 @@ import org.apache.james.mime4j.stream.BodyDescriptor
 import org.apache.james.mime4j.stream.Field
 import org.apache.james.mime4j.stream.MimeConfig
 import io.ktor.http.ContentType
+import io.ktor.http.charset
 import mu.KotlinLogging
 import java.io.ByteArrayInputStream
 import java.io.InputStream
@@ -91,7 +92,18 @@ data class FormPart(
     val filename: String? = null,
     val content: ByteArray,
     val contentType: ContentType? = null
-)
+) {
+    override fun toString(): String {
+        val contentStr = when (contentType) {
+            null -> super.toString()
+            else -> {
+                content.toString(contentType.charset() ?: Charsets.UTF_8)
+            }
+        }.take(100)
+
+        return "FormPart(name=$name, filename=$filename, contentType=$contentType, content=`$contentStr`)"
+    }
+}
 
 /**
  * Represents the parsed contents of a multipart/form-data HTTP request body.
@@ -133,15 +145,19 @@ private class MultipartContentHandler : AbstractContentHandler() {
 
         when (fieldName) {
             "content-disposition" -> {
-                // parse: `form-data; name="fieldname"; filename="file.txt"`
+                // parse: `form-data; name="field-name"; filename="file.txt"`
                 // for HTTP requests, no other values for this header allowed
                 // see: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Disposition
                 val value = field.body
-                val nameMatch = Regex("""name="([^"]+)"""").find(value)
-                val filenameMatch = Regex("""filename="([^"]+)"""").find(value)
+                // matching: `name="my-name"` or `name=my-name`
+                val nameMatch = Regex("""name=(?:"([^"]+)"|([^\s;]+))""").find(value)
+                // matching: `filename="my-file.txt"` or `filename=my-file.txt`
+                val filenameMatch = Regex("""filename=(?:"([^"]+)"|([^\s;]+))""").find(value)
 
-                currentPartName = nameMatch?.groupValues?.get(1)
-                currentFilename = filenameMatch?.groupValues?.get(1)
+                // group 1 corresponds to the quoted field value, group 2 corresponds to the unquoted field value.
+                // dropping first value because it is an entire match
+                currentPartName = nameMatch?.groupValues?.drop(1)?.firstOrNull { it.isNotEmpty() }
+                currentFilename = filenameMatch?.groupValues?.drop(1)?.firstOrNull { it.isNotEmpty() }
             }
             "content-type" -> {
                 currentContentType = try {
