@@ -44,9 +44,6 @@ class MultipartFormDataParser {
         val handler = MultipartContentHandler()
         parser.setContentHandler(handler)
 
-        val s = bytes.inputStream().readAllBytes().decodeToString()
-        println("sss:\n'''\n$s\n'''")
-
         parser.parse(bytes.inputStream())
         return FormData(handler.parts)
     }
@@ -154,8 +151,6 @@ private class MultipartContentHandler : AbstractContentHandler() {
     private var firstFieldEncountered = false
 
     override fun field(field: Field) {
-        println("field: $field")
-
         when (field.name.lowercase()) {
             "content-disposition" -> {
                 // parse: `form-data; name="field-name"; filename="file.txt"`
