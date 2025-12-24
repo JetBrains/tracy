@@ -70,10 +70,16 @@ class MultipartFormDataParser {
 
     companion object {
         private fun checkContentType(contentType: ContentType) {
-            val contentType = contentType.withoutParameters()
+            val contentTypeWithoutParams = contentType.withoutParameters()
+            if (!ContentType.MultiPart.FormData.match(contentTypeWithoutParams)) {
+                throw IllegalArgumentException(
+                    "Content type must be ${ContentType.MultiPart.FormData}, got $contentType.")
+            }
 
-            if (!ContentType.MultiPart.FormData.match(contentType)) {
-                throw IllegalArgumentException("Content type must be ${ContentType.MultiPart.FormData}, got $contentType.")
+            // require 'boundary' parameter to be present
+            val boundaryParam = contentType.parameters.firstOrNull { it.name == "boundary" }
+            if (boundaryParam == null) {
+                throw IllegalArgumentException("Content type must contain 'boundary' parameter, got $contentType.")
             }
         }
     }
@@ -96,10 +102,10 @@ data class FormPart(
     override fun toString(): String {
         val contentStr = when (contentType) {
             null -> super.toString()
-            else -> {
-                content.toString(contentType.charset() ?: Charsets.UTF_8)
-            }
-        }.take(100)
+            else -> content.toString(contentType.charset() ?: Charsets.UTF_8)
+        }.let {
+            if (it.length > 100) it.substring(0..97) + "..." else it
+        }
 
         return "FormPart(name=$name, filename=$filename, contentType=$contentType, content=`$contentStr`)"
     }
