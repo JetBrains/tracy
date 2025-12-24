@@ -12,22 +12,22 @@ import ai.jetbrains.tracy.core.http.protocol.Url
 import ai.jetbrains.tracy.core.http.protocol.toContentType
 import ai.jetbrains.tracy.core.http.protocol.toProtocolUrl
 import io.ktor.http.ContentType
+import ai.dev.kit.adapters.LLMTracingAdapter
+import ai.dev.kit.http.protocol.*
+import ai.dev.kit.tracing.TracingManager
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonObject
 import mu.KotlinLogging
 import okhttp3.Interceptor
-import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.Buffer
 import okio.BufferedSource
 import okio.ForwardingSource
 import okio.buffer
-import java.nio.charset.Charset
 import okhttp3.Request as OkHttpRequest
 import okhttp3.Response as OkHttpResponse
 import okhttp3.ResponseBody as OkHttpResponseBody
@@ -137,8 +137,6 @@ class OpenTelemetryOkHttpInterceptor(
 
                 if (bodyContent != null) {
                     val mediaType = request.body?.contentType()
-                    println("bodyContent:\n${bodyContent.toString(Charset.defaultCharset())}")
-
                     val req = bodyContent.asRequestBody(mediaType)?.let {
                         Request(
                             contentType = mediaType?.toContentType(),

@@ -141,7 +141,6 @@ private class MultipartContentHandler : AbstractContentHandler() {
 
     override fun field(field: Field) {
         val fieldName = field.name.lowercase()
-        println("fieldName: $fieldName")
 
         when (fieldName) {
             "content-disposition" -> {
@@ -162,8 +161,7 @@ private class MultipartContentHandler : AbstractContentHandler() {
             "content-type" -> {
                 currentContentType = try {
                     ContentType.parse(field.body)
-                }
-                catch (err: Exception) {
+                } catch (err: Exception) {
                     logger.trace("Failed to parse Content-Type header: ${field.body}", err)
                     null
                 }
@@ -173,7 +171,6 @@ private class MultipartContentHandler : AbstractContentHandler() {
 
     override fun body(bd: BodyDescriptor, inputStream: InputStream) {
         val content = inputStream.readBytes()
-
         parts.add(
             FormPart(
                 name = currentPartName,

@@ -77,52 +77,25 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
             onRequest { request, _ ->
                 val tracingEnabled = TracingManager.isTracingEnabled
                 request.attributes.put(tracingEnabledKey, tracingEnabled)
-                if (!tracingEnabled) return@onRequest
+                if (!tracingEnabled) {
+                    return@onRequest
+                }
+
                 val span = tracer.spanBuilder("http-client-span").startSpan()
+
                 span.makeCurrent().use {
                     request.attributes.put(httpSpanKey, span)
 
                     val contentType = request.contentType()
                     val bodyContent = request.copyBodyContent()
 
-                    val a = bodyContent!!.toString(contentType?.charset() ?: Charset.defaultCharset())
-                    println("contenttype: ${contentType == ContentType.MultiPart.FormData}")
-                    println("contentbbb:\n'''\n$a\n'''")
-
                     val requestBody = when {
-                        bodyContent != null && contentType != null -> bodyContent.asRequestBody(contentType)
+                        (bodyContent != null) && (contentType != null) -> bodyContent.asRequestBody(contentType)
                         else -> {
                             logger.warn("Either body or content type are null, defaulting to empty request body")
                             null
                         }
                     } ?: RequestBody.Empty
-
-                    /*val body = try {
-                        val reqBody = request.body
-                        val bodyType = request.bodyType?.type
-
-                        println("bodyType: ${bodyType}, body: ${request.body}")
-                        when {
-                            reqBody is EmptyContent -> JsonObject(emptyMap())
-                            reqBody is MultiPartFormDataContent -> {
-                                val ch = ByteChannel()
-                                reqBody.writeTo(ch)
-
-                                ch.readRemaining().readByteArray()
-
-                                JsonObject(emptyMap())
-
-                            }
-                            (bodyType != null) && bodyType.hasAnnotation<Serializable>() -> {
-                                serializeToJson(reqBody)?.let { Json.parseToJsonElement(it).jsonObject }
-                                    ?: JsonObject(emptyMap())
-                            }
-                            else -> Json.parseToJsonElement(reqBody.toString()).jsonObject
-                        }
-                    } catch (err: Exception) {
-                        logger.trace("Error while parsing request body, defaulting to empty JSON object", err)
-                        JsonObject(emptyMap())
-                    }*/
 
                     val req = Request(
                         url = request.url.toProtocolUrl(),
