@@ -24,7 +24,6 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQU
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TEMPERATURE
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.readByteArray
-import kotlinx.io.readString
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import org.junit.jupiter.api.Tag
@@ -453,40 +452,62 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
     }
 
     @Test
-    fun test() = runTest {
+    fun `test Ktor's form data content body gets parsed by form data parser`() = runTest {
         val model = "gpt-image-1"
         val prompt = "Remove all dogs from the image"
-        val image = MediaSource.File("image.jpg", "image/jpeg")
 
-        val b = MultiPartFormDataContent(
+        val image = MediaSource.File("cat-n-dog-2-alpha.png", "image/png")
+        val filename = image.filepath.substringAfterLast("/")
+        val imageBytes = readResource(image.filepath).readBytes()
+
+        val body = MultiPartFormDataContent(
             formData {
-                val plainText = ContentType.Text.Plain.withCharset(Charsets.UTF_8).toString()
+                val plainText = ContentType.Text.Plain.toString()
 
-                append("\"model\"", model, Headers.build {
+                append("model", model, Headers.build {
                     append(HttpHeaders.ContentType, plainText)
                 })
-                append("\"prompt\"", prompt, Headers.build {
+                append("prompt", prompt, Headers.build {
                     append(HttpHeaders.ContentType, plainText)
                 })
                 // image
-                append("\"image\"", readResource(image.filepath).readBytes(), Headers.build {
+                append("image", imageBytes, Headers.build {
                     append(HttpHeaders.ContentType, image.contentType)
                     append(
                         HttpHeaders.ContentDisposition,
-                        "filename=\"${image.filepath.substringAfterLast("/")}\""
+                        "filename=\"${filename}\""
                     )
                 })
             }
         )
 
         val ch = ByteChannel()
-        b.writeTo(ch)
+        body.writeTo(ch)
         val bytes = ch.readRemaining().readByteArray()
 
-        val p = MultipartFormDataParser()
-        val data = p.parse(ContentType.MultiPart.FormData, bytes)
+        val parser = MultipartFormDataParser()
+        val data = parser.parse(body.contentType, bytes)
 
-        println(data)
+        assertEquals(3, data.parts.size,
+            "Expected 3 parts in the parsed multipart form data: 1) model, 2) prompt, and 3) image")
+
+        val modelPart = data.parts.first { it.name == "model" }
+        val promptPart = data.parts.first { it.name == "prompt" }
+        val imagePart = data.parts.first { it.name == "image" }
+
+        assertEquals(model, modelPart.content.toString(Charsets.UTF_8),
+            "Model names don't match")
+        assertEquals(prompt, promptPart.content.toString(Charsets.UTF_8),
+            "Prompts don't match")
+        // image assertions
+        assertEquals(
+            imageBytes.toString(Charsets.UTF_8),
+            imagePart.content.toString(Charsets.UTF_8),
+            "Image contents don't match"
+        )
+        assertEquals(image.contentType, imagePart.contentType?.toString(),
+            "Image content types don't match")
+        assertEquals(filename, imagePart.filename, "Filenames don't match")
     }
 
     @Test
@@ -499,23 +520,21 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
 
         val model = "gpt-image-1"
         val prompt = "Remove all dogs from the image"
-        val image = MediaSource.File("image.jpg", "image/jpeg")
+        val image = MediaSource.File("cat-n-dog-2-alpha.png", "image/png")
 
         val response = client.post("$baseUrl/v1/images/edits") {
-            header("Authorization", "Bearer $llmProviderApiKey")
-            contentType(ContentType.MultiPart.FormData)
-            setBody(MultiPartFormDataContent(
+            val body = MultiPartFormDataContent(
                 formData {
-                    val plainText = ContentType.Text.Plain.withCharset(Charsets.UTF_8).toString()
+                    val plainText = ContentType.Text.Plain.toString()
 
-                    append("\"model\"", model, Headers.build {
+                    append("model", model, Headers.build {
                         append(HttpHeaders.ContentType, plainText)
                     })
-                    append("\"prompt\"", prompt, Headers.build {
+                    append("prompt", prompt, Headers.build {
                         append(HttpHeaders.ContentType, plainText)
                     })
                     // image
-                    append("\"image\"", readResource(image.filepath).readBytes(), Headers.build {
+                    append("image", readResource(image.filepath).readBytes(), Headers.build {
                         append(HttpHeaders.ContentType, image.contentType)
                         append(
                             HttpHeaders.ContentDisposition,
@@ -523,7 +542,12 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
                         )
                     })
                 }
-            ))
+            )
+            val contentType = ContentType.MultiPart.FormData.withParameter("boundary", body.boundary)
+
+            header("Authorization", "Bearer $llmProviderApiKey")
+            contentType(contentType)
+            setBody(body)
         }
 
         val traces = analyzeSpans()
@@ -540,10 +564,13 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
         val tracedModel = trace.attributes[AttributeKey.stringKey("gen_ai.request.model")]
         assertEquals(model, tracedModel)
 
+        val responseImageData = Json.parseToJsonElement(response.bodyAsText())
+            .jsonObject["data"]!!.jsonArray[0].jsonObject["b64_json"]!!.jsonPrimitive.content
+
         val expected = MediaContentAttributeValues.Data(
             field = "output",
             contentType = "image/png",
-            data = response.bodyAsChannel().readRemaining().readString(),
+            data = responseImageData,
         )
 
         verifyMediaContentUploadAttributes(trace, expected = listOf(
