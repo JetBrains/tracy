@@ -1,4 +1,4 @@
-package ai.dev.kit.examples.clients
+package ai.jetbrains.tracy.examples.clients
 
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
 import ai.jetbrains.tracy.core.tracing.TracingManager

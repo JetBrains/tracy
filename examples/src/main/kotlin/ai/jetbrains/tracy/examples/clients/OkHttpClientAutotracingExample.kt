@@ -1,29 +1,28 @@
-package ai.dev.kit.examples.clients
+package ai.jetbrains.tracy.examples.clients
 
-import ai.jetbrains.tracy.anthropic.adapters.AnthropicLLMTracingAdapter
-import ai.jetbrains.tracy.gemini.adapters.GeminiLLMTracingAdapter
-import ai.jetbrains.tracy.core.fluent.adapters.OpenAILLMTracingAdapter
+import ai.jetbrains.tracy.core.OpenTelemetryOkHttpInterceptor
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
-import ai.jetbrains.tracy.ktor.instrument
+import ai.jetbrains.tracy.core.instrument
 import ai.jetbrains.tracy.core.tracing.TracingManager
 import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
-import io.ktor.client.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
+import ai.jetbrains.tracy.core.fluent.adapters.OpenAILLMTracingAdapter
+import ai.jetbrains.tracy.gemini.adapters.GeminiLLMTracingAdapter
+import ai.jetbrains.tracy.anthropic.adapters.AnthropicLLMTracingAdapter
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 
 /**
- * Example of integrating a Ktor [HttpClient] with tracing for OpenAI API requests.
+ * Example of [OkHttpClient] instrumentation that enables OpenAI API requests tracing.
  *
  * This example demonstrates how to:
  * - Initialize tracing using [TracingManager] with [ConsoleExporterConfig].
- * - Instrument a Ktor [HttpClient] using [OpenAILLMTracingAdapter] to automatically capture trace data.
+ * - Instrument a [OkHttpClient] using [OpenTelemetryOkHttpInterceptor] to automatically capture trace data.
  * - Perform an OpenAI API request with trace data automatically captured.
  * - Call [TracingManager.flushTraces] before exiting to ensure all trace data is exported.
  *
@@ -32,22 +31,16 @@ import kotlinx.serialization.json.buildJsonObject
  *
  * Run the example. Span will appear in the console output.
  *
- * Note: The AI Dev Kit provides multiple provider-specific tracing adapters,
+ * Note: The AI Dev Kit provides multiple provider-specific tracing loggers,
  * including [OpenAILLMTracingAdapter], [GeminiLLMTracingAdapter], and [AnthropicLLMTracingAdapter].
  * Choose the adapter that matches the provider your client uses.
  */
-suspend fun main() {
+fun main() {
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     TracingManager.traceSensitiveContent()
 
     val apiToken = System.getenv("OPENAI_API_KEY") ?: error("Environment variable 'OPENAI_API_KEY' is not set")
-    val client = HttpClient {
-        install(ContentNegotiation) {
-            json(Json { prettyPrint = true })
-        }
-    }
-    val instrumentedClient = instrument(client, OpenAILLMTracingAdapter())
-    val requestBody = buildJsonObject {
+    val requestBodyJson = buildJsonObject {
         put("model", JsonPrimitive("gpt-4o-mini"))
         put("messages", buildJsonArray {
             add(buildJsonObject {
@@ -57,11 +50,18 @@ suspend fun main() {
         })
         put("temperature", JsonPrimitive(1.0))
     }
-    val response = instrumentedClient.post("https://api.openai.com/v1/chat/completions") {
-        header(HttpHeaders.Authorization, "Bearer $apiToken")
-        contentType(ContentType.Application.Json)
-        setBody(requestBody)
+    val client = OkHttpClient()
+    val instrumentedClient = instrument(client, OpenAILLMTracingAdapter())
+    val requestBody = Json { prettyPrint = true }
+        .encodeToString(requestBodyJson)
+        .toRequestBody("application/json".toMediaType())
+    val request = Request.Builder().url("https://api.openai.com/v1/chat/completions")
+        .addHeader("Authorization", "Bearer $apiToken")
+        .addHeader("Content-Type", "application/json")
+        .post(requestBody)
+        .build()
+    instrumentedClient.newCall(request).execute().use { response ->
+        println("Result: ${response.body?.string() ?: "<empty response>"}\nSee trace details in the console.")
     }
-    println("Result: ${response.bodyAsText()}\nSee trace details in the console.")
     TracingManager.flushTraces()
 }

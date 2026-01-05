@@ -1,4 +1,4 @@
-package ai.dev.kit.examples.backends
+package ai.jetbrains.tracy.examples.backends
 
 import ai.jetbrains.tracy.core.exporters.otlp.OtlpGrpcExporterConfig
 import ai.jetbrains.tracy.core.exporters.otlp.OtlpHttpExporterConfig

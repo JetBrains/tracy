@@ -1,4 +1,4 @@
-package ai.dev.kit.examples
+package ai.jetbrains.tracy.examples
 
 import ai.jetbrains.tracy.core.exporters.otlp.LangfuseExporterConfig
 import ai.jetbrains.tracy.core.tracing.TracingManager

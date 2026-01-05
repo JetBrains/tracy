@@ -1,4 +1,4 @@
-package ai.dev.kit.examples
+package ai.jetbrains.tracy.examples
 
 import ai.jetbrains.tracy.core.exporters.FileExporterConfig
 import ai.jetbrains.tracy.core.exporters.OutputFormat

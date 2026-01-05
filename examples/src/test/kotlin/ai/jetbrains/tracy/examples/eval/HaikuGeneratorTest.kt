@@ -1,4 +1,4 @@
-package ai.dev.kit.examples.eval
+package ai.jetbrains.tracy.examples.eval
 
 import ai.jetbrains.tracy.core.exporters.otlp.LangfuseExporterConfig
 import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
