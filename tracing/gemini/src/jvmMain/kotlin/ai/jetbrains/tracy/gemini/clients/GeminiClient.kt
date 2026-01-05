@@ -1,7 +1,7 @@
-package ai.dev.kit.clients
+package ai.jetbrains.tracy.gemini.clients
 
 import ai.dev.kit.OpenTelemetryOkHttpInterceptor
-import ai.dev.kit.adapters.GeminiLLMTracingAdapter
+import ai.jetbrains.tracy.gemini.adapters.GeminiLLMTracingAdapter
 import ai.dev.kit.patchInterceptors
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient

@@ -1,11 +1,8 @@
-package ai.dev.kit.tracing.fluent.providers
+package ai.jetbrains.tracy.gemini
 
-import ai.dev.kit.clients.instrument
-import ai.dev.kit.tracing.BaseAITracingTest
+import ai.jetbrains.tracy.gemini.clients.instrument
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.policy.ContentCapturePolicy
-import com.google.auth.oauth2.AccessToken
-import com.google.auth.oauth2.GoogleCredentials
 import com.google.genai.errors.GenAiIOException
 import com.google.genai.types.Content
 import com.google.genai.types.GenerateContentResponse

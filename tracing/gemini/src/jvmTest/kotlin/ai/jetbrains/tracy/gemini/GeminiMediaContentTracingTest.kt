@@ -1,6 +1,6 @@
-package ai.dev.kit.tracing.fluent.providers
+package ai.jetbrains.tracy.gemini
 
-import ai.dev.kit.clients.instrument
+import ai.jetbrains.tracy.gemini.clients.instrument
 import ai.dev.kit.tracing.MediaContentAttributeValues
 import ai.dev.kit.tracing.MediaSource
 import ai.dev.kit.tracing.toMediaContentAttributeValues

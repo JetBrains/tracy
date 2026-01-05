@@ -1,8 +1,8 @@
 package ai.dev.kit.tracing.fluent
 
-import ai.dev.kit.adapters.AnthropicLLMTracingAdapter
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseAITracingTest
+import ai.jetbrains.tracy.anthropic.adapters.AnthropicLLMTracingAdapter
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*

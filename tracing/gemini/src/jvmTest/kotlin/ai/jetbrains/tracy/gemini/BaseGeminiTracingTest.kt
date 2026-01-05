@@ -1,4 +1,4 @@
-package ai.dev.kit.tracing.fluent.providers
+package ai.jetbrains.tracy.gemini
 
 import ai.dev.kit.tracing.BaseAITracingTest
 import com.google.auth.oauth2.AccessToken

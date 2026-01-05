@@ -6,6 +6,7 @@ import ai.dev.kit.instrument
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
+import ai.jetbrains.tracy.gemini.adapters.GeminiLLMTracingAdapter
 import ai.jetbrains.tracy.anthropic.adapters.AnthropicLLMTracingAdapter
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
@@ -31,7 +32,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * Run the example. Span will appear in the console output.
  *
  * Note: The AI Dev Kit provides multiple provider-specific tracing loggers,
- * including [OpenAILLMTracingAdapter], [OpenTelemetryGeminiLogger], and [AnthropicLLMTracingAdapter].
+ * including [OpenAILLMTracingAdapter], [GeminiLLMTracingAdapter], and [AnthropicLLMTracingAdapter].
  * Choose the adapter that matches the provider your client uses.
  */
 fun main() {

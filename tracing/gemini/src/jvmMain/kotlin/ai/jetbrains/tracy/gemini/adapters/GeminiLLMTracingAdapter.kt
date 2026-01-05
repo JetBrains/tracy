@@ -1,16 +1,14 @@
-package ai.dev.kit.adapters
+package ai.jetbrains.tracy.gemini.adapters
 
+import ai.dev.kit.adapters.LLMTracingAdapter
 import ai.dev.kit.adapters.handlers.EndpointApiHandler
-import ai.dev.kit.adapters.handlers.GeminiContentGenHandler
-import ai.dev.kit.adapters.handlers.GeminiImagenHandler
+import ai.jetbrains.tracy.gemini.adapters.handlers.GeminiContentGenHandler
+import ai.jetbrains.tracy.gemini.adapters.handlers.GeminiImagenHandler
 import ai.dev.kit.adapters.media.MediaContentExtractor
 import ai.dev.kit.adapters.media.MediaContentExtractorImpl
 import ai.dev.kit.http.protocol.Request
 import ai.dev.kit.http.protocol.Response
 import ai.dev.kit.http.protocol.Url
-import ai.dev.kit.http.protocol.asJson
-import ai.dev.kit.tracing.policy.orRedactedInput
-import ai.dev.kit.tracing.policy.orRedactedOutput
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 

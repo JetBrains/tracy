@@ -1,5 +1,6 @@
-package ai.dev.kit.adapters.handlers
+package ai.jetbrains.tracy.gemini.adapters.handlers
 
+import ai.dev.kit.adapters.handlers.EndpointApiHandler
 import ai.dev.kit.adapters.media.MediaContent
 import ai.dev.kit.adapters.media.MediaContentExtractor
 import ai.dev.kit.adapters.media.MediaContentPart

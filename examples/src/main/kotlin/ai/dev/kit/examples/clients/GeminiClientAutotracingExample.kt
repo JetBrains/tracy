@@ -1,6 +1,6 @@
 package ai.dev.kit.examples.clients
 
-import ai.dev.kit.clients.instrument
+import ai.jetbrains.tracy.gemini.clients.instrument
 import ai.dev.kit.exporters.ConsoleExporterConfig
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.configureOpenTelemetrySdk

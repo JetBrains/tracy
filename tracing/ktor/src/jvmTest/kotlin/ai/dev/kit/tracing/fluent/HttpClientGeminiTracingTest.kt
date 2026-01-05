@@ -1,6 +1,6 @@
 package ai.dev.kit.tracing.fluent
 
-import ai.dev.kit.adapters.GeminiLLMTracingAdapter
+import ai.jetbrains.tracy.gemini.adapters.GeminiLLMTracingAdapter
 import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseAITracingTest
 import io.ktor.client.*
