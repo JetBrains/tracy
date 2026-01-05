@@ -1,7 +1,6 @@
-package ai.dev.kit.tracing.fluent
+package ai.jetbrains.tracy.ktor
 
 import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
-import ai.dev.kit.instrument
 import ai.dev.kit.tracing.BaseAITracingTest
 import ai.dev.kit.tracing.TracingManager
 import com.openai.core.ClientOptions.Companion.PRODUCTION_URL

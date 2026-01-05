@@ -1,4 +1,4 @@
-package ai.dev.kit
+package ai.jetbrains.tracy.ktor
 
 import ai.dev.kit.adapters.LLMTracingAdapter
 import ai.dev.kit.http.protocol.Request

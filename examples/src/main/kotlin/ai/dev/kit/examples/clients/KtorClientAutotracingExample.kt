@@ -4,7 +4,7 @@ import ai.jetbrains.tracy.anthropic.adapters.AnthropicLLMTracingAdapter
 import ai.jetbrains.tracy.gemini.adapters.GeminiLLMTracingAdapter
 import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
 import ai.dev.kit.exporters.ConsoleExporterConfig
-import ai.dev.kit.instrument
+import ai.jetbrains.tracy.ktor.instrument
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.configureOpenTelemetrySdk
 import io.ktor.client.*
