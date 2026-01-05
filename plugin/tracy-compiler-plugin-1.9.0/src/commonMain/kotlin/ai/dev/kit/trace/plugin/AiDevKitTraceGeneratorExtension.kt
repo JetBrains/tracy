@@ -25,14 +25,14 @@ import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.Name
 
 class AiDevKitTraceGeneratorExtension : IrGenerationExtension {
-    private val traceAnnotationFqName = FqName("ai.dev.kit.tracing.fluent.KotlinFlowTrace")
+    private val traceAnnotationFqName = FqName("ai.jetbrains.tracy.core.fluent.KotlinFlowTrace")
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val withTraceSymbol = pluginContext.referenceFunctions(
-            CallableId(FqName("ai.dev.kit.tracing.fluent.processor"), Name.identifier("withTrace"))
+            CallableId(FqName("ai.jetbrains.tracy.core.fluent.processor"), Name.identifier("withTrace"))
         ).findMultiplatformSymbol()
         val withTraceSuspendedSymbol = pluginContext.referenceFunctions(
-            CallableId(FqName("ai.dev.kit.tracing.fluent.processor"), Name.identifier("withTraceSuspended"))
+            CallableId(FqName("ai.jetbrains.tracy.core.fluent.processor"), Name.identifier("withTraceSuspended"))
         ).findMultiplatformSymbol()
 
         moduleFragment.accept(object : IrElementTransformerVoid() {

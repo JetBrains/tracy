@@ -29,7 +29,7 @@ Trace function calls, including inputs and outputs, using annotations that can b
 All method implementations are instrumented automatically.
 
 <!--- INCLUDE
-import ai.dev.kit.tracing.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
 -->
 ```kotlin
 private interface TestClassPropagationInterface {
@@ -43,7 +43,7 @@ private interface TestClassPropagationInterface {
 ### Method Example
 
 <!--- INCLUDE
-import ai.dev.kit.tracing.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
 -->
 ```kotlin
 private class TestClassDirectlyAnnotated {
@@ -59,7 +59,7 @@ private class TestClassDirectlyAnnotated {
 Allows tracing of code blocks and setting custom span attributes.
 
 <!--- INCLUDE
-import ai.dev.kit.tracing.fluent.processor.withSpan
+import ai.jetbrains.tracy.core.fluent.processor.withSpan
 
 fun main() {
 val customAttributeName = "attr"

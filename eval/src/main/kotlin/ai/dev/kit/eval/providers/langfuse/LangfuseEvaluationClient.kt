@@ -1,9 +1,9 @@
 package ai.dev.kit.eval.providers.langfuse
 
 import ai.dev.kit.eval.utils.*
-import ai.dev.kit.exporters.otlp.LangfuseExporterConfig
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.exporters.otlp.LangfuseExporterConfig
+import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.net.URLEncoder

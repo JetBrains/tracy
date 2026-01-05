@@ -1,10 +1,10 @@
 package ai.dev.kit.eval.utils
 
 import ai.dev.kit.eval.providers.dataclasses.RunStatus
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.fluent.FluentSpanAttributes
-import ai.dev.kit.tracing.fluent.TracingSessionProvider.currentSessionId
-import ai.dev.kit.tracing.fluent.withSessionIdBlocking
+import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.fluent.FluentSpanAttributes
+import ai.jetbrains.tracy.core.fluent.TracingSessionProvider.currentSessionId
+import ai.jetbrains.tracy.core.fluent.withSessionIdBlocking
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.extension.kotlin.asContextElement

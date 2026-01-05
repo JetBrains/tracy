@@ -1,9 +1,9 @@
 package ai.dev.kit.examples.backends
 
-import ai.dev.kit.exporters.otlp.LangfuseExporterConfig
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
-import ai.dev.kit.tracing.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.exporters.otlp.LangfuseExporterConfig
+import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
 
 @KotlinFlowTrace(name = "SimpleExample")
 fun printName(name: String): String {

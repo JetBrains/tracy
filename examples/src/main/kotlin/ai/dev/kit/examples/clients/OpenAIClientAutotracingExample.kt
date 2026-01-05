@@ -1,9 +1,9 @@
 package ai.dev.kit.examples.clients
 
-import ai.jetbrains.tracy.openai.clients.instrument
-import ai.dev.kit.exporters.ConsoleExporterConfig
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.fluent.clients.instrument
+import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
+import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.ChatModel

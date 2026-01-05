@@ -1,6 +1,6 @@
 package ai.dev.kit.eval.providers.langfuse
 
-import ai.dev.kit.exporters.otlp.LangfuseExporterConfig
+import ai.jetbrains.tracy.core.exporters.otlp.LangfuseExporterConfig
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*

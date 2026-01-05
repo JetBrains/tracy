@@ -1,9 +1,9 @@
 package ai.dev.kit.examples.clients
 
 import ai.jetbrains.tracy.gemini.clients.instrument
-import ai.dev.kit.exporters.ConsoleExporterConfig
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
+import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
 import com.google.genai.Client
 import com.google.genai.types.GenerateContentConfig
 

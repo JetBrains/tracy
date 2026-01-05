@@ -1,13 +1,13 @@
 package ai.jetbrains.tracy.ktor
 
-import ai.dev.kit.adapters.LLMTracingAdapter
-import ai.dev.kit.http.protocol.Request
-import ai.dev.kit.http.protocol.RequestBody
-import ai.dev.kit.http.protocol.Response
-import ai.dev.kit.http.protocol.ResponseBody
-import ai.dev.kit.http.protocol.toProtocolUrl
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.fluent.processor.Span
+import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
+import ai.jetbrains.tracy.core.http.protocol.Request
+import ai.jetbrains.tracy.core.http.protocol.RequestBody
+import ai.jetbrains.tracy.core.http.protocol.Response
+import ai.jetbrains.tracy.core.http.protocol.ResponseBody
+import ai.jetbrains.tracy.core.http.protocol.toProtocolUrl
+import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.fluent.processor.Span
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
 import io.ktor.client.statement.request

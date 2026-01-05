@@ -1,7 +1,7 @@
 package ai.jetbrains.tracy.anthropic.clients
 
-import ai.dev.kit.OpenTelemetryOkHttpInterceptor
-import ai.dev.kit.patchOpenAICompatibleClient
+import ai.jetbrains.tracy.core.OpenTelemetryOkHttpInterceptor
+import ai.jetbrains.tracy.core.patchOpenAICompatibleClient
 import ai.jetbrains.tracy.anthropic.adapters.AnthropicLLMTracingAdapter
 import com.anthropic.client.AnthropicClient
 

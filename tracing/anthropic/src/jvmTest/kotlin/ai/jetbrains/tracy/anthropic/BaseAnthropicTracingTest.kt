@@ -1,7 +1,7 @@
 package ai.jetbrains.tracy.anthropic
 
-import ai.dev.kit.getFieldValue
-import ai.dev.kit.setFieldValue
+import ai.jetbrains.tracy.core.getFieldValue
+import ai.jetbrains.tracy.core.setFieldValue
 import ai.jetbrains.tracy.test.utils.BaseAITracingTest
 import com.anthropic.client.AnthropicClient
 import com.anthropic.client.okhttp.AnthropicOkHttpClient

@@ -1,11 +1,11 @@
 package ai.dev.kit.examples
 
-import ai.dev.kit.exporters.ConsoleExporterConfig
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
-import ai.dev.kit.tracing.fluent.KotlinFlowTrace
-import ai.dev.kit.tracing.fluent.processor.currentSpanContext
-import ai.dev.kit.tracing.fluent.processor.currentSpanContextElement
+import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
+import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.processor.currentSpanContext
+import ai.jetbrains.tracy.core.fluent.processor.currentSpanContextElement
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.runBlocking

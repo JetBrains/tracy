@@ -1,14 +1,14 @@
 package ai.jetbrains.tracy.gemini.adapters.handlers
 
-import ai.dev.kit.adapters.handlers.EndpointApiHandler
-import ai.dev.kit.adapters.media.MediaContent
-import ai.dev.kit.adapters.media.MediaContentExtractor
-import ai.dev.kit.adapters.media.MediaContentPart
-import ai.dev.kit.adapters.media.Resource
-import ai.dev.kit.common.parseSafe
-import ai.dev.kit.http.protocol.Request
-import ai.dev.kit.http.protocol.Response
-import ai.dev.kit.http.protocol.asJson
+import ai.jetbrains.tracy.core.adapters.handlers.EndpointApiHandler
+import ai.jetbrains.tracy.core.adapters.media.MediaContent
+import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractor
+import ai.jetbrains.tracy.core.adapters.media.MediaContentPart
+import ai.jetbrains.tracy.core.adapters.media.Resource
+import ai.jetbrains.tracy.core.common.parseSafe
+import ai.jetbrains.tracy.core.http.protocol.Request
+import ai.jetbrains.tracy.core.http.protocol.Response
+import ai.jetbrains.tracy.core.http.protocol.asJson
 import io.ktor.http.ContentType
 import io.opentelemetry.api.trace.Span
 import kotlinx.serialization.json.Json

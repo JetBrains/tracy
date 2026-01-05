@@ -1,11 +1,11 @@
 package ai.dev.kit.examples.clients
 
-import ai.dev.kit.OpenTelemetryOkHttpInterceptor
-import ai.dev.kit.exporters.ConsoleExporterConfig
-import ai.dev.kit.instrument
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
-import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
+import ai.jetbrains.tracy.core.OpenTelemetryOkHttpInterceptor
+import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
+import ai.jetbrains.tracy.core.instrument
+import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.fluent.adapters.OpenAILLMTracingAdapter
 import ai.jetbrains.tracy.gemini.adapters.GeminiLLMTracingAdapter
 import ai.jetbrains.tracy.anthropic.adapters.AnthropicLLMTracingAdapter
 import kotlinx.serialization.json.Json

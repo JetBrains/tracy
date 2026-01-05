@@ -1,11 +1,11 @@
 package ai.dev.kit.examples
 
-import ai.dev.kit.exporters.ConsoleExporterConfig
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
-import ai.dev.kit.tracing.fluent.KotlinFlowTrace
-import ai.dev.kit.tracing.fluent.handlers.PlatformMethod
-import ai.dev.kit.tracing.fluent.handlers.SpanMetadataCustomizer
+import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
+import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.handlers.PlatformMethod
+import ai.jetbrains.tracy.core.fluent.handlers.SpanMetadataCustomizer
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 

@@ -1,7 +1,7 @@
 package ai.jetbrains.tracy.anthropic
 
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.policy.ContentCapturePolicy
+import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.tracing.policy.ContentCapturePolicy
 import ai.jetbrains.tracy.anthropic.clients.instrument
 import com.anthropic.core.JsonString
 import com.anthropic.core.JsonValue

@@ -2,11 +2,11 @@ package ai.dev.kit.examples.clients
 
 import ai.jetbrains.tracy.anthropic.adapters.AnthropicLLMTracingAdapter
 import ai.jetbrains.tracy.gemini.adapters.GeminiLLMTracingAdapter
-import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
-import ai.dev.kit.exporters.ConsoleExporterConfig
+import ai.jetbrains.tracy.core.fluent.adapters.OpenAILLMTracingAdapter
+import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
 import ai.jetbrains.tracy.ktor.instrument
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*

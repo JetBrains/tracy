@@ -1,10 +1,10 @@
 package ai.dev.kit.examples
 
-import ai.dev.kit.exporters.otlp.LangfuseExporterConfig
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.addLangfuseTagsToCurrentTrace
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
-import ai.dev.kit.tracing.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.exporters.otlp.LangfuseExporterConfig
+import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.tracing.addLangfuseTagsToCurrentTrace
+import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
 
 @KotlinFlowTrace(name = "GreetUserTrace")
 fun greetUser(name: String, isPremium: Boolean): String {

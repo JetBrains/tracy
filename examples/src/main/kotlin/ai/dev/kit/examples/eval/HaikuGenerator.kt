@@ -3,7 +3,7 @@ package ai.dev.kit.examples.eval
 import ai.dev.kit.eval.utils.AIInput
 import ai.dev.kit.eval.utils.AIOutput
 import ai.dev.kit.eval.utils.Generator
-import ai.dev.kit.tracing.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams

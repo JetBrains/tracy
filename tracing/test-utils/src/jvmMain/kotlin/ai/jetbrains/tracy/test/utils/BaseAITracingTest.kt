@@ -1,7 +1,7 @@
 package ai.jetbrains.tracy.test.utils
 
-import ai.dev.kit.adapters.media.UploadableMediaContentAttributeKeys
-import ai.dev.kit.tracing.policy.ContentCapturePolicy
+import ai.jetbrains.tracy.core.adapters.media.UploadableMediaContentAttributeKeys
+import ai.jetbrains.tracy.core.tracing.policy.ContentCapturePolicy
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.sdk.trace.data.SpanData
 import org.junit.jupiter.api.TestInstance

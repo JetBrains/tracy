@@ -1,10 +1,10 @@
 package ai.dev.kit.examples.backends
 
-import ai.dev.kit.exporters.otlp.OtlpGrpcExporterConfig
-import ai.dev.kit.exporters.otlp.OtlpHttpExporterConfig
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
-import ai.dev.kit.tracing.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.exporters.otlp.OtlpGrpcExporterConfig
+import ai.jetbrains.tracy.core.exporters.otlp.OtlpHttpExporterConfig
+import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
 
 /**
  * Demonstrates how to use [OtlpHttpExporterConfig] with [KotlinFlowTrace] to export traces to Jaeger.

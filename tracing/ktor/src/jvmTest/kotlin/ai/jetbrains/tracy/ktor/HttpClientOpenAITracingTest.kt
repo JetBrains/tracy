@@ -1,8 +1,8 @@
 package ai.jetbrains.tracy.ktor
 
-import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
+import ai.jetbrains.tracy.core.fluent.adapters.OpenAILLMTracingAdapter
 import ai.jetbrains.tracy.test.utils.BaseAITracingTest
-import ai.dev.kit.tracing.TracingManager
+import ai.jetbrains.tracy.core.tracing.TracingManager
 import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
 import io.ktor.client.*
 import io.ktor.client.engine.mock.*

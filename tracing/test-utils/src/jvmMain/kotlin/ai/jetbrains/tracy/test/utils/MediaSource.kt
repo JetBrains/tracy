@@ -1,7 +1,7 @@
 package ai.jetbrains.tracy.test.utils
 
-import ai.dev.kit.adapters.media.SupportedMediaContentTypes
-import ai.dev.kit.common.DataUrl
+import ai.jetbrains.tracy.core.adapters.media.SupportedMediaContentTypes
+import ai.jetbrains.tracy.core.common.DataUrl
 import io.ktor.http.Headers
 import java.io.File
 import java.util.Base64

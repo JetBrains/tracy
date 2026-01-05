@@ -1,6 +1,6 @@
 package ai.jetbrains.tracy.test.utils
 
-import ai.dev.kit.tracing.TracingManager
+import ai.jetbrains.tracy.core.tracing.TracingManager
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.sdk.OpenTelemetrySdk

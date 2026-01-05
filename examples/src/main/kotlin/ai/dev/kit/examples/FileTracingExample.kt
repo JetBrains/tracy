@@ -1,10 +1,10 @@
 package ai.dev.kit.examples
 
-import ai.dev.kit.exporters.FileExporterConfig
-import ai.dev.kit.exporters.OutputFormat
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
-import ai.dev.kit.tracing.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.exporters.FileExporterConfig
+import ai.jetbrains.tracy.core.exporters.OutputFormat
+import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.createTempFile
 import kotlin.io.path.readText

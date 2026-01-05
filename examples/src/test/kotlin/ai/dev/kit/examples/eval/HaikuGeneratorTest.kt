@@ -2,8 +2,8 @@ package ai.dev.kit.examples.eval
 
 import ai.dev.kit.eval.providers.langfuse.LangfuseEvaluationTest
 import ai.dev.kit.eval.utils.*
-import ai.dev.kit.exporters.otlp.LangfuseExporterConfig
-import ai.dev.kit.tracing.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.exporters.otlp.LangfuseExporterConfig
+import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams

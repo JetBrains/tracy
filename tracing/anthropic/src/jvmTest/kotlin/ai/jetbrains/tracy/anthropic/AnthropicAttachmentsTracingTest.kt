@@ -1,9 +1,9 @@
 package ai.jetbrains.tracy.anthropic
 
 import ai.jetbrains.tracy.test.utils.MediaSource
-import ai.dev.kit.tracing.TracingManager
+import ai.jetbrains.tracy.core.tracing.TracingManager
 import ai.jetbrains.tracy.test.utils.asDataUrl
-import ai.dev.kit.tracing.policy.ContentCapturePolicy
+import ai.jetbrains.tracy.core.tracing.policy.ContentCapturePolicy
 import ai.jetbrains.tracy.test.utils.toMediaContentAttributeValues
 import ai.jetbrains.tracy.anthropic.clients.instrument
 import com.anthropic.core.JsonValue

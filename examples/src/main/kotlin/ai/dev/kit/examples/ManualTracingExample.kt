@@ -1,10 +1,10 @@
 package ai.dev.kit.examples
 
-import ai.dev.kit.exporters.ConsoleExporterConfig
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
-import ai.dev.kit.tracing.fluent.FluentSpanAttributes
-import ai.dev.kit.tracing.fluent.processor.withSpan
+import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
+import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.fluent.FluentSpanAttributes
+import ai.jetbrains.tracy.core.fluent.processor.withSpan
 
 fun handleUserLogin(username: String, password: String) =
     withSpan("HandleUserLogin", mapOf("username" to username)) { span ->
