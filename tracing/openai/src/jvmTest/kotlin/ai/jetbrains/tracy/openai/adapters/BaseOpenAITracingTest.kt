@@ -1,6 +1,6 @@
 package ai.jetbrains.tracy.openai.adapters
 
-import ai.dev.kit.tracing.BaseAITracingTest
+import ai.jetbrains.tracy.test.utils.BaseAITracingTest
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.core.ClientOptions.Companion.PRODUCTION_URL

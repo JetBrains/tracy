@@ -1,6 +1,6 @@
 package ai.dev.kit.tracing.fluent
 
-import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.jetbrains.tracy.test.utils.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.addLangfuseTagsToCurrentTrace
 import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.api.trace.StatusCode

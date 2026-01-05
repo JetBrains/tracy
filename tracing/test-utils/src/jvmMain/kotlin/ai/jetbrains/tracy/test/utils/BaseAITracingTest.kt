@@ -1,4 +1,4 @@
-package ai.dev.kit.tracing
+package ai.jetbrains.tracy.test.utils
 
 import ai.dev.kit.adapters.media.UploadableMediaContentAttributeKeys
 import ai.dev.kit.tracing.policy.ContentCapturePolicy

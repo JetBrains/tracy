@@ -1,9 +1,9 @@
 package ai.jetbrains.tracy.gemini
 
 import ai.jetbrains.tracy.gemini.clients.instrument
-import ai.dev.kit.tracing.MediaContentAttributeValues
-import ai.dev.kit.tracing.MediaSource
-import ai.dev.kit.tracing.toMediaContentAttributeValues
+import ai.jetbrains.tracy.test.utils.MediaContentAttributeValues
+import ai.jetbrains.tracy.test.utils.MediaSource
+import ai.jetbrains.tracy.test.utils.toMediaContentAttributeValues
 import com.google.genai.types.*
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Tag

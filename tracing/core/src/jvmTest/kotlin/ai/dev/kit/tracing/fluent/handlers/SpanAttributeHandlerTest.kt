@@ -1,6 +1,6 @@
 package ai.dev.kit.tracing.fluent.handlers
 
-import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.jetbrains.tracy.test.utils.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.fluent.KotlinFlowTrace
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test

@@ -1,10 +1,10 @@
 package ai.jetbrains.tracy.openai.adapters.handlers
 
 import ai.jetbrains.tracy.openai.clients.instrument
-import ai.dev.kit.tracing.MediaSource
+import ai.jetbrains.tracy.test.utils.MediaSource
 import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.toDataUrl
-import ai.dev.kit.tracing.toMediaContentAttributeValues
+import ai.jetbrains.tracy.test.utils.toDataUrl
+import ai.jetbrains.tracy.test.utils.toMediaContentAttributeValues
 import ai.jetbrains.tracy.openai.adapters.BaseOpenAITracingTest
 import ai.jetbrains.tracy.openai.adapters.containsToolCall
 import ai.dev.kit.tracing.policy.ContentCapturePolicy

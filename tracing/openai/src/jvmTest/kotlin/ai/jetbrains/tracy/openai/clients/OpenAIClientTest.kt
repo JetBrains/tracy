@@ -1,6 +1,6 @@
 package ai.jetbrains.tracy.openai.clients
 
-import ai.dev.kit.tracing.BaseOpenTelemetryTracingTest
+import ai.jetbrains.tracy.test.utils.BaseOpenTelemetryTracingTest
 import ai.dev.kit.tracing.TracingManager
 import ai.dev.kit.tracing.fluent.processor.withSpan
 import com.openai.client.OpenAIClient

@@ -6,6 +6,10 @@ import ai.jetbrains.tracy.openai.adapters.BaseOpenAITracingTest
 import ai.jetbrains.tracy.openai.adapters.containsToolCall
 import ai.jetbrains.tracy.openai.adapters.name
 import ai.jetbrains.tracy.openai.clients.instrument
+import ai.jetbrains.tracy.test.utils.MediaSource
+import ai.jetbrains.tracy.test.utils.loadFileAsBase64Encoded
+import ai.jetbrains.tracy.test.utils.toDataUrl
+import ai.jetbrains.tracy.test.utils.toMediaContentAttributeValues
 import com.openai.core.JsonValue
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.*

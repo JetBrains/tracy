@@ -1,6 +1,6 @@
-package ai.dev.kit.tracing
+package ai.jetbrains.tracy.test.utils
 
-import ai.dev.kit.tracing.policy.ContentCapturePolicy
+import ai.dev.kit.tracing.TracingManager
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.sdk.OpenTelemetrySdk

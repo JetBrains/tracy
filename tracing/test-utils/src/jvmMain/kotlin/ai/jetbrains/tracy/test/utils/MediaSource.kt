@@ -1,4 +1,4 @@
-package ai.dev.kit.tracing
+package ai.jetbrains.tracy.test.utils
 
 import ai.dev.kit.adapters.media.SupportedMediaContentTypes
 import ai.dev.kit.common.DataUrl

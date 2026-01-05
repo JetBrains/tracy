@@ -1,7 +1,7 @@
 package ai.jetbrains.tracy.ktor
 
 import ai.jetbrains.tracy.gemini.adapters.GeminiLLMTracingAdapter
-import ai.dev.kit.tracing.BaseAITracingTest
+import ai.jetbrains.tracy.test.utils.BaseAITracingTest
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*

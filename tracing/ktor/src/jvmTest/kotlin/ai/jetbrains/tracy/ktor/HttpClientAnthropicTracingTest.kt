@@ -1,6 +1,6 @@
 package ai.jetbrains.tracy.ktor
 
-import ai.dev.kit.tracing.BaseAITracingTest
+import ai.jetbrains.tracy.test.utils.BaseAITracingTest
 import ai.jetbrains.tracy.anthropic.adapters.AnthropicLLMTracingAdapter
 import io.ktor.client.*
 import io.ktor.client.request.*

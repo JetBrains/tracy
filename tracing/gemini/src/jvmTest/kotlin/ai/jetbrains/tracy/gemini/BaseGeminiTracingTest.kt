@@ -1,6 +1,6 @@
 package ai.jetbrains.tracy.gemini
 
-import ai.dev.kit.tracing.BaseAITracingTest
+import ai.jetbrains.tracy.test.utils.BaseAITracingTest
 import com.google.auth.oauth2.AccessToken
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.genai.types.FunctionDeclaration

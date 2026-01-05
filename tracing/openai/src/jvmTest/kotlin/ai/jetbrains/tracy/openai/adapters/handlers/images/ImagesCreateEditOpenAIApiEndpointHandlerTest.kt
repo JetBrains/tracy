@@ -1,9 +1,9 @@
 package ai.jetbrains.tracy.openai.adapters.handlers.images
 
-import ai.dev.kit.tracing.MediaContentAttributeValues
-import ai.dev.kit.tracing.MediaSource
+import ai.jetbrains.tracy.test.utils.MediaContentAttributeValues
+import ai.jetbrains.tracy.test.utils.MediaSource
 import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.toMediaContentAttributeValues
+import ai.jetbrains.tracy.test.utils.toMediaContentAttributeValues
 import ai.jetbrains.tracy.openai.clients.instrument
 import ai.jetbrains.tracy.openai.adapters.BaseOpenAITracingTest
 import ai.dev.kit.tracing.policy.ContentCapturePolicy
