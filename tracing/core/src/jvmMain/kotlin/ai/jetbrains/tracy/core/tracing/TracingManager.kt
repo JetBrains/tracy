@@ -1,6 +1,6 @@
 package ai.jetbrains.tracy.core.tracing
 
-import ai.dev.kit.config.BuildConfig
+import ai.jetbrains.tracy.config.BuildConfig
 import ai.jetbrains.tracy.core.exporters.BaseExporterConfig
 import ai.jetbrains.tracy.core.tracing.TracingManager.setSdk
 import ai.jetbrains.tracy.core.tracing.policy.ContentCapturePolicy

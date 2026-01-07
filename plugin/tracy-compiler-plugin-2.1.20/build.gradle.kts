@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
 
 plugins {
-    id("ai.dev.kit.space.publishing")
+    id("ai.jetbrains.tracy.space.publishing")
     id("org.jetbrains.kotlin.multiplatform") version "2.1.20"
 }
 

@@ -1,5 +1,5 @@
 plugins {
-    id("ai.dev.kit.space.publishing")
+    id("ai.jetbrains.tracy.space.publishing")
     id("java-gradle-plugin")
     id("org.jetbrains.kotlin.jvm") version "2.1.0"
 }

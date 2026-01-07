@@ -33,7 +33,7 @@ You can use it to:
 1. Add dependencies to the `build.gradle.kts` file:
     ```kotlin
     plugins {
-        id("ai.dev.kit.trace") version "0.0.24"
+        id("ai.jetbrains.tracy") version "0.0.24"
     }
     
     dependencies {

@@ -28,9 +28,9 @@ subprojects {
 tasks.register("publishContentModules") {
     group = "publishing"
     description =
-        "Publishes all modules that apply the ai.dev.kit.space.publishing plugin"
+        "Publishes all modules that apply the ai.jetbrains.tracy.space.publishing plugin"
     val publishTasks = subprojects.filter { subproject ->
-        subproject.plugins.hasPlugin("ai.dev.kit.space.publishing")
+        subproject.plugins.hasPlugin("ai.jetbrains.tracy.space.publishing")
     }.mapNotNull { subproject ->
         subproject.tasks.findByName("publish")
     }

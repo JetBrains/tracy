@@ -1,7 +1,7 @@
 plugins {
     kotlin("jvm")
     alias(libs.plugins.kotlin.serialization)
-    id("ai.dev.kit.space.publishing")
+    id("ai.jetbrains.tracy.space.publishing")
 }
 
 dependencies {
