@@ -1,4 +1,4 @@
-package ai.dev.kit.trace.plugin
+package ai.jetbrains.tracy.compiler.plugin
 
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
