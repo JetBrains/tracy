@@ -38,12 +38,12 @@ fun registerContentPublishTask(taskName: String, publishType: String, pluginTask
 }
 
 registerContentPublishTask(
-    taskName = "publishContentModules",
+    taskName = "publishAll",
     publishType = "publish",
     pluginTask = "publishTracingPlugin"
 )
 registerContentPublishTask(
-    taskName = "publishContentModulesToMavenLocal",
+    taskName = "publishAllToMavenLocal",
     publishType = "publishToMavenLocal",
     pluginTask = "publishTracingPluginToMavenLocal"
 )
