@@ -376,7 +376,8 @@ See an example implementation in [
 You can enrich your traces with contextual metadata by adding **custom tags**.  
 Tags help categorize and filter traces based on your business logic. For example, by user type, feature, or
 environment. Use the [
-`addLangfuseTagsToCurrentTrace`](tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/tracing/Utils.kt) function to attach
+`addLangfuseTagsToCurrentTrace`](tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/tracing/Utils.kt) function to
+attach
 tags dynamically within any traced function.  
 These tags appear in Langfuse or other tracing tools, making it easier to group and analyze trace data.
 
@@ -470,7 +471,8 @@ Configuration for exporting OpenTelemetry traces to a file in either JSON or pla
 #### OTLP Configuration
 
 There are [Http](tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/exporters/otlp/OtlpHttpExporterConfig.kt) and
-[Grpc](tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/exporters/otlp/OtlpGrpcExporterConfig.kt) configurations available.
+[Grpc](tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/exporters/otlp/OtlpGrpcExporterConfig.kt) configurations
+available.
 Spans can be exported to any OTLP-compatible HTTP or gRPC collector (for example, Jaeger).
 [Jaeger Setup Example](examples/src/main/kotlin/ai/jetbrains/tracy/examples/backends/JaegerExporterExample.kt)
 
@@ -533,8 +535,29 @@ However, some concurrency models such as `runBlocking` and raw threads create ne
   This is a known Kotlin limitation: references to local functions do not correctly implement the KCallable
   interface. For more details, see the related issue: [KT-64873](https://youtrack.jetbrains.com/issue/KT-64873).
 
-See the [`ContextPropagationExample.kt`](examples/src/main/kotlin/ai/jetbrains/tracy/examples/ContextPropagationExample.kt) for
+See the [
+`ContextPropagationExample.kt`](examples/src/main/kotlin/ai/jetbrains/tracy/examples/ContextPropagationExample.kt) for
 a complete example.
+
+## Publishing
+
+This project uses **Gradle composite builds**.  
+Because of that, running plain `publish` or `publishToMavenLocal` is **not enough**. Included builds are not published
+automatically.
+
+Use these tasks instead:
+
+* **Publish to remote Maven**
+    ```bash
+    ./gradlew publishAll
+    ```
+
+* **Publish to Maven Local**
+    ```bash
+    ./gradlew publishAllToMavenLocal
+    ```
+
+These tasks publish JARs of all modules, all versions of the Kotlin-compiler plugin, and the Gradle plugin.
 
 ### Versioning
 

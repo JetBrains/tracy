@@ -16,7 +16,8 @@ kotlin {
     }
 
     sourceSets {
-        commonMain {
+        val commonMain by getting {
+            kotlin.srcDir(layout.buildDirectory.dir("generated/commonMain"))
             dependencies {
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
@@ -64,7 +65,7 @@ val generatedBuildConfigDir = layout.buildDirectory.dir("generated/commonMain")
 val version = providers.gradleProperty("VERSION").orNull
     ?: error("Missing VERSION property")
 
-tasks.register("generateBuildConfig") {
+val generateBuildConfig by tasks.registering {
     val outputDir = generatedBuildConfigDir.get()
     outputs.dir(generatedBuildConfigDir)
 
@@ -86,20 +87,17 @@ tasks.register("generateBuildConfig") {
     }
 }
 
-kotlin {
-    sourceSets {
-        val commonMain by getting {
-            kotlin.srcDir(layout.buildDirectory.dir("generated/commonMain"))
-        }
-    }
+tasks.named("dokkaGeneratePublicationHtml") {
+    dependsOn(generateBuildConfig)
 }
 
+tasks.named("jvmSourcesJar") {
+    dependsOn(generateBuildConfig)
+}
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    dependsOn(generateBuildConfig)
     compilerOptions {
-        freeCompilerArgs.addAll(
-            "-java-parameters", "-Xexpect-actual-classes"
-        )
+        freeCompilerArgs.addAll("-java-parameters", "-Xexpect-actual-classes")
     }
-    dependsOn("generateBuildConfig")
 }
