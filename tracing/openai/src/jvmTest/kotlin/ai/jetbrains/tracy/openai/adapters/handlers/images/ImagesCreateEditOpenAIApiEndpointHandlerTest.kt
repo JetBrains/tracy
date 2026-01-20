@@ -12,7 +12,6 @@ import com.openai.models.images.ImageEditParams
 import com.openai.models.images.ImageModel
 import io.opentelemetry.api.common.AttributeKey
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Tag

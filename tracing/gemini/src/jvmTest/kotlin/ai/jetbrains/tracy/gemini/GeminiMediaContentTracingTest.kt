@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
 import java.time.Duration
-import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.minutes
 import com.google.genai.types.GenerateContentConfig as GeminiGenerateContentConfig
 

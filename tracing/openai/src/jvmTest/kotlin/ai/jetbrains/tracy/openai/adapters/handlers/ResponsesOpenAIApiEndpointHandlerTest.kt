@@ -13,17 +13,14 @@ import com.openai.models.ChatModel
 import com.openai.models.responses.*
 import io.opentelemetry.api.common.AttributeKey
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Assumptions
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.time.Duration
 import kotlin.time.Duration.Companion.minutes
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotEquals
 
 
 @Tag("openai")
