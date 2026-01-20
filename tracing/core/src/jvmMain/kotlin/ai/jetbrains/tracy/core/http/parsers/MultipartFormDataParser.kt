@@ -22,7 +22,7 @@ class MultipartFormDataParser {
      * This method extracts the MIME-formatted parts from the provided buffer,
      * expecting the given [contentType] to be of `multipart/form-data`.
      *
-     * Automatically decodes fields based on their Content-Transfer-Encoding header (see [MimeStreamParser.setContentDecoding]).
+     * Automatically decodes fields based on their Content-Transfer-Encoding header (see [MimeStreamParser.isContentDecoding]).
      *
      * @param contentType The content type of the input data, used to properly parse the content.
      * @param bytes An array containing the `multipart/form-data` content to be parsed.
@@ -37,9 +37,9 @@ class MultipartFormDataParser {
             .setMaxHeaderLen(-1)
             .build()
         val parser = MimeStreamParser(config)
-        //  recursively parsing RFC822 parts
+        // recursively parsing RFC822 parts
         parser.setRecurse()
-        parser.setContentDecoding(true)
+        parser.isContentDecoding = true
 
         val handler = MultipartContentHandler()
         parser.setContentHandler(handler)
@@ -69,6 +69,12 @@ class MultipartFormDataParser {
     )
 
     companion object {
+        /**
+         * Requires a [contentType] to be of `multipart/form-data` with
+         * a non-blank **"boundary"** parameter present.
+         *
+         * @throws IllegalArgumentException
+         */
         private fun checkContentType(contentType: ContentType) {
             val contentTypeWithoutParams = contentType.withoutParameters()
             if (!ContentType.MultiPart.FormData.match(contentTypeWithoutParams)) {
@@ -78,8 +84,8 @@ class MultipartFormDataParser {
 
             // require 'boundary' parameter to be present
             val boundaryParam = contentType.parameters.firstOrNull { it.name == "boundary" }
-            if (boundaryParam == null) {
-                throw IllegalArgumentException("Content type must contain 'boundary' parameter, got $contentType.")
+            if (boundaryParam == null || boundaryParam.value.isBlank()) {
+                throw IllegalArgumentException("Content type must contain non-blank 'boundary' parameter, got $contentType.")
             }
         }
     }
@@ -113,7 +119,7 @@ data class FormPart(
 }
 
 /**
- * Represents the parsed contents of a multipart/form-data HTTP request body.
+ * Represents the parsed contents of a `multipart/form-data` HTTP request body.
  *
  * This data class encapsulates a collection of individual form parts, each represented
  * by the [FormPart] data class.
@@ -143,10 +149,10 @@ private class MultipartContentHandler : AbstractContentHandler() {
 
     /**
      * Marks whether the very first field, which is always a content type of the entire form data
-     * (i.e., `multipart/form-data` content type), already encountered.
+     * (i.e., `multipart/form-data`), already encountered.
      *
-     * Needed to skip the first content type, as it corresponds to the form-data body as a whole,
-     * not an individual field (see [MultipartContentHandler.field]) implementation.
+     * Note: We need to skip the first content type, as it corresponds to the form-data body as a whole,
+     * not an individual field (see [MultipartContentHandler.field]).
      */
     private var firstFieldEncountered = false
 
@@ -181,7 +187,8 @@ private class MultipartContentHandler : AbstractContentHandler() {
                 val isBodyContentTypeFieldEncountered = !firstFieldEncountered &&
                         contentType?.withoutParameters()?.match(ContentType.MultiPart.FormData) == true
                 if (!isBodyContentTypeFieldEncountered) {
-                    // if not, it is a content type of the actual field of a body part
+                    // if not, it is a content type of the actual field of a body part;
+                    // otherwise, ignore to skip it
                     currentContext.contentType = contentType
                 }
             }

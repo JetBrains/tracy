@@ -87,7 +87,7 @@ fun ByteArray.asRequestBody(contentType: ContentType): RequestBody? {
                     bytes.toString(contentType.charset() ?: Charsets.UTF_8)
                 ).jsonObject
             } catch (err: Exception) {
-                logger.trace("Error while parsing response body", err)
+                logger.trace("Error while parsing request body", err)
                 null
             } ?: return null
 

@@ -500,13 +500,15 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
         assertEquals(prompt, promptPart.content.toString(Charsets.UTF_8),
             "Prompts don't match")
         // image assertions
-        assertEquals(
-            imageBytes.toString(Charsets.UTF_8),
-            imagePart.content.toString(Charsets.UTF_8),
-            "Image contents don't match"
+        assertTrue(
+            imageBytes.contentEquals(imagePart.content),
+            "Image contents don't match",
         )
-        assertEquals(image.contentType, imagePart.contentType?.toString(),
-            "Image content types don't match")
+        assertEquals(
+            image.contentType,
+            imagePart.contentType?.toString(),
+            "Image content types don't match",
+        )
         assertEquals(filename, imagePart.filename, "Filenames don't match")
     }
 
