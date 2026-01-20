@@ -334,8 +334,9 @@ class MultipartFormDataParserTest {
     }
 
     @Test
-    fun `test parser does not extract Content-Transfer-Encoding`() = runTest {
-        // capturing `Content-Transfer-Encoding` header.
+    fun `test parser extracts and applies 'Content-Transfer-Encoding' header`() = runTest {
+        // verifying that the `Content-Transfer-Encoding` header is captured
+        // and applied to the content.
         // This header is important for `multipart/form-data` as it specifies how the body content
         // is encoded (e.g., "base64", "quoted-printable", "binary", "7bit", "8bit")
         val boundary = "EncodingBoundary"
@@ -388,11 +389,12 @@ class MultipartFormDataParserTest {
     }
 
     @Test
-    fun `test parser does not provide access to custom headers`() = runTest {
+    fun `test parser correctly parses and stores custom headers`() = runTest {
         // Some applications may include custom headers like:
         // - Content-ID
         // - Content-Description
         // - Custom application-specific headers (X-Custom-Header, etc.)
+        // All these headers should be correctly parsed and stored in the form part instances.
 
         val boundary = "CustomHeaderBoundary"
         val body = """

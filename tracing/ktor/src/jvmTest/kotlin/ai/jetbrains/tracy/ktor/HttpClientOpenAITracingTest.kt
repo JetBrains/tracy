@@ -591,7 +591,7 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
                     { "role": "user", "content": "$userRequest" }
                 ],
                 "model": "$model",
-                "stream": true
+                "stream": $acceptStream
             }
             """.trimIndent()
             )

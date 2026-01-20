@@ -96,8 +96,9 @@ class MultipartFormDataParser {
  *
  * @property name The name of the form field associated with this part. Can be null if not provided.
  * @property filename The filename associated with this part, commonly used for file uploads. Can be null if not applicable.
- * @property content The raw binary content of the form part.
  * @property contentType The MIME type of the content associated with this part. Can be null if not specified.
+ * @property headers additional headers present in the form part (e.g., Content-Transfer-Encoding, Content-ID, custom headers).
+ * @property content The raw content of the form part.
  */
 data class FormPart(
     val name: String?,
