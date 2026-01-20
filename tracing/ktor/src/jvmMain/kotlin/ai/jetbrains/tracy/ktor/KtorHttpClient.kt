@@ -4,11 +4,12 @@ import ai.jetbrains.tracy.core.http.protocol.asRequestBody
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
 import ai.jetbrains.tracy.core.fluent.processor.Span
 import ai.jetbrains.tracy.core.http.protocol.Request
-import ai.jetbrains.tracy.core.http.protocol.RequestBody
+import ai.jetbrains.tracy.core.http.protocol.RequestBody as TracyRequestBody
 import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.ResponseBody
 import ai.jetbrains.tracy.core.http.protocol.toProtocolUrl
 import ai.jetbrains.tracy.core.tracing.TracingManager
+import io.ktor.http.content.TextContent
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
 import io.ktor.client.request.*
@@ -84,7 +85,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                             logger.warn("Either body or content type are null, defaulting to empty request body")
                             null
                         }
-                    } ?: RequestBody.Empty
+                    } ?: TracyRequestBody.Empty
 
                     val req = Request(
                         url = request.url.toProtocolUrl(),
@@ -217,7 +218,9 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
     }
 
     private suspend fun HttpRequestBuilder.copyBodyContent(): ByteArray? {
-        return when (val body = this.body) {
+        // first, attempt to parse the body directly.
+        // if fails, check if the underlying type is serializable
+        val bytes = when (val body = this.body) {
             is MultiPartFormDataContent -> {
                 val bytes = body.let {
                     val ch = ByteChannel()
@@ -226,8 +229,20 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 }
                 bytes
             }
-            is RequestBody.Json -> body.json.toString().toByteArray()
+            is TextContent -> body.text.toByteArray()
+            is String -> body.toByteArray()
             is EmptyContent -> null
+            else -> null
+        }
+        if (bytes != null) {
+            return bytes
+        }
+
+        val bodyType = this.bodyType?.type
+        return when {
+            bodyType != null && bodyType.hasAnnotation<Serializable>() -> {
+                serializeToJson(body)?.toByteArray()
+            }
             else -> null
         }
     }
