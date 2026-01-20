@@ -13,16 +13,17 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import ai.jetbrains.tracy.core.fluent.processor.SpanData as FluentSpanData
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class BaseAITracingTest : BaseOpenTelemetryTracingTest() {
-    protected fun assumeTracesCount(assumedCount: Int, traces: List<ai.dev.kit.tracing.fluent.processor.SpanData>) {
+    protected fun assumeTracesCount(assumedCount: Int, traces: List<FluentSpanData>) {
         assumeTrue(assumedCount == traces.size) {
             "Expected $assumedCount traces, but got ${traces.size}. Traces:\n${traces.joinToString(",\n") { it.toString() }}"
         }
     }
 
-    protected fun assertTracesCount(expectedCount: Int, traces: List<ai.dev.kit.tracing.fluent.processor.SpanData>) {
+    protected fun assertTracesCount(expectedCount: Int, traces: List<FluentSpanData>) {
         assertEquals(expectedCount, traces.size,
             "Expected $expectedCount traces, but got ${traces.size}. Traces:\n${traces.joinToString(",\n") { it.toString() }}")
     }
