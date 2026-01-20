@@ -2,19 +2,8 @@ package ai.jetbrains.tracy.core
 
 
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
-import ai.jetbrains.tracy.core.http.parsers.MultipartFormDataParser
+import ai.jetbrains.tracy.core.http.protocol.*
 import ai.jetbrains.tracy.core.tracing.TracingManager
-import ai.jetbrains.tracy.core.http.protocol.Request
-import ai.jetbrains.tracy.core.http.protocol.RequestBody
-import ai.jetbrains.tracy.core.http.protocol.Response
-import ai.jetbrains.tracy.core.http.protocol.ResponseBody
-import ai.jetbrains.tracy.core.http.protocol.Url
-import ai.jetbrains.tracy.core.http.protocol.toContentType
-import ai.jetbrains.tracy.core.http.protocol.toProtocolUrl
-import io.ktor.http.ContentType
-import ai.dev.kit.adapters.LLMTracingAdapter
-import ai.dev.kit.http.protocol.*
-import ai.dev.kit.tracing.TracingManager
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.serialization.json.Json

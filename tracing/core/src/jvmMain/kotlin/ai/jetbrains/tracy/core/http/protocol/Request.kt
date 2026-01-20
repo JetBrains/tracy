@@ -1,6 +1,6 @@
 package ai.jetbrains.tracy.core.http.protocol
 
-import ai.dev.kit.http.parsers.MultipartFormDataParser
+import ai.jetbrains.tracy.core.http.parsers.MultipartFormDataParser
 import ai.jetbrains.tracy.core.http.parsers.FormData
 import io.ktor.http.ContentType
 import io.ktor.http.charset
@@ -39,7 +39,7 @@ data class Request(
  */
 sealed class RequestBody {
     data class Json(val json: JsonElement) : RequestBody()
-    data class FormData(val data: ai.dev.kit.http.parsers.FormData) : RequestBody()
+    data class FormData(val data: ai.jetbrains.tracy.core.http.parsers.FormData) : RequestBody()
     object Empty : RequestBody()
 }
 

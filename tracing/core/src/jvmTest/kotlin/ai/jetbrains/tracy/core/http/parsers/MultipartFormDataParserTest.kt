@@ -1,9 +1,8 @@
-package ai.dev.kit.http.parsers
+package ai.jetbrains.tracy.core.http.parsers
 
-import io.ktor.http.*
+import io.ktor.http.ContentType
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -36,7 +35,7 @@ class MultipartFormDataParserTest {
         """.trimIndent()
 
         val contentType = assertDoesNotThrow {
-            ContentType.parse("multipart/form-data; boundary=$boundary")
+            ContentType.Companion.parse("multipart/form-data; boundary=$boundary")
         }
 
         val parser = MultipartFormDataParser()
@@ -44,17 +43,19 @@ class MultipartFormDataParserTest {
             parser.parse(contentType, body.toByteArray())
         }
 
-        assertEquals(3, data.parts.size,
-            "Expected 3 parts in the parsed multipart form data")
-        assertEquals(
+        Assertions.assertEquals(
+            3, data.parts.size,
+            "Expected 3 parts in the parsed multipart form data"
+        )
+        Assertions.assertEquals(
             prompt,
             data.parts.first { it.name == "prompt" }.content.decodeToString()
         )
-        assertEquals(
+        Assertions.assertEquals(
             completion,
             data.parts.first { it.name == "completion" }.content.decodeToString()
         )
-        assertTrue(
+        Assertions.assertTrue(
             data.parts.first { it.name == "empty-value" }.content.decodeToString().isEmpty()
         )
     }
@@ -62,7 +63,7 @@ class MultipartFormDataParserTest {
     @Test
     fun `test parser throws incorrect content type`() = runTest {
         val body = "This is NOT multipart/form-data"
-        val contentType = ContentType.parse("text/plain")
+        val contentType = ContentType.Companion.parse("text/plain")
 
         val parser = MultipartFormDataParser()
         assertThrows<IllegalArgumentException> {
@@ -82,7 +83,7 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = assertDoesNotThrow { ContentType.parse("multipart/form-data") }
+        val contentType = assertDoesNotThrow { ContentType.Companion.parse("multipart/form-data") }
 
         val parser = MultipartFormDataParser()
         assertThrows<IllegalArgumentException> {
@@ -105,16 +106,16 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = ContentType.Companion.parse("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
-        assertEquals(1, data.parts.size)
+        Assertions.assertEquals(1, data.parts.size)
         val part = data.parts[0]
-        assertEquals("file", part.name)
-        assertEquals(fileName, part.filename)
-        assertEquals(fileContent, part.content.decodeToString())
-        assertEquals(ContentType.Text.Plain, part.contentType)
+        Assertions.assertEquals("file", part.name)
+        Assertions.assertEquals(fileName, part.filename)
+        Assertions.assertEquals(fileContent, part.content.decodeToString())
+        Assertions.assertEquals(ContentType.Text.Plain, part.contentType)
     }
 
     @Test
@@ -129,13 +130,13 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = ContentType.Companion.parse("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
-        assertEquals(1, data.parts.size)
-        assertEquals("fieldname", data.parts[0].name)
-        assertEquals("file.txt", data.parts[0].filename)
+        Assertions.assertEquals(1, data.parts.size)
+        Assertions.assertEquals("fieldname", data.parts[0].name)
+        Assertions.assertEquals("file.txt", data.parts[0].filename)
     }
 
     @Test
@@ -156,15 +157,15 @@ class MultipartFormDataParserTest {
 
         val bodyBytes = header.toByteArray() + binaryData + footer.toByteArray()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = ContentType.Companion.parse("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, bodyBytes)
 
-        assertEquals(1, data.parts.size)
+        Assertions.assertEquals(1, data.parts.size)
         val part = data.parts[0]
-        assertEquals("binfile", part.name)
-        assertEquals("binary.bin", part.filename)
-        assertEquals(binaryData.toList(), part.content.toList())
+        Assertions.assertEquals("binfile", part.name)
+        Assertions.assertEquals("binary.bin", part.filename)
+        Assertions.assertEquals(binaryData.toList(), part.content.toList())
     }
 
     @Test
@@ -178,14 +179,14 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = ContentType.Companion.parse("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
-        assertEquals(1, data.parts.size)
-        assertEquals("textfield", data.parts[0].name)
-        assertEquals(null, data.parts[0].contentType)
-        assertEquals("some text value", data.parts[0].content.decodeToString())
+        Assertions.assertEquals(1, data.parts.size)
+        Assertions.assertEquals("textfield", data.parts[0].name)
+        Assertions.assertEquals(null, data.parts[0].contentType)
+        Assertions.assertEquals("some text value", data.parts[0].content.decodeToString())
     }
 
     @Test
@@ -210,23 +211,23 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = ContentType.Companion.parse("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
-        assertEquals(3, data.parts.size)
+        Assertions.assertEquals(3, data.parts.size)
 
         val file1 = data.parts.first { it.name == "file1" }
-        assertEquals("file1.txt", file1.filename)
-        assertEquals("content of file 1", file1.content.decodeToString())
+        Assertions.assertEquals("file1.txt", file1.filename)
+        Assertions.assertEquals("content of file 1", file1.content.decodeToString())
 
         val file2 = data.parts.first { it.name == "file2" }
-        assertEquals("file2.json", file2.filename)
-        assertEquals("{\"key\": \"value\"}", file2.content.decodeToString())
+        Assertions.assertEquals("file2.json", file2.filename)
+        Assertions.assertEquals("{\"key\": \"value\"}", file2.content.decodeToString())
 
         val description = data.parts.first { it.name == "description" }
-        assertEquals(null, description.filename)
-        assertEquals("Files description", description.content.decodeToString())
+        Assertions.assertEquals(null, description.filename)
+        Assertions.assertEquals("Files description", description.content.decodeToString())
     }
 
     @Test
@@ -243,12 +244,12 @@ class MultipartFormDataParserTest {
             |--$boundary--
         """.trimMargin()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = ContentType.Companion.parse("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
-        assertEquals(1, data.parts.size)
-        assertEquals(content, data.parts[0].content.decodeToString())
+        Assertions.assertEquals(1, data.parts.size)
+        Assertions.assertEquals(content, data.parts[0].content.decodeToString())
     }
 
     @Test
@@ -265,12 +266,12 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = ContentType.Companion.parse("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
-        assertEquals(1, data.parts.size)
-        assertEquals(utf8Text, data.parts[0].content.decodeToString())
+        Assertions.assertEquals(1, data.parts.size)
+        Assertions.assertEquals(utf8Text, data.parts[0].content.decodeToString())
     }
 
     @Test
@@ -285,15 +286,15 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = ContentType.Companion.parse("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
         // Parser should handle this gracefully, setting contentType to null
-        assertEquals(1, data.parts.size)
-        assertEquals("field", data.parts[0].name)
-        assertEquals(null, data.parts[0].contentType)
-        assertEquals("content", data.parts[0].content.decodeToString())
+        Assertions.assertEquals(1, data.parts.size)
+        Assertions.assertEquals("field", data.parts[0].name)
+        Assertions.assertEquals(null, data.parts[0].contentType)
+        Assertions.assertEquals("content", data.parts[0].content.decodeToString())
     }
 
     @Test
@@ -301,11 +302,11 @@ class MultipartFormDataParserTest {
         val boundary = "EmptyBoundary"
         val body = "--$boundary--"
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = ContentType.Companion.parse("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
-        assertEquals(0, data.parts.size)
+        Assertions.assertEquals(0, data.parts.size)
     }
 
     @Test
@@ -320,16 +321,16 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = ContentType.Companion.parse("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
-        assertEquals(1, data.parts.size)
+        Assertions.assertEquals(1, data.parts.size)
         val part = data.parts[0]
 
-        assertEquals("field1", part.name)
-        assertEquals("file.txt", part.filename)
-        assertEquals("content", part.content.decodeToString())
+        Assertions.assertEquals("field1", part.name)
+        Assertions.assertEquals("file.txt", part.filename)
+        Assertions.assertEquals("content", part.content.decodeToString())
     }
 
     @Test
@@ -351,22 +352,22 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = ContentType.Companion.parse("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
-        assertEquals(1, data.parts.size)
+        Assertions.assertEquals(1, data.parts.size)
         val part = data.parts[0]
 
         // parser should automatically parse the field according to their MIME types
-        assertEquals(content, part.content.decodeToString())
+        Assertions.assertEquals(content, part.content.decodeToString())
 
-        assertTrue(part.headers.contains("Content-Transfer-Encoding"))
-        assertEquals("base64", part.headers["Content-Transfer-Encoding"])
+        Assertions.assertTrue(part.headers.contains("Content-Transfer-Encoding"))
+        Assertions.assertEquals("base64", part.headers["Content-Transfer-Encoding"])
     }
 
     @Test
-    fun `test parser does not handle parts without name attribute`() = runTest {
+    fun `test parser skips parts without name attribute`() = runTest {
         // according to RFC 7578 (multipart/form-data), each part MUST have a "name" parameter
         // in the Content-Disposition header.
         val boundary = "NoNameBoundary"
@@ -379,11 +380,11 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = ContentType.Companion.parse("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
-        assertTrue(data.parts.isEmpty())
+        Assertions.assertTrue(data.parts.isEmpty())
     }
 
     @Test
@@ -405,14 +406,14 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = ContentType.Companion.parse("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
-        assertEquals(1, data.parts.size)
+        Assertions.assertEquals(1, data.parts.size)
         val part = data.parts[0]
 
         val expectedHeaders = mapOf("Content-ID" to "<custom-id-123>", "X-Custom-Header" to "custom-value")
-        assertEquals(expectedHeaders, part.headers)
+        Assertions.assertEquals(expectedHeaders, part.headers)
     }
 }

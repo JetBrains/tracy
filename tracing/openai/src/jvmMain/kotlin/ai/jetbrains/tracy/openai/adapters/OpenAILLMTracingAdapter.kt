@@ -14,9 +14,9 @@ import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.Url
 import ai.jetbrains.tracy.core.http.protocol.asFormData
 import ai.jetbrains.tracy.core.http.protocol.asJson
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
 import io.ktor.http.charset
 import io.opentelemetry.api.trace.Span
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
