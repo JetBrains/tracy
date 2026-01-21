@@ -48,6 +48,12 @@ registerContentPublishTask(
     pluginTask = "publishTracingPluginToMavenLocal"
 )
 
+registerContentPublishTask(
+    taskName = "publishAllToArtifacts",
+    publishType = "publishMavenPublicationToArtifactsRepository",
+    pluginTask = "publishPluginMavenPublicationToArtifactsRepository"
+)
+
 dependencies {
     dokka(project(":tracing:anthropic"))
     dokka(project(":tracing:core"))

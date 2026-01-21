@@ -27,3 +27,9 @@ registerTracingPublishTask(
     taskName = "publishTracingPluginToMavenLocal",
     publishTaskName = "publishToMavenLocal"
 )
+
+registerTracingPublishTask(
+    taskName = "publishPluginMavenPublicationToArtifactsRepository",
+    publishTaskName = "publishMavenPublicationToArtifactsRepository"
+)
+
