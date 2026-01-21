@@ -87,7 +87,15 @@ gradle.rootProject {
 
             dependsOn(":publishAllToArtifacts")
 
-            from(layout.buildDirectory.dir("artifacts/maven"))
+            subprojects
+                .forEach { sub ->
+                    from(sub.layout.buildDirectory.dir("artifacts/maven"))
+                }
+
+            from(projectDir.resolve("plugin")) {
+                include("**/build/artifacts/maven/**")
+            }
+
             archiveFileName.set("bundle.zip")
             destinationDirectory.set(layout.buildDirectory)
         }
