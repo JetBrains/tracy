@@ -90,6 +90,15 @@ val generateBuildConfig by tasks.registering {
 tasks.named("dokkaGeneratePublicationHtml") {
     dependsOn(generateBuildConfig)
 }
+tasks.named("dokkaGeneratePublicationJavadoc") {
+    dependsOn(generateBuildConfig)
+}
+tasks.named("dokkaGenerateModuleHtml") {
+    dependsOn(generateBuildConfig)
+}
+tasks.named("dokkaGenerateModuleJavadoc") {
+    dependsOn(generateBuildConfig)
+}
 
 tasks.named("jvmSourcesJar") {
     dependsOn(generateBuildConfig)
