@@ -7,15 +7,10 @@ It provides a **unified API** to capture structured traces. Fully compatible wit
 platforms like **Langfuse** and **Weights & Biases (W&B)**.
 
 > [!Note]
-> This project uses [Tracy YouTrack project](https://youtrack.jetbrains.com/issues/TRACY) for issue tracking.  
-> Please file bug reports and feature requests there.
-> Issue templates and additional details are available in the [Contributing Guidelines](CONTRIBUTING.md).
+> This project uses [Tracy YouTrack project](https://youtrack.jetbrains.com/issues/TRACY) for issue tracking. Please file bug reports and feature requests there. Issue templates and additional details are available in the [Contributing Guidelines](CONTRIBUTING.md).
 
 **Standards:**  
-This library implements
-the [OpenTelemetry Generative AI Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/)
-for span attributes and event naming, ensuring your traces remain compatible with any
-OpenTelemetry-compliant backend.
+This library implements the [OpenTelemetry Generative AI Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/) for span attributes and event naming, ensuring your traces remain compatible with any OpenTelemetry-compliant backend.
 
 You can use it to:
 
@@ -28,6 +23,11 @@ You can use it to:
 
 ## Installation
 
+Select the build system that matches your setup:
+
+<details>
+<summary><strong>Gradle (Kotlin DSL)</strong></summary>
+
 ### Gradle (Kotlin DSL)
 
 1. Add dependencies to the `build.gradle.kts` file:
@@ -37,8 +37,9 @@ You can use it to:
     }
     
     dependencies {
+        // Core Module with Shared Functionalities
         implementation("com.jetbrains:tracy-core:0.0.24")
-        // Clients Auto Tracing
+        // Client-specific Auto Tracing (select the one you need)
         implementation("com.jetbrains:tracy-anthropic:0.0.24")
         implementation("com.jetbrains:tracy-gemini:0.0.24")
         implementation("com.jetbrains:tracy-ktor:0.0.24")
@@ -64,7 +65,12 @@ You can use it to:
     }
     ```
 
+</details>
+
 ---
+
+<details>
+<summary><strong>Gradle (Groovy)</strong></summary>
 
 ### Gradle (Groovy)
 
@@ -76,7 +82,7 @@ You can use it to:
     
     dependencies {
         implementation 'com.jetbrains:tracy-core:0.0.24'
-        // Clients Auto Tracing
+        // Client-specific Auto Tracing
         implementation 'com.jetbrains:tracy-anthropic:0.0.24'
         implementation 'com.jetbrains:tracy-gemini:0.0.24'
         implementation 'com.jetbrains:tracy-ktor:0.0.24'
@@ -106,7 +112,12 @@ You can use it to:
     }
     ```
 
+</details>
+
 ---
+
+<details>
+<summary><strong>Maven</strong></summary>
 
 ### Maven
 
@@ -151,7 +162,7 @@ You can use it to:
           <artifactId>tracy-core-jvm</artifactId>
           <version>0.0.24</version>
         </dependency>
-          <!-- Clients Auto Tracing -->
+          <!-- Client-specific Auto Tracing -->
         <dependency>
             <groupId>com.jetbrains</groupId>
             <artifactId>tracy-anthropic-jvm</artifactId>
@@ -191,6 +202,9 @@ You can use it to:
         </pluginRepository>
     </pluginRepositories>
     ```
+
+</details>
+
 
 ## Requirements
 
@@ -259,17 +273,39 @@ Below is a minimal OpenAI example. For others, check the examples directory:
 
 ```kotlin
 // Initialize tracing and export spans to the console
-TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
-val instrumentedClient: OpenAIClient = instrument(fromEnv())
+val sdk: OpenTelemetrySdk = configureOpenTelemetrySdk(
+    exporterConfig = ConsoleExporterConfig()
+)
+TracingManager.setSdk(sdk)
+
+// Permit tracing of sensitive content in requests AND responses
+TracingManager.traceSensitiveContent()
+
+// Create an OpenAI client and instrument it with tracing capabilities
+val myOpenAIClient  = OpenAIOkHttpClient.builder()
+    .baseUrl(url)
+    .apiKey(apiKey)
+    .timeout(timeout)
+    .build()
+
+val instrumentedClient: OpenAIClient = instrument(myOpenAIClient)
+
+
+// Make request and receive response
 val request = ChatCompletionCreateParams.builder()
     .addUserMessage("Generate a polite greeting and introduce yourself.")
     .model(ChatModel.GPT_4O_MINI)
     .temperature(0.0)
     .build()
+
 val response = instrumentedClient.chat().completions().create(request)
+
 println("OpenAI response: ${response.choices().first().message().content().get()}")
+
 // Ensure all trace data is exported
 TracingManager.flushTraces()
+// Now, navigate to your terminal to see a single trace
+// with request and response details 
 ```
 
 > This example uses simple console tracing for a demonstration.
