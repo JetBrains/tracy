@@ -1,7 +1,6 @@
-# Tracy
+# Tracy: AI Tracing Library for Kotlin and Java
 
-The **Tracy** helps you **trace, monitor, and evaluate AI-powered features** directly from your
-Kotlin or Java projects.
+**Tracy** helps you **trace, monitor, and evaluate AI-powered features** directly from your Kotlin or Java projects.
 
 It provides a **unified API** to capture structured traces. Fully compatible with observability
 platforms like **Langfuse** and **Weights & Biases (W&B)**.
@@ -338,17 +337,19 @@ example: [OpenAI Client Auto Tracing Example](examples/src/main/kotlin/ai/jetbra
     - **SDK set after instrumentation**: instrumented clients start emitting spans immediately.
     - **Runtime toggle**: tracing can be dynamically enabled or disabled via `TracingManager.isTracingEnabled`.
 
+
 ### Annotation-Based Tracing
 
 You can trace regular functions (not only client calls)
 using the [`@KotlinFlowTrace`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/fluent/KotlinFlowTrace.kt)
-annotation.  
-Make sure to apply the `ai.jetbrains.tracy` plugin in your build.  
-The Kotlin compiler plugin automatically instruments annotated functions, capturing execution details such as start and
-end time, duration, inputs, and outputs.
+annotation.
 
-> ⚠️ Annotation-based tracing is supported **only in Kotlin**.  
-> For Java, use [Manual Tracing](#manual-tracing) instead.
+**Make sure to apply the `ai.jetbrains.tracy` plugin in your build.**
+
+The Kotlin compiler plugin automatically instruments annotated functions, capturing execution details such as start and end time, duration, inputs, and outputs.
+
+> ⚠️ Annotation-based tracing is supported **only in Kotlin**. For Java, use [Manual Tracing](#manual-tracing) instead.
+
 
 #### Quick Start
 
