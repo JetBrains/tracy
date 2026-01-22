@@ -6,7 +6,7 @@ It provides a **unified API** to capture structured traces. Fully compatible wit
 platforms like **Langfuse** and **Weights & Biases (W&B)**.
 
 > [!Note]
-> This project uses [Tracy YouTrack project](https://youtrack.jetbrains.com/issues/TRACY) for issue tracking. Please file bug reports and feature requests there. Issue templates and additional details are available in the [Contributing Guidelines](CONTRIBUTING.md).
+> This project uses [Tracy Official YouTrack Project](https://youtrack.jetbrains.com/issues/TRACY) for issue tracking. Please file bug reports and feature requests there. Issue templates and additional details are available in the [Contributing Guidelines](CONTRIBUTING.md).
 
 **Standards:**  
 This library implements the [OpenTelemetry Generative AI Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/) for span attributes and event naming, ensuring your traces remain compatible with any OpenTelemetry-compliant backend.
@@ -508,12 +508,13 @@ Configuration for exporting OpenTelemetry traces to a file in either JSON or pla
 #### OTLP Configuration
 
 There are [Http](tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/exporters/otlp/OtlpHttpExporterConfig.kt) and
-[Grpc](tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/exporters/otlp/OtlpGrpcExporterConfig.kt) configurations
+[gRPC](tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/exporters/otlp/OtlpGrpcExporterConfig.kt) configurations
 available.
 Spans can be exported to any OTLP-compatible HTTP or gRPC collector (for example, Jaeger).
 [Jaeger Setup Example](examples/src/main/kotlin/ai/jetbrains/tracy/examples/backends/JaegerExporterExample.kt)
 
-### Project Structure
+
+## Project Structure
 
 - **[`plugin`](plugin)** — contains the Kotlin compiler plugins for annotation-based fluent tracing.  
   It includes multiple Kotlin Compiler Plugin (KCP) implementations for different Kotlin versions.  
@@ -530,10 +531,17 @@ Spans can be exported to any OTLP-compatible HTTP or gRPC collector (for example
     - **[`openai`](tracing/openai)** — tracing integration for the `OpenAI` client.
     - **[`gemini`](tracing/gemini)** — tracing integration for the `Gemini` client.
     - **[`anthropic`](tracing/anthropic)** — tracing integration for the `Anthropic` client.
-    - **[`test-utils`](tracing/test-utils)** — shared utilities for testing tracing functionality across
-      modules.
+    - **[`ktor`](tracing/ktor)** — tracing integration for the `Ktor` HTTP client.
+    - **[`test-utils`](tracing/test-utils)** — shared utilities for testing tracing functionality across modules.
 
-### Limitations
+## Limitations
+
+### Span Context Propagation
+
+There are a few known limitations of the library in terms of the content propogation. To see complete examples of the recommended usage patterns, refer to the [
+`ContextPropagationExample.kt`](examples/src/main/kotlin/ai/jetbrains/tracy/examples/ContextPropagationExample.kt) file.
+
+#### Kotlin Coroutines
 
 Context propagation works automatically in structured coroutines (e.g., `withContext`, `launch`).
 However, some concurrency models such as `runBlocking` and raw threads create new execution boundaries and require
@@ -542,8 +550,7 @@ However, some concurrency models such as `runBlocking` and raw threads create ne
 - **`runBlocking` inside suspend functions:**  
   Use [
   `currentSpanContextElement(...)`](tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/fluent/processor/Utils.kt)
-  to ensure child spans remain linked to their parent.  
-  Without it, spans become detached and appear as separate traces.
+  to ensure child spans remain linked to their parent. Otherwise, spans become detached and appear as separate traces.
 
   ```kotlin
   @KotlinFlowTrace
@@ -557,8 +564,11 @@ However, some concurrency models such as `runBlocking` and raw threads create ne
       }
   }
   ```
+
+#### Multi-Threading
+
 - **Custom threads (via `thread { ... }`):**  
-  Threads do **not inherit** the OpenTelemetry context automatically.  
+  Threads **do NOT inherit** the OpenTelemetry context automatically.  
   Capture and propagate it manually:
   ```kotlin
   val context = currentSpanContext(currentCoroutineContext())
@@ -567,20 +577,16 @@ However, some concurrency models such as `runBlocking` and raw threads create ne
   }
   ```
 
-- **Local functions:**
-  Avoid using `@KotlinFlowTrace` on local (nested) functions.
-  This is a known Kotlin limitation: references to local functions do not correctly implement the KCallable
-  interface. For more details, see the related issue: [KT-64873](https://youtrack.jetbrains.com/issue/KT-64873).
+### Local functions
 
-See the [
-`ContextPropagationExample.kt`](examples/src/main/kotlin/ai/jetbrains/tracy/examples/ContextPropagationExample.kt) for
-a complete example.
+Avoid using `@KotlinFlowTrace` on local (nested) functions.
+This is a known Kotlin limitation: references to local functions do NOT implement the `KCallable`
+interface correctly. For more details, see the related issue: [KT-64873](https://youtrack.jetbrains.com/issue/KT-64873).
+
 
 ## Publishing
 
-This project uses **Gradle composite builds**.  
-Because of that, running plain `publish` or `publishToMavenLocal` is **not enough**. Included builds are not published
-automatically.
+This project uses **Gradle composite builds**. Thus, running plain `publish` or `publishToMavenLocal` is **NOT enough**. Included builds are not published automatically.
 
 Use these tasks instead:
 
