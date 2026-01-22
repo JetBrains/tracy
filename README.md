@@ -67,7 +67,7 @@ Select the build system that matches your setup:
 
 </details>
 
----
+
 
 <details>
 <summary><strong>Gradle (Groovy)</strong></summary>
@@ -114,7 +114,7 @@ Select the build system that matches your setup:
 
 </details>
 
----
+
 
 <details>
 <summary><strong>Maven</strong></summary>
