@@ -53,7 +53,7 @@ suspend fun processInThread() {
 // Example usage
 ```
 
-See the full example: [ContextPropagationExample.kt](../../../examples/src/main/kotlin/ai/jetbrains/tracy/examples/ContextPropagationExample.kt)
+See the full example: [ContextPropagationExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/ContextPropagationExample.kt)
 
 ## Custom Tags
 
@@ -74,7 +74,7 @@ fun myBusinessLogic() {
 ```
 <!--- KNIT example-advanced-01.kt -->
 
-See the full example: [LangfuseTagExample.kt](../../../examples/src/main/kotlin/ai/jetbrains/tracy/examples/LangfuseTagExample.kt)
+See the full example: [LangfuseTagExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/LangfuseTagExample.kt)
 
 ## Best Practices
 

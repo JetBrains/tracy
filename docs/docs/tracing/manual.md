@@ -43,7 +43,7 @@ public class ManualTracingJava {
 }
 ```
 
-See the full example: [ManualTracingExample.kt](../../../examples/src/main/kotlin/ai/jetbrains/tracy/examples/ManualTracingExample.kt)
+See the full example: [ManualTracingExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/ManualTracingExample.kt)
 
 ## Manual Span Management
 

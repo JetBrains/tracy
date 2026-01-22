@@ -47,7 +47,7 @@ fun main() {
 ```
 <!--- KNIT example-annotations-02.kt -->
 
-See the full example: [NestedSpansExample.kt](../../../examples/src/main/kotlin/ai/jetbrains/tracy/examples/NestedSpansExample.kt)
+See the full example: [NestedSpansExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/NestedSpansExample.kt)
 
 ## Advanced Usage
 
@@ -73,7 +73,7 @@ service.execute("test") // This will be traced!
 ```
 <!--- KNIT example-annotations-03.kt -->
 
-See the full example: [TracingPropagationExample.kt](../../../examples/src/main/kotlin/ai/jetbrains/tracy/examples/TracingPropagationExample.kt)
+See the full example: [TracingPropagationExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/TracingPropagationExample.kt)
 
 ### Customizing Span Metadata
 
@@ -90,14 +90,14 @@ object MyCustomizer : SpanMetadataCustomizer {
 }
 -->
 ```kotlin
-@KotlinFlowTrace(customizer = MyCustomizer::class)
+@KotlinFlowTrace(metadataCustomizer = MyCustomizer::class)
 fun myCustomFunction(input: String) {
     // ...
 }
 ```
 <!--- KNIT example-annotations-04.kt -->
 
-See the full example: [MetadataCustomizerExample.kt](../../../examples/src/main/kotlin/ai/jetbrains/tracy/examples/MetadataCustomizerExample.kt)
+See the full example: [MetadataCustomizerExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/MetadataCustomizerExample.kt)
 
 ## Limitations
 
