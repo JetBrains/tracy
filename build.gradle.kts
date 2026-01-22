@@ -38,10 +38,11 @@ fun registerContentPublishTask(taskName: String, publishType: String, pluginTask
 }
 
 registerContentPublishTask(
-    taskName = "publishAll",
-    publishType = "publish",
-    pluginTask = "publishTracingPlugin"
+    taskName = "publishAllToSpace",
+    publishType = "publishAllPublicationsToSpaceRepository",
+    pluginTask = "publishTracingPluginToSpace",
 )
+
 registerContentPublishTask(
     taskName = "publishAllToMavenLocal",
     publishType = "publishToMavenLocal",
@@ -50,8 +51,8 @@ registerContentPublishTask(
 
 registerContentPublishTask(
     taskName = "publishAllToArtifacts",
-    publishType = "publishMavenPublicationToArtifactsRepository",
-    pluginTask = "publishPluginMavenPublicationToArtifactsRepository"
+    publishType = "publishAllPublicationsToArtifactsRepository",
+    pluginTask = "publishTracingPluginToArtifactsRepository"
 )
 
 dependencies {

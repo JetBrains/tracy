@@ -110,3 +110,15 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
         freeCompilerArgs.addAll("-java-parameters", "-Xexpect-actual-classes")
     }
 }
+
+
+publishing {
+    publications.withType<MavenPublication>().configureEach {
+        artifactId = "tracy-$artifactId"
+        pom {
+            name.set(artifactId)
+            description.set("Core tracing module of the Tracy library.")
+        }
+    }
+}
+

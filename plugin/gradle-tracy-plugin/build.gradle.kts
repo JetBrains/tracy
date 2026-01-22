@@ -30,3 +30,11 @@ java {
     }
 }
 
+publishing {
+    publications.withType<MavenPublication>().configureEach {
+        pom {
+            name.set(artifactId)
+            description.set("Gradle plugin for configuring Tracy annotation based tracing in Kotlin projects.")
+        }
+    }
+}

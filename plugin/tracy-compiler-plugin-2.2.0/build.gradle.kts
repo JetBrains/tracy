@@ -22,3 +22,12 @@ kotlin {
         }
     }
 }
+
+publishing {
+    publications.withType<MavenPublication>().configureEach {
+        pom {
+            name.set(artifactId)
+            description.set("Kotlin compiler plugin for enabling Tracy tracing annotations with Kotlin 2.2.0.")
+        }
+    }
+}

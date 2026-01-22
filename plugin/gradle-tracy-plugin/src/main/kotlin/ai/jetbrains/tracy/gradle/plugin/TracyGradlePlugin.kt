@@ -36,7 +36,7 @@ class TracyGradlePlugin : KotlinCompilerPluginSupportPlugin {
         val pluginVersion = findPluginVersion(kotlinVersion)
         logger.debug("Resolved tracy-compiler-plugin-$pluginVersion for Kotlin compiler $kotlinVersion")
         return SubpluginArtifact(
-            groupId = "ai.jetbrains",
+            groupId = "ai.jetbrains.tracy",
             artifactId = "tracy-compiler-plugin-$pluginVersion",
             version = VERSION
         )

@@ -17,7 +17,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(project(":tracing:core"))
+                api(project(":tracing:core"))
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
             }
@@ -51,3 +51,15 @@ kotlin {
         }
     }
 }
+
+
+publishing {
+    publications.withType<MavenPublication>().configureEach {
+        artifactId = "tracy-$artifactId"
+        pom {
+            name.set(artifactId)
+            description.set("Tracy integration module for OpenAI clients.")
+        }
+    }
+}
+

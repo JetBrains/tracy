@@ -19,8 +19,8 @@ fun registerTracingPublishTask(taskName: String, publishTaskName: String) {
 }
 
 registerTracingPublishTask(
-    taskName = "publishTracingPlugin",
-    publishTaskName = "publish"
+    taskName = "publishTracingPluginToSpace",
+    publishTaskName = "publishAllPublicationsToSpaceRepository"
 )
 
 registerTracingPublishTask(
@@ -29,7 +29,7 @@ registerTracingPublishTask(
 )
 
 registerTracingPublishTask(
-    taskName = "publishPluginMavenPublicationToArtifactsRepository",
-    publishTaskName = "publishMavenPublicationToArtifactsRepository"
+    taskName = "publishTracingPluginToArtifactsRepository",
+    publishTaskName = "publishAllPublicationsToArtifactsRepository"
 )
 

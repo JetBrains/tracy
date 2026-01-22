@@ -55,3 +55,14 @@ kotlin {
         }
     }
 }
+
+publishing {
+    publications.withType<MavenPublication>().configureEach {
+        artifactId = "tracy-$artifactId"
+        pom {
+            name.set(artifactId)
+            description.set("Tracy integration module for Ktor HTTP clients.")
+        }
+    }
+}
+

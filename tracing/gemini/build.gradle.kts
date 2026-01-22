@@ -17,7 +17,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(project(":tracing:core"))
+                api(project(":tracing:core"))
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
             }
@@ -45,6 +45,16 @@ kotlin {
                 implementation(libs.opentelemetry.sdk.testing)
                 implementation(project(":tracing:test-utils"))
             }
+        }
+    }
+}
+
+publishing {
+    publications.withType<MavenPublication>().configureEach {
+        artifactId = "tracy-$artifactId"
+        pom {
+            name.set(artifactId)
+            description.set("Tracy integration module for Google Gemini clients.")
         }
     }
 }
