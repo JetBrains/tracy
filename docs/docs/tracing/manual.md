@@ -29,13 +29,13 @@ val result = withSpan("myOperation", mapOf("inputParam" to "someValue")) { span 
 Tracy provides a Java-friendly API for manual tracing.
 
 ```java
-import ai.jetbrains.tracy.core.tracing.ManualTracer;
+import ai.jetbrains.tracy.core.fluent.processor.withSpan;
 import io.opentelemetry.api.trace.Span;
 import java.util.Collections;
 
 public class ManualTracingJava {
     public void doSomething() {
-        String result = ManualTracer.withSpan("javaOperation", Collections.emptyMap(), span -> {
+        String result = withSpan("javaOperation", Collections.emptyMap(), span -> {
             span.setAttribute("java.version", System.getProperty("java.version"));
             return "Done";
         });

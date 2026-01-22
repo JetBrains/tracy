@@ -10,9 +10,11 @@ Tracy usually handles context propagation automatically, especially when using s
 
 Context propagation works automatically with `withContext`, `launch`, and `async`. But some models like `runBlocking` or raw threads create boundaries that require manual propagation.
 
+See the full examples: [ContextPropagationExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/ContextPropagationExample.kt)
+
 #### `runBlocking`
 
-Use `currentSpanContextElement` to ensure child spans are linked to their parent when using `runBlocking` inside a suspend function.
+Use [`currentSpanContextElement`](https://github.com/JetBrains/tracy/blob/f23d34692d0d0d9e7164554a2e4a50df268867d4/tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/fluent/processor/Utils.kt#L34-L36) to ensure child spans are linked to their parent when using `runBlocking` inside a suspend function.
 
 <!--- INCLUDE
 import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
@@ -20,16 +22,16 @@ import ai.jetbrains.tracy.core.fluent.processor.currentSpanContextElement
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.runBlocking
 
+-->
+```kotlin
 @KotlinFlowTrace
 suspend fun processRequest() {
     runBlocking(currentSpanContextElement(currentCoroutineContext())) {
         // Nested spans will be correctly linked
     }
 }
--->
-```kotlin
-// Example usage in a suspend function
 ```
+<!--- KNIT example-advanced-01.kt -->
 
 ### Multi-Threading
 
@@ -40,6 +42,8 @@ import ai.jetbrains.tracy.core.fluent.processor.currentSpanContext
 import kotlinx.coroutines.currentCoroutineContext
 import kotlin.concurrent.thread
 
+-->
+```kotlin
 suspend fun processInThread() {
     val context = currentSpanContext(currentCoroutineContext())
     thread {
@@ -48,23 +52,22 @@ suspend fun processInThread() {
         }
     }
 }
--->
-```kotlin
-// Example usage
 ```
+<!--- KNIT example-advanced-02.kt -->
 
-See the full example: [ContextPropagationExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/ContextPropagationExample.kt)
 
 ## Custom Tags
 
 You can enrich your traces with business-specific metadata using custom tags. These tags are especially useful for filtering and grouping traces in tools like Langfuse.
 
+
 ### Adding Langfuse Tags
 
-Use `addLangfuseTagsToCurrentTrace` to attach tags dynamically within any traced function.
+Use [`addLangfuseTagsToCurrentTrace`](https://github.com/JetBrains/tracy/blob/f23d34692d0d0d9e7164554a2e4a50df268867d4/tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/tracing/Utils.kt#L71-L74) to attach tags dynamically within any traced function.
 
 <!--- INCLUDE
 import ai.jetbrains.tracy.core.tracing.addLangfuseTagsToCurrentTrace
+
 -->
 ```kotlin
 fun myBusinessLogic() {
@@ -72,7 +75,7 @@ fun myBusinessLogic() {
     // ...
 }
 ```
-<!--- KNIT example-advanced-01.kt -->
+<!--- KNIT example-advanced-03.kt -->
 
 See the full example: [LangfuseTagExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/LangfuseTagExample.kt)
 

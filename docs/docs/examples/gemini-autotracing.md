@@ -1,6 +1,6 @@
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.gemini.clients.instrument
+import ai.jetbrains.tracy.openai.clients.instrument
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import java.time.Duration
 
@@ -17,8 +17,6 @@ val client = OpenAIOkHttpClient.builder()
     .build()
 
 
-val instrumentedClient = instrument(
-    client
-)
+val instrumentedClient = instrument(client)
 ```
 <!--- KNIT example-gemini-autotracing-01.kt -->

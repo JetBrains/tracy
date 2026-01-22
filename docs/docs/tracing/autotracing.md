@@ -62,8 +62,10 @@ If you are using Ktor's `HttpClient` for manual LLM calls or custom integrations
 
 <!--- INCLUDE
 import ai.jetbrains.tracy.ktor.instrument
+import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
+
 -->
 ```kotlin
 val client = HttpClient(CIO)
@@ -87,6 +89,8 @@ For applications using OkHttp, Tracy provides an interceptor-based approach via 
 <!--- INCLUDE
 import ai.jetbrains.tracy.core.instrument
 import okhttp3.OkHttpClient
+import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
+
 -->
 ```kotlin
 val okHttpClient = OkHttpClient.Builder().build()

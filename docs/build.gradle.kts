@@ -26,6 +26,8 @@ dependencies {
     implementation(libs.gemini)
     implementation(libs.openai)
     implementation(libs.okhttp)
+    implementation(libs.kotlinx.coroutines)
+    implementation(libs.ktor.client.cio)
 }
 
 val knitProperties: Provider<Properties> =

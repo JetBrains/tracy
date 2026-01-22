@@ -50,7 +50,7 @@ The documentation is built using [MkDocs](https://www.mkdocs.org/) with the Mate
 
 ### Code Snippets Verification
 
-We use the [kotlinx-knit](https://github.com/Kotlin/kotlinx-knit) library to ensure code snippets in documentation are compilable and up to date with the latest framework version. Knit provides a Gradle plugin that extracts specially annotated Kotlin code snippets from Markdown files and generates Kotlin source files._
+We use the [kotlinx-knit](https://github.com/Kotlin/kotlinx-knit) library to ensure code snippets in documentation are compilable and up to date with the latest framework version. Knit provides a Gradle plugin that extracts specially annotated Kotlin code snippets from Markdown files and generates Kotlin source files.
 
 There are two options of adding new code snippets into your documentation. The syntax remains the same; the only difference is how they are included in the documentation md-files.
 

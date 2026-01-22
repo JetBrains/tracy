@@ -66,11 +66,17 @@ interface Service {
 class ServiceImpl : Service {
     override fun execute(data: String): String = "Executed $data"
 }
+
+fun main() {
 -->
 ```kotlin
 val service: Service = ServiceImpl()
 service.execute("test") // This will be traced!
 ```
+<!--- SUFFIX
+}
+-->
+
 <!--- KNIT example-annotations-03.kt -->
 
 See the full example: [TracingPropagationExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/TracingPropagationExample.kt)
@@ -81,15 +87,21 @@ You can customize how spans are named and how inputs/outputs are serialized by p
 
 <!--- INCLUDE
 import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.handlers.PlatformMethod
 import ai.jetbrains.tracy.core.fluent.handlers.SpanMetadataCustomizer
-import io.opentelemetry.api.trace.Span
 
-object MyCustomizer : SpanMetadataCustomizer {
-    override fun getSpanName(instance: Any?, args: Array<out Any?>): String = "CustomName"
-    // Implement other methods as needed
-}
 -->
 ```kotlin
+object MyCustomizer : SpanMetadataCustomizer {
+    fun getSpanName(instance: Any?, args: Array<out Any?>): String = "CustomName"
+    override fun formatInputAttributes(
+        method: PlatformMethod,
+        args: Array<Any?>
+    ): String = "${method.name}(${args.joinToString { it.toString() }})"
+
+    // Implement other methods as needed
+}
+
 @KotlinFlowTrace(metadataCustomizer = MyCustomizer::class)
 fun myCustomFunction(input: String) {
     // ...

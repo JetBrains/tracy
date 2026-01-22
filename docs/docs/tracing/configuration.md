@@ -10,10 +10,10 @@ The `TracingManager` is the central configuration point for the library.
 
 You can enable or disable tracing at runtime:
 
-```kotlin
+````kotlin
 TracingManager.isTracingEnabled = true // Enable
 TracingManager.isTracingEnabled = false // Disable
-```
+````
 
 By default, it checks the `IS_TRACY_ENABLED` environment variable.
 
@@ -21,10 +21,10 @@ By default, it checks the `IS_TRACY_ENABLED` environment variable.
 
 Before any spans can be exported, you must set an OpenTelemetry SDK instance:
 
-```kotlin
+````kotlin
 val sdk = configureOpenTelemetrySdk(ConsoleExporterConfig())
 TracingManager.setSdk(sdk)
-```
+````
 
 ## Sensitive Content (Redaction)
 
@@ -40,23 +40,28 @@ You can enable capturing of inputs and outputs in two ways:
 
 Set the following environment variables:
 
-```bash
+````bash
 TRACY_CAPTURE_INPUT=true
 TRACY_CAPTURE_OUTPUT=true
-```
+````
 
 #### 2. Programmatically
 
 Use the helper method to enable both:
 
-```kotlin
+````kotlin
 TracingManager.traceSensitiveContent()
-```
+````
 
 Or configure the policy more granularly:
 
 <!--- INCLUDE
 import ai.jetbrains.tracy.core.tracing.policy.ContentCapturePolicy
+import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
+import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
+
+fun main() {
 -->
 ```kotlin
 TracingManager.withCapturingPolicy(
@@ -66,6 +71,9 @@ TracingManager.withCapturingPolicy(
     )
 )
 ```
+<!--- SUFFIX
+}
+-->
 <!--- KNIT example-configuration-01.kt -->
 
 ## Exporters
