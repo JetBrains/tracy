@@ -10,10 +10,10 @@ The library provides APIs that help define what needs to be traced at a high lev
 
 ## Quick Start
 
-The simplest way to get started is to use the instructions provided in the [README](https://github.com/JetBrains/tracy/blob/main/README.md).
+The simplest way to get started is to follow the initial instructions provided in the [README](https://github.com/JetBrains/tracy/blob/main/README.md).
 
 
-**Read the following pages:**
+**Next, read the following pages:**
 
-1. [Tracing APIs](./tracing-api.md): Detailed information about the tracing APIs for LLM clients, such as OpenAI and Anthropic, and normal functions.
+1. [Tracing API](./tracing/index.md): Detailed information about the tracing APIs for LLM clients (OpenAI, Anthropic, Gemini), function tracing, and manual instrumentation.
 2. [Supported Backends](./supported-backends.md): Information about the supported backends and their configuration.
