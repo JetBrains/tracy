@@ -17,9 +17,9 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
 import java.net.SocketTimeoutException
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -59,7 +59,7 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
         )
 
         val traces = analyzeSpans()
-        assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
         val trace = traces.first()
 
         // input side
@@ -128,7 +128,7 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
         )
 
         val traces = analyzeSpans()
-        assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
         val trace = traces.first()
 
         val prompt = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
@@ -160,7 +160,7 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
         )
 
         val traces = analyzeSpans()
-        assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
     }
 
     @Test
@@ -183,10 +183,8 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
         flushTracesAndAssumeToolCalled(response, toolName, GenerateContentResponse::containsToolCall)
 
         val traces = analyzeSpans()
-
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
+        assertTracesCount(1, traces)
+        val trace = traces.first()
 
         // assert request
         assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.name")])
@@ -267,10 +265,8 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
         )
 
         val traces = analyzeSpans()
-
-        assertEquals(2, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
+        assertTracesCount(2, traces)
+        val trace = traces.first()
 
         // assert request
         assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.name")])
@@ -341,9 +337,9 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
         )
 
         val traces = analyzeSpans()
-        assertEquals(2, traces.size)
-
+        assertTracesCount(2, traces)
         val trace = traces.first()
+
         // Assert both tools are declared in the request
         assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.name")])
         assertEquals("goodbye", trace.attributes[AttributeKey.stringKey("gen_ai.tool.1.function.0.name")])
@@ -373,10 +369,8 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
         )
 
         val traces = analyzeSpans()
-
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
+        assertTracesCount(1, traces)
+        val trace = traces.first()
 
         assertEquals(StatusCode.OK, trace.status.statusCode)
         assertEquals(
@@ -451,10 +445,8 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
         }
 
         val traces = analyzeSpans()
-
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
+        assertTracesCount(1, traces)
+        val trace = traces.first()
 
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
         assertEquals(
@@ -482,10 +474,9 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
         )
 
         val traces = analyzeSpans()
+        assertTracesCount(1, traces)
+        val trace = traces.first()
 
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
         val labelsAttribute = trace.attributes[AttributeKey.stringKey("tracy.request.labels")]
 
         assertNotNull(labelsAttribute)

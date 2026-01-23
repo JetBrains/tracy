@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
 import java.time.Duration
-import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.minutes
 import com.google.genai.types.GenerateContentConfig as GeminiGenerateContentConfig
 
@@ -137,7 +136,7 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
         chat.sendMessage("Update this infographic to be in Japanese")
 
         val traces = analyzeSpans()
-        assertEquals(2, traces.size)
+        assertTracesCount(2, traces)
 
         val trace1 = traces.first()
         val trace2 = traces.last()
@@ -241,7 +240,7 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
         client.models.generateImages(model, prompt, params)
 
         val traces = analyzeSpans()
-        assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
         val trace = traces.first()
 
         val expectedImage = MediaContentAttributeValues.Data(
@@ -311,7 +310,7 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
         )
 
         val traces = analyzeSpans()
-        assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
         val trace = traces.first()
 
         val expectedImage = MediaContentAttributeValues.Data(
@@ -352,7 +351,7 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
         client.models.upscaleImage(model, inputImage, upscaleFactor, params)
 
         val traces = analyzeSpans()
-        assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
         val trace = traces.first()
 
         val expectedImage = MediaContentAttributeValues.Data(

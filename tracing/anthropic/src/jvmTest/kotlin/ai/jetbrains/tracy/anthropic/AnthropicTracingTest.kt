@@ -11,11 +11,7 @@ import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_FINISH_REASONS
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -27,8 +23,8 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 
 @Tag("anthropic")
 class AnthropicTracingTest : BaseAnthropicTracingTest() {
@@ -51,7 +47,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         client.messages().create(params)
 
         val traces = analyzeSpans()
-        assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
         val trace = traces.first()
 
         // input side
@@ -111,7 +107,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         client.messages().create(params)
 
         val traces = analyzeSpans()
-        assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
     }
 
     @Test
@@ -133,10 +129,8 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         flushTracesAndAssumeToolCalled(response, toolName, Message::containsToolCall)
 
         val traces = analyzeSpans()
-
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
+        assertTracesCount(1, traces)
+        val trace = traces.first()
 
         // Check tool definitions in the request
         assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
@@ -213,7 +207,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
 
         // NOTE: the first trace will contain text/event-stream content type, hence it isn't traced fully
         val traces = analyzeSpans()
-        assertEquals(2, traces.size)
+        assertTracesCount(2, traces)
 
         val traceWithToolCallResult = traces.lastOrNull()
         assertNotNull(traceWithToolCallResult)
@@ -307,7 +301,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         client.messages().create(paramsBuilder.build())
 
         val traces = analyzeSpans()
-        assertEquals(3, traces.size)
+        assertTracesCount(3, traces)
 
         val finalTrace = traces.last()
 
@@ -341,10 +335,8 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         client.messages().create(params)
 
         val traces = analyzeSpans()
-
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-        assertNotNull(trace)
+        assertTracesCount(1, traces)
+        val trace = traces.first()
 
         assertEquals(
             llmProviderUrl,

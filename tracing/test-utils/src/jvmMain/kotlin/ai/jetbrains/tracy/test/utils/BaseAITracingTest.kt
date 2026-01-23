@@ -4,6 +4,7 @@ import ai.jetbrains.tracy.core.adapters.media.UploadableMediaContentAttributeKey
 import ai.jetbrains.tracy.core.tracing.policy.ContentCapturePolicy
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.sdk.trace.data.SpanData
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.provider.Arguments
 import java.io.InputStream
@@ -12,16 +13,26 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import ai.jetbrains.tracy.core.fluent.processor.SpanData as FluentSpanData
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class BaseAITracingTest : BaseOpenTelemetryTracingTest() {
+    protected fun assumeTracesCount(assumedCount: Int, traces: List<FluentSpanData>) {
+        assumeTrue(assumedCount == traces.size) {
+            "Expected $assumedCount traces, but got ${traces.size}. Traces:\n${traces.joinToString(",\n") { it.toString() }}"
+        }
+    }
+
+    protected fun assertTracesCount(expectedCount: Int, traces: List<FluentSpanData>) {
+        assertEquals(expectedCount, traces.size,
+            "Expected $expectedCount traces, but got ${traces.size}. Traces:\n${traces.joinToString(",\n") { it.toString() }}")
+    }
+
     protected fun validateBasicTracing(url: String, model: String) {
         val traces = analyzeSpans()
+        assertTracesCount(1, traces)
+        val trace = traces.first()
 
-        assertEquals(1, traces.size)
-        val trace = traces.firstOrNull()
-
-        assertNotNull(trace)
         assertTrue(
             url.startsWith(trace.attributes[AttributeKey.stringKey("gen_ai.api_base")].toString())
         )

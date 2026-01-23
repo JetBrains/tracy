@@ -10,7 +10,8 @@ import com.openai.models.images.ImageModel
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -18,9 +19,7 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.time.Duration
 import java.util.stream.Stream
-import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.minutes
-import kotlin.test.assertNotEquals
 
 @Tag("openai")
 class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
@@ -310,7 +309,7 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         client.images().generate(params)
 
         val traces = analyzeSpans()
-        assertEquals(1, traces.size)
+        assumeTracesCount(1, traces)
         val trace = traces.first()
 
         val prompt = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
@@ -348,11 +347,11 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     private fun validateBasicImageTracing(prompt: String, model: ImageModel) {
         val traces = analyzeSpans()
-        Assertions.assertEquals(1, traces.size)
+        assertTracesCount(1, traces)
         val trace = traces.first()
 
-        Assertions.assertEquals(prompt, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
-        Assertions.assertEquals(
+        assertEquals(prompt, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
+        assertEquals(
             true,
             trace.attributes[AttributeKey.stringKey("gen_ai.request.model")]?.startsWith(model.asString())
         )

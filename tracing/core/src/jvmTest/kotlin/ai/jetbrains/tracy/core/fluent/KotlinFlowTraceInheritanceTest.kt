@@ -56,6 +56,7 @@ class KotlinFlowTraceInheritanceTest : BaseOpenTelemetryTracingTest() {
 
         assertEquals(1, traces.size)
         val trace = traces.first()
+
         assertTrue(
             trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)?.endsWith("TestClassPropagationInterfaceImpl.fromInterface") ?: false
         )
