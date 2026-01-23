@@ -208,6 +208,9 @@ To view the generated documentation, use any static file server, e.g.:
 ```bash
 cd build/dokka/html
 python3 -m http.server --bind 127.0.0.1
+
+# alternatively, from the project root directory:
+python3 -m http.server 8000 --directory build/dokka/html
 ```
 
 ## Build javadoc.jar
