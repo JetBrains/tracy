@@ -4,7 +4,7 @@ Tracy offers flexible configuration options to control how traces are collected 
 
 ## TracingManager
 
-The `TracingManager` is the central configuration point for the library.
+The [`TracingManager`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/index.html?query=object%20TracingManager) is the central configuration point for the library.
 
 ### Enabling/Disabling Tracing
 
@@ -15,7 +15,7 @@ TracingManager.isTracingEnabled = true // Enable
 TracingManager.isTracingEnabled = false // Disable
 ````
 
-By default, it checks the `IS_TRACY_ENABLED` environment variable.
+By default, it checks the **`IS_TRACY_ENABLED`** environment variable.
 
 ### Setting the SDK
 
@@ -82,11 +82,11 @@ Tracy supports multiple backends out of the box. For detailed configuration of e
 
 Common exporters include:
 
-- **Console**: Great for development.
-- **Langfuse**: Dedicated LLM observability.
-- **Weave (Weights & Biases)**: For experiment tracking and evaluation.
-- **File**: Export traces to a local JSON or plain text file.
-- **OTLP**: Export to any OpenTelemetry-compliant backend (e.g., Jaeger, Honeycomb).
+- [**Langfuse**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.exporters.otlp/-langfuse-exporter-config/index.html): Dedicated LLM observability.
+- [**Weave (Weights & Biases)**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.exporters.otlp/-weave-exporter-config/index.html): For experiment tracking and evaluation.
+- [**Console**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.exporters/-console-exporter-config/index.html): Great for development.
+- [**File**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.exporters/-file-exporter-config/index.html): Export traces to a local JSON or plain text file.
+- **OTLP**: Export to any OpenTelemetry-compliant backend (e.g., Jaeger, Honeycomb; see [`OtlpHttpExporterConfig`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.exporters.otlp/-otlp-http-exporter-config/index.html), [`OtlpGrpcExporterConfig`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.exporters.otlp/-otlp-grpc-exporter-config/index.html)).
 
 Example of configuring a File exporter:
 

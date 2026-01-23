@@ -12,17 +12,17 @@ The Tracing API is divided into three main categories:
 
 ## Key Components
 
-- **TracingManager**: The central point for configuring and controlling tracing at runtime.
-- **instrument()**: A function used to wrap LLM clients with tracing capabilities.
-- **@KotlinFlowTrace**: An annotation for automatic instrumentation of Kotlin functions.
-- **withSpan**: A block-based API for manual span management.
+- [**`TracingManager`**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/index.html?query=object%20TracingManager): The central point for configuring and controlling tracing at runtime.
+- **`instrument()`**: A function used to wrap LLM clients with tracing capabilities (_multiple overloads for different LLM clients, e.g., see [`instrument`]({{ api_docs_url }}/tracing/openai/ai.jetbrains.tracy.openai.clients/instrument.html) for the [`OpenAIClient`](https://javadoc.io/doc/com.openai/openai-java/4.5.0/com/openai/client/OpenAIClient.html)_).
+- [**`@KotlinFlowTrace`**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent/-kotlin-flow-trace/index.html): An annotation for automatic instrumentation of Kotlin functions.
+- [**`withSpan`**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-span.html): A block-based API for manual span management.
 
 ## Getting Started
 
 To start tracing, you need to:
 
 1.  Configure the OpenTelemetry SDK with a desired exporter.
-2.  Set the SDK in the `TracingManager`.
+2.  Set the SDK in the [`TracingManager`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/index.html?query=object%20TracingManager).
 3.  Instrument your clients or annotate your functions.
 4.  Flush traces before your application exits.
 

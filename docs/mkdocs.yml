@@ -75,6 +75,9 @@ repo_name: "Tracy on GitHub"
 edit_uri: edit/develop/docs/docs/
 copyright: Copyright © 2000-2025 JetBrains s.r.o.
 
+extra:
+  api_docs_url: https://api-tracy.labs.jb.gg
+
 #extra:
 #  social:
 #   TODO: Add a similar link as in Koog (e.g., https://docs.koog.ai/koog-slack-channel) and name
