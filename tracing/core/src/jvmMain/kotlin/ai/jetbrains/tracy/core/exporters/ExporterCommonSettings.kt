@@ -33,7 +33,7 @@ data class ExporterCommonSettings(
     val maxNumberOfSpanAttributes: Int? = null,
     val maxSpanAttributeValueLength: Int? = null,
 ) {
-    companion object {
+    internal companion object {
         const val DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES = 256
         const val DEFAULT_SPAN_ATTRIBUTE_VALUE_LENGTH = Int.MAX_VALUE
         const val DEFAULT_FLUSH_INTERVAL_MS = 5L

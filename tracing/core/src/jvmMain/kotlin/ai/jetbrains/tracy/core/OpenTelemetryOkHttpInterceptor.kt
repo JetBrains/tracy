@@ -19,6 +19,20 @@ import okhttp3.Request as OkHttpRequest
 import okhttp3.Response as OkHttpResponse
 import okhttp3.ResponseBody as OkHttpResponseBody
 
+/**
+ * Instruments an [OkHttpClient] with OpenTelemetry tracing for LLM API calls.
+ *
+ * This function adds a tracing interceptor to the OkHttp client that automatically
+ * captures and exports span data for HTTP requests made to LLM providers.
+ *
+ * @param client The [OkHttpClient] instance to instrument.
+ * @param adapter The [LLMTracingAdapter] that handles provider-specific attribute extraction
+ *  (e.g., `ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter` for OpenAI).
+ * @return A new [OkHttpClient] instance with tracing capabilities enabled.
+ *
+ * @see OpenTelemetryOkHttpInterceptor
+ * @see LLMTracingAdapter
+ */
 fun instrument(client: OkHttpClient, adapter: LLMTracingAdapter): OkHttpClient {
     val clientBuilder = client.newBuilder()
 
@@ -103,9 +117,7 @@ internal fun setFieldValue(instance: Any, fieldName: String, value: Any?) {
 class OpenTelemetryOkHttpInterceptor(
     private val adapter: LLMTracingAdapter,
 ) : Interceptor {
-    companion object {
-        private val logger = KotlinLogging.logger {}
-    }
+    private val logger = KotlinLogging.logger {}
 
     override fun intercept(chain: Interceptor.Chain): OkHttpResponse {
         if (!TracingManager.isTracingEnabled) {

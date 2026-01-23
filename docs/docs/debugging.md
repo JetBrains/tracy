@@ -43,11 +43,11 @@ Or programmatically:
 TracingManager.isTracingEnabled = true
 ```
 
-See [Configuration](../tracing/configuration.md#enablingdisabling-tracing) for details.
+See [Configuration](tracing/configuration.md#enablingdisabling-tracing) for details.
 
 ## 5. Ensure Traces Are Flushed
 
-Traces are automatically flushed based on [`ExporterCommonSettings`](../otel-config/sdk-configuration.md#common-exporter-settings):
+Traces are automatically flushed based on [`ExporterCommonSettings`](otel-config/sdk-configuration.md#common-exporter-settings):
 
 - **Periodically**: via `flushIntervalMs` and `flushThreshold`
 - **On shutdown**: via JVM shutdown hook if `flushOnShutdown = true`
@@ -58,7 +58,23 @@ Or flush manually:
 TracingManager.flushTraces()
 ```
 
-See [Flushing and Shutdown](../tracing/configuration.md#flushing-and-shutdown) for details.
+See [Flushing and Shutdown](tracing/configuration.md#flushing-and-shutdown) for details.
+
+## 6. Fixing Generic Parameter Names (arg0, arg1)
+
+If your traces show generic parameter names like `arg0` or `arg1` instead of the actual names from your code, you need to enable the `-java-parameters` compiler flag.
+
+Add the following to your `build.gradle.kts`:
+
+```kotlin
+tasks.withType<KotlinCompile> {
+    compilerOptions {
+        freeCompilerArgs.addAll("-java-parameters")
+    }
+}
+```
+
+This flag instructs the Kotlin compiler to generate metadata for method parameters, allowing Tracy to retrieve their names via reflection.
 
 !!! note "Limitations"
-    The compiler plugin has some limitations (local functions, inline lambdas, Java interoperability). See the [Limitations](../limitations.md) page for details.
+    The compiler plugin has some limitations (local functions, inline lambdas, Java interoperability). See the [Limitations](limitations.md) page for details.

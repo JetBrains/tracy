@@ -95,11 +95,11 @@ abstract class BaseExporterConfig(
         return this
     }
 
-    companion object {
-        internal fun resolveEnvInt(envKey: String, default: Int): Int =
+    internal companion object {
+        fun resolveEnvInt(envKey: String, default: Int): Int =
             System.getenv(envKey)?.toInt() ?: default
 
-        internal fun resolveRequiredEnvVar(argValue: String?, envKey: String): String {
+        fun resolveRequiredEnvVar(argValue: String?, envKey: String): String {
             return argValue ?: System.getenv(envKey) ?: error("$envKey must be provided via argument or env var")
         }
     }

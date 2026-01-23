@@ -25,7 +25,7 @@ import mu.KotlinLogging
  *
  * See [Generate Content API Docs](https://ai.google.dev/api/generate-content)
  */
-class GeminiContentGenHandler(
+internal class GeminiContentGenHandler(
     private val extractor: MediaContentExtractor
 ) : EndpointApiHandler {
     override fun handleRequestAttributes(span: Span, request: Request) {
@@ -347,8 +347,7 @@ class GeminiContentGenHandler(
         }
     }
 
-    companion object {
-        private val logger = KotlinLogging.logger {}
+    private val logger = KotlinLogging.logger {}
 
         private val mappedRequestAttributes: List<String> = listOf(
             "contents",
@@ -364,7 +363,6 @@ class GeminiContentGenHandler(
         )
 
         private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes
-    }
 }
 
 internal fun ContentType.Companion.parseOrNull(mimeType: String) =

@@ -8,15 +8,9 @@ import ai.jetbrains.tracy.core.adapters.media.Resource
 import ai.jetbrains.tracy.core.http.protocol.Request
 import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.asJson
-import io.ktor.http.ContentType
+import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
 import mu.KotlinLogging
 
 /**
@@ -24,7 +18,7 @@ import mu.KotlinLogging
  *
  * See: [Imagen API Docs](https://ai.google.dev/gemini-api/docs/imagen)
  */
-class GeminiImagenHandler(
+internal class GeminiImagenHandler(
     private val extractor: MediaContentExtractor
 ) : EndpointApiHandler {
     override fun handleRequestAttributes(span: Span, request: Request) {
@@ -121,7 +115,5 @@ class GeminiImagenHandler(
         return Resource.Base64(base64, contentType)
     }
 
-    companion object {
-        private val logger = KotlinLogging.logger {}
-    }
+    private val logger = KotlinLogging.logger {}
 }

@@ -75,7 +75,7 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
             }
             is RequestBody.Json -> {
                 val body = request.body.asJson()?.jsonObject ?: return false
-                 body["stream"]?.jsonPrimitive?.boolean ?: false
+                body["stream"]?.jsonPrimitive?.boolean ?: false
             }
             RequestBody.Empty -> false
         }
@@ -117,7 +117,5 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
         return handler
     }
 
-    companion object {
-        private val logger = KotlinLogging.logger {}
-    }
+    private val logger = KotlinLogging.logger {}
 }

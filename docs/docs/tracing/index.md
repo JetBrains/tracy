@@ -18,7 +18,7 @@ The Tracing API is divided into three main categories:
 ## Key Components
 
 - [**`TracingManager`**]({{ api_docs_url
-  }}/tracing/core/ai.jetbrains.tracy.core/-tracing-manager/index.html?query=object%20TracingManager): The
+  }}/tracing/core/ai.jetbrains.tracy.core/-tracing-manager/index.html): The
   central point for configuring and controlling tracing at runtime.
 - **`instrument()`**: A function used to wrap LLM clients with tracing capabilities (_multiple overloads for different
   LLM clients, e.g., see [`instrument`]({{ api_docs_url
@@ -29,50 +29,9 @@ The Tracing API is divided into three main categories:
 - [**`withSpan`**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-span.html): A
   block-based API for manual span management.
 
-## Getting Started
-
-To start tracing, you need to:
-
-1. Configure the OpenTelemetry SDK with a desired [exporter](../otel-config/exporters.md).
-2. Set the SDK in the [`TracingManager`]({{ api_docs_url
-   }}/tracing/core/ai.jetbrains.tracy.core/-tracing-manager/index.html?query=object%20TracingManager).
-3. Instrument your clients or annotate your functions.
-4. Flush traces before your application exits.
-
-Example of a basic setup:
-
-<!--- INCLUDE
-import ai.jetbrains.tracy.core.TracingManager
-import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
-import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
-import ai.jetbrains.tracy.core.fluent.Trace
--->
-
-```kotlin
-@Trace
-fun greet(name: String) = println("Hello, $name!")
-
-fun main() {
-    // 1. Configure SDK
-    val sdk = configureOpenTelemetrySdk(ConsoleExporterConfig())
-
-    // 2. Set SDK
-    TracingManager.setSdk(sdk)
-
-    // 3. Call a traced function
-    greet("Tracy")
-    
-    // Traces are automatically flushed based on ExporterCommonSettings:
-    // - Periodically via flushIntervalMs and flushThreshold
-    // - On JVM shutdown if flushOnShutdown = true (default)
-    // For manual control, use TracingManager.flushTraces()
-}
-```
-
-<!--- KNIT example-tracing-index-01.kt -->
-
 See the following sections for more details:
 
+- [Getting Started](../get-started.md)
 - [Configuration & Sensitivity](configuration.md)
 - [LLM Client Autotracing](autotracing.md)
 - [Function Tracing with Annotations](annotations.md)

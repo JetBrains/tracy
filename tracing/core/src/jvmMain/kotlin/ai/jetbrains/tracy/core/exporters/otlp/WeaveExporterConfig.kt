@@ -7,6 +7,8 @@ import io.opentelemetry.sdk.trace.export.SpanExporter
 import java.util.*
 import java.util.concurrent.TimeUnit
 
+private const val WEAVE_BASE_URL = "https://trace.wandb.ai"
+
 /**
  * Configuration for exporting OpenTelemetry traces to [W&B Weave](https://wandb.ai/site/weave) via OTLP HTTP.
  *
@@ -61,9 +63,5 @@ class WeaveExporterConfig(
     override fun basicAuthHeader(): String {
         val credentials = "api:$resolvedApiKey"
         return Base64.getEncoder().encodeToString(credentials.toByteArray(Charsets.UTF_8))
-    }
-
-    companion object {
-        private const val WEAVE_BASE_URL = "https://trace.wandb.ai"
     }
 }

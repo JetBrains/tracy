@@ -143,9 +143,9 @@ abstract class BaseAITracingTest : BaseOpenTelemetryTracingTest() {
             ?: error("File '$filepath' not found")
     }
 
-    companion object {
-        protected const val CAT_IMAGE_URL =
+    protected companion object {
+        const val CAT_IMAGE_URL =
             "https://images.pexels.com/photos/104827/cat-pet-animal-domestic-104827.jpeg"
-        protected const val SAMPLE_PDF_FILE_URL = "https://pdfobject.com/pdf/sample.pdf"
+        const val SAMPLE_PDF_FILE_URL = "https://pdfobject.com/pdf/sample.pdf"
     }
 }

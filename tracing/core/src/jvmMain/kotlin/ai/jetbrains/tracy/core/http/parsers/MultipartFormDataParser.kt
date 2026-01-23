@@ -1,8 +1,7 @@
 package ai.jetbrains.tracy.core.http.parsers
 
 import ai.jetbrains.tracy.core.http.protocol.toContentType
-import io.ktor.http.ContentType
-import io.ktor.http.charset
+import io.ktor.http.*
 import mu.KotlinLogging
 import okhttp3.MediaType
 import okio.Buffer
@@ -68,25 +67,24 @@ class MultipartFormDataParser {
         buffer.readByteArray(),
     )
 
-    companion object {
-        /**
-         * Requires a [contentType] to be of `multipart/form-data` with
-         * a non-blank **"boundary"** parameter present.
-         *
-         * @throws IllegalArgumentException
-         */
-        private fun checkContentType(contentType: ContentType) {
-            val contentTypeWithoutParams = contentType.withoutParameters()
-            if (!ContentType.MultiPart.FormData.match(contentTypeWithoutParams)) {
-                throw IllegalArgumentException(
-                    "Content type must be ${ContentType.MultiPart.FormData}, got $contentType.")
-            }
+    /**
+     * Requires a [contentType] to be of `multipart/form-data` with
+     * a non-blank **"boundary"** parameter present.
+     *
+     * @throws IllegalArgumentException
+     */
+    private fun checkContentType(contentType: ContentType) {
+        val contentTypeWithoutParams = contentType.withoutParameters()
+        if (!ContentType.MultiPart.FormData.match(contentTypeWithoutParams)) {
+            throw IllegalArgumentException(
+                "Content type must be ${ContentType.MultiPart.FormData}, got $contentType."
+            )
+        }
 
-            // require 'boundary' parameter to be present
-            val boundaryParam = contentType.parameters.firstOrNull { it.name == "boundary" }
-            if (boundaryParam == null || boundaryParam.value.isBlank()) {
-                throw IllegalArgumentException("Content type must contain non-blank 'boundary' parameter, got $contentType.")
-            }
+        // require 'boundary' parameter to be present
+        val boundaryParam = contentType.parameters.firstOrNull { it.name == "boundary" }
+        if (boundaryParam == null || boundaryParam.value.isBlank()) {
+            throw IllegalArgumentException("Content type must contain non-blank 'boundary' parameter, got $contentType.")
         }
     }
 }
@@ -174,6 +172,7 @@ private class MultipartContentHandler : AbstractContentHandler() {
                 currentContext.name = nameMatch?.groupValues?.drop(1)?.firstOrNull { it.isNotEmpty() }
                 currentContext.filename = filenameMatch?.groupValues?.drop(1)?.firstOrNull { it.isNotEmpty() }
             }
+
             "content-type" -> {
                 // the very first encountered field is a content type of the entire body;
                 // therefore, we skip it
@@ -193,6 +192,7 @@ private class MultipartContentHandler : AbstractContentHandler() {
                     currentContext.contentType = contentType
                 }
             }
+
             else -> {
                 // collect all other headers
                 currentContext.headers[field.name] = field.body
@@ -209,6 +209,7 @@ private class MultipartContentHandler : AbstractContentHandler() {
             null -> {
                 logger.warn { "No name found for multipart part of content type ${currentContext.contentType}, skipping" }
             }
+
             else -> {
                 // add a new part into form data
                 val part = FormPart(
@@ -232,7 +233,5 @@ private class MultipartContentHandler : AbstractContentHandler() {
         var headers: MutableMap<String, String> = mutableMapOf(),
     )
 
-    companion object {
-        private val logger = KotlinLogging.logger {}
-    }
+    private val logger = KotlinLogging.logger {}
 }

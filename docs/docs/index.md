@@ -2,6 +2,7 @@
 
 [Tracy](https://github.com/JetBrains/tracy/) is an open-source JetBrains Kotlin library that adds OpenTelemetry observability to JVM applications. It provides APIs that help define what needs to be traced at a high level, while hiding implementation details such as span structures and attribute names. The library also supports multiple OpenTelemetry backends out of the box.
 
+<!--suppress HtmlUnknownAttribute -->
 <div class="grid cards" markdown>
 
 -   :material-rocket-launch:{ .lg .middle } [**Get Started**](./get-started.md)
@@ -28,7 +29,7 @@
 
     Learn how to instrument your code with Tracy's tracing primitives
 
--   :material-export:{ .lg .middle } [**OpenTelemetry Exporters**](./otel-exporters.md)
+-   :material-export:{ .lg .middle } [**OpenTelemetry Exporters**](./otel-config/exporters.md)
 
     ---
 
@@ -51,7 +52,7 @@
 
 <div class="grid cards" markdown>
 
--   :material-bug:{ .lg .middle } [**Debugging**](./compiler-plugin/debugging.md)
+-   :material-bug:{ .lg .middle } [**Debugging**](debugging.md)
 
     ---
 

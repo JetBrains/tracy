@@ -1,10 +1,10 @@
 # Configuration & Sensitivity
 
-Tracy offers flexible configuration options to control how traces are collected and exported, and how sensitive data is handled.
+Tracy offers flexible configuration options to control how traces are collected and exported and how sensitive data is handled.
 
 ## TracingManager
 
-The [`TracingManager`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core/-tracing-manager/index.html?query=object%20TracingManager) is the central configuration point for the library.
+The [`TracingManager`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core/-tracing-manager/index.html) is the central configuration point for the library.
 
 | Method/Property | Description |
 |-----------------|-------------|

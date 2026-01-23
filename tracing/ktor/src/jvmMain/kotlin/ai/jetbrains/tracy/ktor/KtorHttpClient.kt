@@ -38,11 +38,17 @@ import ai.jetbrains.tracy.core.http.protocol.RequestBody as TracyRequestBody
 
 
 /**
- * Configures a Ktor [HttpClient] for tracing client calls when one of the supported LLM providers is used.
+ * Instruments a Ktor [HttpClient] with OpenTelemetry tracing for LLM API calls.
  *
- * @param client The [HttpClient] instance to be configured for tracing.
- * @param adapter The [LLMTracingAdapter] specifying the LLM adapter for which tracing should be enabled.
- * @return A configured [HttpClient] instance with tracing capabilities for the selected provider.
+ * All LLM API calls made using this client will be automatically traced,
+ * capturing request/response attributes as span data.
+ *
+ * @param client The [HttpClient] instance to instrument.
+ * @param adapter The [LLMTracingAdapter] that handles provider-specific attribute extraction
+ *  (e.g., `ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter` for OpenAI).
+ * @return A configured [HttpClient] instance with tracing capabilities enabled.
+ *
+ * @see LLMTracingAdapter
  */
 fun instrument(client: HttpClient, adapter: LLMTracingAdapter): HttpClient {
     return client.config {

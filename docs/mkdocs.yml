@@ -18,7 +18,7 @@ nav:
       - Compiler Plugin:
           - Overview: compiler-plugin/index.md
           - How Tracy Transforms Code: compiler-plugin/ir-transformation.md
-      - Debugging Tips: compiler-plugin/debugging.md
+      - Debugging Tips: debugging.md
       - Limitations: limitations.md
   - API Reference: https://api-tracy.labs.jb.gg/
 
