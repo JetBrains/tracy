@@ -3,7 +3,7 @@ site_name: Tracy
 # TODO: add site_url, favicon, style.css (for details, see PR description: https://github.com/JetBrains/tracy/pull/95)
 nav:
   - Documentation:
-      - Overview: index.md
+      - Welcome to Tracy: index.md
       - Tracing API:
           - Overview: tracing/index.md
           - Configuration: tracing/configuration.md

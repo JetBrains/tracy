@@ -1,4 +1,3 @@
-# Tracy
 # Tracy: AI Tracing Library for Kotlin and Java
 
 ## Introduction
