@@ -8,13 +8,13 @@ Tracy usually handles context propagation automatically, especially when using s
 
 ### Kotlin Coroutines
 
-Context propagation works automatically with `withContext`, `launch`, and `async`. But some models like `runBlocking` or raw threads create boundaries that require manual propagation.
+Context propagation works automatically with [`withContext`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-context.html), [`launch`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/launch.html), and [`async`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html). But some models like [`runBlocking`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html) or raw threads create boundaries that require manual propagation.
 
 See the full examples: [ContextPropagationExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/ContextPropagationExample.kt)
 
-#### `runBlocking`
+#### [`runBlocking`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html)
 
-Use [`currentSpanContextElement`](https://github.com/JetBrains/tracy/blob/f23d34692d0d0d9e7164554a2e4a50df268867d4/tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/fluent/processor/Utils.kt#L34-L36) to ensure child spans are linked to their parent when using `runBlocking` inside a suspend function.
+Use [`currentSpanContextElement`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent.processor/current-span-context-element.html) to ensure child spans are linked to their parent when using [`runBlocking`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html) inside a suspend function.
 
 <!--- INCLUDE
 import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
@@ -35,7 +35,7 @@ suspend fun processRequest() {
 
 ### Multi-Threading
 
-Standard threads do **not** inherit the OpenTelemetry context. You must capture and propagate it manually:
+Standard threads do **NOT** inherit the OpenTelemetry context. You must capture and propagate it manually:
 
 <!--- INCLUDE
 import ai.jetbrains.tracy.core.fluent.processor.currentSpanContext
@@ -63,7 +63,7 @@ You can enrich your traces with business-specific metadata using custom tags. Th
 
 ### Adding Langfuse Tags
 
-Use [`addLangfuseTagsToCurrentTrace`](https://github.com/JetBrains/tracy/blob/f23d34692d0d0d9e7164554a2e4a50df268867d4/tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/tracing/Utils.kt#L71-L74) to attach tags dynamically within any traced function.
+Use [`addLangfuseTagsToCurrentTrace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/add-langfuse-tags-to-current-trace.html) to attach tags dynamically within any traced function.
 
 <!--- INCLUDE
 import ai.jetbrains.tracy.core.tracing.addLangfuseTagsToCurrentTrace
@@ -81,7 +81,7 @@ See the full example: [LangfuseTagExample.kt](https://github.com/JetBrains/tracy
 
 ## Best Practices
 
-1.  **Always flush**: Ensure `TracingManager.flushTraces()` is called before application exit.
+1.  **Always flush**: Ensure [`TracingManager.flushTraces()`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/flush-traces.html) is called before application exit.
 2.  **Use structured concurrency**: Prefer Kotlin coroutines over raw threads to benefit from automatic context propagation.
 3.  **Redact by default**: Be mindful of PII (Personally Identifiable Information) and only enable sensitive content capture when necessary.
 4.  **Tag for success**: Use custom tags to make your traces easier to analyze in the backend.

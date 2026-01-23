@@ -2,13 +2,13 @@
 
 In addition to annotation-based tracing, you can manually create and manage spans anywhere in your code. This is especially useful for:
 
-- **Java projects**: Where `@KotlinFlowTrace` is not supported.
+- **Java projects**: Where [`@KotlinFlowTrace`](https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent/-kotlin-flow-trace/index.html) is not supported.
 - **Granular control**: When you want to trace specific blocks of code within a function.
 - **Custom metadata**: When you want to add specific attributes to a span dynamically.
 
-## Using `withSpan`
+## Using [`withSpan`](https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-span.html)
 
-The `withSpan` function is the easiest way to manually trace a block of code. It automatically handles span creation, activation, and closing (even in case of exceptions).
+The [`withSpan`](https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-span.html) function is the easiest way to manually trace a block of code. It automatically handles span creation, activation, and closing (even in the case of exceptions).
 
 ### Kotlin Example
 
@@ -47,7 +47,7 @@ See the full example: [ManualTracingExample.kt](https://github.com/JetBrains/tra
 
 ## Manual Span Management
 
-If `withSpan` doesn't fit your needs, you can use the OpenTelemetry API directly while still benefiting from Tracy's configuration.
+If [`withSpan`](https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-span.html) doesn't fit your needs, you can use the OpenTelemetry API directly while still benefiting from Tracy's configuration.
 
 ```kotlin
 val tracer = TracingManager.getTracer()
