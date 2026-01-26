@@ -1,8 +1,8 @@
 package ai.jetbrains.tracy.gemini.clients
 
-import ai.jetbrains.tracy.core.OpenTelemetryOkHttpInterceptor
 import ai.jetbrains.tracy.gemini.adapters.GeminiLLMTracingAdapter
-import ai.jetbrains.tracy.core.patchInterceptors
+import ai.jetbrains.tracy.okhttp.interceptors.OpenTelemetryOkHttpInterceptor
+import ai.jetbrains.tracy.okhttp.interceptors.patchInterceptors
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import com.google.genai.Client as GeminiClient

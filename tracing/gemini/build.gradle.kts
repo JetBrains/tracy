@@ -18,6 +18,7 @@ kotlin {
         commonMain {
             dependencies {
                 api(project(":tracing:core"))
+                api(project(":tracing:okhttp"))
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
             }

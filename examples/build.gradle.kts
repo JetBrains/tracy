@@ -18,6 +18,7 @@ dependencies {
     implementation(project(":tracing:core"))
     implementation(project(":tracing:gemini"))
     implementation(project(":tracing:ktor"))
+    implementation(project(":tracing:okhttp"))
     implementation(project(":tracing:openai"))
     testImplementation(libs.kotlin.test)
 }
