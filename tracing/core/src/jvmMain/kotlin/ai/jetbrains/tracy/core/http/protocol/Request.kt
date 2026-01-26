@@ -43,6 +43,7 @@ sealed class RequestBody {
     object Empty : RequestBody()
 }
 
+// TODO: remove?
 fun MediaType.toContentType(): ContentType = ContentType.parse(this.toString())
 
 fun RequestBody.asJson(): JsonElement? {

@@ -25,6 +25,7 @@ kotlin {
 
         jvmMain {
             dependencies {
+                implementation(project(":tracing:okhttp"))
                 implementation(libs.anthropic)
                 implementation(libs.okhttp)
                 implementation(libs.opentelemetry)
