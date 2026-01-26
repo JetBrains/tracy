@@ -100,4 +100,4 @@ fun ByteArray.asRequestBody(contentType: ContentType): RequestBody? {
     }
 }
 
-fun MediaType.toContentType(): ContentType = ContentType.parse(this.toString())
+fun MediaType.toContentType() = ContentType.parse(this.toString())
