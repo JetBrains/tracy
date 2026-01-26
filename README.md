@@ -1,5 +1,13 @@
 # Tracy: AI Tracing Library for Kotlin and Java
 
+[![JetBrains incubator project](https://jb.gg/badges/incubator.svg)](https://github.com/JetBrains#jetbrains-on-github)
+[![Kotlin Alpha](https://kotl.in/badges/alpha.svg)](https://kotlinlang.org/docs/components-stability.html)
+[![Kotlin](https://img.shields.io/badge/kotlin-2.1-blue.svg?logo=kotlin)](http://kotlinlang.org)
+[![GitHub license](https://img.shields.io/github/license/JetBrains/tracy)](LICENSE)
+[![YouTrack Issues](https://img.shields.io/badge/Issue%20Tracker-YouTrack-blue)](https://youtrack.jetbrains.com/issues/TRACY)
+[![Documentation](https://img.shields.io/badge/documentation-blue)](https://tracy.labs.jb.gg/)
+[![API Docs](https://img.shields.io/badge/API-Docs-blue)](https://api-tracy.labs.jb.gg/)
+
 **Tracy** helps you **trace, monitor, and evaluate AI-powered features** directly from your Kotlin or Java projects.
 
 It provides a **unified API** to capture structured traces. Fully compatible with observability
