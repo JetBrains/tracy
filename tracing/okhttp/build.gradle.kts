@@ -34,6 +34,7 @@ kotlin {
                 implementation(libs.opentelemetry.sdk)
                 implementation(libs.opentelemetry.semconv.incubating)
                 implementation(libs.kotlin.logging)
+                implementation(libs.ktor.client)
             }
         }
 

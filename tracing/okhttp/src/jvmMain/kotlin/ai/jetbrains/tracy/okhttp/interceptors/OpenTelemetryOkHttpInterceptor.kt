@@ -6,12 +6,11 @@ import ai.jetbrains.tracy.core.http.protocol.Request
 import ai.jetbrains.tracy.core.http.protocol.RequestBody
 import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.ResponseBody
-import ai.jetbrains.tracy.core.http.protocol.ContentType as TracyContentType
 import ai.jetbrains.tracy.core.http.protocol.Url
+import ai.jetbrains.tracy.core.http.protocol.toContentType
 import ai.jetbrains.tracy.core.tracing.TracingManager
-import ai.jetbrains.tracy.okhttp.extensions.parse
-import ai.jetbrains.tracy.okhttp.extensions.toContentType as toTracyContentType
 import ai.jetbrains.tracy.okhttp.extensions.toProtocolUrl
+import io.ktor.http.ContentType
 import ai.jetbrains.tracy.core.http.protocol.*
 import ai.jetbrains.tracy.core.tracing.TracingManager
 import io.opentelemetry.api.trace.Span
@@ -61,8 +60,8 @@ class OpenTelemetryOkHttpInterceptor(
                     val mediaType = request.body?.contentType()
                     val req = bodyContent.asRequestBody(mediaType)?.let {
                         Request(
-                            contentType = mediaType?.toTracyContentType(),
                             url = request.url.toProtocolUrl(),
+                            contentType = mediaType?.toContentType(),
                             body = it,
                         )
                     }
@@ -86,7 +85,7 @@ class OpenTelemetryOkHttpInterceptor(
                     adapter.registerResponse(
                         span = span,
                         response = Response(
-                            contentType = responseMediaType?.toTracyContentType(),
+                            contentType = responseMediaType?.toContentType(),
                             code = response.code,
                             body = ResponseBody.Json(streamingMarker),
                             url = url,
@@ -102,7 +101,7 @@ class OpenTelemetryOkHttpInterceptor(
                     adapter.registerResponse(
                         span = span,
                         response = Response(
-                            contentType = responseMediaType?.toTracyContentType(),
+                            contentType = responseMediaType?.toContentType(),
                             code = response.code,
                             body = ResponseBody.Json(decodedResponse),
                             url = request.url.toProtocolUrl(),
