@@ -36,16 +36,7 @@
             aria-label="{{ lang.t('header') }}"
     >
 
-        <!-- Link to home -->
-        <a
-                href="{{ config.extra.homepage | d(nav.homepage.url, true) | url }}"
-                title="{{ config.site_name | e }}"
-                class="md-header__button md-logo"
-                aria-label="{{ config.site_name }}"
-                data-md-component="logo"
-        >
-            {% include "partials/logo.html" %}
-        </a>
+        <!-- TODO: Add a proper Tracy logo icon here -->
 
         <!-- Button to open drawer -->
         <label class="md-header__button md-icon" for="__drawer">
@@ -57,9 +48,9 @@
         <div class="md-header__title" data-md-component="header-title">
             <div class="md-header__ellipsis">
                 <div class="md-header__topic">
-          <span class="md-ellipsis">
+          <a href="{{ config.extra.homepage | d(nav.homepage.url, true) | url }}" class="md-ellipsis md-header__title-link">
             {{ config.site_name }}
-          </span>
+          </a>
                 </div>
                 <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
@@ -106,43 +97,17 @@
         {% endif %}
         {% endif %}
 
-        <!-- custom slack icon-link-->
-        <div class="md_header__social">
-<!--            TODO: add link as in Koog (https://docs.koog.ai/koog-slack-channel/) and title-->
-            <a
-                href=""
-                target="_blank"
-                title=""
-                class="md_social-custom"
-            >
-                <div class="md_social-custom__icon md-icon">
-                    {% set slackIcon = "fontawesome/brands/slack" %}
-                    {% include ".icons/" ~ slackIcon ~ ".svg" %}
-                </div>
-                <div>
-                    Support
-                </div>
-            </a>
-        </div>
-        <!-- end custom slack icon-link-->
-
         <!-- custom YT icon-link-->
-        <div class="md_header__social">
-            <a
-                    href="TODO: add YT issues board as in Koog (https://youtrack.jetbrains.com/issues/KG/)"
-                    target="_blank"
-                    title="Issues on YouTrack"
-                    class="md_social-custom"
-            >
-                <div class="md_social-custom__icon md-icon">
-                    {% set ytIcon = "fontawesome/solid/clipboard-list" %}
-                    {% include ".icons/" ~ ytIcon ~ ".svg" %}
+        {% if config.extra.youtrack %}
+        <div class="md-header__social">
+            <a href="{{ config.extra.youtrack.url }}" target="_blank" title="{{ config.extra.youtrack.name }}" class="md-header__social-link">
+                <div class="md-header__social-icon">
+                    <img src="{{ config.extra.youtrack.icon | url }}" alt="YouTrack" class="md-header__social-img">
                 </div>
-                <div>
-                    Issue Tracker
-                </div>
+                <span>{{ config.extra.youtrack.name }}</span>
             </a>
         </div>
+        {% endif %}
         <!-- end custom YT icon-link-->
 
         <!-- Repository information -->

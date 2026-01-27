@@ -1,18 +1,66 @@
-# Tracy: AI Tracing Library for Kotlin and Java
+# Tracy
 
-## Introduction
+[Tracy](https://github.com/JetBrains/tracy/) is an open-source JetBrains Kotlin library that adds OpenTelemetry observability to JVM applications. It provides APIs that help define what needs to be traced at a high level, while hiding implementation details such as span structures and attribute names. The library also supports multiple OpenTelemetry backends out of the box.
 
-Tracy is an open-source Kotlin library that adds OpenTelemetry observability to JVM applications that use LLMs of different providers (currently, OpenAI, Anthropic, and Gemini are supported directly).
+<div class="grid cards" markdown>
 
-The library provides APIs that help define what needs to be traced at a high level, while hiding implementation details such as span structures and attribute names. It also supports multiple OpenTelemetry backends out of the box.
+-   :material-rocket-launch:{ .lg .middle } [**Get Started**](./get-started.md)
 
+    ---
 
-## Quick Start
+    Quick introduction to Tracy and how to set it up
 
-The simplest way to get started is to follow the initial instructions provided in the [README](https://github.com/JetBrains/tracy/blob/main/README.md).
+-   :material-open-in-new:{ .lg .middle } [**OpenTelemetry**](./opentelemetry.md)
 
+    ---
 
-**Next, read the following pages:**
+    Tracy is built on OpenTelemetry, the industry-standard framework for observability
 
-1. [Tracing API](./tracing/index.md): Detailed information about the tracing APIs for LLM clients (OpenAI, Anthropic, Gemini), function tracing, and manual instrumentation.
-2. [Supported Backends](./supported-backends.md): Information about the supported backends and their configuration.
+</div>
+
+## Features
+
+<div class="grid cards" markdown>
+
+-   :material-code-tags:{ .lg .middle } [**Tracing API**](./tracing)
+
+    ---
+
+    Learn how to instrument your code with Tracy's tracing primitives
+
+-   :material-export:{ .lg .middle } [**OpenTelemetry Exporters**](./otel-exporters.md)
+
+    ---
+
+    Configure backends like Langfuse, Jaeger, and more
+
+-   :material-robot:{ .lg .middle } [**LLM Tracing API**](#)
+
+    ---
+
+    Trace LLM calls with dedicated primitives for prompts, completions, and token usage
+
+-   :material-water:{ .lg .middle } [**KCP**](./compiler-plugin/index.md)
+
+    ---
+
+    Kotlin Compiler Plugin that enables annotation-based tracing with zero boilerplate
+</div>
+
+## Troubleshooting
+
+<div class="grid cards" markdown>
+
+-   :material-bug:{ .lg .middle } [**Debugging**](./compiler-plugin/debugging.md)
+
+    ---
+
+    Tips for troubleshooting when tracing isn't working as expected
+
+-   :material-alert-circle:{ .lg .middle } [**Limitations**](./limitations.md)
+
+    ---
+
+    Known limitations and recommended workarounds for context propagation, local functions, and more
+
+</div>

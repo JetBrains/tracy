@@ -20,7 +20,7 @@ import ai.jetbrains.tracy.core.fluent.processor.currentSpanContextElement
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.runBlocking
 
-@FlowTrace
+@Trace
 suspend fun processUserRequest(requestId: String) {
     println("Processing $requestId")
 }
