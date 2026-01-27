@@ -24,7 +24,7 @@ The Tracing API is divided into three main categories:
   LLM clients, e.g., see [`instrument`]({{ api_docs_url
   }}/tracing/openai/ai.jetbrains.tracy.openai.clients/instrument.html) for
   the [`OpenAIClient`](https://javadoc.io/doc/com.openai/openai-java/4.5.0/com/openai/client/OpenAIClient.html)_).
-- [**`@Trace`**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent/-kotlin-flow-trace/index.html): An
+- [**`@Trace`**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html): An
   annotation for automatic instrumentation of Kotlin functions.
 - [**`withSpan`**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-span.html): A
   block-based API for manual span management.
@@ -39,7 +39,7 @@ To start tracing, you need to:
 3. Instrument your clients or annotate your functions.
 4. Flush traces before your application exits.
 
-Example of basic setup:
+Example of a basic setup:
 
 <!--- INCLUDE
 import ai.jetbrains.tracy.core.tracing.TracingManager
@@ -61,9 +61,11 @@ fun main() {
 
     // 3. Call a traced function
     greet("Tracy")
-
-    // 4. Flush traces
-    TracingManager.flushTraces()
+    
+    // Traces are automatically flushed based on ExporterCommonSettings:
+    // - Periodically via flushIntervalMs and flushThreshold
+    // - On JVM shutdown if flushOnShutdown = true (default)
+    // For manual control, use TracingManager.flushTraces()
 }
 ```
 

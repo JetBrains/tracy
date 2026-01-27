@@ -42,5 +42,6 @@ suspend fun main() {
     PremiumOrderProcessor().processOrder(101)
     DefaultOrderProcessor().processOrder(202)
     println("See trace details in the console.")
+    // Manual flush - alternatively, configure automatic flushing via ExporterCommonSettings
     TracingManager.flushTraces()
 }

@@ -40,5 +40,6 @@ fun main() {
     )
     printName("Bob")
     println("See trace details in Jaeger.")
+    // Manual flush - alternatively, configure automatic flushing via ExporterCommonSettings
     TracingManager.flushTraces()
 }

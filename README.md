@@ -312,10 +312,10 @@ val response = instrumentedClient.chat().completions().create(request)
 
 println("OpenAI response: ${response.choices().first().message().content().get()}")
 
-// Ensure all trace data is exported
-TracingManager.flushTraces()
-// Now, navigate to your terminal to see a single trace
-// with request and response details 
+// Traces are automatically flushed based on ExporterCommonSettings:
+// - Periodically via flushIntervalMs and flushThreshold
+// - On JVM shutdown if flushOnShutdown = true (default)
+// For manual control, use TracingManager.flushTraces() 
 ```
 
 > This example uses simple console tracing for a demonstration.
@@ -373,7 +373,10 @@ fun greetUser(name: String): String {
 fun main() {
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     greetUser("Alice")
-    TracingManager.flushTraces()
+    // Traces are automatically flushed based on ExporterCommonSettings:
+    // - Periodically via flushIntervalMs and flushThreshold
+    // - On JVM shutdown if flushOnShutdown = true (default)
+    // For manual control, use TracingManager.flushTraces()
 }
 ```
 

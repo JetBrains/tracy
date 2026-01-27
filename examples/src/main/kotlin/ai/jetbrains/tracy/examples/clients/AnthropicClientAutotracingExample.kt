@@ -16,7 +16,9 @@ import com.anthropic.models.messages.Model
  * - Initialize tracing using [TracingManager] with [ConsoleExporterConfig].
  * - Instrument the Anthropic client using [instrument] to automatically capture trace data.
  * - Perform an Anthropic API request with trace data automatically captured.
- * - Call [TracingManager.flushTraces] before exiting to ensure all trace data is exported.
+ * - Traces are automatically flushed based on [ExporterCommonSettings][ai.jetbrains.tracy.core.exporters.ExporterCommonSettings]
+ *   (periodically via `flushIntervalMs`/`flushThreshold`, and on shutdown if `flushOnShutdown = true`).
+ * - For manual control, call [TracingManager.flushTraces] to ensure all trace data is exported immediately.
  *
  * To run this example:
  * * Set the `ANTHROPIC_API_KEY` environment variable to your Anthropic API key.
@@ -38,5 +40,6 @@ fun main() {
         .build()
     val result = instrumentedClient.messages().create(params).content().first().text().get().text()
     println("Result: $result\nSee trace details in the console.")
+    // Manual flush - alternatively, configure automatic flushing via ExporterCommonSettings
     TracingManager.flushTraces()
 }

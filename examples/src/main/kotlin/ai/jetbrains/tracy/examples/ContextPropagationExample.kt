@@ -87,5 +87,6 @@ fun main() {
         handleRequestWithContext("REQ-202")
         handleRequestInNewThread("REQ-303")
     }
+    // Manual flush - alternatively, configure automatic flushing via ExporterCommonSettings
     TracingManager.flushTraces()
 }

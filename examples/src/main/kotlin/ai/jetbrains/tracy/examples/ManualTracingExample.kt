@@ -34,5 +34,6 @@ fun main() {
         handleUserLogin("bob", "wrongpass")
     }
     println("See trace details in the console.")
+    // Manual flush - alternatively, configure automatic flushing via ExporterCommonSettings
     TracingManager.flushTraces()
 }

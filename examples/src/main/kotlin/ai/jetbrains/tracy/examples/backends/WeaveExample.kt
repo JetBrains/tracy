@@ -23,5 +23,6 @@ fun main() {
     TracingManager.setSdk(configureOpenTelemetrySdk(WeaveExporterConfig()))
     printName("Bob")
     println("See trace details in W&B.")
+    // Manual flush - alternatively, configure automatic flushing via ExporterCommonSettings
     TracingManager.flushTraces()
 }
