@@ -18,6 +18,7 @@ import io.ktor.client.statement.*
 import io.ktor.client.utils.*
 import io.ktor.http.*
 import io.ktor.util.*
+import io.ktor.util.cio.use
 import io.ktor.utils.io.*
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.CoroutineScope
@@ -222,12 +223,13 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
         // if fails, check if the underlying type is serializable
         val bytes = when (val body = this.body) {
             is MultiPartFormDataContent -> {
-                val bytes = body.let {
-                    val ch = ByteChannel()
-                    it.writeTo(ch)
+                val ch = ByteChannel()
+                try {
+                    body.writeTo(ch)
                     ch.readRemaining().readByteArray()
+                } finally {
+                    ch.close()
                 }
-                bytes
             }
             is TextContent -> body.text.toByteArray()
             is String -> body.toByteArray()
