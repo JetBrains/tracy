@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
 plugins {
     kotlin("multiplatform")
     alias(libs.plugins.kotlin.serialization)
-    id("ai.jetbrains.tracy.space.publishing")
+    id("ai.jetbrains.tracy.published-artifact")
     id("ai.jetbrains.tracy")
     id("ai.kotlin.dokka")
 }

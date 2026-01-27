@@ -1,5 +1,5 @@
 plugins {
-    id("ai.jetbrains.tracy.space.publishing")
+    id("ai.jetbrains.tracy.published-artifact")
     id("org.jetbrains.kotlin.multiplatform") version "2.0.20"
 }
 

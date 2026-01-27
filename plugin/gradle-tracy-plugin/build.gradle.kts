@@ -1,5 +1,5 @@
 plugins {
-    id("ai.jetbrains.tracy.space.publishing")
+    id("ai.jetbrains.tracy.published-artifact")
     id("java-gradle-plugin")
     id("org.jetbrains.kotlin.jvm") version "2.1.0"
 }
@@ -11,7 +11,7 @@ dependencies {
 
 gradlePlugin {
     plugins {
-        create("TracyPlugin") {
+        create("TracyPublishingPlugin") {
             id = "ai.jetbrains.tracy"
             implementationClass = "ai.jetbrains.tracy.gradle.plugin.TracyGradlePlugin"
         }
@@ -25,6 +25,8 @@ kotlin {
 }
 
 java {
+    withSourcesJar()
+    withJavadocJar()
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))
     }

@@ -28,9 +28,9 @@ subprojects {
 fun registerContentPublishTask(taskName: String, publishType: String, pluginTask: String) {
     tasks.register(taskName) {
         group = "publishing"
-        description = "Publishes all modules that apply the ai.jetbrains.tracy.space.publishing plugin ($publishType)"
+        description = "Publishes all modules that apply the ai.jetbrains.tracy.published-artifact plugin ($publishType)"
         val publishTasks = subprojects
-            .filter { it.plugins.hasPlugin("ai.jetbrains.tracy.space.publishing") }
+            .filter { it.plugins.hasPlugin("ai.jetbrains.tracy.published-artifact") }
             .mapNotNull { it.tasks.findByName(publishType) }
         val pluginPublishTask = gradle.includedBuild("plugin").task(":$pluginTask")
         dependsOn(publishTasks + pluginPublishTask)

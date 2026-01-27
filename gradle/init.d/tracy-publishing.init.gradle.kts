@@ -28,7 +28,7 @@ initscript {
 }
 
 allprojects {
-    plugins.withId("ai.jetbrains.tracy.space.publishing") {
+    plugins.withId("ai.jetbrains.tracy.published-artifact") {
         val isUnderTeamCity = System.getenv("TEAMCITY_VERSION") != null
         plugins.apply("signing")
         extensions.configure<SigningExtension> {

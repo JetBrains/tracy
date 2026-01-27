@@ -10,8 +10,8 @@ repositories {
 gradlePlugin {
     plugins {
         create("commonPublishing") {
-            id = "ai.jetbrains.tracy.space.publishing"
-            implementationClass = "SpacePublishingPlugin"
+            id = "ai.jetbrains.tracy.published-artifact"
+            implementationClass = "TracyPublishedArtifactPlugin"
         }
     }
 }
