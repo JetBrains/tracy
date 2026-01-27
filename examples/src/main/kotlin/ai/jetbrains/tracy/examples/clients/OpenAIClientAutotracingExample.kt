@@ -16,7 +16,9 @@ import com.openai.models.chat.completions.ChatCompletionCreateParams
  * - Initialize tracing using [TracingManager] with [ConsoleExporterConfig].
  * - Instrument the OpenAI client using [instrument] to automatically capture trace data.
  * - Execute an OpenAI API call with tracing information automatically collected.
- * - Call [TracingManager.flushTraces] before exiting to ensure all trace data is exported.
+ * - Traces are automatically flushed based on [ExporterCommonSettings][ai.jetbrains.tracy.core.exporters.ExporterCommonSettings]
+ *   (periodically via `flushIntervalMs`/`flushThreshold`, and on shutdown if `flushOnShutdown = true`).
+ * - For manual control, call [TracingManager.flushTraces] to ensure all trace data is exported immediately.
  *
  * To run this example:
  * * Set the `OPENAI_API_KEY` environment variable to your OpenAI API key.
@@ -35,5 +37,6 @@ fun main() {
     val response = instrumentedClient.chat().completions().create(request)
     val content = response.choices().first().message().content().get()
     println("Result: $content\nSee trace details in the console.")
+    // Manual flush - alternatively, configure automatic flushing via ExporterCommonSettings
     TracingManager.flushTraces()
 }

@@ -17,7 +17,7 @@ fun printName(name: String): String {
  * This example shows how:
  * - [LangfuseExporterConfig] initializes the tracing backend for Langfuse.
  *
- * To run this example provide your Langfuse credentials either:
+ * To run this example, provide your Langfuse credentials either:
  * - Explicitly in code via [LangfuseExporterConfig] constructor parameters, or
  * - Through the environment variables `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`.
  *
@@ -29,5 +29,6 @@ fun main() {
     TracingManager.setSdk(configureOpenTelemetrySdk(LangfuseExporterConfig()))
     printName("Bob")
     println("See trace details in Langfuse.")
+    // Manual flush - alternatively, configure automatic flushing via ExporterCommonSettings
     TracingManager.flushTraces()
 }

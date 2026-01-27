@@ -25,7 +25,9 @@ import kotlinx.serialization.json.buildJsonObject
  * - Initialize tracing using [TracingManager] with [ConsoleExporterConfig].
  * - Instrument a Ktor [HttpClient] using [OpenAILLMTracingAdapter] to automatically capture trace data.
  * - Perform an OpenAI API request with trace data automatically captured.
- * - Call [TracingManager.flushTraces] before exiting to ensure all trace data is exported.
+ * - Traces are automatically flushed based on [ExporterCommonSettings][ai.jetbrains.tracy.core.exporters.ExporterCommonSettings]
+ *   (periodically via `flushIntervalMs`/`flushThreshold`, and on shutdown if `flushOnShutdown = true`).
+ * - For manual control, call [TracingManager.flushTraces] to ensure all trace data is exported immediately.
  *
  * To run this example:
  * * Set the `OPENAI_API_KEY` environment variable to your OpenAI API key.
@@ -63,5 +65,6 @@ suspend fun main() {
         setBody(requestBody)
     }
     println("Result: ${response.bodyAsText()}\nSee trace details in the console.")
+    // Manual flush - alternatively, configure automatic flushing via ExporterCommonSettings
     TracingManager.flushTraces()
 }

@@ -98,7 +98,19 @@ Tracy supports multiple backends out of the box. For detailed configuration, see
 
 ## Flushing and Shutdown
 
-Since many exporters use batching to improve performance, it's important to flush remaining traces before the application exits using [`flushTraces()`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/flush-traces.html) or [`shutdownTracing()`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/shutdown-tracing.html):
+### Automatic Flushing
+
+Tracy automatically flushes traces in two ways:
+
+1. **Periodic batch flushing**: Spans are automatically exported in batches based on the [`ExporterCommonSettings` configuration](../otel-config/sdk-configuration.md#common-exporter-settings):
+    - `flushIntervalMs` (default: `5ms`) — delay between batch export attempts
+    - `flushThreshold` (default: `512`) — maximum number of spans per export batch
+
+2. **Shutdown flushing**: When the application exits, Tracy flushes and shuts down traces via a JVM shutdown hook. This is enabled by default through the `flushOnShutdown` setting (default: `true`).
+
+### Manual Flushing
+
+For cases where you need manual control (e.g., reading trace files before exit, or when `flushOnShutdown` is disabled), you can use [`flushTraces()`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/flush-traces.html) or [`shutdownTracing()`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/shutdown-tracing.html):
 
 ```kotlin
 // Flush pending spans (waits up to 5 seconds by default)

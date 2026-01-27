@@ -36,5 +36,6 @@ fun main() {
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     parentOperation()
     println("See trace details in the console.")
+    // Manual flush - alternatively, configure automatic flushing via ExporterCommonSettings
     TracingManager.flushTraces()
 }

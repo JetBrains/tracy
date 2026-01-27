@@ -65,5 +65,6 @@ suspend fun main() {
     }
     val result = agent.run("Sort 9,1,4,3,7")
     println("Result: $result\nSee trace details in the console.")
+    // Manual flush - alternatively, configure automatic flushing via ExporterCommonSettings
     TracingManager.flushTraces()
 }

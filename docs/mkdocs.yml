@@ -15,6 +15,11 @@ nav:
           - Overview: otel-config/index.md
           - SDK Configuration: otel-config/sdk-configuration.md
           - Exporters: otel-config/exporters.md
+      - Compiler Plugin:
+          - Overview: compiler-plugin/index.md
+          - How Tracy Transforms Code: compiler-plugin/ir-transformation.md
+      - Debugging Tips: compiler-plugin/debugging.md
+      - Limitations: limitations.md
 
 markdown_extensions:
   - pymdownx.highlight:
@@ -24,7 +29,11 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.details
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - admonition
   - attr_list
   - admonition

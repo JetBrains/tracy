@@ -4,7 +4,7 @@ In addition to annotation-based tracing, you can manually create and manage span
 especially useful for:
 
 - **Java projects**: Where [
-  `@Trace`](https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent/-kotlin-flow-trace/index.html) is
+  `@Trace`](https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html) is
   not supported.
 - **Granular control**: When you want to trace specific blocks of code within a function.
 - **Custom metadata**: When you want to add specific attributes to a span dynamically.

@@ -39,5 +39,6 @@ fun main() {
     greetUser("Alice", isPremium = true)
     greetUser("Bob", isPremium = false)
     println("See trace details with tags in the console.")
+    // Manual flush - alternatively, configure automatic flushing via ExporterCommonSettings
     TracingManager.flushTraces()
 }
