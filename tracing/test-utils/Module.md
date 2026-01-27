@@ -1,6 +1,23 @@
 # Module test-utils
 
-Testing utilities.
+Internal testing utilities.
+
+## Notice
+
+> **⚠️ INTERNAL USE ONLY**
+>
+> This module contains test utilities for internal use within the Tracy library's test suites.
+> It is **not intended for public consumption** and is **not part of the public API**.
+>
+> **Do not use this module in your projects.** The APIs in this module:
+> - Are not documented
+> - May change without notice
+> - Are not covered by semantic versioning guarantees
+> - May be removed in future releases
+>
+> This module exists solely to avoid code duplication between test submodules of other Tracy modules.
+
+## Overview
 
 Provides base classes and helpers for writing tests that verify tracing behavior:
 
