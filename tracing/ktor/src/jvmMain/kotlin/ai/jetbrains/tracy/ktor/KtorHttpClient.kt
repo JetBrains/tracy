@@ -1,15 +1,9 @@
 package ai.jetbrains.tracy.ktor
 
-import ai.jetbrains.tracy.core.http.protocol.asRequestBody
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
 import ai.jetbrains.tracy.core.fluent.processor.Span
-import ai.jetbrains.tracy.core.http.protocol.Request
-import ai.jetbrains.tracy.core.http.protocol.RequestBody as TracyRequestBody
-import ai.jetbrains.tracy.core.http.protocol.Response
-import ai.jetbrains.tracy.core.http.protocol.ResponseBody
-import ai.jetbrains.tracy.core.http.protocol.toProtocolUrl
+import ai.jetbrains.tracy.core.http.protocol.*
 import ai.jetbrains.tracy.core.tracing.TracingManager
-import io.ktor.http.content.TextContent
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
 import io.ktor.client.request.*
@@ -17,8 +11,8 @@ import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.client.utils.*
 import io.ktor.http.*
+import io.ktor.http.content.*
 import io.ktor.util.*
-import io.ktor.util.cio.use
 import io.ktor.utils.io.*
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.CoroutineScope
@@ -39,6 +33,7 @@ import kotlinx.serialization.serializer
 import mu.KotlinLogging
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
+import ai.jetbrains.tracy.core.http.protocol.RequestBody as TracyRequestBody
 
 
 /**
