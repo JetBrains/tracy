@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     id("ai.jetbrains.tracy.published-artifact")
     id("ai.kotlin.dokka")
+    `java-test-fixtures`
 }
 
 kotlin {
@@ -41,6 +42,7 @@ kotlin {
 
         jvmTest {
             dependencies {
+                implementation(libs.openai)
                 implementation(libs.kotlin.test)
                 implementation(libs.junit.params)
                 implementation(libs.kotlinx.coroutines.test)
@@ -49,11 +51,10 @@ kotlin {
                 implementation(libs.ktor.serialization.json)
                 implementation(libs.opentelemetry.sdk.testing)
                 implementation(libs.opentelemetry.semconv.incubating)
-                implementation(project(":tracing:test-utils"))
                 implementation(project(":tracing:openai"))
                 implementation(project(":tracing:anthropic"))
                 implementation(project(":tracing:gemini"))
-                implementation(libs.openai)
+                implementation(project.dependencies.testFixtures(project(":tracing:test-utils")))
             }
         }
     }
