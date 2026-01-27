@@ -14,9 +14,9 @@ import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.Url
 import ai.jetbrains.tracy.core.http.protocol.asFormData
 import ai.jetbrains.tracy.core.http.protocol.asJson
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
 import io.ktor.http.charset
 import io.opentelemetry.api.trace.Span
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -66,7 +66,7 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
 
     override fun isStreamingRequest(request: Request): Boolean {
         return when (request.body) {
-            is RequestBody.DataForm -> {
+            is RequestBody.FormData -> {
                 val data = request.body.asFormData() ?: return false
                 data.parts.filter { it.name == "stream" }.any {
                     val value = it.content.toString(it.contentType?.charset() ?: Charsets.UTF_8)
@@ -77,6 +77,7 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
                 val body = request.body.asJson()?.jsonObject ?: return false
                  body["stream"]?.jsonPrimitive?.boolean ?: false
             }
+            RequestBody.Empty -> false
         }
     }
 

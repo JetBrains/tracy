@@ -1,6 +1,9 @@
 package ai.jetbrains.tracy.core.http.parsers
 
 import ai.jetbrains.tracy.core.http.protocol.toContentType
+import io.ktor.http.ContentType
+import io.ktor.http.charset
+import mu.KotlinLogging
 import okhttp3.MediaType
 import okio.Buffer
 import org.apache.james.mime4j.parser.AbstractContentHandler
@@ -8,11 +11,7 @@ import org.apache.james.mime4j.parser.MimeStreamParser
 import org.apache.james.mime4j.stream.BodyDescriptor
 import org.apache.james.mime4j.stream.Field
 import org.apache.james.mime4j.stream.MimeConfig
-import io.ktor.http.ContentType
-import mu.KotlinLogging
-import java.io.ByteArrayInputStream
 import java.io.InputStream
-import java.io.SequenceInputStream
 
 /**
  * Parses a `multipart/form-data` HTTP request body.
@@ -21,29 +20,31 @@ class MultipartFormDataParser {
     /**
      * Parses a multipart/form-data HTTP request body from the given content type and buffer.
      * This method extracts the MIME-formatted parts from the provided buffer,
-     * expecting the given [mediaType] to be of `multipart/form-data`.
+     * expecting the given [contentType] to be of `multipart/form-data`.
      *
-     * @param mediaType The media type of the input data, used to properly parse the content.
+     * Automatically decodes fields based on their Content-Transfer-Encoding header (see [MimeStreamParser.isContentDecoding]).
+     *
+     * @param contentType The content type of the input data, used to properly parse the content.
      * @param bytes An array containing the `multipart/form-data` content to be parsed.
      * @throws IllegalArgumentException if the provided content type is not multipart/form-data.
      */
-    fun parse(mediaType: MediaType, bytes: ByteArray): FormData {
-        checkContentType(mediaType)
+    fun parse(contentType: ContentType, bytes: ByteArray): FormData {
+        checkContentType(contentType)
 
-        val parser = MimeStreamParser(MimeConfig.DEFAULT)
+        val config = MimeConfig.custom()
+            .setHeadlessParsing(contentType.toString())
+            .setMaxLineLen(-1)
+            .setMaxHeaderLen(-1)
+            .build()
+        val parser = MimeStreamParser(config)
+        // recursively parsing RFC822 parts
+        parser.setRecurse()
+        parser.isContentDecoding = true
+
         val handler = MultipartContentHandler()
         parser.setContentHandler(handler)
 
-        // use headless parsing since we don't have full MIME headers,
-        // we need to prepend the Content-Type header for the parser
-        val headerPrefix = "Content-Type: $mediaType\r\n\r\n"
-
-        val combinedStream = SequenceInputStream(
-            ByteArrayInputStream(headerPrefix.toByteArray()),
-            bytes.inputStream()
-        )
-
-        parser.parse(combinedStream)
+        parser.parse(bytes.inputStream())
         return FormData(handler.parts)
     }
 
@@ -52,14 +53,39 @@ class MultipartFormDataParser {
      *
      * @see MultipartFormDataParser.parse
      */
-    fun parse(mediaType: MediaType, buffer: Buffer) = parse(mediaType, buffer.readByteArray())
+    fun parse(mediaType: MediaType, bytes: ByteArray) = parse(
+        mediaType.toContentType(),
+        bytes,
+    )
+
+    /**
+     * An overload of [MultipartFormDataParser.parse]
+     *
+     * @see MultipartFormDataParser.parse
+     */
+    fun parse(mediaType: MediaType, buffer: Buffer) = parse(
+        mediaType.toContentType(),
+        buffer.readByteArray(),
+    )
 
     companion object {
-        private fun checkContentType(mediaType: MediaType) {
-            val contentType = mediaType.toContentType().withoutParameters()
+        /**
+         * Requires a [contentType] to be of `multipart/form-data` with
+         * a non-blank **"boundary"** parameter present.
+         *
+         * @throws IllegalArgumentException
+         */
+        private fun checkContentType(contentType: ContentType) {
+            val contentTypeWithoutParams = contentType.withoutParameters()
+            if (!ContentType.MultiPart.FormData.match(contentTypeWithoutParams)) {
+                throw IllegalArgumentException(
+                    "Content type must be ${ContentType.MultiPart.FormData}, got $contentType.")
+            }
 
-            if (!ContentType.MultiPart.FormData.match(contentType)) {
-                throw IllegalArgumentException("Content type must be ${ContentType.MultiPart.FormData}, got $mediaType.")
+            // require 'boundary' parameter to be present
+            val boundaryParam = contentType.parameters.firstOrNull { it.name == "boundary" }
+            if (boundaryParam == null || boundaryParam.value.isBlank()) {
+                throw IllegalArgumentException("Content type must contain non-blank 'boundary' parameter, got $contentType.")
             }
         }
     }
@@ -70,18 +96,31 @@ class MultipartFormDataParser {
  *
  * @property name The name of the form field associated with this part. Can be null if not provided.
  * @property filename The filename associated with this part, commonly used for file uploads. Can be null if not applicable.
- * @property content The raw binary content of the form part.
  * @property contentType The MIME type of the content associated with this part. Can be null if not specified.
+ * @property headers additional headers present in the form part (e.g., Content-Transfer-Encoding, Content-ID, custom headers).
+ * @property content The raw content of the form part.
  */
 data class FormPart(
     val name: String?,
     val filename: String? = null,
+    val contentType: ContentType? = null,
+    val headers: Map<String, String> = emptyMap(),
     val content: ByteArray,
-    val contentType: ContentType? = null
-)
+) {
+    override fun toString(): String {
+        val contentStr = when (contentType) {
+            null -> content.decodeToString()
+            else -> content.toString(contentType.charset() ?: Charsets.UTF_8)
+        }.let {
+            if (it.length > 100) it.substring(0..97) + "..." else it
+        }
+
+        return "FormPart(name=$name, filename=$filename, contentType=$contentType, headers=$headers, content=`$contentStr`)"
+    }
+}
 
 /**
- * Represents the parsed contents of a multipart/form-data HTTP request body.
+ * Represents the parsed contents of a `multipart/form-data` HTTP request body.
  *
  * This data class encapsulates a collection of individual form parts, each represented
  * by the [FormPart] data class.
@@ -105,57 +144,95 @@ data class FormData(val parts: List<FormPart>)
  * - `parts`: A mutable list of [FormPart] that holds the parsed data from the multipart content.
  */
 private class MultipartContentHandler : AbstractContentHandler() {
-    companion object {
-        private val logger = KotlinLogging.logger {}
-    }
-
     val parts = mutableListOf<FormPart>()
-    private var currentPartName: String? = null
-    private var currentFilename: String? = null
-    private var currentContentType: ContentType? = null
+
+    private var currentContext = PartContext()
+
+    /**
+     * Marks whether the very first field, which is always a content type of the entire form data
+     * (i.e., `multipart/form-data`), already encountered.
+     *
+     * Note: We need to skip the first content type, as it corresponds to the form-data body as a whole,
+     * not an individual field (see [MultipartContentHandler.field]).
+     */
+    private var firstFieldEncountered = false
 
     override fun field(field: Field) {
-        val fieldName = field.name.lowercase()
-
-        when (fieldName) {
+        when (field.name.lowercase()) {
             "content-disposition" -> {
-                // parse: `form-data; name="fieldname"; filename="file.txt"`
+                // parse: `form-data; name="field-name"; filename="file.txt"`
                 // for HTTP requests, no other values for this header allowed
                 // see: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Disposition
                 val value = field.body
-                val nameMatch = Regex("""name="([^"]+)"""").find(value)
-                val filenameMatch = Regex("""filename="([^"]+)"""").find(value)
+                // matching: `name="my-name"` or `name=my-name`
+                val nameMatch = Regex("""name=(?:"([^"]+)"|([^\s;]+))""").find(value)
+                // matching: `filename="my-file.txt"` or `filename=my-file.txt`
+                val filenameMatch = Regex("""filename=(?:"([^"]+)"|([^\s;]+))""").find(value)
 
-                currentPartName = nameMatch?.groupValues?.get(1)
-                currentFilename = filenameMatch?.groupValues?.get(1)
+                // group 1 corresponds to the quoted field value, group 2 corresponds to the unquoted field value.
+                // dropping first value because it is an entire match
+                currentContext.name = nameMatch?.groupValues?.drop(1)?.firstOrNull { it.isNotEmpty() }
+                currentContext.filename = filenameMatch?.groupValues?.drop(1)?.firstOrNull { it.isNotEmpty() }
             }
             "content-type" -> {
-                currentContentType = try {
+                // the very first encountered field is a content type of the entire body;
+                // therefore, we skip it
+                val contentType = try {
                     ContentType.parse(field.body)
-                }
-                catch (err: Exception) {
+                } catch (err: Exception) {
                     logger.trace("Failed to parse Content-Type header: ${field.body}", err)
                     null
                 }
+
+                // this field is the first one to encounter, and it is a multipart/form-data
+                val isBodyContentTypeFieldEncountered = !firstFieldEncountered &&
+                        contentType?.withoutParameters()?.match(ContentType.MultiPart.FormData) == true
+                if (!isBodyContentTypeFieldEncountered) {
+                    // if not, it is a content type of the actual field of a body part;
+                    // otherwise, ignore to skip it
+                    currentContext.contentType = contentType
+                }
+            }
+            else -> {
+                // collect all other headers
+                currentContext.headers[field.name] = field.body
             }
         }
+        // mark that the first field already encountered
+        firstFieldEncountered = true
     }
 
     override fun body(bd: BodyDescriptor, inputStream: InputStream) {
         val content = inputStream.readBytes()
 
-        parts.add(
-            FormPart(
-                name = currentPartName,
-                filename = currentFilename,
-                content = content,
-                contentType = currentContentType
-            )
-        )
+        when (currentContext.name) {
+            null -> {
+                logger.warn { "No name found for multipart part of content type ${currentContext.contentType}, skipping" }
+            }
+            else -> {
+                // add a new part into form data
+                val part = FormPart(
+                    name = currentContext.name,
+                    filename = currentContext.filename,
+                    contentType = currentContext.contentType,
+                    headers = currentContext.headers,
+                    content = content,
+                )
+                parts.add(part)
+            }
+        }
+        // reset for the next part
+        currentContext = PartContext()
+    }
 
-        // Reset for the next part
-        currentPartName = null
-        currentFilename = null
-        currentContentType = null
+    private data class PartContext(
+        var name: String? = null,
+        var filename: String? = null,
+        var contentType: ContentType? = null,
+        var headers: MutableMap<String, String> = mutableMapOf(),
+    )
+
+    companion object {
+        private val logger = KotlinLogging.logger {}
     }
 }

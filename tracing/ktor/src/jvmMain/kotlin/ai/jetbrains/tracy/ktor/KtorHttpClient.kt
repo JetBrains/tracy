@@ -1,18 +1,17 @@
 package ai.jetbrains.tracy.ktor
 
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
-import ai.jetbrains.tracy.core.http.protocol.Request
-import ai.jetbrains.tracy.core.http.protocol.RequestBody
-import ai.jetbrains.tracy.core.http.protocol.Response
-import ai.jetbrains.tracy.core.http.protocol.ResponseBody
-import ai.jetbrains.tracy.core.http.protocol.toProtocolUrl
-import ai.jetbrains.tracy.core.tracing.TracingManager
 import ai.jetbrains.tracy.core.fluent.processor.Span
+import ai.jetbrains.tracy.core.http.protocol.*
+import ai.jetbrains.tracy.core.tracing.TracingManager
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
-import io.ktor.client.statement.request
+import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
+import io.ktor.client.statement.*
 import io.ktor.client.utils.*
 import io.ktor.http.*
+import io.ktor.http.content.*
 import io.ktor.util.*
 import io.ktor.utils.io.*
 import io.opentelemetry.api.trace.StatusCode
@@ -21,6 +20,7 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 import kotlinx.io.Buffer
 import kotlinx.io.InternalIoApi
+import kotlinx.io.readByteArray
 import kotlinx.io.readString
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
@@ -33,6 +33,7 @@ import kotlinx.serialization.serializer
 import mu.KotlinLogging
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
+import ai.jetbrains.tracy.core.http.protocol.RequestBody as TracyRequestBody
 
 
 /**
@@ -62,29 +63,30 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
             onRequest { request, _ ->
                 val tracingEnabled = TracingManager.isTracingEnabled
                 request.attributes.put(tracingEnabledKey, tracingEnabled)
-                if (!tracingEnabled) return@onRequest
+                if (!tracingEnabled) {
+                    return@onRequest
+                }
+
                 val span = tracer.spanBuilder("http-client-span").startSpan()
+
                 span.makeCurrent().use {
                     request.attributes.put(httpSpanKey, span)
-                    val body = try {
-                        val bodyType = request.bodyType?.type
-                        when {
-                            request.body is EmptyContent -> JsonObject(emptyMap())
-                            (bodyType != null) && bodyType.hasAnnotation<Serializable>() -> {
-                                serializeToJson(request.body)?.let { Json.parseToJsonElement(it).jsonObject }
-                                    ?: JsonObject(emptyMap())
-                            }
 
-                            else -> Json.parseToJsonElement(request.body.toString()).jsonObject
+                    val contentType = request.contentType()
+                    val bodyContent = request.copyBodyContent()
+
+                    val requestBody = when {
+                        (bodyContent != null) && (contentType != null) -> bodyContent.asRequestBody(contentType)
+                        else -> {
+                            logger.warn("Either body or content type are null, defaulting to empty request body")
+                            null
                         }
-                    } catch (_: Exception) {
-                        JsonObject(emptyMap())
-                    }
+                    } ?: TracyRequestBody.Empty
 
                     val req = Request(
                         url = request.url.toProtocolUrl(),
-                        body = RequestBody.Json(body),
-                        contentType = request.contentType(),
+                        body = requestBody,
+                        contentType = contentType,
                     )
 
                     request.attributes.put(isStreamingRequestKey, value = adapter.isStreamingRequest(req))
@@ -208,6 +210,37 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
             }
         } catch (_: Exception) {
             null
+        }
+    }
+
+    private suspend fun HttpRequestBuilder.copyBodyContent(): ByteArray? {
+        // first, attempt to parse the body directly.
+        // if fails, check if the underlying type is serializable
+        val bytes = when (val body = this.body) {
+            is MultiPartFormDataContent -> {
+                val ch = ByteChannel()
+                try {
+                    body.writeTo(ch)
+                    ch.readRemaining().readByteArray()
+                } finally {
+                    ch.close()
+                }
+            }
+            is TextContent -> body.text.toByteArray()
+            is String -> body.toByteArray()
+            is EmptyContent -> null
+            else -> null
+        }
+        if (bytes != null) {
+            return bytes
+        }
+
+        val bodyType = this.bodyType?.type
+        return when {
+            bodyType != null && bodyType.hasAnnotation<Serializable>() -> {
+                serializeToJson(body)?.toByteArray()
+            }
+            else -> null
         }
     }
 

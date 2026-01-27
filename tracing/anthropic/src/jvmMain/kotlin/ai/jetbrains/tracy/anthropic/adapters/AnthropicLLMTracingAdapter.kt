@@ -21,7 +21,7 @@ import kotlinx.serialization.json.*
 import mu.KotlinLogging
 import io.ktor.http.ContentType
 
-class AnthropicLLMTracingAdapter(): LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.ANTHROPIC) {
+class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.ANTHROPIC) {
     override fun getRequestBodyAttributes(span: Span, request: Request) {
         val body = request.body.asJson()?.jsonObject ?: return
 

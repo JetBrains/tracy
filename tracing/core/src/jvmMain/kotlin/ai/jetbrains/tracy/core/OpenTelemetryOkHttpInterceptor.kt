@@ -2,25 +2,15 @@ package ai.jetbrains.tracy.core
 
 
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
-import ai.jetbrains.tracy.core.http.parsers.MultipartFormDataParser
+import ai.jetbrains.tracy.core.http.protocol.*
 import ai.jetbrains.tracy.core.tracing.TracingManager
-import ai.jetbrains.tracy.core.http.protocol.Request
-import ai.jetbrains.tracy.core.http.protocol.RequestBody
-import ai.jetbrains.tracy.core.http.protocol.Response
-import ai.jetbrains.tracy.core.http.protocol.ResponseBody
-import ai.jetbrains.tracy.core.http.protocol.Url
-import ai.jetbrains.tracy.core.http.protocol.toContentType
-import ai.jetbrains.tracy.core.http.protocol.toProtocolUrl
-import io.ktor.http.ContentType
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonObject
 import mu.KotlinLogging
 import okhttp3.Interceptor
-import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.Buffer
@@ -249,33 +239,6 @@ class OpenTelemetryOkHttpInterceptor(
         }
 
         return originalResponse.newBuilder().body(tracingBody).build()
-    }
-
-    private fun ByteArray.asRequestBody(mediaType: MediaType?): RequestBody? {
-        val bytes = this
-        // check for the content type regardless of the parameters
-        return when (mediaType?.toContentType()?.withoutParameters()) {
-            ContentType.Application.Json -> {
-                val json = try {
-                    Json.parseToJsonElement(
-                        bytes.toString(mediaType.charset() ?: Charsets.UTF_8)
-                    ).jsonObject
-                } catch (err: Exception) {
-                    logger.trace("Error while parsing response body", err)
-                    null
-                } ?: return null
-
-                RequestBody.Json(json)
-            }
-
-            ContentType.MultiPart.FormData -> {
-                val parser = MultipartFormDataParser()
-                val formData = parser.parse(mediaType, bytes)
-                RequestBody.DataForm(formData)
-            }
-
-            else -> null
-        }
     }
 
     private fun OkHttpRequest.withCopiedBodyContent(): Pair<ByteArray?, OkHttpRequest> {
