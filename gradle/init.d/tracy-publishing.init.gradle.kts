@@ -61,7 +61,7 @@ allprojects {
 
                 repositories.maven {
                     name = "space"
-                    url = project.uri("https://packages.jetbrains.team/maven/p/ai-development-kit/test-maven")
+                    url = project.uri("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")
                     credentials {
                         username = System.getenv("SPACE_USERNAME")
                         password = System.getenv("SPACE_PASSWORD")
