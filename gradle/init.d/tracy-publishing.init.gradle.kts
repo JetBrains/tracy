@@ -30,9 +30,10 @@ initscript {
 allprojects {
     plugins.withId("ai.jetbrains.tracy.published-artifact") {
         val isUnderTeamCity = System.getenv("TEAMCITY_VERSION") != null
+        val isSigningRequired = System.getenv("IS_SIGNING_REQUIRED")?.toBoolean() ?: false
         plugins.apply("signing")
         extensions.configure<SigningExtension> {
-            if (isUnderTeamCity) {
+            if (isUnderTeamCity && isSigningRequired) {
                 val publishing = extensions.getByType(PublishingExtension::class.java)
                 sign(publishing.publications)
                 signatories = GpgSignSignatoryProvider()
