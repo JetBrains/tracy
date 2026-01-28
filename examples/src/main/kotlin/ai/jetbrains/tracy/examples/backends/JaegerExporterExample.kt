@@ -4,10 +4,10 @@ import ai.jetbrains.tracy.core.exporters.otlp.OtlpGrpcExporterConfig
 import ai.jetbrains.tracy.core.exporters.otlp.OtlpHttpExporterConfig
 import ai.jetbrains.tracy.core.tracing.TracingManager
 import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
-import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.Trace
 
 /**
- * Demonstrates how to use [OtlpHttpExporterConfig] with [KotlinFlowTrace] to export traces to Jaeger.
+ * Demonstrates how to use [OtlpHttpExporterConfig] with [Trace] to export traces to Jaeger.
  *
  * To run this example:
  * - For Jaeger, run a local Jaeger instance, for example, using Docker:

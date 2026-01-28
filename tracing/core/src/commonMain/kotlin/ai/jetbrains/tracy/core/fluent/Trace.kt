@@ -15,7 +15,7 @@ import kotlin.reflect.KClass
  */
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.FUNCTION)
-annotation class KotlinFlowTrace(
+annotation class Trace(
     val name: String = "",
     val metadataCustomizer: KClass<out SpanMetadataCustomizer> = DefaultSpanMetadataCustomizer::class,
 )

@@ -3,7 +3,7 @@ package ai.jetbrains.tracy.examples
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
 import ai.jetbrains.tracy.core.tracing.TracingManager
 import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
-import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.Trace
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.core.tools.annotations.LLMDescription
@@ -17,28 +17,28 @@ import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 /**
  * Example [ToolSet] that defines a simple sorting tool for use with a [Koog](https://github.com/koog-ai/koog) [AIAgent].
  *
- * The tools in this set are annotated with [KotlinFlowTrace] to automatically generate tracing spans
+ * The tools in this set are annotated with [Trace] to automatically generate tracing spans
  * for both tool invocation and helper function.
  */
 object SortTools : ToolSet {
     @Tool
     @LLMDescription("Sorts a comma-separated list of integers in ascending order and returns the sorted list as a string.")
-    @KotlinFlowTrace(name = "Sort integers")
+    @Trace(name = "Sort integers")
     fun sortIntegers(
         @LLMDescription("Comma-separated integers, e.g. '1,2,3,4,5'") numbers: String
     ): String = parseCsvInts(numbers).sorted().joinToString(",")
 
-    @KotlinFlowTrace(name = "Parse comma-separated list")
+    @Trace(name = "Parse comma-separated list")
     private fun parseCsvInts(input: String): List<Int> =
         input.split(',').map { it.trim() }.map { it.toIntOrNull() ?: error("Invalid integer value: '$it'") }
 }
 
 /**
- * Example of integrating a [Koog](https://github.com/koog-ai/koog) [AIAgent] with tracing using [KotlinFlowTrace].
+ * Example of integrating a [Koog](https://github.com/koog-ai/koog) [AIAgent] with tracing using [Trace].
  *
  * This example demonstrates how to:
  * - Initialize tracing using [TracingManager] with [ConsoleExporterConfig].
- * - Annotate Koog [ToolSet] functions with [KotlinFlowTrace] to automatically generate spans for tool calls.
+ * - Annotate Koog [ToolSet] functions with [Trace] to automatically generate spans for tool calls.
  * - Run an [AIAgent] that discovers and executes annotated tools, capturing detailed trace data for both tool and helper functions.
  *
  * To run this example:

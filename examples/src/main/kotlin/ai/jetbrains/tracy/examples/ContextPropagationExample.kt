@@ -3,7 +3,7 @@ package ai.jetbrains.tracy.examples
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
 import ai.jetbrains.tracy.core.tracing.TracingManager
 import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
-import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.Trace
 import ai.jetbrains.tracy.core.fluent.processor.currentSpanContext
 import ai.jetbrains.tracy.core.fluent.processor.currentSpanContextElement
 import kotlinx.coroutines.Dispatchers
@@ -12,7 +12,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlin.concurrent.thread
 
-@KotlinFlowTrace
+@Trace
 fun processUserRequest(requestId: String) {
     println("Processing request: $requestId")
 }
@@ -24,7 +24,7 @@ fun processUserRequest(requestId: String) {
  * is preserved automatically. The nested span created inside `withContext` is linked correctly
  * to its parent span.
  */
-@KotlinFlowTrace
+@Trace
 suspend fun handleRequestWithContext(requestId: String) {
     println("Running on thread: ${Thread.currentThread().name}")
     withContext(Dispatchers.IO) {
@@ -44,7 +44,7 @@ suspend fun handleRequestWithContext(requestId: String) {
  *
  * Note: [withContext] handles propagation automatically, so no manual setup is needed there.
  */
-@KotlinFlowTrace
+@Trace
 suspend fun handleRequestInCoroutine(requestId: String) {
     println("Running on thread: ${Thread.currentThread().name}")
     runBlocking(currentSpanContextElement(currentCoroutineContext())) {
@@ -62,7 +62,7 @@ suspend fun handleRequestInCoroutine(requestId: String) {
  *
  * This ensures that spans created within the thread remain part of the same trace.
  */
-@KotlinFlowTrace
+@Trace
 suspend fun handleRequestInNewThread(requestId: String) {
     println("Running on thread: ${Thread.currentThread().name}")
     val context = currentSpanContext(currentCoroutineContext())

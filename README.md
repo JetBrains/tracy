@@ -14,10 +14,14 @@ It provides a **unified API** to capture structured traces. Fully compatible wit
 platforms like **Langfuse** and **Weights & Biases (W&B)**.
 
 > [!Note]
-> This project uses [Tracy Official YouTrack Project](https://youtrack.jetbrains.com/issues/TRACY) for issue tracking. Please file bug reports and feature requests there. Issue templates and additional details are available in the [Contributing Guidelines](CONTRIBUTING.md).
+> This project uses [Tracy Official YouTrack Project](https://youtrack.jetbrains.com/issues/TRACY) for issue tracking.
+> Please file bug reports and feature requests there. Issue templates and additional details are available in
+> the [Contributing Guidelines](CONTRIBUTING.md).
 
 **Standards:**  
-This library implements the [OpenTelemetry Generative AI Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/) for span attributes and event naming, ensuring your traces remain compatible with any OpenTelemetry-compliant backend.
+This library implements
+the [OpenTelemetry Generative AI Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/) for span
+attributes and event naming, ensuring your traces remain compatible with any OpenTelemetry-compliant backend.
 
 You can use it to:
 
@@ -212,7 +216,6 @@ Select the build system that matches your setup:
 
 </details>
 
-
 ## Requirements
 
 Compatible with Kotlin **1.9.0 through 2.2.20** and Java **17+**.
@@ -289,7 +292,7 @@ TracingManager.setSdk(sdk)
 TracingManager.traceSensitiveContent()
 
 // Create an OpenAI client and instrument it with tracing capabilities
-val myOpenAIClient  = OpenAIOkHttpClient.builder()
+val myOpenAIClient = OpenAIOkHttpClient.builder()
     .baseUrl(url)
     .apiKey(apiKey)
     .timeout(timeout)
@@ -345,24 +348,23 @@ example: [OpenAI Client Auto Tracing Example](examples/src/main/kotlin/ai/jetbra
     - **SDK set after instrumentation**: instrumented clients start emitting spans immediately.
     - **Runtime toggle**: tracing can be dynamically enabled or disabled via `TracingManager.isTracingEnabled`.
 
-
 ### Annotation-Based Tracing
 
 You can trace regular functions (not only client calls)
-using the [`@KotlinFlowTrace`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/fluent/KotlinFlowTrace.kt)
+using the [`@Trace`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/fluent/Trace.kt)
 annotation.
 
 **Make sure to apply the `ai.jetbrains.tracy` plugin in your build.**
 
-The Kotlin compiler plugin automatically instruments annotated functions, capturing execution details such as start and end time, duration, inputs, and outputs.
+The Kotlin compiler plugin automatically instruments annotated functions, capturing execution details such as start and
+end time, duration, inputs, and outputs.
 
 > ⚠️ Annotation-based tracing is supported **only in Kotlin**. For Java, use [Manual Tracing](#manual-tracing) instead.
-
 
 #### Quick Start
 
 ```kotlin
-@KotlinFlowTrace(name = "GreetUser")
+@Trace(name = "GreetUser")
 fun greetUser(name: String): String {
     println("Hello, $name!")
     return "Greeting sent to $name"
@@ -389,7 +391,7 @@ demonstration of hierarchical tracing.
 
 Tracing annotation is automatically propagated through interfaces and class hierarchies.  
 If a method in an interface or superclass is annotated with [
-`@KotlinFlowTrace`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/fluent/KotlinFlowTrace.kt), all
+`@Trace`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/fluent/Trace.kt), all
 overriding or implementing methods
 inherit tracing behavior automatically, even if the annotation is not explicitly declared again.  
 This approach ensures consistent and reusable tracing across an entire inheritance chain without code duplication.
@@ -404,7 +406,7 @@ The tracing system offers flexible customization through the [
 `SpanMetadataCustomizer`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/fluent/handlers/SpanMetadataCustomizer.kt)
 interface.
 To use it, you must implement the interface as a Kotlin `object` and link it to a traced function via the [
-`@KotlinFlowTrace`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/fluent/KotlinFlowTrace.kt) annotation.
+`@Trace`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/fluent/Trace.kt) annotation.
 This ensures that the metadata customizer is a singleton and can be efficiently reused at runtime.
 With a custom `SpanMetadataCustomizer`, you can define:
 
@@ -482,9 +484,9 @@ Once the SDK is configured, initialize tracing with `TracingManager.setSdk(sdk)`
 | `langfusePublicKey`           | `LANGFUSE_PUBLIC_KEY`             | true     | -                                                          |
 | `langfuseSecretKey`           | `LANGFUSE_SECRET_KEY`             | true     | -                                                          |
 | `traceToConsole`              | -                                 | false    | `false`                                                    |
-| `exporterTimeoutSeconds`             | -                                 | false    | `10`                                                       |
+| `exporterTimeoutSeconds`      | -                                 | false    | `10`                                                       |
 | `maxNumberOfSpanAttributes`   | `MAX_NUMBER_OF_SPAN_ATTRIBUTES`   | false    | `256`                                                      |
-| `maxSpanAttributeValueLength` | `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` | false    | `Int.MAX_VALUE`                                                     |
+| `maxSpanAttributeValueLength` | `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` | false    | `Int.MAX_VALUE`                                            |
 
 [Langfuse Setup Example](examples/src/main/kotlin/ai/jetbrains/tracy/examples/backends/LangfuseExample.kt)
 
@@ -492,14 +494,14 @@ Once the SDK is configured, initialize tracing with `TracingManager.setSdk(sdk)`
 
 | Property                      | Environment Variable              | Required | Default Value                                      |
 |-------------------------------|-----------------------------------|----------|----------------------------------------------------|
-| `weaveUrl`            | `WEAVE_URL`                       | false    | [`https://trace.wandb.ai`](https://trace.wandb.ai) |
+| `weaveUrl`                    | `WEAVE_URL`                       | false    | [`https://trace.wandb.ai`](https://trace.wandb.ai) |
 | `weaveEntity`                 | `WEAVE_ENTITY`                    | true     | -                                                  |
 | `weaveProjectName`            | `WEAVE_PROJECT_NAME`              | true     | -                                                  |
 | `weaveApiKey`                 | `WEAVE_API_KEY`                   | true     | -                                                  |
 | `traceToConsole`              | -                                 | false    | `false`                                            |
-| `exporterTimeoutSeconds`             | -o                                | false    | `10`                                               |
+| `exporterTimeoutSeconds`      | -o                                | false    | `10`                                               |
 | `maxNumberOfSpanAttributes`   | `MAX_NUMBER_OF_SPAN_ATTRIBUTES`   | false    | `256`                                              |
-| `maxSpanAttributeValueLength` | `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` | false    | `Int.MAX_VALUE`                                             |
+| `maxSpanAttributeValueLength` | `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` | false    | `Int.MAX_VALUE`                                    |
 
 [Weave Setup Example](examples/src/main/kotlin/ai/jetbrains/tracy/examples/backends/WeaveExample.kt)
 
@@ -520,7 +522,6 @@ There are [Http](tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/exporte
 available.
 Spans can be exported to any OTLP-compatible HTTP or gRPC collector (for example, Jaeger).
 [Jaeger Setup Example](examples/src/main/kotlin/ai/jetbrains/tracy/examples/backends/JaegerExporterExample.kt)
-
 
 ## Project Structure
 
@@ -546,7 +547,8 @@ Spans can be exported to any OTLP-compatible HTTP or gRPC collector (for example
 
 ### Span Context Propagation
 
-There are a few known limitations of the library in terms of the content propogation. To see complete examples of the recommended usage patterns, refer to the [
+There are a few known limitations of the library in terms of the content propogation. To see complete examples of the
+recommended usage patterns, refer to the [
 `ContextPropagationExample.kt`](examples/src/main/kotlin/ai/jetbrains/tracy/examples/ContextPropagationExample.kt) file.
 
 #### Kotlin Coroutines
@@ -561,7 +563,7 @@ However, some concurrency models such as `runBlocking` and raw threads create ne
   to ensure child spans remain linked to their parent. Otherwise, spans become detached and appear as separate traces.
 
   ```kotlin
-  @KotlinFlowTrace
+  @Trace
   suspend fun handleRequestInCoroutine(requestId: String) {
       println("Running on thread: ${Thread.currentThread().name}")
 
@@ -587,14 +589,14 @@ However, some concurrency models such as `runBlocking` and raw threads create ne
 
 ### Local functions
 
-Avoid using `@KotlinFlowTrace` on local (nested) functions.
+Avoid using `@Trace` on local (nested) functions.
 This is a known Kotlin limitation: references to local functions do NOT implement the `KCallable`
 interface correctly. For more details, see the related issue: [KT-64873](https://youtrack.jetbrains.com/issue/KT-64873).
 
-
 ## Publishing
 
-This project uses **Gradle composite builds**. Thus, running plain `publish` or `publishToMavenLocal` is **NOT enough**. Included builds are not published automatically.
+This project uses **Gradle composite builds**. Thus, running plain `publish` or `publishToMavenLocal` is **NOT enough**.
+Included builds are not published automatically.
 
 Use these tasks instead:
 

@@ -1,7 +1,7 @@
 package ai.jetbrains.tracy.examples.eval
 
 import ai.jetbrains.tracy.core.exporters.otlp.LangfuseExporterConfig
-import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.Trace
 import ai.jetbrains.tracy.eval.providers.langfuse.LangfuseEvaluationTest
 import ai.jetbrains.tracy.eval.utils.AggregateScore
 import ai.jetbrains.tracy.eval.utils.ConsoleEvaluationTest
@@ -86,11 +86,11 @@ class HaikuEvaluator : Evaluator<NoGroundTruth, HaikuText, MultiScoreEvalResult>
  *
  * In English tradition haiku should consist of three lines.
  */
-@KotlinFlowTrace(name = "ConsistsOfThreeLines")
+@Trace(name = "ConsistsOfThreeLines")
 fun consistsOfThreeLines(haikuText: HaikuText): Boolean =
     haikuText.text.trim().split("\n").size == 3
 
-@KotlinFlowTrace(name = "Quality")
+@Trace(name = "Quality")
 fun evaluateQuality(haikuText: HaikuText): Float {
     val prompt = """
 You are an AI poetry critic. Your job is to evaluate the overall quality of a Haiku based on the following criteria:
@@ -120,7 +120,7 @@ Evaluate this Haiku:
     return result.message().content().getOrElse { "0" }.toFloat()
 }
 
-@KotlinFlowTrace(name = "Creativity")
+@Trace(name = "Creativity")
 fun evaluateCreativity(haikuText: HaikuText): Float {
     val prompt = """
 You are an AI poetry critic highly focused on creativity in poetry. Your task is to evaluate the creativity of a Haiku based on the following guidelines:
@@ -152,7 +152,7 @@ Evaluate the creativity of this Haiku:
 }
 
 
-@KotlinFlowTrace(name = "Structure")
+@Trace(name = "Structure")
 fun evaluateStructure(haikuText: HaikuText): Float {
     val prompt = """
 You are a Haiku poetry expert and your task is to evaluate the structural correctness of a Haiku. Haiku should adhere to the following strict rules:

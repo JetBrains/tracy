@@ -7,7 +7,7 @@ import ai.jetbrains.tracy.core.fluent.processor.getSpanMetadataCustomizer
 
 actual fun configureTracingMetadata(
     spanBuilder: SpanBuilder,
-    traceAnnotation: KotlinFlowTrace,
+    traceAnnotation: Trace,
     method: PlatformMethod,
     args: Array<Any?>,
 ) {
@@ -23,7 +23,7 @@ actual fun configureTracingMetadata(
 }
 
 
-actual fun addOutputAttributesToTracing(span: Span, traceAnnotation: KotlinFlowTrace, result: Any?) {
+actual fun addOutputAttributesToTracing(span: Span, traceAnnotation: Trace, result: Any?) {
     span.setAttribute(
         FluentSpanAttributes.SPAN_OUTPUTS.key,
         traceAnnotation.getSpanMetadataCustomizer().formatOutputAttribute(result)

@@ -3,9 +3,9 @@ package ai.jetbrains.tracy.examples
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
 import ai.jetbrains.tracy.core.tracing.TracingManager
 import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
-import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.Trace
 
-@KotlinFlowTrace(name = "SimpleExample")
+@Trace(name = "SimpleExample")
 private fun printName(name: String): String {
     println("Hello $name!")
     return "Name successfully printed"
@@ -16,7 +16,7 @@ private fun printName(name: String): String {
  *
  * This example shows how:
  * - Initializing tracing with [TracingManager] and [ConsoleExporterConfig].
- * - Annotating a function with [KotlinFlowTrace] to generate spans automatically.
+ * - Annotating a function with [Trace] to generate spans automatically.
  * - Call [TracingManager.flushTraces] before exiting to ensure all trace data is exported.
  *
  * Running this example creates a single span named **SimpleExample**

@@ -3,15 +3,15 @@ package ai.jetbrains.tracy.examples
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
 import ai.jetbrains.tracy.core.tracing.TracingManager
 import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
-import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.Trace
 
-@KotlinFlowTrace(name = "ChildOperation")
+@Trace(name = "ChildOperation")
 fun childOperation(): String {
     println("Running child operation...")
     return "Child operation complete"
 }
 
-@KotlinFlowTrace(name = "ParentOperation")
+@Trace(name = "ParentOperation")
 fun parentOperation(): String {
     println("Starting parent operation...")
     val result = childOperation()
@@ -24,7 +24,7 @@ fun parentOperation(): String {
  * when one annotated function calls another.
  *
  * This example shows how:
- * - Each function annotated with [KotlinFlowTrace] generates its own tracing span.
+ * - Each function annotated with [Trace] generates its own tracing span.
  * - When [parentOperation] calls [childOperation], a **nested span structure** is produced,
  *   representing the parent-child relationship between operations.
  *

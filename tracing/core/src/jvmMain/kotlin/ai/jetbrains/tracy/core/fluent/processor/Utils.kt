@@ -2,7 +2,7 @@ package ai.jetbrains.tracy.core.fluent.processor
 
 import ai.jetbrains.tracy.core.tracing.TracingManager
 import ai.jetbrains.tracy.core.fluent.FluentSpanAttributes
-import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.Trace
 import ai.jetbrains.tracy.core.fluent.TracingSessionProvider
 import ai.jetbrains.tracy.core.fluent.addOutputAttributesToTracing
 import ai.jetbrains.tracy.core.fluent.configureTracingMetadata
@@ -67,7 +67,7 @@ inline fun <T> withSpan(
 actual inline fun <T> withTrace(
     function: KFunction<*>,
     args: Array<Any?>,
-    traceAnnotation: KotlinFlowTrace,
+    traceAnnotation: Trace,
     crossinline block: () -> T
 ): T {
     if (!TracingManager.isTracingEnabled) {
@@ -95,7 +95,7 @@ actual inline fun <T> withTrace(
 actual suspend inline fun <T> withTraceSuspended(
     function: KFunction<*>,
     args: Array<Any?>,
-    traceAnnotation: KotlinFlowTrace,
+    traceAnnotation: Trace,
     crossinline block: suspend () -> T
 ): T {
     if (!TracingManager.isTracingEnabled) {
@@ -122,7 +122,7 @@ actual suspend inline fun <T> withTraceSuspended(
 }
 
 fun createSpan(
-    traceAnnotation: KotlinFlowTrace,
+    traceAnnotation: Trace,
     method: Method,
     args: Array<Any?>,
     context: Context = Context.current(),
@@ -155,7 +155,7 @@ fun createSpan(
     return span
 }
 
-fun KotlinFlowTrace.getSpanMetadataCustomizer() = this.metadataCustomizer.objectInstance
+fun Trace.getSpanMetadataCustomizer() = this.metadataCustomizer.objectInstance
     ?: error("Handler must be an object singleton")
 
 fun Span.addExceptionAttributes(exception: Throwable) {
