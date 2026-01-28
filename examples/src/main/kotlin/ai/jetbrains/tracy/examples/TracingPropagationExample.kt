@@ -3,10 +3,10 @@ package ai.jetbrains.tracy.examples
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
 import ai.jetbrains.tracy.core.tracing.TracingManager
 import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
-import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.Trace
 
 private interface OrderProcessor {
-    @KotlinFlowTrace(name = "ProcessOrder")
+    @Trace(name = "ProcessOrder")
     suspend fun processOrder(orderId: Int): String
 }
 
@@ -25,17 +25,17 @@ class PremiumOrderProcessor : DefaultOrderProcessor() {
 }
 
 /**
- * Demonstrates how tracing logic from [KotlinFlowTrace] annotations
+ * Demonstrates how tracing logic from [Trace] annotations
  * applies automatically to interface implementations and subclass overrides.
  *
  * This example shows how:
- * - Applying [KotlinFlowTrace] on an interface method enables automatic tracing for all its implementations.
+ * - Applying [Trace] on an interface method enables automatic tracing for all its implementations.
  * - The tracing logic is propagated by the Kotlin tracing plugin.
  * - You can trace multiple class hierarchies without re-declaring annotations.
  *
  * When you run this example, both [PremiumOrderProcessor] and [DefaultOrderProcessor]
  * produce traced spans for their `processOrder` calls, even though only the interface method
- * is annotated with [KotlinFlowTrace].
+ * is annotated with [Trace].
  */
 suspend fun main() {
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))

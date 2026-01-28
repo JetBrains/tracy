@@ -1,6 +1,6 @@
 package ai.jetbrains.tracy.examples.eval
 
-import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.Trace
 import ai.jetbrains.tracy.eval.utils.AIInput
 import ai.jetbrains.tracy.eval.utils.AIOutput
 import ai.jetbrains.tracy.eval.utils.Generator
@@ -35,7 +35,7 @@ class HaikuGenerator : Generator<HaikuTopic, HaikuText> {
     /**
     Generate a haiku using the [input] provided.
      */
-    @KotlinFlowTrace(name = "GenerateHaiku")
+    @Trace(name = "GenerateHaiku")
     override suspend fun generate(input: HaikuTopic): HaikuText {
         val apiToken = System.getenv("OPENAI_API_KEY")
             ?: error("Environment variable 'OPENAI_API_KEY' is not set")

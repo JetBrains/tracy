@@ -4,12 +4,12 @@ import ai.jetbrains.tracy.core.exporters.FileExporterConfig
 import ai.jetbrains.tracy.core.exporters.OutputFormat
 import ai.jetbrains.tracy.core.tracing.TracingManager
 import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
-import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.Trace
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.createTempFile
 import kotlin.io.path.readText
 
-@KotlinFlowTrace(name = "FileTracingExample")
+@Trace(name = "FileTracingExample")
 private fun printName(name: String): String {
     println("Hello $name!")
     return "Name successfully printed"
@@ -20,7 +20,7 @@ private fun printName(name: String): String {
  *
  * This example shows how:
  * - Initializing tracing with [TracingManager] and [FileExporterConfig].
- * - Annotating a function with [KotlinFlowTrace] to generate spans automatically.
+ * - Annotating a function with [Trace] to generate spans automatically.
  * - Call [TracingManager.flushTraces] before exiting to ensure all trace data is exported.
  *
  * Running this example creates a single span named **FileTracingExample**

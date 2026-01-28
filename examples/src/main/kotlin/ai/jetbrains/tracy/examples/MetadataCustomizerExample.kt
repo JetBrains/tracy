@@ -3,13 +3,13 @@ package ai.jetbrains.tracy.examples
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
 import ai.jetbrains.tracy.core.tracing.TracingManager
 import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
-import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.Trace
 import ai.jetbrains.tracy.core.fluent.handlers.PlatformMethod
 import ai.jetbrains.tracy.core.fluent.handlers.SpanMetadataCustomizer
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-@KotlinFlowTrace(metadataCustomizer = ExampleWithMetadataCustomizer::class)
+@Trace(metadataCustomizer = ExampleWithMetadataCustomizer::class)
 fun greetUser(name: String): String {
     println("Hello, $name!")
     return "Greeting sent to $name"
@@ -37,7 +37,7 @@ object ExampleWithMetadataCustomizer : SpanMetadataCustomizer {
 }
 
 /**
- * Demonstrates how to use a custom [SpanMetadataCustomizer] with [KotlinFlowTrace]
+ * Demonstrates how to use a custom [SpanMetadataCustomizer] with [Trace]
  * to enrich spans with additional metadata.
  *
  * This example shows how:

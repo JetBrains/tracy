@@ -21,78 +21,78 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 internal class MyTestClassWithSuspend {
-    @KotlinFlowTrace(name = "Main Span")
+    @Trace(name = "Main Span")
     suspend fun testFunction(paramName: Int): Int {
         delay(12)
         return paramName
     }
 
-    @KotlinFlowTrace(name = "Main Span")
+    @Trace(name = "Main Span")
     suspend fun testFunctionWithTag(paramName: Int): Int {
         delay(12)
         addLangfuseTagsToCurrentTrace(listOf("Tag1", "Tag2"), currentCoroutineContext())
         return paramName
     }
 
-    @KotlinFlowTrace(name = "Throws")
+    @Trace(name = "Throws")
     suspend fun testFunctionThrows(paramName: Int): Int {
         delay(42)
         throw RuntimeException("Test exception")
     }
 
-    @KotlinFlowTrace(name = "Secondary Span")
+    @Trace(name = "Secondary Span")
     suspend fun anotherTestFunction(x: String): String {
         delay(45)
         return x.reversed()
     }
 
-    @KotlinFlowTrace(name = "Parent Span")
+    @Trace(name = "Parent Span")
     suspend fun parentTestFunction(x: String): String {
         delay(50)
         return childTestFunction(x.reversed())
     }
 
-    @KotlinFlowTrace(name = "Child Span")
+    @Trace(name = "Child Span")
     suspend fun childTestFunction(x: String): String {
         delay(10)
         val result = x.reversed()
         return result
     }
 
-    @KotlinFlowTrace(name = "Parent Span Non-Suspend")
+    @Trace(name = "Parent Span Non-Suspend")
     suspend fun parentTestFunctionWithNonSuspendKidWithDispatcher(x: String): String {
         delay(50)
         return withContext(Dispatchers.IO) { childTestFunctionNonSuspendWithDispatcher(x.reversed()) }
     }
 
-    @KotlinFlowTrace(name = "Child Span Non Suspend")
+    @Trace(name = "Child Span Non Suspend")
     fun childTestFunctionNonSuspendWithDispatcher(x: String): String {
         return x.reversed()
     }
 
-    @KotlinFlowTrace(name = "Parent Span Non-Suspend")
+    @Trace(name = "Parent Span Non-Suspend")
     suspend fun parentTestFunctionWithNonSuspendKid(x: String): String {
         delay(50)
         return childTestFunctionNonSuspend(x.reversed())
     }
 
-    @KotlinFlowTrace(name = "Child Span Non Suspend")
+    @Trace(name = "Child Span Non Suspend")
     fun childTestFunctionNonSuspend(x: String): String {
         return x.reversed()
     }
 
-    @KotlinFlowTrace(name = "Parent Span Non-Suspend")
+    @Trace(name = "Parent Span Non-Suspend")
     fun parentTestFunctionWithSuspendKid(x: String): String {
         return runBlocking { childTestFunctionSuspend(x.reversed()) }
     }
 
-    @KotlinFlowTrace(name = "Child Span Non Suspend")
+    @Trace(name = "Child Span Non Suspend")
     suspend fun childTestFunctionSuspend(x: String): String {
         delay(10)
         return x.reversed()
     }
 
-    @KotlinFlowTrace(name = "Child Span")
+    @Trace(name = "Child Span")
     suspend fun testRecursion(level: Int): Int {
         delay(100)
         if (level == 1) return 0
@@ -101,7 +101,7 @@ internal class MyTestClassWithSuspend {
 }
 
 internal class MyTestClassWithSuspendHard() {
-    @KotlinFlowTrace(name = "P")
+    @Trace(name = "P")
     suspend fun parentFunction(p: String): String {
         delay(100)
         // Calling Children
@@ -112,26 +112,26 @@ internal class MyTestClassWithSuspendHard() {
         return "$child1Result, $child2Result, $child3Result"
     }
 
-    @KotlinFlowTrace(name = "C1")
+    @Trace(name = "C1")
     suspend fun childFunction1(p: String): String {
         delay(50)
         return p.uppercase()
     }
 
-    @KotlinFlowTrace(name = "C2")
+    @Trace(name = "C2")
     suspend fun childFunction2(p: String): String {
         delay(50)
         val grandChild1Result = grandChildFunction1(p)
         return grandChild1Result
     }
 
-    @KotlinFlowTrace(name = "C3")
+    @Trace(name = "C3")
     suspend fun childFunction3(p: String): String {
         delay(50)
         return p.reversed()
     }
 
-    @KotlinFlowTrace(name = "G1")
+    @Trace(name = "G1")
     suspend fun grandChildFunction1(p: String): String {
         delay(30)
         return "G(${p.length})"
@@ -176,7 +176,8 @@ class SuspendFluentTracingTest() : BaseOpenTelemetryTracingTest() {
         val trace = assertNotNull(traces.firstOrNull())
         assertEquals(StatusData.ok(), trace.status)
         assertTrue(
-            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)?.endsWith("MyTestClassWithSuspend.testFunction") ?: false
+            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)?.endsWith("MyTestClassWithSuspend.testFunction")
+                ?: false
         )
         assertEquals(
             trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS),

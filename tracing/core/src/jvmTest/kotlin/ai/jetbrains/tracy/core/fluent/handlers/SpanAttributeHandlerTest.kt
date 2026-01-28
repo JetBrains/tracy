@@ -1,22 +1,22 @@
 package ai.jetbrains.tracy.core.fluent.handlers
 
 import ai.jetbrains.tracy.test.utils.BaseOpenTelemetryTracingTest
-import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.Trace
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
 private class TestSpanAttributeHandlerClass {
-    @KotlinFlowTrace
+    @Trace
     fun baseAttributeHandler(param: Int): Int = param
 
-    @KotlinFlowTrace(name = "Test Name")
+    @Trace(name = "Test Name")
     fun baseAttributeHandlerWithName(param: Int): Int = param
 
-    @KotlinFlowTrace(metadataCustomizer = TestMetadataCustomizer::class)
+    @Trace(metadataCustomizer = TestMetadataCustomizer::class)
     fun baseAttributeHandlerWithHandler(param: Int): Int = param
 
-    @KotlinFlowTrace(name = "Test Name", metadataCustomizer = TestMetadataCustomizer::class)
+    @Trace(name = "Test Name", metadataCustomizer = TestMetadataCustomizer::class)
     fun baseAttributeHandlerWithNameAndHandler(param: Int): Int = param
 
     object TestMetadataCustomizer : SpanMetadataCustomizer {

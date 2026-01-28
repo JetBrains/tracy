@@ -25,7 +25,7 @@ import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.Name
 
 class TracyGeneratorExtension : IrGenerationExtension {
-    private val traceAnnotationFqName = FqName("ai.jetbrains.tracy.core.fluent.KotlinFlowTrace")
+    private val traceAnnotationFqName = FqName("ai.jetbrains.tracy.core.fluent.Trace")
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val withTraceSymbol = pluginContext.referenceFunctions(
@@ -37,7 +37,7 @@ class TracyGeneratorExtension : IrGenerationExtension {
 
         moduleFragment.accept(object : IrElementTransformerVoid() {
             override fun visitSimpleFunction(declaration: IrSimpleFunction): IrStatement {
-                // Try to get this function's own @KotlinFlowTrace annotation
+                // Try to get this function's own @Trace annotation
                 // or fall back to a propagated one from an overridden function.
                 val traceAnnotation = declaration.findOverriddenAnnotationWithPropagation()
                 if (traceAnnotation != null && declaration.body != null) {
@@ -55,7 +55,7 @@ class TracyGeneratorExtension : IrGenerationExtension {
     }
 
     /**
-     * Recursively find the first matching @KotlinFlowTrace annotation
+     * Recursively find the first matching @Trace annotation
      * in any overridden function in the hierarchy.
      */
     private fun IrSimpleFunction.findOverriddenAnnotationWithPropagation(): IrConstructorCall? =

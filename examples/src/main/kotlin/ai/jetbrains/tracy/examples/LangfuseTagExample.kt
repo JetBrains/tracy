@@ -4,9 +4,9 @@ import ai.jetbrains.tracy.core.exporters.otlp.LangfuseExporterConfig
 import ai.jetbrains.tracy.core.tracing.TracingManager
 import ai.jetbrains.tracy.core.tracing.addLangfuseTagsToCurrentTrace
 import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
-import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.Trace
 
-@KotlinFlowTrace(name = "GreetUserTrace")
+@Trace(name = "GreetUserTrace")
 fun greetUser(name: String, isPremium: Boolean): String {
     println("Hello, $name!")
     if (isPremium) {
@@ -18,7 +18,7 @@ fun greetUser(name: String, isPremium: Boolean): String {
 }
 
 /**
- * Demonstrates how to use [LangfuseExporterConfig] with [KotlinFlowTrace]
+ * Demonstrates how to use [LangfuseExporterConfig] with [Trace]
  * to export traces to [Langfuse](https://langfuse.com) and enrich them with custom tags.
  *
  * This example shows how:

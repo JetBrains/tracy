@@ -6,10 +6,10 @@ import ai.jetbrains.tracy.core.fluent.processor.SpanBuilder
 
 expect fun configureTracingMetadata(
     spanBuilder: SpanBuilder,
-    traceAnnotation: KotlinFlowTrace,
+    traceAnnotation: Trace,
     method: PlatformMethod,
     args: Array<Any?>
 )
 
 
-expect fun addOutputAttributesToTracing(span: Span, traceAnnotation: KotlinFlowTrace, result: Any?)
+expect fun addOutputAttributesToTracing(span: Span, traceAnnotation: Trace, result: Any?)

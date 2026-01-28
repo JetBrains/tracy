@@ -16,85 +16,85 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 internal class MyTestClass {
-    @KotlinFlowTrace(name = "Main Span")
+    @Trace(name = "Main Span")
     fun testFunction(paramName: Int): Int {
         return paramName
     }
 
-    @KotlinFlowTrace(name = "Main Span")
+    @Trace(name = "Main Span")
     fun testFunctionWithTag(paramName: Int): Int {
         addLangfuseTagsToCurrentTrace(listOf("Tag1", "Tag2"))
         return paramName
     }
 
-    @KotlinFlowTrace(name = "Throws")
+    @Trace(name = "Throws")
     fun testFunctionThrows(paramName: Int): Int {
         throw RuntimeException("Test exception")
     }
 
-    @KotlinFlowTrace(name = "Main Span")
+    @Trace(name = "Main Span")
     fun testFunctionWithDefaultValue(paramName: Int = 10): Int {
         return paramName
     }
 
-    @KotlinFlowTrace(name = "Secondary Span")
+    @Trace(name = "Secondary Span")
     fun anotherTestFunction(x: String): String {
         return x.reversed()
     }
 
-    @KotlinFlowTrace(name = "Parent Span")
+    @Trace(name = "Parent Span")
     fun parentTestFunction(x: String): String {
         return childTestFunction(x.reversed())
     }
 
-    @KotlinFlowTrace(name = "Child Span")
+    @Trace(name = "Child Span")
     fun childTestFunction(x: String): String {
         return x.reversed()
     }
 
     internal class InsideClass() {
-        @KotlinFlowTrace(name = "Inside Test Span")
+        @Trace(name = "Inside Test Span")
         fun insideTestFunction(x: String): String {
             return x.reversed()
         }
     }
 
-    @KotlinFlowTrace(name = "InlineOperation")
+    @Trace(name = "InlineOperation")
     inline fun <T> inlineOperation(name: String, block: () -> T): Pair<String, T> =
         name to block()
 
-    @KotlinFlowTrace(name = "InlineOperation")
+    @Trace(name = "InlineOperation")
     inline fun <T> inlineOperationBlockFirst(block: () -> T, name: String): Pair<String, T> =
         name to block()
 
-    @KotlinFlowTrace(name = "InlineOperation")
+    @Trace(name = "InlineOperation")
     inline fun <T> inlineOperationNoinlineBlock(name: String, noinline block: () -> T): Pair<String, T> =
         name to block()
 }
 
 internal class MyGenericTestClass<T> {
-    @KotlinFlowTrace
+    @Trace
     fun returnGenericParam(paramName: T): T {
         return paramName
     }
 
-    @KotlinFlowTrace
+    @Trace
     fun <V> returnTypeVWithTypeTParam(x: V, y: T): V {
         return x
     }
 }
 
-@KotlinFlowTrace(name = "Top Level Span")
+@Trace(name = "Top Level Span")
 internal fun topLevelTestFunction(x: String): String {
     return x.reversed()
 }
 
-@KotlinFlowTrace()
+@Trace()
 fun List<String>.foo(): String {
     return this.joinToString(" ")
 }
 
-@KotlinFlowTrace
+@Trace
 fun <T> topLevelReturnGenericParam(paramName: T): T {
     return paramName
 }
@@ -277,7 +277,8 @@ class FluentTracingTest : BaseOpenTelemetryTracingTest() {
 
         assertEquals(StatusData.ok(), trace.status)
         assertTrue(
-            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)?.endsWith("MyTestClass.testFunctionWithDefaultValue") ?: false
+            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)
+                ?.endsWith("MyTestClass.testFunctionWithDefaultValue") ?: false
         )
         assertEquals(
             trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS),

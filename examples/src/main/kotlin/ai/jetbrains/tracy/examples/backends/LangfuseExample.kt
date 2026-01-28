@@ -3,16 +3,16 @@ package ai.jetbrains.tracy.examples.backends
 import ai.jetbrains.tracy.core.exporters.otlp.LangfuseExporterConfig
 import ai.jetbrains.tracy.core.tracing.TracingManager
 import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
-import ai.jetbrains.tracy.core.fluent.KotlinFlowTrace
+import ai.jetbrains.tracy.core.fluent.Trace
 
-@KotlinFlowTrace(name = "SimpleExample")
+@Trace(name = "SimpleExample")
 fun printName(name: String): String {
     println("Hello $name!")
     return "Name successfully printed"
 }
 
 /**
- * Demonstrates how to use [LangfuseExporterConfig] with [KotlinFlowTrace] to export traces to [Langfuse](https://langfuse.com).
+ * Demonstrates how to use [LangfuseExporterConfig] with [Trace] to export traces to [Langfuse](https://langfuse.com).
  *
  * This example shows how:
  * - [LangfuseExporterConfig] initializes the tracing backend for Langfuse.
