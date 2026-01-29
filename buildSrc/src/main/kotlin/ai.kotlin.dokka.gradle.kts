@@ -33,14 +33,13 @@ dokka {
     // Configure test fixtures documentation after project evaluation when source sets are created
     project.afterEvaluate {
         val kotlinExt = extensions.findByType(KotlinMultiplatformExtension::class.java)
-        val jvmTestFixturesDir = file("src/jvmTestFixtures/kotlin")
         val hasTestFixtures = kotlinExt?.sourceSets?.findByName("jvmTestFixtures") != null
-                && jvmTestFixturesDir.exists()
+        val jvmTestFixturesDir = file("src/jvmTestFixtures/kotlin")
 
         println("${project.name} hasTestFixtures: $hasTestFixtures")
         println("${project.name} source sets: [${kotlinExt?.sourceSets?.toList()}]")
 
-        if (hasTestFixtures) {
+        if (hasTestFixtures && jvmTestFixturesDir.exists()) {
             dokka.dokkaSourceSets.maybeCreate("jvmTestFixtures").apply {
                 displayName.set("JVM Test Fixtures")
                 sourceRoots.from(jvmTestFixturesDir)
