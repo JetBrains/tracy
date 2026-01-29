@@ -10,7 +10,6 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     id("ai.jetbrains.tracy.published-artifact")
     id("ai.kotlin.dokka")
-    // `java-test-fixtures`
 }
 
 kotlin {
