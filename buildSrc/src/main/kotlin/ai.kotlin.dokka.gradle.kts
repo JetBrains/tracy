@@ -36,9 +36,6 @@ dokka {
         val hasTestFixtures = kotlinExt?.sourceSets?.findByName("jvmTestFixtures") != null
         val jvmTestFixturesDir = file("src/jvmTestFixtures/kotlin")
 
-        println("${project.name} hasTestFixtures: $hasTestFixtures")
-        println("${project.name} source sets: [${kotlinExt?.sourceSets?.toList()}]")
-
         if (hasTestFixtures && jvmTestFixturesDir.exists()) {
             dokka.dokkaSourceSets.maybeCreate("jvmTestFixtures").apply {
                 displayName.set("JVM Test Fixtures")

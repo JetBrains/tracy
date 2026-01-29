@@ -11,7 +11,7 @@ plugins {
     id("ai.jetbrains.tracy.published-artifact")
     id("org.jetbrains.ai.tracy")
     id("ai.kotlin.dokka")
-    `java-test-fixtures`
+    // `java-test-fixtures`
 }
 
 kotlin {
