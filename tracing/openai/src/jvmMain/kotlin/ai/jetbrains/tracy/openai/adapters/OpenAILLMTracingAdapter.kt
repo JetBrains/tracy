@@ -50,7 +50,37 @@ private enum class OpenAIApiType(val route: String) {
 }
 
 /**
- * Processes OpenAI API calls and extracts relevant information as span attributes.
+ * Tracing adapter for OpenAI API.
+ *
+ * Automatically detects and handles multiple OpenAI API endpoints including chat completions,
+ * responses API, and image operations (generation, editing). Uses specialized handlers for each
+ * endpoint type to extract telemetry data including model parameters, messages, tool calls,
+ * streaming, and media content.
+ *
+ * ## Supported Endpoints
+ * - **Chat Completions**: `/v1/chat/completions`
+ * - **Responses API**: `/v1/responses`
+ * - **Image Generation**: `/v1/images/generations`
+ * - **Image Editing**: `/v1/images/edits`
+ *
+ * ## Example Usage
+ * ```kotlin
+ * val client = instrument(HttpClient(), OpenAILLMTracingAdapter())
+ *
+ * // Chat completions
+ * client.post("https://api.openai.com/v1/chat/completions") {
+ *     header("Authorization", "Bearer $apiKey")
+ *     setBody("""
+ *         {
+ *             "messages": [{"role": "user", "content": "Hello!"}],
+ *             "model": "gpt-4o-mini"
+ *         }
+ *     """)
+ * }
+ * // Automatically detects endpoint and traces accordingly
+ * ```
+ *
+ * See: [OpenAI API Reference](https://platform.openai.com/docs/api-reference)
  */
 class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.OPENAI) {
     private val handlers = ConcurrentHashMap<OpenAIApiType, EndpointApiHandler>()

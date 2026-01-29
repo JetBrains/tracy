@@ -25,18 +25,101 @@ import okhttp3.Response as OkHttpResponse
 import okhttp3.ResponseBody as OkHttpResponseBody
 
 /**
- * Instruments an [OkHttpClient] with OpenTelemetry tracing for LLM API calls.
+ * Instruments an [OkHttpClient] with OpenTelemetry tracing for LLM provider API calls,
+ * returning a cloned and patched instance of the provided [OkHttpClient].
  *
- * This function adds a tracing interceptor to the OkHttp client that automatically
- * captures and exports span data for HTTP requests made to LLM providers.
+ * This function adds automatic tracing capabilities to an OkHttp client by injecting an
+ * [OpenTelemetryOkHttpInterceptor] configured with the provided [LLMTracingAdapter]. All HTTP
+ * requests made through the instrumented client to LLM provider APIs will be automatically traced,
+ * including request/response bodies, token usage, model parameters, tool calls, and errors.
+ * Supports both streaming and non-streaming requests.
  *
- * @param client The [OkHttpClient] instance to instrument.
- * @param adapter The [LLMTracingAdapter] that handles provider-specific attribute extraction
- *  (e.g., `ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter` for OpenAI).
- * @return A new [OkHttpClient] instance with tracing capabilities enabled.
+ * This is a lower-level instrumentation function that works with raw OkHttp clients. For
+ * provider-specific clients (OpenAI, Anthropic, Gemini), consider using the provider-specific
+ * `instrument()` functions instead.
  *
- * @see OpenTelemetryOkHttpInterceptor
- * @see LLMTracingAdapter
+ * ## Use Cases
+ *
+ * ### Basic OpenAI API Request
+ * ```kotlin
+ * TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
+ * TracingManager.traceSensitiveContent()
+ *
+ * val apiToken = System.getenv("OPENAI_API_KEY")
+ * val requestBodyJson = buildJsonObject {
+ *     put("model", JsonPrimitive("gpt-4o-mini"))
+ *     put("messages", buildJsonArray {
+ *         add(buildJsonObject {
+ *             put("role", JsonPrimitive("user"))
+ *             put("content", JsonPrimitive("Generate polite greeting and introduce yourself"))
+ *         })
+ *     })
+ *     put("temperature", JsonPrimitive(1.0))
+ * }
+ *
+ * val client = OkHttpClient()
+ * val instrumentedClient = instrument(client, OpenAILLMTracingAdapter())
+ *
+ * val requestBody = Json { prettyPrint = true }
+ *     .encodeToString(requestBodyJson)
+ *     .toRequestBody("application/json".toMediaType())
+ *
+ * val request = Request.Builder()
+ *     .url("https://api.openai.com/v1/chat/completions")
+ *     .addHeader("Authorization", "Bearer $apiToken")
+ *     .addHeader("Content-Type", "application/json")
+ *     .post(requestBody)
+ *     .build()
+ *
+ * instrumentedClient.newCall(request).execute().use { response ->
+ *     println("Result: ${response.body?.string()}")
+ * }
+ *
+ * TracingManager.flushTraces()
+ * ```
+ *
+ * ### Using with Different Providers
+ * ```kotlin
+ * // OpenAI
+ * val openAiClient = instrument(OkHttpClient(), OpenAILLMTracingAdapter())
+ *
+ * // Anthropic
+ * val anthropicClient = instrument(OkHttpClient(), AnthropicLLMTracingAdapter())
+ *
+ * // Gemini
+ * val geminiClient = instrument(OkHttpClient(), GeminiLLMTracingAdapter())
+ * ```
+ *
+ * ### Streaming Requests
+ * ```kotlin
+ * val client = instrument(OkHttpClient(), OpenAILLMTracingAdapter())
+ * val request = Request.Builder()
+ *     .url("https://api.openai.com/v1/chat/completions")
+ *     .addHeader("Authorization", "Bearer $apiToken")
+ *     .post(streamingRequestBody)
+ *     .build()
+ *
+ * client.newCall(request).execute().use { response ->
+ *     response.body?.source()?.let { source ->
+ *         // Read streaming response
+ *         while (!source.exhausted()) {
+ *             val line = source.readUtf8Line()
+ *             // Process streaming data
+ *         }
+ *     }
+ * }
+ * // Streaming data is automatically captured and traced
+ * ```
+ *
+ * ## Notes
+ * - This function is **idempotent**: calling `instrument()` multiple times on the same client
+ *   will not result in duplicate interceptors.
+ * - Tracing can be controlled globally via `TracingManager.isTracingEnabled`.
+ * - **The original client is not modified; a new client instance with instrumentation is returned**.
+ *
+ * @param client The OkHttp client to instrument
+ * @param adapter The [LLMTracingAdapter] specifying which LLM provider adapter to use for tracing
+ * @return **A new [OkHttpClient] instance** with OpenTelemetry tracing enabled (i.e., the initial [client] remains **unmodified**)
  */
 fun instrument(client: OkHttpClient, adapter: LLMTracingAdapter): OkHttpClient {
     val clientBuilder = client.newBuilder()

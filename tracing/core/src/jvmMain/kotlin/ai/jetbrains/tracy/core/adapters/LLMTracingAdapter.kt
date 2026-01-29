@@ -19,12 +19,35 @@ import kotlinx.serialization.json.jsonPrimitive
 
 
 /**
- * An abstract class representing an adapter for tracing LLM interactions.
- * This adapter handles the tracing of HTTP requests and responses, extracting relevant attributes
- * from both the request and response bodies to populate spans.
+ * Base adapter for tracing LLM provider API interactions using OpenTelemetry.
  *
- * @constructor Initializes the adapter with the name of the GenAI system being traced.
- * @param genAISystem The name of the Generative AI system that this adapter represents.
+ * This abstract class provides the foundation for implementing provider-specific tracing adapters.
+ * It handles HTTP request/response interception, attribute extraction, error handling, and
+ * streaming support. Subclasses implement provider-specific parsing logic for different API formats
+ * (OpenAI, Anthropic, Gemini, etc.).
+ *
+ * ## Usage
+ * Extend this class to create a provider-specific adapter:
+ * ```kotlin
+ * class AnthropicLLMTracingAdapter : LLMTracingAdapter(GenAiSystemIncubatingValues.ANTHROPIC) {
+ *     override fun getRequestBodyAttributes(span: Span, request: Request) {
+ *         // Parse Anthropic-specific request format
+ *     }
+ *     override fun getResponseBodyAttributes(span: Span, response: Response) {
+ *         // Parse Anthropic-specific response format
+ *     }
+ *     override fun getSpanName(request: Request) = "Anthropic-generation"
+ *     override fun isStreamingRequest(request: Request) = false
+ *     override fun handleStreaming(span: Span, url: Url, events: String) = Unit
+ * }
+ * ```
+ *
+ * Use with the `instrument()` function:
+ * ```kotlin
+ * val client = instrument(HttpClient(), AnthropicLLMTracingAdapter())
+ * ```
+ *
+ * @param genAISystem The name of the GenAI system (e.g., "openai", "anthropic", "gemini")
  */
 abstract class LLMTracingAdapter(private val genAISystem: String) {
     fun registerRequest(span: Span, request: Request): Unit = runCatching {

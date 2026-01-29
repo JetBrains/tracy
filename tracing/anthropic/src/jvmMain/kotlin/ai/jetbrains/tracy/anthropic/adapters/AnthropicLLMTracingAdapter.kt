@@ -22,6 +22,32 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
 import mu.KotlinLogging
 
+/**
+ * Tracing adapter for Anthropic Claude API.
+ *
+ * Parses Anthropic Messages API requests and responses to extract telemetry data including
+ * model parameters, messages, tool definitions, tool calls, usage statistics, and media content.
+ * Supports both text and multimodal inputs (images, documents).
+ *
+ * ## Example Usage
+ * ```kotlin
+ * val client = instrument(HttpClient(), AnthropicLLMTracingAdapter())
+ * client.post("https://api.anthropic.com/v1/messages") {
+ *     header("x-api-key", apiKey)
+ *     header("anthropic-version", "2023-06-01")
+ *     setBody("""
+ *         {
+ *             "max_tokens": 1024,
+ *             "messages": [{"content": "Hello!", "role": "user"}],
+ *             "model": "claude-sonnet-4-20250514"
+ *         }
+ *     """)
+ * }
+ * // Automatically traces request/response with tool calls and media content
+ * ```
+ *
+ * See: [Anthropic Messages API](https://docs.claude.com/en/api/messages)
+ */
 class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.ANTHROPIC) {
     override fun getRequestBodyAttributes(span: Span, request: Request) {
         val body = request.body.asJson()?.jsonObject ?: return
