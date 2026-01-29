@@ -3,6 +3,9 @@
  * Use of this source code is governed by the Apache 2.0 license.
  */
 
+import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+
 plugins {
     id("org.jetbrains.dokka")
     id("org.jetbrains.dokka-javadoc")
@@ -26,6 +29,40 @@ private fun Project.getVersions() = object {
 
 dokka {
     val versions = project.getVersions()
+
+    // Configure test fixtures documentation after project evaluation when source sets are created
+    project.afterEvaluate {
+        val kotlinExt = extensions.findByType(KotlinMultiplatformExtension::class.java)
+        val jvmTestFixturesDir = file("src/jvmTestFixtures/kotlin")
+        val hasTestFixtures = kotlinExt?.sourceSets?.findByName("jvmTestFixtures") != null
+                && jvmTestFixturesDir.exists()
+
+        println("${project.name} hasTestFixtures: $hasTestFixtures")
+        println("${project.name} source sets: [${kotlinExt?.sourceSets?.toList()}]")
+
+        if (hasTestFixtures) {
+            dokka.dokkaSourceSets.maybeCreate("jvmTestFixtures").apply {
+                displayName.set("JVM Test Fixtures")
+                sourceRoots.from(file("src/jvmTestFixtures/kotlin"))
+
+                // declare dependency on main sources for type resolution
+                dependentSourceSets { named("jvmMain") }
+
+                suppress.set(false)
+
+                // include classpath for proper type resolution
+                classpath.from(
+                    configurations.named("jvmCompileClasspath"),
+                    configurations.named("jvmTestFixturesCompileClasspath")
+                )
+
+                documentedVisibilities.set(setOf(
+                    VisibilityModifier.Public,
+                    VisibilityModifier.Protected
+                ))
+            }
+        }
+    }
 
     dokkaSourceSets.configureEach {
         includes.from("Module.md")
