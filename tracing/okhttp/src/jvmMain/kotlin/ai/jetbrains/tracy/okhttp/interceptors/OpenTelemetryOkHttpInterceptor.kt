@@ -1,18 +1,9 @@
 package ai.jetbrains.tracy.okhttp.interceptors
 
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
-import ai.jetbrains.tracy.core.http.parsers.MultipartFormDataParser
-import ai.jetbrains.tracy.core.http.protocol.Request
-import ai.jetbrains.tracy.core.http.protocol.RequestBody
-import ai.jetbrains.tracy.core.http.protocol.Response
-import ai.jetbrains.tracy.core.http.protocol.ResponseBody
-import ai.jetbrains.tracy.core.http.protocol.Url
-import ai.jetbrains.tracy.core.http.protocol.toContentType
-import ai.jetbrains.tracy.core.tracing.TracingManager
-import ai.jetbrains.tracy.okhttp.extensions.toProtocolUrl
-import io.ktor.http.ContentType
 import ai.jetbrains.tracy.core.http.protocol.*
 import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.okhttp.extensions.toProtocolUrl
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.serialization.json.Json
@@ -20,8 +11,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import mu.KotlinLogging
 import okhttp3.Interceptor
-import okhttp3.MediaType
-import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.Buffer
 import okio.BufferedSource
