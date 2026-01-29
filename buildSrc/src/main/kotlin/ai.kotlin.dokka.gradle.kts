@@ -43,10 +43,7 @@ dokka {
         if (hasTestFixtures) {
             dokka.dokkaSourceSets.maybeCreate("jvmTestFixtures").apply {
                 displayName.set("JVM Test Fixtures")
-                sourceRoots.from(file("src/jvmTestFixtures/kotlin"))
-
-                // declare dependency on main sources for type resolution
-                dependentSourceSets { named("jvmMain") }
+                sourceRoots.from(jvmTestFixturesDir)
 
                 suppress.set(false)
 
