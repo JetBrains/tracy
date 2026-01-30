@@ -4,6 +4,7 @@ name = "docs"
 version = "0.0.21"
 requires-python = ">=3.11"
 dependencies = [
+    "urllib3==2.6.3",
     "mkdocs-material==9.6.19",
     "mkdocs-redirects==1.2.2",
     "mkdocs-llmstxt==0.3.1",
