@@ -30,7 +30,7 @@ private fun Project.getVersions() = object {
 dokka {
     val versions = project.getVersions()
 
-    // Configure test fixtures documentation after project evaluation when source sets are created
+    // configure test fixtures documentation after project evaluation when source sets are created
     project.afterEvaluate {
         val kotlinExt = extensions.findByType(KotlinMultiplatformExtension::class.java)
         val hasTestFixtures = kotlinExt?.sourceSets?.findByName("jvmTestFixtures") != null
