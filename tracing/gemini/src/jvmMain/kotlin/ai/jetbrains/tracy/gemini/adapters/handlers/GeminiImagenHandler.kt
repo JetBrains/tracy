@@ -23,7 +23,7 @@ import mu.KotlinLogging
  *
  * See: [Imagen API Docs](https://ai.google.dev/gemini-api/docs/imagen)
  */
-internal class GeminiImagenHandler(
+class GeminiImagenHandler(
     private val extractor: MediaContentExtractor
 ) : EndpointApiHandler {
     override fun handleRequestAttributes(span: Span, request: Request) {
