@@ -51,7 +51,8 @@ See the full example: [LangfuseExample.kt](https://github.com/JetBrains/tracy/bl
 
 ---
 
-## Weave (Weights & Biases)
+## Weave (Weights & Biases) { #weave }
+
 
 [W&B Weave](https://wandb.ai/site/weave/) is the Weights & Biases platform for LLM application tracing and evaluation.
 

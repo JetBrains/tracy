@@ -1,4 +1,4 @@
-# Tracy
+# Tracy: AI Tracing Library for Kotlin and Java
 
 [Tracy](https://github.com/JetBrains/tracy/) is an open-source JetBrains Kotlin library that adds OpenTelemetry observability to JVM applications. It provides APIs that help define what needs to be traced at a high level, while hiding implementation details such as span structures and attribute names. The library also supports multiple OpenTelemetry backends out of the box.
 

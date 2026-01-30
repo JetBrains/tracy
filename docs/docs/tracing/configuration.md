@@ -91,7 +91,7 @@ TracingManager.withCapturingPolicy(
 Tracy supports multiple backends out of the box. For detailed configuration, see [Exporters](../otel-config/exporters.md).
 
 - [**Langfuse**](../otel-config/exporters.md#langfuse): Dedicated LLM observability platform.
-- [**Weave (Weights & Biases)**](../otel-config/exporters.md#weave-weights--biases): For experiment tracking and evaluation.
+- [**Weave (Weights & Biases)**](../otel-config/exporters.md#weave): For experiment tracking and evaluation.
 - [**OTLP HTTP**](../otel-config/exporters.md#otlp-http): Export to any OpenTelemetry-compliant backend (Jaeger, Grafana Tempo, etc.).
 - [**Console**](../otel-config/exporters.md#console): Great for development and debugging.
 - [**File**](../otel-config/exporters.md#file): Export traces to a local JSON or plain text file.
