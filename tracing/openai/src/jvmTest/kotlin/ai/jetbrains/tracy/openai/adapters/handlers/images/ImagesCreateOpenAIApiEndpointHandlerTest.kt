@@ -112,8 +112,11 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
         client.images().generate(params)
 
+        val traces = analyzeSpans()
+        assumeTracesCount(1, traces)
+
         validateBasicImageTracing(prompt, model)
-        val trace = analyzeSpans().first()
+        val trace = traces.first()
 
         assertEquals(
             size.asString(),
