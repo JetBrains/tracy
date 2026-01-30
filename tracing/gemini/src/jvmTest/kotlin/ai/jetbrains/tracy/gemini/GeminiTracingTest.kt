@@ -21,10 +21,12 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.net.SocketTimeoutException
+import java.time.Duration
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.minutes
 import com.google.genai.Client as GeminiClient
 import com.google.genai.types.GenerateContentConfig as GeminiGenerateContentConfig
 
@@ -164,8 +166,10 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
     }
 
     @Test
-    fun `test Gemini tool calling auto logging`() = runTest {
-        val client = instrument(createGeminiClient())
+    fun `test Gemini tool calling auto logging`() = runTest(timeout = 3.minutes) {
+        val client = instrument(createGeminiClient(
+            timeout = Duration.ofMinutes(3)
+        ))
 
         val toolName = "hi"
         val greetTool = createTool(toolName)
