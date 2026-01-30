@@ -1,18 +1,21 @@
 package ai.jetbrains.tracy.openai.adapters.handlers.images
 
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.policy.ContentCapturePolicy
+import ai.jetbrains.tracy.openai.adapters.BaseOpenAITracingTest
+import ai.jetbrains.tracy.openai.clients.instrument
 import ai.jetbrains.tracy.test.utils.MediaContentAttributeValues
 import ai.jetbrains.tracy.test.utils.MediaSource
-import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.test.utils.toMediaContentAttributeValues
-import ai.jetbrains.tracy.openai.clients.instrument
-import ai.jetbrains.tracy.openai.adapters.BaseOpenAITracingTest
-import ai.jetbrains.tracy.core.policy.ContentCapturePolicy
 import com.openai.core.MultipartField
+import com.openai.errors.InternalServerException
 import com.openai.models.images.ImageEditParams
 import com.openai.models.images.ImageModel
 import io.opentelemetry.api.common.AttributeKey
 import kotlinx.coroutines.test.runTest
+import mu.KotlinLogging
 import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -21,6 +24,8 @@ import org.junit.jupiter.params.provider.MethodSource
 import java.io.InputStream
 import java.time.Duration
 import kotlin.time.Duration.Companion.minutes
+
+private val logger = KotlinLogging.logger {}
 
 @Tag("openai")
 class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
@@ -360,7 +365,15 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             )
             .build()
 
-        client.images().edit(params)
+        val requestFailedWithServerError = try {
+            client.images().edit(params)
+            false
+        }
+        catch (err: InternalServerException) {
+            logger.trace(err) { "Failed with an internal server error, status code ${err.statusCode()}" }
+            true
+        }
+        assumeFalse(requestFailedWithServerError)
 
         val traces = analyzeSpans()
         assertTracesCount(1, traces)
