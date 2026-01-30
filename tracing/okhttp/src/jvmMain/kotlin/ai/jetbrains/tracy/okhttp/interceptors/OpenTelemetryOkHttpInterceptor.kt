@@ -1,9 +1,9 @@
-package ai.jetbrains.tracy.core
-
+package ai.jetbrains.tracy.okhttp.interceptors
 
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
 import ai.jetbrains.tracy.core.http.protocol.*
 import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.okhttp.extensions.toProtocolUrl
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.serialization.json.Json
@@ -11,7 +11,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import mu.KotlinLogging
 import okhttp3.Interceptor
-import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.Buffer
 import okio.BufferedSource
@@ -21,86 +20,8 @@ import okhttp3.Request as OkHttpRequest
 import okhttp3.Response as OkHttpResponse
 import okhttp3.ResponseBody as OkHttpResponseBody
 
-fun instrument(client: OkHttpClient, adapter: LLMTracingAdapter): OkHttpClient {
-    val clientBuilder = client.newBuilder()
-
-    val interceptor = OpenTelemetryOkHttpInterceptor(adapter)
-    patchInterceptorsInplace(clientBuilder.interceptors(), interceptor)
-
-    return clientBuilder.build()
-}
-
-/**
- * Patches the OpenAI-compatible client by injecting a custom interceptor into its internal HTTP client.
- *
- * This method modifies the internal structure of the provided OpenAI-like client to replace its HTTP client interceptors
- * with the specified interceptor.
- * Supports OpenAI-compatible (**in terms of internal class structure**) clients.
- *
- * @param client The instance of the OpenAI-compatible client to patch.
- * @param interceptor The interceptor to be injected into the internal HTTP client of the OpenAI-compatible client.
- * @return The patched client instance with the custom interceptor injected into its HTTP client.
- */
-fun <T> patchOpenAICompatibleClient(
-    client: T,
-    interceptor: Interceptor,
-): T {
-    val clientOptions = getFieldValue(client as Any, "clientOptions")
-    val originalHttpClient = getFieldValue(clientOptions, "originalHttpClient")
-
-    val okHttpHolder = if (originalHttpClient::class.simpleName == "OkHttpClient") {
-        originalHttpClient
-    } else {
-        getFieldValue(originalHttpClient, "httpClient")
-    }
-
-    val okHttpClient = getFieldValue(okHttpHolder, "okHttpClient") as OkHttpClient
-
-    // add a given interceptor if the current list of interceptors doesn't contain it already
-    val updatedInterceptors = patchInterceptors(okHttpClient.interceptors, interceptor)
-    setFieldValue(okHttpClient, "interceptors", updatedInterceptors)
-
-    return client
-}
-
-fun getFieldValue(instance: Any, fieldName: String): Any {
-    var cls: Class<*>? = instance.javaClass
-    while (cls != null) {
-        try {
-            val field = cls.getDeclaredField(fieldName)
-            field.isAccessible = true
-            return field.get(instance) ?: throw IllegalStateException("Field '$fieldName' is null")
-        } catch (_: NoSuchFieldException) {
-            cls = cls.superclass
-        }
-    }
-    throw NoSuchFieldException("Field '$fieldName' not found in ${instance.javaClass.name}")
-}
-
-fun setFieldValue(instance: Any, fieldName: String, value: Any?) {
-    var cls: Class<*>? = instance.javaClass
-    while (cls != null) {
-        try {
-            val field = cls.getDeclaredField(fieldName)
-            field.isAccessible = true
-
-            if (value == null && field.type.isPrimitive) {
-                throw IllegalArgumentException("Cannot set primitive field '$fieldName' to null")
-            }
-
-            field.set(instance, value)
-            return
-        } catch (_: NoSuchFieldException) {
-            cls = cls.superclass
-        }
-    }
-    throw NoSuchFieldException("Field '$fieldName' not found in ${instance.javaClass.name}")
-}
-
 /**
  * Intercepts OkHttp calls and traces them using the provided [adapter].
- *
- * TODO: extract to a separate `OkHttp` module.
  */
 class OpenTelemetryOkHttpInterceptor(
     private val adapter: LLMTracingAdapter,
@@ -128,8 +49,8 @@ class OpenTelemetryOkHttpInterceptor(
                     val mediaType = request.body?.contentType()
                     val req = bodyContent.asRequestBody(mediaType)?.let {
                         Request(
-                            contentType = mediaType?.toContentType(),
                             url = request.url.toProtocolUrl(),
+                            contentType = mediaType?.toContentType(),
                             body = it,
                         )
                     }
@@ -265,4 +186,3 @@ class OpenTelemetryOkHttpInterceptor(
         return content to request
     }
 }
-

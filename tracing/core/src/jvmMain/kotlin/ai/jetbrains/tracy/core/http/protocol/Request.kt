@@ -43,8 +43,6 @@ sealed class RequestBody {
     object Empty : RequestBody()
 }
 
-fun MediaType.toContentType(): ContentType = ContentType.parse(this.toString())
-
 fun RequestBody.asJson(): JsonElement? {
     return when (this) {
         is RequestBody.Json -> this.json
@@ -101,3 +99,5 @@ fun ByteArray.asRequestBody(contentType: ContentType): RequestBody? {
         else -> null
     }
 }
+
+fun MediaType.toContentType() = ContentType.parse(this.toString())

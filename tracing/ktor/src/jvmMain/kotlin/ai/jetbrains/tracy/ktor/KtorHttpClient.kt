@@ -1,9 +1,14 @@
 package ai.jetbrains.tracy.ktor
 
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
+import ai.jetbrains.tracy.core.http.protocol.Request
+import ai.jetbrains.tracy.core.http.protocol.RequestBody
+import ai.jetbrains.tracy.core.http.protocol.Response
+import ai.jetbrains.tracy.core.http.protocol.ResponseBody
+import ai.jetbrains.tracy.core.tracing.TracingManager
 import ai.jetbrains.tracy.core.fluent.processor.Span
 import ai.jetbrains.tracy.core.http.protocol.*
-import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.ktor.extensions.toProtocolUrl
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
 import io.ktor.client.request.*

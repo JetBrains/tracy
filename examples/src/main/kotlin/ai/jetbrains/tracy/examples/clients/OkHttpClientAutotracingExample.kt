@@ -1,13 +1,13 @@
 package ai.jetbrains.tracy.examples.clients
 
-import ai.jetbrains.tracy.core.OpenTelemetryOkHttpInterceptor
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
-import ai.jetbrains.tracy.core.instrument
 import ai.jetbrains.tracy.core.tracing.TracingManager
 import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
 import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
 import ai.jetbrains.tracy.gemini.adapters.GeminiLLMTracingAdapter
 import ai.jetbrains.tracy.anthropic.adapters.AnthropicLLMTracingAdapter
+import ai.jetbrains.tracy.okhttp.interceptors.OpenTelemetryOkHttpInterceptor
+import ai.jetbrains.tracy.okhttp.instrument
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
@@ -40,6 +40,7 @@ fun main() {
     TracingManager.traceSensitiveContent()
 
     val apiToken = System.getenv("OPENAI_API_KEY") ?: error("Environment variable 'OPENAI_API_KEY' is not set")
+
     val requestBodyJson = buildJsonObject {
         put("model", JsonPrimitive("gpt-4o-mini"))
         put("messages", buildJsonArray {
@@ -50,18 +51,23 @@ fun main() {
         })
         put("temperature", JsonPrimitive(1.0))
     }
+
     val client = OkHttpClient()
     val instrumentedClient = instrument(client, OpenAILLMTracingAdapter())
+
     val requestBody = Json { prettyPrint = true }
         .encodeToString(requestBodyJson)
         .toRequestBody("application/json".toMediaType())
+
     val request = Request.Builder().url("https://api.openai.com/v1/chat/completions")
         .addHeader("Authorization", "Bearer $apiToken")
         .addHeader("Content-Type", "application/json")
         .post(requestBody)
         .build()
+
     instrumentedClient.newCall(request).execute().use { response ->
         println("Result: ${response.body?.string() ?: "<empty response>"}\nSee trace details in the console.")
     }
+
     TracingManager.flushTraces()
 }

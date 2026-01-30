@@ -18,7 +18,6 @@ kotlin {
         commonMain {
             dependencies {
                 api(project(":tracing:core"))
-                api(project(":tracing:okhttp"))
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
             }
@@ -26,14 +25,14 @@ kotlin {
 
         jvmMain {
             dependencies {
-                implementation(libs.openai)
+                implementation(libs.kotlin.reflect)
                 implementation(libs.okhttp)
+                implementation(libs.ktor.client)
                 implementation(libs.opentelemetry)
                 implementation(libs.opentelemetry.kotlin)
                 implementation(libs.opentelemetry.sdk)
                 implementation(libs.opentelemetry.semconv.incubating)
                 implementation(libs.kotlin.logging)
-                implementation(libs.ktor.client)
             }
         }
 
@@ -41,26 +40,9 @@ kotlin {
             dependencies {
                 implementation(libs.kotlin.test)
                 implementation(libs.junit.params)
-                implementation(libs.ktor.client)
-                implementation(libs.ktor.serialization.json)
-                implementation(libs.ktor.client.negotiation)
-                implementation(libs.ktor.client.cio)
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.opentelemetry.sdk.testing)
-                implementation(project(":tracing:test-utils"))
             }
         }
     }
 }
-
-
-publishing {
-    publications.withType<MavenPublication>().configureEach {
-        artifactId = "tracy-$artifactId"
-        pom {
-            name.set(artifactId)
-            description.set("Tracy integration module for OpenAI clients.")
-        }
-    }
-}
-
