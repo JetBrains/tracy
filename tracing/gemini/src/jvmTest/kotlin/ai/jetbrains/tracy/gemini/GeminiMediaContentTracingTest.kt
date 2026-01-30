@@ -77,8 +77,11 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
             params,
         )
 
+        val traces = analyzeSpans()
+        assertTracesCount(1, traces)
+
         validateBasicTracing(model)
-        val trace = analyzeSpans().first()
+        val trace = traces.first()
 
         val expectedImage = MediaContentAttributeValues.Data(
             field = "output",
