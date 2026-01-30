@@ -47,6 +47,7 @@ markdown_extensions:
 plugins:
   - search
   - macros
+  - autorefs
 
 theme:
   name: material
