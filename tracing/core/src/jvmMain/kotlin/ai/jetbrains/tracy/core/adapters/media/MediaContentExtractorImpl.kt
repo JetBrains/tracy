@@ -1,7 +1,7 @@
 package ai.jetbrains.tracy.core.adapters.media
 
 import ai.jetbrains.tracy.core.adapters.media.DataUrl.Companion.parseDataUrl
-import ai.jetbrains.tracy.core.fluent.processor.addExceptionAttributes
+import ai.jetbrains.tracy.core.addExceptionAttributes
 import io.ktor.http.headers
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.sdk.trace.ReadableSpan

@@ -1,6 +1,6 @@
 package ai.jetbrains.tracy.core.adapters.media
 
-import ai.jetbrains.tracy.core.fluent.processor.addExceptionAttributes
+import ai.jetbrains.tracy.core.addExceptionAttributes
 import io.ktor.http.*
 import io.ktor.util.*
 import io.opentelemetry.api.trace.Span

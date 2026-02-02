@@ -25,4 +25,7 @@ interface SpanMetadataCustomizer {
     fun formatOutputAttribute(result: Any?): String = result.toString()
 }
 
+/**
+ * Platform-specific representation of a traced function or method.
+ */
 expect class PlatformMethod

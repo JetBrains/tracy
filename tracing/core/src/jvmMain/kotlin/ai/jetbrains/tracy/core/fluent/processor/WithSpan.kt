@@ -1,6 +1,7 @@
 package ai.jetbrains.tracy.core.fluent.processor
 
 import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.addExceptionAttributes
 import io.opentelemetry.api.trace.Span
 
 inline fun <T> withSpan(

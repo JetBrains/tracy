@@ -6,10 +6,13 @@ import ai.jetbrains.tracy.core.exporters.ExporterCommonSettings
 import ai.jetbrains.tracy.core.exporters.otlp.LangfuseExporterConfig
 import ai.jetbrains.tracy.core.exporters.otlp.WeaveExporterConfig
 import ai.jetbrains.tracy.core.fluent.FluentSpanAttributes
-import ai.jetbrains.tracy.core.fluent.processor.currentSpanContext
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.context.Context
+import io.opentelemetry.extension.kotlin.asContextElement
+import io.opentelemetry.extension.kotlin.getOpenTelemetryContext
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.resources.Resource
 import io.opentelemetry.sdk.trace.SdkTracerProvider
@@ -59,6 +62,27 @@ fun configureOpenTelemetrySdk(
     }
 
     return openTelemetry
+}
+
+/**
+ * Returns the active OpenTelemetry [Context] from the given [CoroutineContext].
+ * Falls back to [Context.current] when no trace is attached or context is root.
+ */
+fun currentSpanContext(coroutineContext: CoroutineContext? = null): Context {
+    val ctx = coroutineContext?.getOpenTelemetryContext() ?: return Context.current()
+    return if (ctx == Context.root()) Context.current() else ctx
+}
+
+/**
+ * Wraps the current OpenTelemetry [Context] as a coroutine [CoroutineContext].
+ * Use this to preserve trace context across coroutines.
+ */
+fun currentSpanContextElement(coroutineContext: CoroutineContext? = null) =
+    currentSpanContext(coroutineContext).asContextElement()
+
+fun Span.addExceptionAttributes(exception: Throwable) {
+    this.recordException(exception)
+    this.setStatus(StatusCode.ERROR, exception.message ?: "Unknown error")
 }
 
 /**
