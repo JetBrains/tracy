@@ -1,9 +1,24 @@
 package ai.jetbrains.tracy.core.fluent.processor
 
 import ai.jetbrains.tracy.core.TracingManager
-import ai.jetbrains.tracy.core.addExceptionAttributes
 import io.opentelemetry.api.trace.Span
 
+/**
+ * Executes the given [block] within a manually created tracing span.
+ *
+ * This function provides a convenient API for manual tracing, handling
+ * span creation, activation, and closing (including in the presence of
+ * exceptions).
+ *
+ * It is especially useful when annotation-based tracing is not available,
+ * such as in Java code, or when fine-grained control over tracing is needed.
+ *
+ * @param name the name of the created span
+ * @param attributes optional attributes to attach to the span
+ * @param block the code to execute within the span's context
+ *
+ * @return the result of [block]
+ */
 inline fun <T> withSpan(
     name: String,
     attributes: Map<String, Any?> = emptyMap(),

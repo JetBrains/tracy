@@ -8,7 +8,6 @@ import ai.jetbrains.tracy.core.adapters.media.MediaContent
 import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractor
 import ai.jetbrains.tracy.core.adapters.media.MediaContentPart
 import ai.jetbrains.tracy.core.adapters.media.Resource
-import ai.jetbrains.tracy.core.adapters.media.parseSafe
 import ai.jetbrains.tracy.core.http.protocol.Request
 import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.asJson
@@ -374,5 +373,13 @@ class GeminiContentGenHandler(
         )
 
         private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes
+    }
+}
+
+fun ContentType.Companion.parseSafe(mimeType: String): ContentType? {
+    return try {
+        ContentType.parse(mimeType)
+    } catch (_: Exception) {
+        null
     }
 }

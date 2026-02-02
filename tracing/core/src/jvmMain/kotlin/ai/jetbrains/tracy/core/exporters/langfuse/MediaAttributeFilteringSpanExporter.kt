@@ -21,7 +21,7 @@ import io.opentelemetry.sdk.trace.export.SpanExporter
  *
  * @see FilteredSpanData
  */
-class MediaAttributeFilteringSpanExporter(
+internal class MediaAttributeFilteringSpanExporter(
     private val delegate: SpanExporter
 ) : SpanExporter {
     override fun export(spans: Collection<SpanData>): CompletableResultCode {

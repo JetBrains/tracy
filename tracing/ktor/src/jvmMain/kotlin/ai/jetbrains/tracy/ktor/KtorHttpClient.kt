@@ -10,6 +10,7 @@ import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.client.utils.*
 import io.ktor.http.*
+import io.ktor.http.Url
 import io.ktor.http.content.*
 import io.ktor.util.*
 import io.ktor.utils.io.*
@@ -256,3 +257,8 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
     }
 }
 
+private fun URLBuilder.toProtocolUrl() =
+    ai.jetbrains.tracy.core.http.protocol.Url(protocol.name, host, pathSegments)
+
+private fun Url.toProtocolUrl() =
+    ai.jetbrains.tracy.core.http.protocol.Url(protocol.name, host, segments)

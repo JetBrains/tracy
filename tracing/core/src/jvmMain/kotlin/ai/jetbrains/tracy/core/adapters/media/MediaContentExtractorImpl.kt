@@ -1,7 +1,6 @@
 package ai.jetbrains.tracy.core.adapters.media
 
 import ai.jetbrains.tracy.core.adapters.media.DataUrl.Companion.parseDataUrl
-import ai.jetbrains.tracy.core.addExceptionAttributes
 import io.ktor.http.headers
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.sdk.trace.ReadableSpan
@@ -40,20 +39,20 @@ class MediaContentExtractorImpl : MediaContentExtractor {
                         base64 = true,
                         data = resource.base64,
                     )
-                    dataUrl.setDataUrlAttributes(span, field, index)
+                    span.setDataUrlAttributes(dataUrl, field, index)
                 }
 
                 is Resource.DataUrl -> {
                     val dataUrl = resource.dataUrl.parseDataUrl()
                     if (dataUrl != null) {
-                        dataUrl.setDataUrlAttributes(span, field, index)
+                        span.setDataUrlAttributes(dataUrl, field, index)
                     } else {
                         logger.warn { "Invalid data url, received: ${resource.dataUrl}" }
                     }
                 }
 
                 is Resource.Url -> {
-                    setUrlAttributes(span, field, index, resource.url)
+                    span.setUrlAttributes(field, index, resource.url)
                 }
             }
         }
@@ -79,28 +78,6 @@ class MediaContentExtractorImpl : MediaContentExtractor {
         }
 
         return contentPartsCount
-    }
-
-    /**
-     * Installs URL-related fields for the uploadable media content into the span
-     *
-     *
-     * @see UploadableMediaContentAttributeKeys
-     */
-    private fun setUrlAttributes(
-        span: Span,
-        field: String,
-        index: Int,
-        url: String,
-    ) {
-        if (!url.isValidUrl()) {
-            span.addExceptionAttributes(IllegalArgumentException("Expected a valid URL, received: $url"))
-        }
-        val keys = UploadableMediaContentAttributeKeys.forIndex(index)
-
-        span.setAttribute(keys.type, SupportedMediaContentTypes.URL.type)
-        span.setAttribute(keys.field, field)
-        span.setAttribute(keys.url, url)
     }
 
     companion object {

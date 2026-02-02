@@ -428,7 +428,7 @@ class ParsingTest {
     )
 }
 
-fun Map<String, String>.toHeaders(): Headers {
+private fun Map<String, String>.toHeaders(): Headers {
     val headers = headers {
         for ((key, value) in entries) {
             set(key, value)

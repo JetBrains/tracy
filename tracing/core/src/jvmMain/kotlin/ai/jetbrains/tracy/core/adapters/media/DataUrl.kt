@@ -1,9 +1,9 @@
 package ai.jetbrains.tracy.core.adapters.media
 
-import ai.jetbrains.tracy.core.addExceptionAttributes
-import io.ktor.http.*
-import io.ktor.util.*
-import io.opentelemetry.api.trace.Span
+import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.headers
+import io.ktor.util.toMap
 import java.nio.charset.StandardCharsets
 
 /**
@@ -26,38 +26,8 @@ data class DataUrl(
         return "data:$mediaType$headersString$base64String,$data"
     }
 
-    /**
-     * Sets base64-related attributes into the span, ensuring that [DataUrl]
-     * contains the data in the base64-encoded format.
-     *
-     * @see UploadableMediaContentAttributeKeys
-     */
-    fun setDataUrlAttributes(
-        span: Span,
-        field: String,
-        index: Int,
-    ) {
-        if (!base64) {
-            val str = this.asString()
-            val trimmed = if (str.length < WARNING_URL_LENGTH_LIMIT) str
-            else str.substring(0, WARNING_URL_LENGTH_LIMIT) + "..."
-            span.addExceptionAttributes(
-                IllegalArgumentException(
-                    "Expect base64 encoding for the data url, received '$trimmed'"
-                )
-            )
-        }
-
-        val keys = UploadableMediaContentAttributeKeys.forIndex(index)
-
-        span.setAttribute(keys.type, SupportedMediaContentTypes.BASE64.type)
-        span.setAttribute(keys.field, field)
-        span.setAttribute(keys.contentType, mediaType)
-        span.setAttribute(keys.data, data)
-    }
-
     companion object {
-        private const val WARNING_URL_LENGTH_LIMIT = 200
+        const val WARNING_URL_LENGTH_LIMIT = 200
 
         /**
          * Parses a data URL extracting media type, headers, and data.

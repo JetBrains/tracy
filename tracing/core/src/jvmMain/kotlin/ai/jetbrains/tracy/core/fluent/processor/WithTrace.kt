@@ -1,7 +1,6 @@
 package ai.jetbrains.tracy.core.fluent.processor
 
 import ai.jetbrains.tracy.core.TracingManager
-import ai.jetbrains.tracy.core.addExceptionAttributes
 import ai.jetbrains.tracy.core.currentSpanContext
 import ai.jetbrains.tracy.core.fluent.FluentSpanAttributes
 import ai.jetbrains.tracy.core.fluent.Trace
@@ -74,6 +73,15 @@ actual suspend inline fun <T> withTraceSuspended(
     } finally {
         span.end()
     }
+}
+
+/**
+ * Records the given [exception] on this span and marks it as failed.
+ */
+@PublishedApi
+internal fun Span.addExceptionAttributes(exception: Throwable) {
+    this.recordException(exception)
+    this.setStatus(StatusCode.ERROR, exception.message ?: "Unknown error")
 }
 
 /**

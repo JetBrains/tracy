@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @see UploadableMediaContentAttributeKeys
  * @see uploadMediaFileToLangfuse
  */
-class LangfuseMediaSpanProcessor(
+internal class LangfuseMediaSpanProcessor(
     private val scope: CoroutineScope,
     private val client: HttpClient = HttpClient {
         install(ContentNegotiation) {
