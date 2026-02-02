@@ -4,7 +4,7 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
 
 ## Requirements
 
-- **Kotlin**: 1.9.0 through 2.2.20
+- **Kotlin**: 1.9.0 through 2.3.0
 - **Java**: 17+
 
 ### Supported LLM Client SDKs
@@ -197,6 +197,7 @@ import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
 import ai.jetbrains.tracy.core.fluent.Trace
 -->
+
 ```kotlin
 @Trace
 fun greet(name: String) = println("Hello, $name!")
@@ -215,19 +216,28 @@ fun main() {
     TracingManager.flushTraces()
 }
 ```
+
 <!--- KNIT example-get-started-01.kt -->
 
 This example uses:
 
-- [`@Trace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html): Annotation that enables automatic tracing for the function
-- [`configureOpenTelemetrySdk`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/configure-open-telemetry-sdk.html): Creates an OpenTelemetry SDK with the specified exporter
-- [`ConsoleExporterConfig`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.exporters/-console-exporter-config/index.html): Configuration for exporting traces to the console
-- [`TracingManager`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/index.html): Central point for configuring and controlling tracing
+- [`@Trace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html): Annotation that enables
+  automatic tracing for the function
+- [`configureOpenTelemetrySdk`]({{ api_docs_url
+  }}/tracing/core/ai.jetbrains.tracy.core.tracing/configure-open-telemetry-sdk.html): Creates an OpenTelemetry SDK with
+  the specified exporter
+- [`ConsoleExporterConfig`]({{ api_docs_url
+  }}/tracing/core/ai.jetbrains.tracy.core.exporters/-console-exporter-config/index.html): Configuration for exporting
+  traces to the console
+- [`TracingManager`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/index.html):
+  Central point for configuring and controlling tracing
 
 Run your application, and you'll see trace output in the console.
 
 !!! tip "More Examples"
-    For complete, runnable examples covering various Tracy features, see the [examples](https://github.com/JetBrains/tracy/tree/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples) on GitHub.
+For complete, runnable examples covering various Tracy features, see
+the [examples](https://github.com/JetBrains/tracy/tree/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples) on
+GitHub.
 
 ## What Can You Trace?
 
@@ -235,7 +245,9 @@ Tracy provides three ways to add tracing to your application:
 
 ### LLM Client Auto-Tracing
 
-Automatically capture spans for all calls made via supported LLM clients (OpenAI, Anthropic, Gemini, Ktor, OkHttp). Simply wrap your client with [`instrument()`]({{ api_docs_url }}/tracing/openai/ai.jetbrains.tracy.openai.clients/instrument.html):
+Automatically capture spans for all calls made via supported LLM clients (OpenAI, Anthropic, Gemini, Ktor, OkHttp).
+Simply wrap your client with [`instrument()`]({{ api_docs_url
+}}/tracing/openai/ai.jetbrains.tracy.openai.clients/instrument.html):
 
 ```kotlin
 val instrumentedClient = instrument(myOpenAIClient)
@@ -245,7 +257,8 @@ val instrumentedClient = instrument(myOpenAIClient)
 
 ### Annotation-Based Tracing
 
-Use the [`@Trace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html) annotation to trace any Kotlin function, capturing its inputs, outputs, and duration:
+Use the [`@Trace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html) annotation to trace
+any Kotlin function, capturing its inputs, outputs, and duration:
 
 ```kotlin
 @Trace(name = "ProcessOrder")
@@ -258,7 +271,8 @@ fun processOrder(orderId: String): OrderResult {
 
 ### Manual Tracing
 
-For fine-grained control or Java interoperability, use the [`withSpan`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-span.html) function:
+For fine-grained control or Java interoperability, use the [`withSpan`]({{ api_docs_url
+}}/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-span.html) function:
 
 ```kotlin
 withSpan("custom-operation") { span ->
