@@ -1,4 +1,4 @@
-package ai.jetbrains.tracy.core.fluent.handlers
+package ai.jetbrains.tracy.core.fluent.customizers
 
 import ai.jetbrains.tracy.test.utils.BaseOpenTelemetryTracingTest
 import ai.jetbrains.tracy.core.fluent.Trace

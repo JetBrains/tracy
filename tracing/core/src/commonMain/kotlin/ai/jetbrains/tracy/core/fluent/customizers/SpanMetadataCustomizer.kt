@@ -1,4 +1,4 @@
-package ai.jetbrains.tracy.core.fluent.handlers
+package ai.jetbrains.tracy.core.fluent.customizers
 
 /**
  * Defines a contract for customizing how trace span names and attributes

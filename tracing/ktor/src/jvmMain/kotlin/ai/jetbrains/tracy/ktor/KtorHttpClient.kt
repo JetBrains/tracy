@@ -1,9 +1,8 @@
 package ai.jetbrains.tracy.ktor
 
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
-import ai.jetbrains.tracy.core.fluent.processor.Span
 import ai.jetbrains.tracy.core.http.protocol.*
-import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.TracingManager
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
 import io.ktor.client.request.*
@@ -14,6 +13,7 @@ import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.util.*
 import io.ktor.utils.io.*
+import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -226,6 +226,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                     ch.close()
                 }
             }
+
             is TextContent -> body.text.toByteArray()
             is String -> body.toByteArray()
             is EmptyContent -> null
@@ -240,6 +241,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
             bodyType != null && bodyType.hasAnnotation<Serializable>() -> {
                 serializeToJson(body)?.toByteArray()
             }
+
             else -> null
         }
     }

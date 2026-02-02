@@ -406,7 +406,7 @@ complete example.
 #### Customizing Tracing Behavior
 
 The tracing system offers flexible customization through the [
-`SpanMetadataCustomizer`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/fluent/handlers/SpanMetadataCustomizer.kt)
+`SpanMetadataCustomizer`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/fluent/customizers/SpanMetadataCustomizer.kt)
 interface.
 To use it, you must implement the interface as a Kotlin `object` and link it to a traced function via the [
 `@Trace`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/fluent/Trace.kt) annotation.
@@ -426,7 +426,7 @@ See an example implementation in [
 You can enrich your traces with contextual metadata by adding **custom tags**.  
 Tags help categorize and filter traces based on your business logic. For example, by user type, feature, or
 environment. Use the [
-`addLangfuseTagsToCurrentTrace`](tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/tracing/Utils.kt) function to
+`addLangfuseTagsToCurrentTrace`](tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/Utils.kt) function to
 attach
 tags dynamically within any traced function.  
 These tags appear in Langfuse or other tracing tools, making it easier to group and analyze trace data.

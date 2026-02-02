@@ -1,7 +1,7 @@
 package ai.jetbrains.tracy.core.adapters.media
 
-import ai.jetbrains.tracy.core.common.DataUrl
-import ai.jetbrains.tracy.core.common.parseDataUrl
+import ai.jetbrains.tracy.core.adapters.media.DataUrl.Companion.parseDataUrl
+import ai.jetbrains.tracy.core.fluent.processor.addExceptionAttributes
 import io.ktor.http.headers
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.sdk.trace.ReadableSpan
@@ -30,7 +30,6 @@ class MediaContentExtractorImpl : MediaContentExtractor {
             when (resource) {
                 is Resource.Base64 -> {
                     val contentType = resource.contentType
-
                     val dataUrl = DataUrl(
                         mediaType = "${contentType.contentType}/${contentType.contentSubtype}",
                         headers = headers {
@@ -41,13 +40,13 @@ class MediaContentExtractorImpl : MediaContentExtractor {
                         base64 = true,
                         data = resource.base64,
                     )
-                    setDataUrlAttributes(span, field, index, dataUrl)
+                    dataUrl.setDataUrlAttributes(span, field, index)
                 }
 
                 is Resource.DataUrl -> {
                     val dataUrl = resource.dataUrl.parseDataUrl()
                     if (dataUrl != null) {
-                        setDataUrlAttributes(span, field, index, dataUrl)
+                        dataUrl.setDataUrlAttributes(span, field, index)
                     } else {
                         logger.warn { "Invalid data url, received: ${resource.dataUrl}" }
                     }
@@ -80,6 +79,28 @@ class MediaContentExtractorImpl : MediaContentExtractor {
         }
 
         return contentPartsCount
+    }
+
+    /**
+     * Installs URL-related fields for the uploadable media content into the span
+     *
+     *
+     * @see UploadableMediaContentAttributeKeys
+     */
+    private fun setUrlAttributes(
+        span: Span,
+        field: String,
+        index: Int,
+        url: String,
+    ) {
+        if (!url.isValidUrl()) {
+            span.addExceptionAttributes(IllegalArgumentException("Expected a valid URL, received: $url"))
+        }
+        val keys = UploadableMediaContentAttributeKeys.forIndex(index)
+
+        span.setAttribute(keys.type, SupportedMediaContentTypes.URL.type)
+        span.setAttribute(keys.field, field)
+        span.setAttribute(keys.url, url)
     }
 
     companion object {

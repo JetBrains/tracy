@@ -5,8 +5,8 @@ import ai.jetbrains.tracy.gemini.adapters.GeminiLLMTracingAdapter
 import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
 import ai.jetbrains.tracy.ktor.instrument
-import ai.jetbrains.tracy.core.tracing.TracingManager
-import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*

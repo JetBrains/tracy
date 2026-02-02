@@ -3,8 +3,8 @@ package ai.jetbrains.tracy.openai.adapters.handlers.images
 import ai.jetbrains.tracy.test.utils.MediaContentAttributeValues
 import ai.jetbrains.tracy.openai.clients.instrument
 import ai.jetbrains.tracy.openai.adapters.BaseOpenAITracingTest
-import ai.jetbrains.tracy.core.tracing.TracingManager
-import ai.jetbrains.tracy.core.tracing.policy.ContentCapturePolicy
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.policy.ContentCapturePolicy
 import com.openai.models.images.ImageGenerateParams
 import com.openai.models.images.ImageModel
 import io.opentelemetry.api.common.AttributeKey
@@ -292,10 +292,12 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) = runTest(timeout = 3.minutes) {
         TracingManager.withCapturingPolicy(policy)
 
-        val client = instrument(createOpenAIClient(
-            url = patchedProviderUrl,
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createOpenAIClient(
+                url = patchedProviderUrl,
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val promptMessage = "generate an image of a cat"
         val model = ImageModel.DALL_E_2
@@ -328,10 +330,12 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
         val uploads = buildList {
             if (policy.captureOutputs) {
-                add(MediaContentAttributeValues.Url(
-                    field = "output",
-                    url = null,
-                ))
+                add(
+                    MediaContentAttributeValues.Url(
+                        field = "output",
+                        url = null,
+                    )
+                )
             }
         }
         verifyMediaContentUploadAttributes(trace, expected = uploads)

@@ -1,8 +1,8 @@
 package ai.jetbrains.tracy.gemini
 
 import ai.jetbrains.tracy.gemini.clients.instrument
-import ai.jetbrains.tracy.core.tracing.TracingManager
-import ai.jetbrains.tracy.core.tracing.policy.ContentCapturePolicy
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.policy.ContentCapturePolicy
 import com.google.genai.errors.GenAiIOException
 import com.google.genai.types.Content
 import com.google.genai.types.GenerateContentResponse

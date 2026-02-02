@@ -3,7 +3,6 @@ package ai.jetbrains.tracy.core
 
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
 import ai.jetbrains.tracy.core.http.protocol.*
-import ai.jetbrains.tracy.core.tracing.TracingManager
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.serialization.json.Json

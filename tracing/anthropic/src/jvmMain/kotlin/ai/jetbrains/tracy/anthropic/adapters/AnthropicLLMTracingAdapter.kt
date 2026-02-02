@@ -9,10 +9,10 @@ import ai.jetbrains.tracy.core.http.protocol.Request
 import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.Url
 import ai.jetbrains.tracy.core.http.protocol.asJson
-import ai.jetbrains.tracy.core.tracing.policy.ContentKind
-import ai.jetbrains.tracy.core.tracing.policy.contentTracingAllowed
-import ai.jetbrains.tracy.core.tracing.policy.orRedactedInput
-import ai.jetbrains.tracy.core.tracing.policy.orRedactedOutput
+import ai.jetbrains.tracy.core.policy.ContentKind
+import ai.jetbrains.tracy.core.policy.contentTracingAllowed
+import ai.jetbrains.tracy.core.policy.orRedactedInput
+import ai.jetbrains.tracy.core.policy.orRedactedOutput
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter.Companion.PayloadType
@@ -39,7 +39,12 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
 
         // system prompt
         body["system"]?.jsonObject?.let { system ->
-            system["text"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.prompt.system.content", it.content.orRedactedInput()) }
+            system["text"]?.jsonPrimitive?.let {
+                span.setAttribute(
+                    "gen_ai.prompt.system.content",
+                    it.content.orRedactedInput()
+                )
+            }
             system["type"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.prompt.system.type", it.content) }
         }
 
@@ -107,6 +112,7 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
                             message.jsonObject["text"]?.toString()?.orRedactedOutput()
                         )
                     }
+
                     "tool_use" -> {
                         // tool call request by LLM
                         val toolCall = message
@@ -130,6 +136,7 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
                             toolCall.jsonObject["input"].toString().orRedactedOutput()
                         )
                     }
+
                     else -> {
                         span.setAttribute("gen_ai.completion.$index.content", message.toString().orRedactedOutput())
                     }
@@ -234,10 +241,12 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
                 val url = parseUrl(messageType, source) ?: return emptyList()
                 listOf(url)
             }
+
             "base64" -> {
                 val base64 = parseBase64(messageType, source) ?: return emptyList()
                 listOf(base64)
             }
+
             "content" -> parseContent(messageType, source)
             else -> emptyList()
         }
@@ -299,6 +308,7 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
 
         return resources
     }
+
     companion object {
         private val extractor: MediaContentExtractor = MediaContentExtractorImpl()
 

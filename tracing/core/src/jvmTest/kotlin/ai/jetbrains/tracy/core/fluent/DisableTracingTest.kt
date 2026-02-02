@@ -1,7 +1,7 @@
 package ai.jetbrains.tracy.core.fluent
 
 import ai.jetbrains.tracy.test.utils.BaseOpenTelemetryTracingTest
-import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.TracingManager
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals

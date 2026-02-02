@@ -1,8 +1,8 @@
 package ai.jetbrains.tracy.examples.backends
 
 import ai.jetbrains.tracy.core.exporters.otlp.WeaveExporterConfig
-import ai.jetbrains.tracy.core.tracing.TracingManager
-import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 
 /**
  * Example of exporting tracing data to [W&B Weave](https://wandb.ai/site/weave) using [WeaveExporterConfig].

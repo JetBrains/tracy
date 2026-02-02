@@ -1,5 +1,8 @@
 package ai.jetbrains.tracy.core.common
 
+import ai.jetbrains.tracy.core.adapters.media.DataUrl
+import ai.jetbrains.tracy.core.adapters.media.DataUrl.Companion.parseDataUrl
+import ai.jetbrains.tracy.core.adapters.media.isValidUrl
 import io.ktor.http.*
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -423,4 +426,13 @@ class ParsingTest {
         val input: String,
         val expected: DataUrl
     )
+}
+
+fun Map<String, String>.toHeaders(): Headers {
+    val headers = headers {
+        for ((key, value) in entries) {
+            set(key, value)
+        }
+    }
+    return headers
 }

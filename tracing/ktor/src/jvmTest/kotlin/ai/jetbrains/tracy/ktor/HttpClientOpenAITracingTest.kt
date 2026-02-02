@@ -1,7 +1,7 @@
 package ai.jetbrains.tracy.ktor
 
 import ai.jetbrains.tracy.core.http.parsers.MultipartFormDataParser
-import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
 import ai.jetbrains.tracy.test.utils.BaseAITracingTest
 import ai.jetbrains.tracy.test.utils.MediaContentAttributeValues
@@ -488,17 +488,23 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
         val parser = MultipartFormDataParser()
         val data = parser.parse(body.contentType, bytes)
 
-        assertEquals(3, data.parts.size,
-            "Expected 3 parts in the parsed multipart form data: 1) model, 2) prompt, and 3) image")
+        assertEquals(
+            3, data.parts.size,
+            "Expected 3 parts in the parsed multipart form data: 1) model, 2) prompt, and 3) image"
+        )
 
         val modelPart = data.parts.first { it.name == "model" }
         val promptPart = data.parts.first { it.name == "prompt" }
         val imagePart = data.parts.first { it.name == "image" }
 
-        assertEquals(model, modelPart.content.toString(Charsets.UTF_8),
-            "Model names don't match")
-        assertEquals(prompt, promptPart.content.toString(Charsets.UTF_8),
-            "Prompts don't match")
+        assertEquals(
+            model, modelPart.content.toString(Charsets.UTF_8),
+            "Model names don't match"
+        )
+        assertEquals(
+            prompt, promptPart.content.toString(Charsets.UTF_8),
+            "Prompts don't match"
+        )
         // image assertions
         assertTrue(
             imageBytes.contentEquals(imagePart.content),
@@ -571,10 +577,12 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
             data = responseImageData,
         )
 
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            image.toMediaContentAttributeValues("input"),
-            expected,
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                image.toMediaContentAttributeValues("input"),
+                expected,
+            )
+        )
     }
 
     private suspend fun HttpClient.postChatCompletion(

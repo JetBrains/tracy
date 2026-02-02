@@ -1,4 +1,4 @@
-package ai.jetbrains.tracy.core.tracing
+package ai.jetbrains.tracy.core
 
 import ai.jetbrains.tracy.core.exporters.BaseExporterConfig
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
@@ -6,10 +6,10 @@ import ai.jetbrains.tracy.core.exporters.ExporterCommonSettings
 import ai.jetbrains.tracy.core.exporters.otlp.LangfuseExporterConfig
 import ai.jetbrains.tracy.core.exporters.otlp.WeaveExporterConfig
 import ai.jetbrains.tracy.core.fluent.FluentSpanAttributes
-import ai.jetbrains.tracy.core.fluent.processor.Span
 import ai.jetbrains.tracy.core.fluent.processor.currentSpanContext
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
+import io.opentelemetry.api.trace.Span
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.resources.Resource
 import io.opentelemetry.sdk.trace.SdkTracerProvider

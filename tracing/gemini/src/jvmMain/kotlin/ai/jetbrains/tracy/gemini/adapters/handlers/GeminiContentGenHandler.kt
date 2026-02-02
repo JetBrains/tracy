@@ -1,20 +1,20 @@
 package ai.jetbrains.tracy.gemini.adapters.handlers
 
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter.Companion.PayloadType
-import ai.jetbrains.tracy.core.tracing.policy.orRedactedInput
+import ai.jetbrains.tracy.core.policy.orRedactedInput
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
 import ai.jetbrains.tracy.core.adapters.handlers.EndpointApiHandler
 import ai.jetbrains.tracy.core.adapters.media.MediaContent
 import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractor
 import ai.jetbrains.tracy.core.adapters.media.MediaContentPart
 import ai.jetbrains.tracy.core.adapters.media.Resource
-import ai.jetbrains.tracy.core.common.parseSafe
+import ai.jetbrains.tracy.core.adapters.media.parseSafe
 import ai.jetbrains.tracy.core.http.protocol.Request
 import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.asJson
-import ai.jetbrains.tracy.core.tracing.policy.ContentKind
-import ai.jetbrains.tracy.core.tracing.policy.contentTracingAllowed
-import ai.jetbrains.tracy.core.tracing.policy.orRedactedOutput
+import ai.jetbrains.tracy.core.policy.ContentKind
+import ai.jetbrains.tracy.core.policy.contentTracingAllowed
+import ai.jetbrains.tracy.core.policy.orRedactedOutput
 import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME
@@ -116,7 +116,12 @@ class GeminiContentGenHandler(
             config.jsonObject["maxOutputTokens"]?.jsonPrimitive?.intOrNull?.let {
                 span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it.toLong())
             }
-            config.jsonObject["temperature"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it) }
+            config.jsonObject["temperature"]?.jsonPrimitive?.doubleOrNull?.let {
+                span.setAttribute(
+                    GEN_AI_REQUEST_TEMPERATURE,
+                    it
+                )
+            }
             config.jsonObject["topP"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_P, it) }
             config.jsonObject["topK"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_K, it) }
         }
@@ -134,7 +139,10 @@ class GeminiContentGenHandler(
         body["candidates"]?.let {
             for ((index, candidate) in it.jsonArray.withIndex()) {
                 candidate.jsonObject["content"]?.let { content ->
-                    span.setAttribute("gen_ai.completion.$index.role", content.jsonObject["role"]?.jsonPrimitive?.content)
+                    span.setAttribute(
+                        "gen_ai.completion.$index.role",
+                        content.jsonObject["role"]?.jsonPrimitive?.content
+                    )
 
                     // response parts
                     val parts = content.jsonObject["parts"]
@@ -154,8 +162,14 @@ class GeminiContentGenHandler(
                                 val name = part["name"]?.jsonPrimitive?.content
                                 val args = part["args"].toString()
 
-                                span.setAttribute("gen_ai.completion.$index.tool.$toolCallIndex.name", name?.orRedactedOutput())
-                                span.setAttribute("gen_ai.completion.$index.tool.$toolCallIndex.arguments", args.orRedactedOutput())
+                                span.setAttribute(
+                                    "gen_ai.completion.$index.tool.$toolCallIndex.name",
+                                    name?.orRedactedOutput()
+                                )
+                                span.setAttribute(
+                                    "gen_ai.completion.$index.tool.$toolCallIndex.arguments",
+                                    args.orRedactedOutput()
+                                )
                                 ++toolCallIndex
                             }
                         }

@@ -7,14 +7,14 @@ import ai.jetbrains.tracy.core.adapters.media.MediaContent
 import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractor
 import ai.jetbrains.tracy.core.adapters.media.MediaContentPart
 import ai.jetbrains.tracy.core.adapters.media.Resource
-import ai.jetbrains.tracy.core.common.isValidUrl
+import ai.jetbrains.tracy.core.adapters.media.isValidUrl
 import ai.jetbrains.tracy.core.http.protocol.Request
 import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.asJson
-import ai.jetbrains.tracy.core.tracing.policy.ContentKind
-import ai.jetbrains.tracy.core.tracing.policy.contentTracingAllowed
-import ai.jetbrains.tracy.core.tracing.policy.orRedactedInput
-import ai.jetbrains.tracy.core.tracing.policy.orRedactedOutput
+import ai.jetbrains.tracy.core.policy.ContentKind
+import ai.jetbrains.tracy.core.policy.contentTracingAllowed
+import ai.jetbrains.tracy.core.policy.orRedactedInput
+import ai.jetbrains.tracy.core.policy.orRedactedOutput
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
@@ -85,6 +85,7 @@ internal class ResponsesOpenAIApiEndpointHandler(
                         attachMediaContentAttributes(span, inputs)
                     }
                 }
+
                 else -> {
                     val index = if (instructionsInsertedAsFirstPrompt) 1 else 0
                     val content = when (inputs) {
@@ -368,17 +369,21 @@ internal class ResponsesOpenAIApiEndpointHandler(
                             else -> null
                         }
                     }
+
                     "input_file" -> when {
                         "file_url" in part.jsonObject -> {
                             val url = part.jsonObject["file_url"]?.jsonPrimitive?.content ?: continue
                             if (url.isValidUrl()) MediaContentPart(Resource.Url(url)) else null
                         }
+
                         "file_data" in part.jsonObject -> {
                             val dataUrl = part.jsonObject["file_data"]?.jsonPrimitive?.content ?: continue
                             MediaContentPart(Resource.DataUrl(dataUrl))
                         }
+
                         else -> null
                     }
+
                     else -> null
                 }
 

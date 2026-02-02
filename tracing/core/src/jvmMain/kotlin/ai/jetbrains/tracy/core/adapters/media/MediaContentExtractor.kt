@@ -9,8 +9,8 @@ import io.opentelemetry.api.trace.Span
  * and attaches it to the span under certain keys described by [UploadableMediaContentAttributeKeys].
  *
  * @see UploadableMediaContentAttributeKeys
- * @see setUrlAttributes
- * @see setDataUrlAttributes
+ * @see MediaContentExtractorImpl.setUrlAttributes
+ * @see DataUrl.setDataUrlAttributes
  */
 interface MediaContentExtractor {
     fun setUploadableContentAttributes(
