@@ -1,7 +1,7 @@
 package ai.jetbrains.tracy.core.fluent
 
 import ai.jetbrains.tracy.test.utils.BaseOpenTelemetryTracingTest
-import ai.jetbrains.tracy.core.addLangfuseTagsToCurrentTrace
+import ai.jetbrains.tracy.core.exporters.langfuse.addLangfuseTagsToCurrentTrace
 import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.sdk.internal.ExceptionAttributeResolver

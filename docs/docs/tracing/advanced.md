@@ -67,7 +67,7 @@ You can enrich your traces with business-specific metadata using custom tags. Th
 
 ### Adding Langfuse Tags
 
-Use [`addLangfuseTagsToCurrentTrace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/add-langfuse-tags-to-current-trace.html) to attach tags dynamically within any traced function.
+Use [`addLangfuseTagsToCurrentTrace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.exporters.langfuse/add-langfuse-tags-to-current-trace.html) to attach tags dynamically within any traced function.
 
 <!--- INCLUDE
 import ai.jetbrains.tracy.core.tracing.addLangfuseTagsToCurrentTrace

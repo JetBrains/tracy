@@ -18,7 +18,6 @@ import java.lang.reflect.Method
 import kotlin.reflect.KFunction
 import kotlin.reflect.jvm.javaMethod
 
-
 @Deprecated("use withSpan() instead", level = DeprecationLevel.HIDDEN)
 actual inline fun <T> withTrace(
     function: KFunction<*>,

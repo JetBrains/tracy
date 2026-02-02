@@ -426,7 +426,8 @@ See an example implementation in [
 You can enrich your traces with contextual metadata by adding **custom tags**.  
 Tags help categorize and filter traces based on your business logic. For example, by user type, feature, or
 environment. Use the [
-`addLangfuseTagsToCurrentTrace`](tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/Utils.kt) function to
+`addLangfuseTagsToCurrentTrace`](tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/exporters/langfuse/LangfuseExtensions.kt)
+function to
 attach
 tags dynamically within any traced function.  
 These tags appear in Langfuse or other tracing tools, making it easier to group and analyze trace data.
@@ -479,7 +480,7 @@ val sdk = configureOpenTelemetrySdk(
 
 Once the SDK is configured, initialize tracing with `TracingManager.setSdk(sdk)`.
 
-#### [Langfuse Configuration](tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/exporters/otlp/LangfuseExporterConfig.kt)
+#### [Langfuse Configuration](tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/exporters/langfuse/LangfuseExporterConfig.kt)
 
 | Property                      | Environment Variable              | Required | Default Value                                              |
 |-------------------------------|-----------------------------------|----------|------------------------------------------------------------|
@@ -562,7 +563,7 @@ However, some concurrency models such as `runBlocking` and raw threads create ne
 
 - **`runBlocking` inside suspend functions:**  
   Use [
-  `currentSpanContextElement(...)`](tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/fluent/processor/Utils.kt)
+  `currentSpanContextElement(...)`](tracing/core/src/jvmMain/kotlin/ai/jetbrains/tracy/core/ContextPropagation.kt)
   to ensure child spans remain linked to their parent. Otherwise, spans become detached and appear as separate traces.
 
   ```kotlin
