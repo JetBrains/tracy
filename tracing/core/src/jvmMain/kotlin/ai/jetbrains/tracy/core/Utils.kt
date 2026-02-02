@@ -19,67 +19,6 @@ import io.opentelemetry.sdk.trace.SdkTracerProvider
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.CoroutineContext
 
-/**
- * Initializes the [OpenTelemetrySdk] using a provided [BaseExporterConfig].
- *
- * This method sets up a [SdkTracerProvider] with:
- *  - Span processors for the given configuration.
- *  - Span limits.
- *  - A shutdown hook to flush and shut down traces gracefully if [ExporterCommonSettings.flushOnShutdown] is true.
- *
- * @param exporterConfig the exporter configuration defining how spans should be exported.
- *  Examples include:
- *  - [LangfuseExporterConfig] sends spans to a Langfuse OTLP endpoint.
- *  - [WeaveExporterConfig] sends spans to a W&B Weave OTLP endpoint.
- *  - [ConsoleExporterConfig] logs spans to the console only (for local debugging).
- * @param additionalResource optional extra [Resource] attributes merged with the default
- *  OpenTelemetry resource. Use this to set values such as "service.name"
- *
- * @return the initialized [OpenTelemetrySdk] instance.
- */
-fun configureOpenTelemetrySdk(
-    exporterConfig: BaseExporterConfig,
-    additionalResource: Resource = Resource.create(
-        Attributes.of(AttributeKey.stringKey("service.name"), "unknown-service")
-    )
-): OpenTelemetrySdk {
-    val resource = Resource.getDefault().merge(additionalResource)
-
-    val tracerProvider = SdkTracerProvider.builder()
-        .setResource(resource)
-        .setSpanLimits(exporterConfig.createSpanLimits())
-        .apply {
-            exporterConfig.configureSpanProcessors(this)
-        }.build()
-
-    val openTelemetry = OpenTelemetrySdk.builder().setTracerProvider(tracerProvider).build()
-
-    if (exporterConfig.settings.flushOnShutdown) {
-        Runtime.getRuntime().addShutdownHook(Thread {
-            openTelemetry.sdkTracerProvider.forceFlush().join(5, TimeUnit.SECONDS)
-            openTelemetry.sdkTracerProvider.shutdown()
-        })
-    }
-
-    return openTelemetry
-}
-
-/**
- * Returns the active OpenTelemetry [Context] from the given [CoroutineContext].
- * Falls back to [Context.current] when no trace is attached or context is root.
- */
-fun currentSpanContext(coroutineContext: CoroutineContext? = null): Context {
-    val ctx = coroutineContext?.getOpenTelemetryContext() ?: return Context.current()
-    return if (ctx == Context.root()) Context.current() else ctx
-}
-
-/**
- * Wraps the current OpenTelemetry [Context] as a coroutine [CoroutineContext].
- * Use this to preserve trace context across coroutines.
- */
-fun currentSpanContextElement(coroutineContext: CoroutineContext? = null) =
-    currentSpanContext(coroutineContext).asContextElement()
-
 fun Span.addExceptionAttributes(exception: Throwable) {
     this.recordException(exception)
     this.setStatus(StatusCode.ERROR, exception.message ?: "Unknown error")

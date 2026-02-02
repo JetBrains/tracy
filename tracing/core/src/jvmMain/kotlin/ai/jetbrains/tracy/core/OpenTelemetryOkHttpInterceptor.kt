@@ -1,6 +1,5 @@
 package ai.jetbrains.tracy.core
 
-
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
 import ai.jetbrains.tracy.core.http.protocol.*
 import io.opentelemetry.api.trace.Span
