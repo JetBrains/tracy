@@ -14,11 +14,11 @@ See the full examples: [ContextPropagationExample.kt](https://github.com/JetBrai
 
 #### [`runBlocking`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html)
 
-Use [`currentSpanContextElement`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent.processor/current-span-context-element.html) to ensure child spans are linked to their parent when using [`runBlocking`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html) inside a suspend function.
+Use [`currentSpanContextElement`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core/current-span-context-element.html) to ensure child spans are linked to their parent when using [`runBlocking`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html) inside a suspend function.
 
 <!--- INCLUDE
 import ai.jetbrains.tracy.core.fluent.Trace
-import ai.jetbrains.tracy.core.fluent.processor.currentSpanContextElement
+import ai.jetbrains.tracy.core.currentSpanContextElement
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.runBlocking
 
@@ -40,7 +40,7 @@ suspend fun processRequest() {
 Standard threads do **NOT** inherit the OpenTelemetry context. You must capture and propagate it manually:
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.fluent.processor.currentSpanContext
+import ai.jetbrains.tracy.core.currentSpanContext
 import kotlinx.coroutines.currentCoroutineContext
 import kotlin.concurrent.thread
 
@@ -70,7 +70,7 @@ You can enrich your traces with business-specific metadata using custom tags. Th
 Use [`addLangfuseTagsToCurrentTrace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.exporters.langfuse/add-langfuse-tags-to-current-trace.html) to attach tags dynamically within any traced function.
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.tracing.addLangfuseTagsToCurrentTrace
+import ai.jetbrains.tracy.core.exporters.langfuse.addLangfuseTagsToCurrentTrace
 
 -->
 

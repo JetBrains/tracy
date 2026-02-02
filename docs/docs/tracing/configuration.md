@@ -4,7 +4,7 @@ Tracy offers flexible configuration options to control how traces are collected 
 
 ## TracingManager
 
-The [`TracingManager`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/index.html?query=object%20TracingManager) is the central configuration point for the library.
+The [`TracingManager`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core/-tracing-manager/index.html?query=object%20TracingManager) is the central configuration point for the library.
 
 | Method/Property | Description |
 |-----------------|-------------|
@@ -65,10 +65,10 @@ TracingManager.traceSensitiveContent()
 Or configure the policy more granularly:
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.tracing.policy.ContentCapturePolicy
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
-import ai.jetbrains.tracy.core.tracing.TracingManager
-import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.policy.ContentCapturePolicy
 
 fun main() {
 -->
