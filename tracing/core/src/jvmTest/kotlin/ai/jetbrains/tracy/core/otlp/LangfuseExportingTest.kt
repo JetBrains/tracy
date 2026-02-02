@@ -1,7 +1,7 @@
 package ai.jetbrains.tracy.core.otlp
 
 import ai.jetbrains.tracy.core.exporters.otlp.ErrorDiagnosingOtlpHttpSpanExporter
-import ai.jetbrains.tracy.core.exporters.otlp.LangfuseExporterConfig
+import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow

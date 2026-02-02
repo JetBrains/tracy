@@ -1,6 +1,6 @@
 package ai.jetbrains.tracy.eval.providers.langfuse
 
-import ai.jetbrains.tracy.core.exporters.otlp.LangfuseExporterConfig
+import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig
 import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 import ai.jetbrains.tracy.eval.utils.MultiScoreEvalResult

@@ -1,6 +1,6 @@
 package ai.jetbrains.tracy.eval.providers.langfuse
 
-import ai.jetbrains.tracy.core.exporters.otlp.LangfuseExporterConfig
+import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig
 import ai.jetbrains.tracy.eval.utils.AIInput
 import ai.jetbrains.tracy.eval.utils.AIOutput
 import ai.jetbrains.tracy.eval.utils.BaseEvaluationTest

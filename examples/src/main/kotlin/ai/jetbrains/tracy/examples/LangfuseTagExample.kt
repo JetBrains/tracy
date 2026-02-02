@@ -1,6 +1,6 @@
 package ai.jetbrains.tracy.examples
 
-import ai.jetbrains.tracy.core.exporters.otlp.LangfuseExporterConfig
+import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig
 import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.addLangfuseTagsToCurrentTrace
 import ai.jetbrains.tracy.core.configureOpenTelemetrySdk

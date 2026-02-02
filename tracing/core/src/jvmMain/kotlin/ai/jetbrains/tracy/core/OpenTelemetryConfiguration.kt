@@ -3,7 +3,7 @@ package ai.jetbrains.tracy.core
 import ai.jetbrains.tracy.core.exporters.BaseExporterConfig
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
 import ai.jetbrains.tracy.core.exporters.ExporterCommonSettings
-import ai.jetbrains.tracy.core.exporters.otlp.LangfuseExporterConfig
+import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig
 import ai.jetbrains.tracy.core.exporters.otlp.WeaveExporterConfig
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
