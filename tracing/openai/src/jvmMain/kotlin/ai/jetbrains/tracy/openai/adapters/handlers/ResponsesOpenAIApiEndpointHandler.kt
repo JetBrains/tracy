@@ -365,7 +365,7 @@ internal class ResponsesOpenAIApiEndpointHandler(
                         val url = part.jsonObject["image_url"]?.jsonPrimitive?.content ?: continue
                         when {
                             url.isValidUrl() -> MediaContentPart(Resource.Url(url))
-                            url.startsWith("data:") -> MediaContentPart(Resource.DataUrl(url))
+                            url.startsWith("data:") -> MediaContentPart(Resource.InlineDataUrl(url))
                             else -> null
                         }
                     }
@@ -378,7 +378,7 @@ internal class ResponsesOpenAIApiEndpointHandler(
 
                         "file_data" in part.jsonObject -> {
                             val dataUrl = part.jsonObject["file_data"]?.jsonPrimitive?.content ?: continue
-                            MediaContentPart(Resource.DataUrl(dataUrl))
+                            MediaContentPart(Resource.InlineDataUrl(dataUrl))
                         }
 
                         else -> null

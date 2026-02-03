@@ -30,15 +30,15 @@ data class DataUrl(
         const val WARNING_URL_LENGTH_LIMIT = 200
 
         /**
-         * Parses a data URL extracting media type, headers, and data.
+         * Parses an inline data URL extracting media type, headers, and data.
          *
          * See [MDN data URLs](https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/data)
          *
-         * @see DataUrl
+         * @see Resource.InlineDataUrl
          * @return DataUrl with the URL components, otherwise `null`
          */
-        fun String.parseDataUrl(): DataUrl? {
-            val url = this
+        fun Resource.InlineDataUrl.parseInlineDataUrl(): DataUrl? {
+            val url = this.inlineDataUrl
             if (!url.startsWith("data:")) {
                 return null
             }

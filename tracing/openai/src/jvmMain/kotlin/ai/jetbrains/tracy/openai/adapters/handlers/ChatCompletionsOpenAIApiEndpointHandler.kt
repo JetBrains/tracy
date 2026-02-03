@@ -286,7 +286,7 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                         if (url.isValidUrl()) {
                             MediaContentPart(Resource.Url(url))
                         } else if (url.startsWith("data:")) {
-                            MediaContentPart(Resource.DataUrl(url))
+                            MediaContentPart(Resource.InlineDataUrl(url))
                         } else {
                             null
                         }
@@ -316,7 +316,7 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                         // OpenAI expects a data url with a base64-encoded PDF file
                         val fileData = part.jsonObject["file"]?.jsonObject["file_data"]?.jsonPrimitive?.content
                             ?: continue
-                        MediaContentPart(Resource.DataUrl(fileData))
+                        MediaContentPart(Resource.InlineDataUrl(fileData))
                     }
 
                     else -> null

@@ -1,6 +1,6 @@
 package ai.jetbrains.tracy.core.adapters.media
 
-import ai.jetbrains.tracy.core.adapters.media.DataUrl.Companion.parseDataUrl
+import ai.jetbrains.tracy.core.adapters.media.DataUrl.Companion.parseInlineDataUrl
 import io.ktor.http.headers
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.sdk.trace.ReadableSpan
@@ -11,7 +11,7 @@ import mu.KotlinLogging
  */
 class MediaContentExtractorImpl : MediaContentExtractor {
     private val logger = KotlinLogging.logger {}
-    
+
     /**
      * Sets uploadable media parts (e.g., images, audio files, and PDFs) into span attributes.
      */
@@ -44,12 +44,12 @@ class MediaContentExtractorImpl : MediaContentExtractor {
                     span.setDataUrlAttributes(dataUrl, field, index)
                 }
 
-                is Resource.DataUrl -> {
-                    val dataUrl = resource.dataUrl.parseDataUrl()
+                is Resource.InlineDataUrl -> {
+                    val dataUrl = resource.parseInlineDataUrl()
                     if (dataUrl != null) {
                         span.setDataUrlAttributes(dataUrl, field, index)
                     } else {
-                        logger.warn { "Invalid data url, received: ${resource.dataUrl}" }
+                        logger.warn { "Invalid data url, received: ${resource.inlineDataUrl}" }
                     }
                 }
 
