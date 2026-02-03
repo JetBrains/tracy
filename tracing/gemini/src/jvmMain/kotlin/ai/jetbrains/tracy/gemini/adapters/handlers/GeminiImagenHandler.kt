@@ -111,7 +111,7 @@ class GeminiImagenHandler(
     private fun parseImagenImage(image: JsonObject): Resource? {
         val mimeType = image["mimeType"]?.jsonPrimitive?.content ?: return null
         val base64 = image["bytesBase64Encoded"]?.jsonPrimitive?.content ?: return null
-        val contentType = ContentType.parseSafe(mimeType)
+        val contentType = ContentType.parseOrNull(mimeType)
 
         if (contentType == null) {
             logger.warn("Cannot convert the mime type '$mimeType' to content type")

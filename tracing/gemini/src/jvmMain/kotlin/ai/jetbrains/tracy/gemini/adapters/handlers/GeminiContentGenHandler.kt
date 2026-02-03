@@ -1,7 +1,6 @@
 package ai.jetbrains.tracy.gemini.adapters.handlers
 
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter.Companion.PayloadType
-import ai.jetbrains.tracy.core.policy.orRedactedInput
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
 import ai.jetbrains.tracy.core.adapters.handlers.EndpointApiHandler
 import ai.jetbrains.tracy.core.adapters.media.MediaContent
@@ -13,20 +12,11 @@ import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.asJson
 import ai.jetbrains.tracy.core.policy.ContentKind
 import ai.jetbrains.tracy.core.policy.contentTracingAllowed
+import ai.jetbrains.tracy.core.policy.orRedactedInput
 import ai.jetbrains.tracy.core.policy.orRedactedOutput
 import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_CHOICE_COUNT
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MAX_TOKENS
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TEMPERATURE
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_K
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_TOP_P
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_ID
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_MODEL
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
 import mu.KotlinLogging
 
@@ -289,7 +279,7 @@ class GeminiContentGenHandler(
         val inlineData = this
         val data = inlineData["data"]?.jsonPrimitive?.content ?: return null
         val mimeType = inlineData["mimeType"]?.jsonPrimitive?.content ?: return null
-        val contentType = ContentType.parseSafe(mimeType)
+        val contentType = ContentType.parseOrNull(mimeType)
 
         if (contentType == null) {
             logger.warn("Cannot convert the mime type '$mimeType' to content type")
@@ -376,10 +366,4 @@ class GeminiContentGenHandler(
     }
 }
 
-fun ContentType.Companion.parseSafe(mimeType: String): ContentType? {
-    return try {
-        ContentType.parse(mimeType)
-    } catch (_: Exception) {
-        null
-    }
-}
+fun ContentType.Companion.parseOrNull(mimeType: String) = runCatching { ContentType.parse(mimeType) }.getOrNull()

@@ -1,6 +1,7 @@
 package ai.jetbrains.tracy.core.fluent.processor
 
 import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.fluent.FluentSpanAttributes
 import io.opentelemetry.api.trace.Span
 
 /**
@@ -36,7 +37,7 @@ inline fun <T> withSpan(
 
     try {
         val result = block(span)
-        span.setAttribute("output", result.toString())
+        span.setAttribute(FluentSpanAttributes.SPAN_OUTPUTS.key, result.toString())
 
         return result
     } catch (e: Exception) {

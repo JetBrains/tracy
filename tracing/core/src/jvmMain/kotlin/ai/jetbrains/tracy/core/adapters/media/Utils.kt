@@ -62,10 +62,8 @@ internal fun Span.setUrlAttributes(
  * @return `true` if parsing into [URL] succeeds, otherwise `false`.
  */
 fun String.isValidUrl(): Boolean {
-    return try {
+    return runCatching {
         URL(this)
         true
-    } catch (_: Exception) {
-        false
-    }
+    }.getOrDefault(false)
 }

@@ -10,6 +10,8 @@ import mu.KotlinLogging
  * Implementation of a media content extractor.
  */
 class MediaContentExtractorImpl : MediaContentExtractor {
+    private val logger = KotlinLogging.logger {}
+    
     /**
      * Sets uploadable media parts (e.g., images, audio files, and PDFs) into span attributes.
      */
@@ -78,9 +80,5 @@ class MediaContentExtractorImpl : MediaContentExtractor {
         }
 
         return contentPartsCount
-    }
-
-    companion object {
-        private val logger = KotlinLogging.logger {}
     }
 }

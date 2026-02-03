@@ -5,6 +5,7 @@ import ai.jetbrains.tracy.core.policy.ContentCapturePolicy
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.sdk.OpenTelemetrySdk
+import io.opentelemetry.sdk.common.CompletableResultCode
 import mu.KotlinLogging
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -146,9 +147,10 @@ object TracingManager {
      * Forces flushing of any pending spans to their respective exporters.
      *
      * @param timeoutSeconds maximum time to wait for flushing, in seconds.
-     * @return true if flush was successful, false otherwise.
+     * @return a [CompletableResultCode] indicating the result of the flush operation,
+     *         or `null` if the OpenTelemetry SDK is not initialized.
      */
-    fun flushTraces(timeoutSeconds: Long = 5) =
+    fun flushTraces(timeoutSeconds: Long = 5): CompletableResultCode? =
         openTelemetrySdk?.sdkTracerProvider?.forceFlush()?.join(timeoutSeconds, TimeUnit.SECONDS)
 
 
@@ -156,8 +158,9 @@ object TracingManager {
      * Shuts down the OpenTelemetry SDK.
      *
      * @param timeoutSeconds maximum time to wait for shutdown, in seconds.
-     * @return true if shutdown was successful, false otherwise.
+     * @return a [CompletableResultCode] indicating the result of the shutdown operation,
+     *         or `null` if the OpenTelemetry SDK is not initialized.
      */
-    fun shutdownTracing(timeoutSeconds: Long = 5) =
+    fun shutdownTracing(timeoutSeconds: Long = 5): CompletableResultCode? =
         openTelemetrySdk?.sdkTracerProvider?.shutdown()?.join(timeoutSeconds, TimeUnit.SECONDS)
 }

@@ -1,7 +1,5 @@
 package ai.jetbrains.tracy.anthropic
 
-import ai.jetbrains.tracy.core.getFieldValue
-import ai.jetbrains.tracy.core.setFieldValue
 import ai.jetbrains.tracy.test.utils.BaseAITracingTest
 import com.anthropic.client.AnthropicClient
 import com.anthropic.client.okhttp.AnthropicOkHttpClient
@@ -10,8 +8,6 @@ import com.anthropic.core.JsonString
 import com.anthropic.models.messages.Message
 import com.anthropic.models.messages.Model
 import com.anthropic.models.messages.Tool
-import okhttp3.Interceptor
-import okhttp3.OkHttpClient
 import org.junit.jupiter.api.TestInstance
 import java.time.Duration
 
@@ -66,23 +62,6 @@ abstract class BaseAnthropicTracingTest : BaseAITracingTest() {
                     .required(listOf("name"))
                     .build()
             ).build()
-    }
-
-    protected fun installHttpInterceptor(client: AnthropicClient, interceptor: Interceptor) {
-        val clientOptions = getFieldValue(client, "clientOptions")
-        val originalHttpClient = getFieldValue(clientOptions, "originalHttpClient")
-
-        // Find the object that actually holds the "okHttpClient" field
-        val okHttpHolder = if (originalHttpClient::class.simpleName == "OkHttpClient") {
-            originalHttpClient
-        } else {
-            getFieldValue(originalHttpClient, "httpClient")
-        }
-
-        val okHttpClient = getFieldValue(okHttpHolder, "okHttpClient") as OkHttpClient
-        val modifiedHttpClient = okHttpClient.newBuilder().addInterceptor(interceptor).build()
-
-        setFieldValue(okHttpHolder, "okHttpClient", modifiedHttpClient)
     }
 
     companion object {
