@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit
  *
  * @return the initialized [OpenTelemetrySdk] instance.
  */
+@JvmOverloads
 fun configureOpenTelemetrySdk(
     exporterConfig: BaseExporterConfig,
     additionalResource: Resource = Resource.create(
