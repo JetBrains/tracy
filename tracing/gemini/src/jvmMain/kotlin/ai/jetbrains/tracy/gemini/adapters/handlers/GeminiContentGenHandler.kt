@@ -106,10 +106,7 @@ class GeminiContentGenHandler(
                 span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it.toLong())
             }
             config.jsonObject["temperature"]?.jsonPrimitive?.doubleOrNull?.let {
-                span.setAttribute(
-                    GEN_AI_REQUEST_TEMPERATURE,
-                    it
-                )
+                span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it)
             }
             config.jsonObject["topP"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_P, it) }
             config.jsonObject["topK"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_K, it) }
@@ -272,10 +269,14 @@ class GeminiContentGenHandler(
      * }
      * ```
      *
+     * See the request body schema for the generateContent endpoint [here](https://ai.google.dev/api/generate-content?hl=en#request-body).
+     * Next, navigate to contents [(Content)](https://ai.google.dev/api/caching?hl=en#Content)
+     * then parts[] [(Part)](https://ai.google.dev/api/caching?hl=en#Part)
+     * then inlineData [(Blob)](https://ai.google.dev/api/caching#Blob).
+     *
      * Converts JSON objects matching the schema above into [Resource].
      */
     private fun JsonObject.toResource(): Resource? {
-        // TODO: any urls supported or base64 only?
         val inlineData = this
         val data = inlineData["data"]?.jsonPrimitive?.content ?: return null
         val mimeType = inlineData["mimeType"]?.jsonPrimitive?.content ?: return null
@@ -366,4 +367,5 @@ class GeminiContentGenHandler(
     }
 }
 
-fun ContentType.Companion.parseOrNull(mimeType: String) = runCatching { ContentType.parse(mimeType) }.getOrNull()
+internal fun ContentType.Companion.parseOrNull(mimeType: String) =
+    runCatching { ContentType.parse(mimeType) }.getOrNull()

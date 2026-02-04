@@ -54,7 +54,7 @@ class MediaContentExtractorImpl : MediaContentExtractor {
                 }
 
                 is Resource.Url -> {
-                    span.setUrlAttributes(field, index, resource.url)
+                    span.setUrlAttributes(resource.url, field, index)
                 }
             }
         }

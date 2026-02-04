@@ -39,7 +39,6 @@ import java.util.concurrent.TimeUnit
  * @see [BaseExporterConfig] for inherited properties such as attribute limits and console logging.
  * @see [Langfuse OpenTelemetry Docs](https://langfuse.com/docs/opentelemetry/get-started)
  */
-
 class LangfuseExporterConfig(
     langfuseUrl: String? = null,
     langfusePublicKey: String? = null,

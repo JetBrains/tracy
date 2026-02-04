@@ -27,8 +27,6 @@ data class DataUrl(
     }
 
     companion object {
-        const val WARNING_URL_LENGTH_LIMIT = 200
-
         /**
          * Parses an inline data URL extracting media type, headers, and data.
          *

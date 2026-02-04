@@ -1,9 +1,10 @@
 package ai.jetbrains.tracy.core.adapters.media
 
-import ai.jetbrains.tracy.core.adapters.media.DataUrl.Companion.WARNING_URL_LENGTH_LIMIT
 import ai.jetbrains.tracy.core.fluent.processor.addExceptionAttributes
 import io.opentelemetry.api.trace.Span
 import java.net.URL
+
+private const val WARNING_URL_LENGTH_LIMIT = 256
 
 /**
  * Sets base64-related attributes into the span, ensuring that [DataUrl]
@@ -42,9 +43,9 @@ internal fun Span.setDataUrlAttributes(
  * @see UploadableMediaContentAttributeKeys
  */
 internal fun Span.setUrlAttributes(
+    url: String,
     field: String,
     index: Int,
-    url: String,
 ) {
     if (!url.isValidUrl()) {
         addExceptionAttributes(IllegalArgumentException("Expected a valid URL, received: $url"))
