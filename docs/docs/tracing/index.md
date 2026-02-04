@@ -18,7 +18,7 @@ The Tracing API is divided into three main categories:
 ## Key Components
 
 - [**`TracingManager`**]({{ api_docs_url
-  }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/index.html?query=object%20TracingManager): The
+  }}/tracing/core/ai.jetbrains.tracy.core/-tracing-manager/index.html?query=object%20TracingManager): The
   central point for configuring and controlling tracing at runtime.
 - **`instrument()`**: A function used to wrap LLM clients with tracing capabilities (_multiple overloads for different
   LLM clients, e.g., see [`instrument`]({{ api_docs_url
@@ -35,15 +35,15 @@ To start tracing, you need to:
 
 1. Configure the OpenTelemetry SDK with a desired [exporter](../otel-config/exporters.md).
 2. Set the SDK in the [`TracingManager`]({{ api_docs_url
-   }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/index.html?query=object%20TracingManager).
+   }}/tracing/core/ai.jetbrains.tracy.core/-tracing-manager/index.html?query=object%20TracingManager).
 3. Instrument your clients or annotate your functions.
 4. Flush traces before your application exits.
 
 Example of a basic setup:
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.tracing.TracingManager
-import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
 import ai.jetbrains.tracy.core.fluent.Trace
 -->

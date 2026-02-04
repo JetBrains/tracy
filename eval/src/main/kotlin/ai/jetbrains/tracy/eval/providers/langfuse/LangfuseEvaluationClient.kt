@@ -1,8 +1,8 @@
 package ai.jetbrains.tracy.eval.providers.langfuse
 
-import ai.jetbrains.tracy.core.exporters.otlp.LangfuseExporterConfig
-import ai.jetbrains.tracy.core.tracing.TracingManager
-import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 import ai.jetbrains.tracy.eval.utils.MultiScoreEvalResult
 import ai.jetbrains.tracy.eval.utils.SingleScoreEvalResult
 import kotlinx.serialization.json.jsonObject
@@ -59,7 +59,10 @@ class LangfuseEvaluationClient(
         )
     }
 
-    override suspend fun uploadResults(runId: String, testResults: List<ai.jetbrains.tracy.eval.utils.TestResult<*, *, *, *>>) {
+    override suspend fun uploadResults(
+        runId: String,
+        testResults: List<ai.jetbrains.tracy.eval.utils.TestResult<*, *, *, *>>
+    ) {
         testResults.forEach { result ->
             when (val evalResult = result.evalResult) {
                 is MultiScoreEvalResult -> {

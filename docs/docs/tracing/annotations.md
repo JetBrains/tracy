@@ -96,12 +96,12 @@ See the full example: [TracingPropagationExample.kt](https://github.com/JetBrain
 
 ### Customizing Span Metadata
 
-You can customize how spans are named and how inputs/outputs are serialized by providing an implementation of the [**`SpanMetadataCustomizer`**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent.handlers/-span-metadata-customizer/index.html) interface.
+You can customize how spans are named and how inputs/outputs are serialized by providing an implementation of the [**`SpanMetadataCustomizer`**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent.customizers/-span-metadata-customizer/index.html) interface.
 
 <!--- INCLUDE
 import ai.jetbrains.tracy.core.fluent.Trace
-import ai.jetbrains.tracy.core.fluent.handlers.PlatformMethod
-import ai.jetbrains.tracy.core.fluent.handlers.SpanMetadataCustomizer
+import ai.jetbrains.tracy.core.fluent.customizers.PlatformMethod
+import ai.jetbrains.tracy.core.fluent.customizers.SpanMetadataCustomizer
 
 -->
 

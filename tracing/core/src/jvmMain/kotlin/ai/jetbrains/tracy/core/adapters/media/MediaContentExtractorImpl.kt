@@ -1,7 +1,6 @@
 package ai.jetbrains.tracy.core.adapters.media
 
-import ai.jetbrains.tracy.core.common.DataUrl
-import ai.jetbrains.tracy.core.common.parseDataUrl
+import ai.jetbrains.tracy.core.adapters.media.DataUrl.Companion.parseInlineDataUrl
 import io.ktor.http.headers
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.sdk.trace.ReadableSpan
@@ -11,6 +10,8 @@ import mu.KotlinLogging
  * Implementation of a media content extractor.
  */
 class MediaContentExtractorImpl : MediaContentExtractor {
+    private val logger = KotlinLogging.logger {}
+
     /**
      * Sets uploadable media parts (e.g., images, audio files, and PDFs) into span attributes.
      */
@@ -30,7 +31,6 @@ class MediaContentExtractorImpl : MediaContentExtractor {
             when (resource) {
                 is Resource.Base64 -> {
                     val contentType = resource.contentType
-
                     val dataUrl = DataUrl(
                         mediaType = "${contentType.contentType}/${contentType.contentSubtype}",
                         headers = headers {
@@ -41,20 +41,20 @@ class MediaContentExtractorImpl : MediaContentExtractor {
                         base64 = true,
                         data = resource.base64,
                     )
-                    setDataUrlAttributes(span, field, index, dataUrl)
+                    span.setDataUrlAttributes(dataUrl, field, index)
                 }
 
-                is Resource.DataUrl -> {
-                    val dataUrl = resource.dataUrl.parseDataUrl()
+                is Resource.InlineDataUrl -> {
+                    val dataUrl = resource.parseInlineDataUrl()
                     if (dataUrl != null) {
-                        setDataUrlAttributes(span, field, index, dataUrl)
+                        span.setDataUrlAttributes(dataUrl, field, index)
                     } else {
-                        logger.warn { "Invalid data url, received: ${resource.dataUrl}" }
+                        logger.warn { "Invalid data url, received: ${resource.inlineDataUrl}" }
                     }
                 }
 
                 is Resource.Url -> {
-                    setUrlAttributes(span, field, index, resource.url)
+                    span.setUrlAttributes(resource.url, field, index)
                 }
             }
         }
@@ -80,9 +80,5 @@ class MediaContentExtractorImpl : MediaContentExtractor {
         }
 
         return contentPartsCount
-    }
-
-    companion object {
-        private val logger = KotlinLogging.logger {}
     }
 }

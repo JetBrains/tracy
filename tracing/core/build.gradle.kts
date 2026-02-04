@@ -18,11 +18,6 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             kotlin.srcDir(layout.buildDirectory.dir("generated/commonMain"))
-            dependencies {
-                implementation(libs.kotlinx.serialization.core)
-                implementation(libs.kotlinx.serialization.json)
-                implementation(libs.ktor.client)
-            }
         }
 
         jvmMain {

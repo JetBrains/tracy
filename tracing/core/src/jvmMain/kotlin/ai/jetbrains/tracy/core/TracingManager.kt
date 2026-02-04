@@ -1,12 +1,11 @@
-package ai.jetbrains.tracy.core.tracing
+package ai.jetbrains.tracy.core
 
 import ai.jetbrains.tracy.config.BuildConfig
-import ai.jetbrains.tracy.core.exporters.BaseExporterConfig
-import ai.jetbrains.tracy.core.tracing.TracingManager.setSdk
-import ai.jetbrains.tracy.core.tracing.policy.ContentCapturePolicy
+import ai.jetbrains.tracy.core.policy.ContentCapturePolicy
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.sdk.OpenTelemetrySdk
+import io.opentelemetry.sdk.common.CompletableResultCode
 import mu.KotlinLogging
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -15,8 +14,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Manager for setting up and managing OpenTelemetry tracing for Tracy.
  *
  * This object provides utilities to:
- *  - Initialize and configure the OpenTelemetry SDK using a [BaseExporterConfig].
- *  - Obtain a default [Tracer] for Tracy, used in automatic tracing
+ *  - Initialize and configure the OpenTelemetry SDK using a [ai.jetbrains.tracy.core.exporters.BaseExporterConfig].
+ *  - Obtain a default [io.opentelemetry.api.trace.Tracer] for Tracy, used in automatic tracing
  *    as well as annotation-based spans.
  *  - Flush and shut down traces gracefully.
  *
@@ -27,8 +26,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  * TracingManager.flushTraces()
  * ```
  *
- * @see BaseExporterConfig
- * @see OpenTelemetrySdk
+ * @see ai.jetbrains.tracy.core.exporters.BaseExporterConfig
+ * @see io.opentelemetry.sdk.OpenTelemetrySdk
  */
 object TracingManager {
     /*
@@ -64,7 +63,7 @@ object TracingManager {
         private set
 
     /**
-     * Provides the default [Tracer] instance for Tracy.
+     * Provides the default [io.opentelemetry.api.trace.Tracer] instance for Tracy.
      *
      * Behavior:
      * - If tracing is enabled and an OpenTelemetry SDK has been initialized via [setSdk], returns a working tracer.
@@ -148,9 +147,10 @@ object TracingManager {
      * Forces flushing of any pending spans to their respective exporters.
      *
      * @param timeoutSeconds maximum time to wait for flushing, in seconds.
-     * @return true if flush was successful, false otherwise.
+     * @return a [CompletableResultCode] indicating the result of the flush operation,
+     *         or `null` if the OpenTelemetry SDK is not initialized.
      */
-    fun flushTraces(timeoutSeconds: Long = 5) =
+    fun flushTraces(timeoutSeconds: Long = 5): CompletableResultCode? =
         openTelemetrySdk?.sdkTracerProvider?.forceFlush()?.join(timeoutSeconds, TimeUnit.SECONDS)
 
 
@@ -158,8 +158,9 @@ object TracingManager {
      * Shuts down the OpenTelemetry SDK.
      *
      * @param timeoutSeconds maximum time to wait for shutdown, in seconds.
-     * @return true if shutdown was successful, false otherwise.
+     * @return a [CompletableResultCode] indicating the result of the shutdown operation,
+     *         or `null` if the OpenTelemetry SDK is not initialized.
      */
-    fun shutdownTracing(timeoutSeconds: Long = 5) =
+    fun shutdownTracing(timeoutSeconds: Long = 5): CompletableResultCode? =
         openTelemetrySdk?.sdkTracerProvider?.shutdown()?.join(timeoutSeconds, TimeUnit.SECONDS)
 }

@@ -1,7 +1,7 @@
 package ai.jetbrains.tracy.test.utils
 
 import ai.jetbrains.tracy.core.adapters.media.UploadableMediaContentAttributeKeys
-import ai.jetbrains.tracy.core.tracing.policy.ContentCapturePolicy
+import ai.jetbrains.tracy.core.policy.ContentCapturePolicy
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.sdk.trace.data.SpanData
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -13,19 +13,20 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import ai.jetbrains.tracy.core.fluent.processor.SpanData as FluentSpanData
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class BaseAITracingTest : BaseOpenTelemetryTracingTest() {
-    protected fun assumeTracesCount(assumedCount: Int, traces: List<FluentSpanData>) {
+    protected fun assumeTracesCount(assumedCount: Int, traces: List<SpanData>) {
         assumeTrue(assumedCount == traces.size) {
             "Expected $assumedCount traces, but got ${traces.size}. Traces:\n${traces.joinToString(",\n") { it.toString() }}"
         }
     }
 
-    protected fun assertTracesCount(expectedCount: Int, traces: List<FluentSpanData>) {
-        assertEquals(expectedCount, traces.size,
-            "Expected $expectedCount traces, but got ${traces.size}. Traces:\n${traces.joinToString(",\n") { it.toString() }}")
+    protected fun assertTracesCount(expectedCount: Int, traces: List<SpanData>) {
+        assertEquals(
+            expectedCount, traces.size,
+            "Expected $expectedCount traces, but got ${traces.size}. Traces:\n${traces.joinToString(",\n") { it.toString() }}"
+        )
     }
 
     protected fun validateBasicTracing(url: String, model: String) {
@@ -56,8 +57,10 @@ abstract class BaseAITracingTest : BaseOpenTelemetryTracingTest() {
             span.attributes.asMap().keys.count { it.key.matches(mediaContentTypeRegex) }
         }
 
-        assertEquals(expected.size, contentPartsCount,
-            "Media content attribute count does not match")
+        assertEquals(
+            expected.size, contentPartsCount,
+            "Media content attribute count does not match"
+        )
 
         for ((index, values) in expected.withIndex()) {
             val keys = UploadableMediaContentAttributeKeys.forIndex(index)
@@ -100,18 +103,24 @@ abstract class BaseAITracingTest : BaseOpenTelemetryTracingTest() {
     }
 
     protected fun provideContentCapturePolicies(): Stream<Arguments> = Stream.of(
-        Arguments.of(ContentCapturePolicy(
-            captureInputs = false,
-            captureOutputs = false,
-        )),
-        Arguments.of(ContentCapturePolicy(
-            captureInputs = true,
-            captureOutputs = false,
-        )),
-        Arguments.of(ContentCapturePolicy(
-            captureInputs = false,
-            captureOutputs = true,
-        )),
+        Arguments.of(
+            ContentCapturePolicy(
+                captureInputs = false,
+                captureOutputs = false,
+            )
+        ),
+        Arguments.of(
+            ContentCapturePolicy(
+                captureInputs = true,
+                captureOutputs = false,
+            )
+        ),
+        Arguments.of(
+            ContentCapturePolicy(
+                captureInputs = false,
+                captureOutputs = true,
+            )
+        ),
     )
 
     /**

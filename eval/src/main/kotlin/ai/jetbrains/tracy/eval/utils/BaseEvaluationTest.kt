@@ -1,6 +1,6 @@
 package ai.jetbrains.tracy.eval.utils
 
-import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.fluent.FluentSpanAttributes
 import ai.jetbrains.tracy.core.fluent.TracingSessionProvider.currentSessionId
 import ai.jetbrains.tracy.core.fluent.withSessionIdBlocking

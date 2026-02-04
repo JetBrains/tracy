@@ -1,6 +1,6 @@
-package ai.jetbrains.tracy.core.tracing.policy
+package ai.jetbrains.tracy.core.policy
 
-import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.TracingManager
 
 /**
  * Determines if content tracing is allowed for the specified content kind

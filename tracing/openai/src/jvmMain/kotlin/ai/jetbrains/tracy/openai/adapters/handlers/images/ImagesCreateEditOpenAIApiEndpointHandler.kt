@@ -8,9 +8,9 @@ import ai.jetbrains.tracy.core.adapters.media.Resource
 import ai.jetbrains.tracy.core.http.protocol.Request
 import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.asFormData
-import ai.jetbrains.tracy.core.tracing.policy.ContentKind
-import ai.jetbrains.tracy.core.tracing.policy.contentTracingAllowed
-import ai.jetbrains.tracy.core.tracing.policy.orRedactedInput
+import ai.jetbrains.tracy.core.policy.ContentKind
+import ai.jetbrains.tracy.core.policy.contentTracingAllowed
+import ai.jetbrains.tracy.core.policy.orRedactedInput
 import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes
@@ -44,8 +44,10 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
                 when {
                     it.match(ContentType.Image.Any) ->
                         Base64.getEncoder().encodeToString(part.content)
+
                     it.match(ContentType.Text.Any) ->
                         part.content.toString(contentType.charset() ?: Charsets.UTF_8)
+
                     else -> null
                 }
             }
@@ -55,10 +57,11 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
                 continue
             }
 
-            when(part.name) {
+            when (part.name) {
                 "prompt" -> {
                     span.setAttribute("gen_ai.prompt.0.content", content.orRedactedInput())
                 }
+
                 "model" -> {
                     span.setAttribute(GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL, content)
                 }
@@ -91,6 +94,7 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
                     )
                     ++imagesCount
                 }
+
                 null -> logger.warn { "Form data part with missing name ignored. Content type: '$contentType'" }
                 else -> {
                     // since we don't know how sensitive other fields may be,

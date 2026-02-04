@@ -1,8 +1,8 @@
 package ai.jetbrains.tracy.examples
 
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
-import ai.jetbrains.tracy.core.tracing.TracingManager
-import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 import ai.jetbrains.tracy.core.fluent.Trace
 
 @Trace(name = "SimpleExample")

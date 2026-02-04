@@ -1,4 +1,4 @@
-package ai.jetbrains.tracy.core.tracing.policy
+package ai.jetbrains.tracy.core.policy
 
 /**
  * Controls whether to capture sensitive LLM content in spans.

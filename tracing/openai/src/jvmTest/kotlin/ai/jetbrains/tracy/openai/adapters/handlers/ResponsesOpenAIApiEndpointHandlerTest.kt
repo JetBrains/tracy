@@ -2,12 +2,12 @@ package ai.jetbrains.tracy.openai.adapters.handlers
 
 import ai.jetbrains.tracy.openai.clients.instrument
 import ai.jetbrains.tracy.test.utils.MediaSource
-import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.test.utils.toDataUrl
 import ai.jetbrains.tracy.test.utils.toMediaContentAttributeValues
 import ai.jetbrains.tracy.openai.adapters.BaseOpenAITracingTest
 import ai.jetbrains.tracy.openai.adapters.containsToolCall
-import ai.jetbrains.tracy.core.tracing.policy.ContentCapturePolicy
+import ai.jetbrains.tracy.core.policy.ContentCapturePolicy
 import com.openai.core.JsonValue
 import com.openai.models.ChatModel
 import com.openai.models.responses.*
@@ -91,10 +91,12 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val client = instrument(createOpenAIClient())
 
         val params = ResponseCreateParams.builder()
-            .input(inputWith(
-                inputText(prompt1),
-                inputText(prompt2),
-            ))
+            .input(
+                inputWith(
+                    inputText(prompt1),
+                    inputText(prompt2),
+                )
+            )
             .instructions(instructions)
             .model(model)
             .temperature(0.0)
@@ -120,7 +122,10 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val tracedPrompts = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.1.content")]
         assertNotNull(tracedPrompts)
         for (prompt in listOf(prompt1, prompt2)) {
-            assertTrue(tracedPrompts!!.contains(prompt), "Prompt '$prompt' must be present in traced prompts '$tracedPrompts'")
+            assertTrue(
+                tracedPrompts!!.contains(prompt),
+                "Prompt '$prompt' must be present in traced prompts '$tracedPrompts'"
+            )
         }
     }
 
@@ -171,7 +176,8 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val toolName = "hi"
         val greetTool = createFunctionTool(toolName)
 
-        val userPrompt = "Call the `$toolName` tool with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool call."
+        val userPrompt =
+            "Call the `$toolName` tool with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool call."
 
         val paramsBuilderFirst = ResponseCreateParams.builder()
             .model(ChatModel.GPT_4O_MINI)
@@ -225,7 +231,8 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val goodbyeToolName = "goodbye"
         val goodbyeTool = createFunctionTool(goodbyeToolName)
 
-        val userPrompt = "Call the `$greetToolName` tool with the argument `name` set to 'USER' and the `$goodbyeToolName` tool with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool calls."
+        val userPrompt =
+            "Call the `$greetToolName` tool with the argument `name` set to 'USER' and the `$goodbyeToolName` tool with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool calls."
 
         val paramsBuilderFirst = ResponseCreateParams.builder()
             .model(ChatModel.GPT_4O_MINI)
@@ -392,9 +399,11 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val model = ChatModel.GPT_4O_MINI
         val prompt = "Describe what you see in the image."
 
-        val client = instrument(createOpenAIClient(
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createOpenAIClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val params = ResponseCreateParams.builder()
             .input(
@@ -417,9 +426,11 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         assertNotNull(content)
         assertTrue(content!!.contains(prompt), "Content attribute must contain '$prompt'")
 
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            image.toMediaContentAttributeValues(field = "input"),
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                image.toMediaContentAttributeValues(field = "input"),
+            )
+        )
     }
 
     @Test
@@ -433,9 +444,11 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             contentType = "image/jpeg",
         )
 
-        val client = instrument(createOpenAIClient(
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createOpenAIClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val params = ResponseCreateParams.builder()
             .input(
@@ -462,9 +475,11 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         assertTrue(content!!.contains(prelude), "Content attribute must contain '$prelude'")
         assertTrue(content.contains(prompt), "Content attribute must contain '$prompt'")
 
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            image.toMediaContentAttributeValues(field = "input"),
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                image.toMediaContentAttributeValues(field = "input"),
+            )
+        )
     }
 
     @Test
@@ -529,9 +544,11 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val model = ChatModel.GPT_4O_MINI
         val prompt = "Describe what you see in the file"
 
-        val client = instrument(createOpenAIClient(
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createOpenAIClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val params = ResponseCreateParams.builder()
             .input(
@@ -548,9 +565,11 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
         validateBasicTracing(model)
         val trace = analyzeSpans().first()
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            file.toMediaContentAttributeValues(field = "input"),
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                file.toMediaContentAttributeValues(field = "input"),
+            )
+        )
     }
 
     @Test
@@ -561,9 +580,11 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val fileImage = MediaSource.File("image.jpg", "image/jpeg")
         val urlImage = MediaSource.Link(CAT_IMAGE_URL)
 
-        val client = instrument(createOpenAIClient(
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createOpenAIClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val params = ResponseCreateParams.builder()
             .input(
@@ -581,10 +602,12 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
         validateBasicTracing(model)
         val trace = analyzeSpans().first()
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            fileImage.toMediaContentAttributeValues(field = "input"),
-            urlImage.toMediaContentAttributeValues(field = "input"),
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                fileImage.toMediaContentAttributeValues(field = "input"),
+                urlImage.toMediaContentAttributeValues(field = "input"),
+            )
+        )
     }
 
     @Test
@@ -596,9 +619,11 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val localFile = MediaSource.File("sample.pdf", "application/pdf")
         val remoteFile = MediaSource.Link(SAMPLE_PDF_FILE_URL)
 
-        val client = instrument(createOpenAIClient(
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createOpenAIClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val params = ResponseCreateParams.builder()
             .input(
@@ -625,15 +650,17 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     }
 
     private fun inputWith(vararg content: ResponseInputContent) = ResponseCreateParams.Input
-        .ofResponse(listOf(
-            ResponseInputItem.ofMessage(
-                ResponseInputItem.Message.builder()
-                    .content(content.toList())
-                    .role(ResponseInputItem.Message.Role.USER)
-                    .type(ResponseInputItem.Message.Type.MESSAGE)
-                    .build()
+        .ofResponse(
+            listOf(
+                ResponseInputItem.ofMessage(
+                    ResponseInputItem.Message.builder()
+                        .content(content.toList())
+                        .role(ResponseInputItem.Message.Role.USER)
+                        .type(ResponseInputItem.Message.Type.MESSAGE)
+                        .build()
+                )
             )
-        ))
+        )
 
     private fun inputText(prompt: String) = ResponseInputContent.ofInputText(
         ResponseInputText.builder()
@@ -661,6 +688,7 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
                     it.fileData(media.toDataUrl())
                     it.filename(media.filepath.substringAfterLast('/'))
                 }
+
                 is MediaSource.Link -> it.fileUrl(media.url)
             }
         }.build()

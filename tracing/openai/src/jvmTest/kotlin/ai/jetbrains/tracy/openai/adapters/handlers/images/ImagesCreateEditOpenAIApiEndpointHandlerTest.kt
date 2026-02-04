@@ -2,11 +2,11 @@ package ai.jetbrains.tracy.openai.adapters.handlers.images
 
 import ai.jetbrains.tracy.test.utils.MediaContentAttributeValues
 import ai.jetbrains.tracy.test.utils.MediaSource
-import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.test.utils.toMediaContentAttributeValues
 import ai.jetbrains.tracy.openai.clients.instrument
 import ai.jetbrains.tracy.openai.adapters.BaseOpenAITracingTest
-import ai.jetbrains.tracy.core.tracing.policy.ContentCapturePolicy
+import ai.jetbrains.tracy.core.policy.ContentCapturePolicy
 import com.openai.core.MultipartField
 import com.openai.models.images.ImageEditParams
 import com.openai.models.images.ImageModel
@@ -285,13 +285,15 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
                 }
                 assumeTrue(b64Json != null) {
                     "One of events has no image data: $e. Two partial images and one final one expected " +
-                    "(see `partial_images` parameter guarantees: https://platform.openai.com/docs/api-reference/images/create#images_create-partial_images)"
+                            "(see `partial_images` parameter guarantees: https://platform.openai.com/docs/api-reference/images/create#images_create-partial_images)"
                 }
-                add(MediaContentAttributeValues.Data(
-                    field = "output",
-                    contentType = contentType,
-                    data = b64Json,
-                ))
+                add(
+                    MediaContentAttributeValues.Data(
+                        field = "output",
+                        contentType = contentType,
+                        data = b64Json,
+                    )
+                )
             }
         }
 
@@ -301,8 +303,8 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         // see: https://platform.openai.com/docs/api-reference/images/create#images_create-partial_images
         assumeTrue(expectedImages.size == 3) {
             "Events are assumed to contain $partialImagesCount partial images and one final image, " +
-            "got ${expectedImages.joinToString { it.toString() }} " +
-            "(see `partial_images` parameter guarantees: https://platform.openai.com/docs/api-reference/images/create#images_create-partial_images)"
+                    "got ${expectedImages.joinToString { it.toString() }} " +
+                    "(see `partial_images` parameter guarantees: https://platform.openai.com/docs/api-reference/images/create#images_create-partial_images)"
         }
 
         validateBasicImageTracing(prompt, model)
@@ -333,10 +335,12 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) = runTest(timeout = 3.minutes) {
         TracingManager.withCapturingPolicy(policy)
 
-        val client = instrument(createOpenAIClient(
-            url = patchedProviderUrl,
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createOpenAIClient(
+                url = patchedProviderUrl,
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val model = ImageModel.GPT_IMAGE_1
         val promptMessage = "Add a 2nd cat to the image"

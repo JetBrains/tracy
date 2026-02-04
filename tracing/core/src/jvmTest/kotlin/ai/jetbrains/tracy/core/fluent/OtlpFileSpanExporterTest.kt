@@ -2,8 +2,8 @@ package ai.jetbrains.tracy.core.fluent
 
 import ai.jetbrains.tracy.core.exporters.FileExporterConfig
 import ai.jetbrains.tracy.core.exporters.OutputFormat
-import ai.jetbrains.tracy.core.tracing.TracingManager
-import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.*
 import org.junit.jupiter.api.Assertions.assertTrue

@@ -7,9 +7,9 @@ import ai.jetbrains.tracy.core.adapters.media.Resource
 import ai.jetbrains.tracy.openai.adapters.handlers.asString
 import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.asJson
-import ai.jetbrains.tracy.core.tracing.policy.ContentKind
-import ai.jetbrains.tracy.core.tracing.policy.contentTracingAllowed
-import ai.jetbrains.tracy.core.tracing.policy.orRedactedOutput
+import ai.jetbrains.tracy.core.policy.ContentKind
+import ai.jetbrains.tracy.core.policy.contentTracingAllowed
+import ai.jetbrains.tracy.core.policy.orRedactedOutput
 import io.ktor.http.ContentType
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.Span
@@ -79,9 +79,11 @@ internal fun handleStreamedImage(
         completedType -> {
             val base64 = data["b64_json"]?.jsonPrimitive?.content ?: return
             // install image data as JSON object: `{ "b64_json": "data" }`
-            val content = Json.parseToJsonElement("""
+            val content = Json.parseToJsonElement(
+                """
                 {"b64_json": "$base64"}
-            """.trimIndent())
+            """.trimIndent()
+            )
             span.setAttribute("gen_ai.completion.0.content", content.asString.orRedactedOutput())
 
             data["usage"]?.jsonObject?.let { setUsageAttributes(span, it) }
@@ -94,6 +96,7 @@ internal fun handleStreamedImage(
                 }
             }
         }
+
         partialImageType -> {
             val partialImageIndex = data["partial_image_index"]?.jsonPrimitive?.intOrNull ?: return
             // insert attributes in `gen_ai.completion.partial_image.[index].*`
@@ -117,9 +120,11 @@ internal fun handleStreamedImage(
             null
         } ?: return
 
-        val content = MediaContent(parts = listOf(
-            MediaContentPart(Resource.Base64(base64, contentType))
-        ))
+        val content = MediaContent(
+            parts = listOf(
+                MediaContentPart(Resource.Base64(base64, contentType))
+            )
+        )
         extractor.setUploadableContentAttributes(span, field = "output", content)
     }
 }
@@ -139,8 +144,7 @@ private fun parseMediaContent(data: JsonArray, contentType: String): MediaConten
                 } ?: continue
 
                 MediaContentPart(Resource.Base64(base64, contentType))
-            }
-            else if (image.hasNonNull("url")) {
+            } else if (image.hasNonNull("url")) {
                 val url = image["url"]?.jsonPrimitive?.content ?: continue
                 MediaContentPart(Resource.Url(url))
             } else {

@@ -7,15 +7,15 @@ import ai.jetbrains.tracy.core.adapters.media.MediaContent
 import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractor
 import ai.jetbrains.tracy.core.adapters.media.MediaContentPart
 import ai.jetbrains.tracy.core.adapters.media.Resource
-import ai.jetbrains.tracy.core.common.isValidUrl
+import ai.jetbrains.tracy.core.adapters.media.isValidUrl
 import ai.jetbrains.tracy.core.http.protocol.Request
 import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.asJson
-import ai.jetbrains.tracy.core.tracing.policy.ContentKind
-import ai.jetbrains.tracy.core.tracing.policy.contentTracingAllowed
-import ai.jetbrains.tracy.core.tracing.policy.orRedacted
-import ai.jetbrains.tracy.core.tracing.policy.orRedactedInput
-import ai.jetbrains.tracy.core.tracing.policy.orRedactedOutput
+import ai.jetbrains.tracy.core.policy.ContentKind
+import ai.jetbrains.tracy.core.policy.contentTracingAllowed
+import ai.jetbrains.tracy.core.policy.orRedacted
+import ai.jetbrains.tracy.core.policy.orRedactedInput
+import ai.jetbrains.tracy.core.policy.orRedactedOutput
 import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
@@ -28,7 +28,8 @@ import mu.KotlinLogging
  * Handler for OpenAI Chat Completions API
  */
 internal class ChatCompletionsOpenAIApiEndpointHandler(
-    private val extractor: MediaContentExtractor) : EndpointApiHandler {
+    private val extractor: MediaContentExtractor
+) : EndpointApiHandler {
 
     companion object {
         // https://platform.openai.com/docs/api-reference/chat/create
@@ -135,6 +136,7 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                 }
                 content.jsonArray.toString()
             }
+
             else -> content.toString()
         }
         span.setAttribute("gen_ai.prompt.$index.content", result.orRedacted(kind))
@@ -178,8 +180,14 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                                     val name = it["name"]?.jsonPrimitive?.content
                                     val arguments = it["arguments"]?.jsonPrimitive?.content
 
-                                    span.setAttribute("gen_ai.completion.$index.tool.$toolCallIndex.name", name?.orRedactedOutput())
-                                    span.setAttribute("gen_ai.completion.$index.tool.$toolCallIndex.arguments", arguments?.orRedactedOutput())
+                                    span.setAttribute(
+                                        "gen_ai.completion.$index.tool.$toolCallIndex.name",
+                                        name?.orRedactedOutput()
+                                    )
+                                    span.setAttribute(
+                                        "gen_ai.completion.$index.tool.$toolCallIndex.arguments",
+                                        arguments?.orRedactedOutput()
+                                    )
                                 }
                             }
                         }
@@ -277,14 +285,13 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                         val url = part.jsonObject["image_url"]?.jsonObject["url"]?.jsonPrimitive?.content ?: continue
                         if (url.isValidUrl()) {
                             MediaContentPart(Resource.Url(url))
-                        }
-                        else if (url.startsWith("data:")) {
-                            MediaContentPart(Resource.DataUrl(url))
-                        }
-                        else {
+                        } else if (url.startsWith("data:")) {
+                            MediaContentPart(Resource.InlineDataUrl(url))
+                        } else {
                             null
                         }
                     }
+
                     "input_audio" -> {
                         // data is base64-encoded
                         val data = part.jsonObject["input_audio"]?.jsonObject["data"]?.jsonPrimitive?.content
@@ -295,18 +302,23 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                         val contentType = try {
                             ContentType.parse("audio/$format")
                         } catch (err: Exception) {
-                            logger.trace("Failed to parse content type: 'audio/$format'. Skipping this content part", err)
+                            logger.trace(
+                                "Failed to parse content type: 'audio/$format'. Skipping this content part",
+                                err
+                            )
                             null
                         } ?: continue
 
                         MediaContentPart(resource = Resource.Base64(data, contentType))
                     }
+
                     "file" -> {
                         // OpenAI expects a data url with a base64-encoded PDF file
                         val fileData = part.jsonObject["file"]?.jsonObject["file_data"]?.jsonPrimitive?.content
                             ?: continue
-                        MediaContentPart(Resource.DataUrl(fileData))
+                        MediaContentPart(Resource.InlineDataUrl(fileData))
                     }
+
                     else -> null
                 }
 

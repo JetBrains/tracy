@@ -1,9 +1,7 @@
 package ai.jetbrains.tracy.core
 
-
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
 import ai.jetbrains.tracy.core.http.protocol.*
-import ai.jetbrains.tracy.core.tracing.TracingManager
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.serialization.json.Json
@@ -63,7 +61,7 @@ fun <T> patchOpenAICompatibleClient(
     return client
 }
 
-fun getFieldValue(instance: Any, fieldName: String): Any {
+internal fun getFieldValue(instance: Any, fieldName: String): Any {
     var cls: Class<*>? = instance.javaClass
     while (cls != null) {
         try {
@@ -77,7 +75,7 @@ fun getFieldValue(instance: Any, fieldName: String): Any {
     throw NoSuchFieldException("Field '$fieldName' not found in ${instance.javaClass.name}")
 }
 
-fun setFieldValue(instance: Any, fieldName: String, value: Any?) {
+internal fun setFieldValue(instance: Any, fieldName: String, value: Any?) {
     var cls: Class<*>? = instance.javaClass
     while (cls != null) {
         try {

@@ -1,9 +1,12 @@
-package ai.jetbrains.tracy.core.fluent.handlers
+package ai.jetbrains.tracy.core.fluent.customizers
 
+import java.lang.reflect.Method
 import kotlin.coroutines.Continuation
+import kotlin.jvm.java
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
-import kotlin.jvm.java
+
+actual typealias PlatformMethod = Method
 
 actual object DefaultSpanMetadataCustomizer : SpanMetadataCustomizer {
     actual override fun formatInputAttributes(method: PlatformMethod, args: Array<Any?>): String {

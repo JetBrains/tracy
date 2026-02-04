@@ -16,7 +16,7 @@ import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor
  * @property flushThreshold Maximum number of spans per export batch.
  *  Default: [DEFAULT_FLUSH_THRESHOLD].
  * @property flushOnShutdown If `true`, attempts to flush spans on shutdown.
- * Creates Runtime Hook, see [ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk]
+ * Creates Runtime Hook, see [ai.jetbrains.tracy.core.configureOpenTelemetrySdk]
  *  Default: `true`.
  * @property maxNumberOfSpanAttributes Maximum number of attributes allowed per span.
  *  Defaults to the `MAX_NUMBER_OF_SPAN_ATTRIBUTES` environment variable,

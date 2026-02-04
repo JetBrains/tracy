@@ -1,7 +1,7 @@
 package ai.jetbrains.tracy.core.fluent
 
-import ai.jetbrains.tracy.core.fluent.handlers.DefaultSpanMetadataCustomizer
-import ai.jetbrains.tracy.core.fluent.handlers.SpanMetadataCustomizer
+import ai.jetbrains.tracy.core.fluent.customizers.DefaultSpanMetadataCustomizer
+import ai.jetbrains.tracy.core.fluent.customizers.SpanMetadataCustomizer
 import kotlin.reflect.KClass
 
 /**

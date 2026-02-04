@@ -1,11 +1,11 @@
 package ai.jetbrains.tracy.openai.adapters.handlers
 
-import ai.jetbrains.tracy.core.tracing.policy.ContentCapturePolicy
+import ai.jetbrains.tracy.core.policy.ContentCapturePolicy
 import ai.jetbrains.tracy.openai.adapters.BaseOpenAITracingTest
 import ai.jetbrains.tracy.openai.adapters.containsToolCall
 import ai.jetbrains.tracy.openai.adapters.name
 import ai.jetbrains.tracy.openai.clients.instrument
-import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.test.utils.MediaSource
 import ai.jetbrains.tracy.test.utils.loadFileAsBase64Encoded
 import ai.jetbrains.tracy.test.utils.toDataUrl
@@ -339,9 +339,11 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val model = ChatModel.GPT_4O
         val prompt = "Please describe what you see in this image."
 
-        val client = instrument(createOpenAIClient(
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createOpenAIClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val params = ChatCompletionCreateParams.builder()
             .model(model)
@@ -372,9 +374,11 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val prompt = "Tell me what is in the audio file"
         val filepath = "lofi.wav"
 
-        val client = instrument(createOpenAIClient(
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createOpenAIClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val params = ChatCompletionCreateParams.builder()
             .model(model)
@@ -408,10 +412,12 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             contentType = "application/pdf",
         )
 
-        val client = instrument(createOpenAIClient(
-            url = patchedProviderUrl,
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createOpenAIClient(
+                url = patchedProviderUrl,
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val params = ChatCompletionCreateParams.builder()
             .model(model)
@@ -439,10 +445,12 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val model = ChatModel.GPT_4O
         val prompt = "Please describe what you see in both images."
 
-        val client = instrument(createOpenAIClient(
-            url = patchedProviderUrl,
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createOpenAIClient(
+                url = patchedProviderUrl,
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val images = listOf(
             MediaSource.File(filepath = "image.jpg", contentType = "image/jpeg"),
@@ -488,10 +496,12 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val model = ChatModel.GPT_4O
         val prompt = "Please describe every media item attached"
 
-        val client = instrument(createOpenAIClient(
-            url = patchedProviderUrl,
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createOpenAIClient(
+                url = patchedProviderUrl,
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val image = MediaSource.File("image.jpg", "image/jpeg")
         val file = MediaSource.File("sample.pdf", "application/pdf")
@@ -522,9 +532,11 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test single instrumented client is used for multiple endpoints`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createOpenAIClient(
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createOpenAIClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         // I. chat completions
         val model1 = ChatModel.GPT_4O

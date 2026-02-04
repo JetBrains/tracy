@@ -9,8 +9,8 @@ import io.opentelemetry.api.trace.Span
  * and attaches it to the span under certain keys described by [UploadableMediaContentAttributeKeys].
  *
  * @see UploadableMediaContentAttributeKeys
- * @see setUrlAttributes
- * @see setDataUrlAttributes
+ * @see Span.setUrlAttributes
+ * @see Span.setDataUrlAttributes
  */
 interface MediaContentExtractor {
     fun setUploadableContentAttributes(
@@ -57,7 +57,7 @@ data class MediaContentPart(val resource: Resource)
  *
  * Subclasses:
  * - Url: Represents a standard URL pointing to a resource.
- * - DataUrl: Represents a Data URL containing inline data of the resource.
+ * - InlineDataUrl: Represents a Data URL containing inline data of the resource.
  * - Base64: Represents a Base64-encoded string containing the resource data.
  *
  * Use cases include:
@@ -66,6 +66,6 @@ data class MediaContentPart(val resource: Resource)
  */
 sealed class Resource {
     data class Url(val url: String) : Resource()
-    data class DataUrl(val dataUrl: String) : Resource()
+    data class InlineDataUrl(val inlineDataUrl: String) : Resource()
     data class Base64(val base64: String, val contentType: ContentType) : Resource()
 }

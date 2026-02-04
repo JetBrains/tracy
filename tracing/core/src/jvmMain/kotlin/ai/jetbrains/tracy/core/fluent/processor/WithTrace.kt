@@ -1,67 +1,21 @@
 package ai.jetbrains.tracy.core.fluent.processor
 
-import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.currentSpanContext
 import ai.jetbrains.tracy.core.fluent.FluentSpanAttributes
 import ai.jetbrains.tracy.core.fluent.Trace
 import ai.jetbrains.tracy.core.fluent.TracingSessionProvider
-import ai.jetbrains.tracy.core.fluent.addOutputAttributesToTracing
-import ai.jetbrains.tracy.core.fluent.configureTracingMetadata
+import ai.jetbrains.tracy.core.fluent.customizers.PlatformMethod
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.SpanBuilder
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.context.Context
 import io.opentelemetry.extension.kotlin.asContextElement
-import io.opentelemetry.extension.kotlin.getOpenTelemetryContext
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 import java.lang.reflect.Method
-import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KFunction
 import kotlin.reflect.jvm.javaMethod
-
-/**
- * Returns the active OpenTelemetry [Context] from the given [CoroutineContext].
- * Falls back to [Context.current] when no trace is attached or context is root.
- */
-fun currentSpanContext(coroutineContext: CoroutineContext? = null): Context {
-    val ctx = coroutineContext?.getOpenTelemetryContext() ?: return Context.current()
-    return if (ctx == Context.root()) Context.current() else ctx
-}
-
-/**
- * Wraps the current OpenTelemetry [Context] as a coroutine [CoroutineContext].
- * Use this to preserve trace context across coroutines.
- */
-fun currentSpanContextElement(coroutineContext: CoroutineContext? = null) =
-    currentSpanContext(coroutineContext).asContextElement()
-
-inline fun <T> withSpan(
-    name: String,
-    attributes: Map<String, Any?> = emptyMap(),
-    block: (Span) -> T
-): T {
-    val tracer = TracingManager.tracer
-
-    val span = tracer.spanBuilder(name).startSpan()
-    val scope = span.makeCurrent()
-
-    attributes.forEach { (key, value) ->
-        // TODO: deal with types
-        span.setAttribute(key, value.toString())
-    }
-
-    try {
-        val result = block(span)
-        span.setAttribute("output", result.toString())
-
-        return result
-    } catch (e: Exception) {
-        span.addExceptionAttributes(e)
-        throw e
-    } finally {
-        scope.close()
-        span.end()
-    }
-}
 
 @Deprecated("use withSpan() instead", level = DeprecationLevel.HIDDEN)
 actual inline fun <T> withTrace(
@@ -121,7 +75,20 @@ actual suspend inline fun <T> withTraceSuspended(
     }
 }
 
-fun createSpan(
+/**
+ * Records the given [exception] on this span and marks it as failed.
+ */
+@PublishedApi
+internal fun Span.addExceptionAttributes(exception: Throwable) {
+    this.recordException(exception)
+    this.setStatus(StatusCode.ERROR, exception.message ?: "Unknown error")
+}
+
+/**
+ * Creates and configures a tracing [Span] for annotation-based tracing.
+ */
+@PublishedApi
+internal fun createSpan(
     traceAnnotation: Trace,
     method: Method,
     args: Array<Any?>,
@@ -131,7 +98,7 @@ fun createSpan(
 
     /**
      * Resolution pipeline:
-     * 1. If [ai.jetbrains.tracy.core.fluent.handlers.SpanMetadataCustomizer.resolveSpanName]
+     * 1. If [ai.jetbrains.tracy.core.fluent.customizers.SpanMetadataCustomizer.resolveSpanName]
      *    returns a non-null value, that name is used.
      * 2. Otherwise, the tracing system checks the annotation name.
      * 3. If blank, the method name is used.
@@ -155,10 +122,44 @@ fun createSpan(
     return span
 }
 
-fun Trace.getSpanMetadataCustomizer() = this.metadataCustomizer.objectInstance
-    ?: error("Handler must be an object singleton")
-
-fun Span.addExceptionAttributes(exception: Throwable) {
-    this.recordException(exception)
-    this.setStatus(StatusCode.ERROR, exception.message ?: "Unknown error")
+/**
+ * Adds formatted output attributes to the given [Span].
+ */
+@PublishedApi
+internal fun addOutputAttributesToTracing(
+    span: Span,
+    traceAnnotation: Trace,
+    result: Any?
+) {
+    span.setAttribute(
+        FluentSpanAttributes.SPAN_OUTPUTS.key, traceAnnotation.getSpanMetadataCustomizer().formatOutputAttribute(result)
+    )
 }
+
+/**
+ * Configures input and code metadata on the span builder.
+ * Internal helper used during span creation.
+ */
+internal fun configureTracingMetadata(
+    spanBuilder: SpanBuilder,
+    traceAnnotation: Trace,
+    method: PlatformMethod,
+    args: Array<Any?>,
+) {
+    with(spanBuilder) {
+        setAttribute(
+            FluentSpanAttributes.SPAN_INPUTS.key,
+            traceAnnotation.getSpanMetadataCustomizer().formatInputAttributes(method, args)
+        )
+        setAttribute(
+            FluentSpanAttributes.CODE_FUNCTION_NAME.key, "${method.declaringClass.name}.${method.name}"
+        )
+    }
+}
+
+/**
+ * Returns the metadata customizer instance from this [Trace].
+ */
+internal fun Trace.getSpanMetadataCustomizer() =
+    this.metadataCustomizer.objectInstance ?: error("Handler must be an object singleton")
+

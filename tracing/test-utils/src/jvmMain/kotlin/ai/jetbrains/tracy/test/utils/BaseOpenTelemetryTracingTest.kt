@@ -1,6 +1,7 @@
 package ai.jetbrains.tracy.test.utils
 
-import ai.jetbrains.tracy.core.tracing.TracingManager
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.fluent.FluentSpanAttributes
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.sdk.OpenTelemetrySdk
@@ -58,6 +59,9 @@ abstract class BaseOpenTelemetryTracingTest {
         val called = containsToolCall(response, toolName)
         assumeTrue(called, "`$toolName` tool was not called")
     }
+
+    protected fun SpanData.getAttribute(spanAttributeKey: FluentSpanAttributes): String? =
+        this.attributes[AttributeKey.stringKey(spanAttributeKey.key)]
 }
 
 private fun initOpenTelemetry(): TestTracing {

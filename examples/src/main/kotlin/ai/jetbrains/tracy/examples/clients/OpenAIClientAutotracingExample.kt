@@ -2,8 +2,8 @@ package ai.jetbrains.tracy.examples.clients
 
 import ai.jetbrains.tracy.openai.clients.instrument
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
-import ai.jetbrains.tracy.core.tracing.TracingManager
-import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.ChatModel
