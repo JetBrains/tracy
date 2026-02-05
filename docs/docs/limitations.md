@@ -15,8 +15,8 @@ Using `runBlocking` inside a suspend function creates a new execution boundary. 
 **Workaround**: Use [`currentSpanContextElement`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent.processor/current-span-context-element.html) to propagate context:
 
 <!--- INCLUDE
+import ai.jetbrains.tracy.core.currentSpanContextElement
 import ai.jetbrains.tracy.core.fluent.Trace
-import ai.jetbrains.tracy.core.fluent.processor.currentSpanContextElement
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.runBlocking
 
@@ -44,7 +44,7 @@ Threads created via `thread { ... }` do not inherit the OpenTelemetry context.
 **Workaround**: Capture and propagate the context manually:
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.fluent.processor.currentSpanContext
+import ai.jetbrains.tracy.core.currentSpanContext
 import kotlinx.coroutines.currentCoroutineContext
 import kotlin.concurrent.thread
 

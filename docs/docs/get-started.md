@@ -170,8 +170,8 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
 Here's a minimal example to verify your setup:
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.tracing.TracingManager
-import ai.jetbrains.tracy.core.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
 import ai.jetbrains.tracy.core.fluent.Trace
 -->

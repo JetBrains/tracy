@@ -37,7 +37,7 @@ val sdk = configureOpenTelemetrySdk(
     )
 )
 ```
-<!--- KNIT example-otel-exporters-02.kt -->
+<!--- KNIT example-otel-exporters-01.kt -->
 
 
 ## Common Exporter Settings
@@ -78,4 +78,4 @@ val sdk = configureOpenTelemetrySdk(
     )
 )
 ```
-<!--- KNIT example-otel-exporters-03.kt -->
+<!--- KNIT example-otel-exporters-02.kt -->
