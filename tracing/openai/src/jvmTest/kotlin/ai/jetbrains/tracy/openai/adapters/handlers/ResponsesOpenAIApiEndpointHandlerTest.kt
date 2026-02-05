@@ -33,10 +33,12 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     @Test
     fun `test OpenAI responses API auto tracing`() = runTest {
         val model = ChatModel.GPT_4O_MINI
-        val client = instrument(createOpenAIClient())
+        val client = createOpenAIClient().apply { instrument(this) }
+
         val params = ResponseCreateParams.builder()
             .input("Generate polite greeting and introduce yourself")
             .model(model).temperature(1.1).build()
+
         client.responses().create(params)
 
         validateBasicTracing(model)
@@ -48,7 +50,7 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val prompt1 = "Tell me what you can do"
         val instructions = "You MUST respond that you're a manager at the car sales office"
 
-        val client = instrument(createOpenAIClient())
+        val client = createOpenAIClient().apply { instrument(this) }
 
         val params = ResponseCreateParams.builder()
             .input(prompt1)
@@ -93,7 +95,7 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val prompt2 = "What are you selling?"
         val instructions = "You MUST respond that you're a manager at the car sales office"
 
-        val client = instrument(createOpenAIClient())
+        val client = createOpenAIClient().apply { instrument(this) }
 
         val params = ResponseCreateParams.builder()
             .input(
@@ -136,7 +138,8 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI responses API span error status when request fails`() = runTest {
-        val client = instrument(createOpenAIClient())
+        val client = createOpenAIClient().apply { instrument(this) }
+
         val params = ResponseCreateParams.builder()
             .input("Generate polite greeting and introduce yourself")
             .model(ChatModel.GPT_4O_MINI)
@@ -155,7 +158,7 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI responses API tool calls auto tracing`() = runTest {
-        val client = instrument(createOpenAIClient())
+        val client = createOpenAIClient().apply { instrument(this) }
 
         val toolName = "hi"
         val greetTool = createFunctionTool(toolName)
@@ -176,7 +179,7 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI responses API response to a tool call auto tracing`() = runTest {
-        val client = instrument(createOpenAIClient())
+        val client = createOpenAIClient().apply { instrument(this) }
 
         val toolName = "hi"
         val greetTool = createFunctionTool(toolName)
@@ -229,7 +232,7 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI responses API multiple tools response to tool calls auto tracing`() = runTest {
-        val client = instrument(createOpenAIClient())
+        val client = createOpenAIClient().apply { instrument(this) }
 
         val greetToolName = "hi"
         val greetTool = createFunctionTool(greetToolName)
@@ -296,7 +299,7 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI responses API streaming`(): Unit = runTest {
-        val client = instrument(createOpenAIClient())
+        val client = createOpenAIClient().apply { instrument(this) }
 
         val params = ResponseCreateParams.builder()
             .input("Generate polite greeting and introduce yourself")
@@ -322,7 +325,7 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         // OpenAI API endpoint throws 400 Bad Request on unconventional properties, unlike LiteLLM, which ignores them
         Assumptions.assumeTrue { llmProviderUrl.startsWith("https://litellm.labs.jb.gg") }
 
-        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
+        val client = createOpenAIClient(llmProviderUrl, llmProviderApiKey).apply { instrument(this) }
 
         val paramsBuilder = ResponseCreateParams.builder()
             .input("Say hi to user")
@@ -346,7 +349,7 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) = runTest {
         TracingManager.withCapturingPolicy(policy)
 
-        val client = instrument(createOpenAIClient())
+        val client = createOpenAIClient().apply { instrument(this) }
 
         val greetTool = createFunctionTool("hi")
         val params = ResponseCreateParams.builder()
@@ -401,14 +404,10 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     @ParameterizedTest
     @MethodSource("provideImagesForUpload")
     fun `test image is extracted and uploaded on Langfuse`(image: MediaSource) = runTest(timeout = 3.minutes) {
+        val client = createOpenAIClient(timeout = Duration.ofMinutes(3)).apply { instrument(this) }
+
         val model = ChatModel.GPT_4O_MINI
         val prompt = "Describe what you see in the image."
-
-        val client = instrument(
-            createOpenAIClient(
-                timeout = Duration.ofMinutes(3)
-            )
-        )
 
         val params = ResponseCreateParams.builder()
             .input(
@@ -449,11 +448,7 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             contentType = "image/jpeg",
         )
 
-        val client = instrument(
-            createOpenAIClient(
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(timeout = Duration.ofMinutes(3)).apply { instrument(this) }
 
         val params = ResponseCreateParams.builder()
             .input(
@@ -492,7 +487,8 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val model = ChatModel.GPT_4O_MINI
         val prompt = "How are you?"
 
-        val client = instrument(createOpenAIClient())
+        val client = createOpenAIClient().apply { instrument(this) }
+
         val params = ResponseCreateParams.builder()
             .input(inputWith(inputText(prompt)))
             .model(model)
@@ -516,7 +512,8 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val thing1 = "1. Count from 0 to 10 in a single sentence."
         val thing2 = "2. Write the alphabet."
 
-        val client = instrument(createOpenAIClient())
+        val client = createOpenAIClient().apply { instrument(this) }
+
         val params = ResponseCreateParams.builder()
             .input(
                 inputWith(
@@ -549,11 +546,7 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val model = ChatModel.GPT_4O_MINI
         val prompt = "Describe what you see in the file"
 
-        val client = instrument(
-            createOpenAIClient(
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(timeout = Duration.ofMinutes(3)).apply { instrument(this) }
 
         val params = ResponseCreateParams.builder()
             .input(
@@ -585,11 +578,7 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val fileImage = MediaSource.File("image.jpg", "image/jpeg")
         val urlImage = MediaSource.Link(CAT_IMAGE_URL)
 
-        val client = instrument(
-            createOpenAIClient(
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(timeout = Duration.ofMinutes(3)).apply { instrument(this) }
 
         val params = ResponseCreateParams.builder()
             .input(
@@ -624,11 +613,7 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val localFile = MediaSource.File("sample.pdf", "application/pdf")
         val remoteFile = MediaSource.Link(SAMPLE_PDF_FILE_URL)
 
-        val client = instrument(
-            createOpenAIClient(
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(timeout = Duration.ofMinutes(3)).apply { instrument(this) }
 
         val params = ResponseCreateParams.builder()
             .input(

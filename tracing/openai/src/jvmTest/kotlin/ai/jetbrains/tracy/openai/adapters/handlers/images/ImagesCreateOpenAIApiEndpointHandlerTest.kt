@@ -35,12 +35,10 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     ) = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
-        val client = instrument(
-            createOpenAIClient(
-                url = patchedProviderUrl,
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ).apply { instrument(this) }
 
         val prompt = "generate an image of dog and cat sitting next to each other"
         val model = ImageModel.DALL_E_2
@@ -95,12 +93,10 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test generation of a single JPEG image gets traced`() = runTest(timeout = 3.minutes) {
-        val client = instrument(
-            createOpenAIClient(
-                url = patchedProviderUrl,
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ).apply { instrument(this) }
 
         val prompt = "generate an image of a cute cat"
         val model = ImageModel.GPT_IMAGE_1
@@ -147,12 +143,10 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     fun `test generation of multiple images gets traced`() = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
-        val client = instrument(
-            createOpenAIClient(
-                url = patchedProviderUrl,
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ).apply { instrument(this) }
 
         val prompt = "generate an image of a cute cat"
         val model = ImageModel.DALL_E_2
@@ -192,12 +186,10 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     fun `test invalid param 'n=0' gets traced as an error`() = runTest {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
-        val client = instrument(
-            createOpenAIClient(
-                url = patchedProviderUrl,
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ).apply { instrument(this) }
 
         val prompt = "generate an image of a cute cat"
         val model = ImageModel.DALL_E_2
@@ -227,12 +219,10 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test image generation with streaming API`() = runTest(timeout = 3.minutes) {
-        val client = instrument(
-            createOpenAIClient(
-                url = patchedProviderUrl,
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ).apply { instrument(this) }
 
         val prompt = "generate an image where a knife cuts a glass watermelon"
         val model = ImageModel.GPT_IMAGE_1
@@ -300,12 +290,10 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) = runTest(timeout = 3.minutes) {
         TracingManager.withCapturingPolicy(policy)
 
-        val client = instrument(
-            createOpenAIClient(
-                url = patchedProviderUrl,
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ).apply { instrument(this) }
 
         val promptMessage = "generate an image of a cat"
         val model = ImageModel.DALL_E_2

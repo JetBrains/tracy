@@ -37,8 +37,8 @@ import kotlin.time.Duration.Companion.minutes
 class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     @Test
     fun `test OpenAI chat completions auto tracing`() = runTest {
+        val client = createOpenAIClient().apply { instrument(this) }
         val model = ChatModel.GPT_4O_MINI
-        val client = instrument(createOpenAIClient())
 
         val params = ChatCompletionCreateParams.builder()
             .addUserMessage("Generate polite greeting and introduce yourself")
@@ -50,13 +50,11 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test nested instrumentation calls don't cause duplicative tracing`() = runTest {
-        val client = instrument(
-            instrument(
-                instrument(
-                    createOpenAIClient(llmProviderUrl, llmProviderApiKey)
-                )
-            )
-        )
+        val client = createOpenAIClient(llmProviderUrl, llmProviderApiKey)
+            .apply { instrument(this) }
+            .apply { instrument(this) }
+            .apply { instrument(this) }
+
         val model = ChatModel.GPT_4O_MINI
 
         val params = ChatCompletionCreateParams.builder()
@@ -71,7 +69,8 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI chat completions span error status when request fails`() = runTest {
-        val client = instrument(createOpenAIClient())
+        val client = createOpenAIClient().apply { instrument(this) }
+
         val params = ChatCompletionCreateParams.builder()
             .addUserMessage("Generate polite greeting and introduce yourself")
             .model(ChatModel.GPT_4O_MINI)
@@ -93,7 +92,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) = runTest {
         TracingManager.withCapturingPolicy(policy)
 
-        val client = instrument(createOpenAIClient())
+        val client = createOpenAIClient().apply { instrument(this) }
 
         val greetTool = createChatCompletionTool("hi")
         val model = ChatModel.GPT_4O_MINI
@@ -149,7 +148,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI chat completions tool calls auto tracing`() = runTest {
-        val client = instrument(createOpenAIClient())
+        val client = createOpenAIClient().apply { instrument(this) }
 
         val toolName = "hi"
         val greetTool = createChatCompletionTool(toolName)
@@ -170,7 +169,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI chat completions response to a tool call auto tracing`() = runTest {
-        val client = instrument(createOpenAIClient())
+        val client = createOpenAIClient().apply { instrument(this) }
 
         val toolName = "hi"
         val greetTool = createChatCompletionTool(toolName)
@@ -210,7 +209,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI chat completions multiple tools response to tool calls auto tracing`() = runTest {
-        val client = instrument(createOpenAIClient())
+        val client = createOpenAIClient().apply { instrument(this) }
 
         val greetToolName = "hi"
         val greetTool = createChatCompletionTool(greetToolName)
@@ -250,6 +249,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     @Test
     fun `test OpenAI auto tracing when instrumentation is off`() = runTest {
         val client = createOpenAIClient()
+
         val params = ChatCompletionCreateParams.builder()
             .addUserMessage("Generate polite greeting and introduce yourself")
             .model(ChatModel.GPT_4O_MINI).temperature(1.1).build()
@@ -266,7 +266,8 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI chat completions streaming`(): Unit = runTest {
-        val client = instrument(createOpenAIClient())
+        val client = createOpenAIClient().apply { instrument(this) }
+
         val params = ChatCompletionCreateParams.builder()
             .addUserMessage("Generate polite greeting and introduce yourself")
             .model(ChatModel.GPT_4O_MINI)
@@ -294,7 +295,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         // OpenAI API endpoint throws 400 Bad Request on unconventional properties, unlike LiteLLM, which ignores them
         Assumptions.assumeTrue { llmProviderUrl.startsWith("https://litellm.labs.jb.gg") }
 
-        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
+        val client = createOpenAIClient(llmProviderUrl, llmProviderApiKey).apply { instrument(this) }
 
         val paramsBuilder = ChatCompletionCreateParams.builder()
             .model(ChatModel.O1)
@@ -315,7 +316,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     @Test
     fun `test OpenAI embeddings`() = runTest {
         // handler defaults to chat/completions, but the specific embedding parameters are still propagated to the span
-        val client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
+        val client = createOpenAIClient(llmProviderUrl, llmProviderApiKey).apply { instrument(this) }
 
         val params = EmbeddingCreateParams.builder()
             .model(EmbeddingModel.TEXT_EMBEDDING_3_SMALL)
@@ -344,11 +345,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val model = ChatModel.GPT_4O
         val prompt = "Please describe what you see in this image."
 
-        val client = instrument(
-            createOpenAIClient(
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(timeout = Duration.ofMinutes(3)).apply { instrument(this) }
 
         val params = ChatCompletionCreateParams.builder()
             .model(model)
@@ -379,11 +376,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val prompt = "Tell me what is in the audio file"
         val filepath = "lofi.wav"
 
-        val client = instrument(
-            createOpenAIClient(
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(timeout = Duration.ofMinutes(3)).apply { instrument(this) }
 
         val params = ChatCompletionCreateParams.builder()
             .model(model)
@@ -417,12 +410,10 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             contentType = "application/pdf",
         )
 
-        val client = instrument(
-            createOpenAIClient(
-                url = patchedProviderUrl,
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ).apply { instrument(this) }
 
         val params = ChatCompletionCreateParams.builder()
             .model(model)
@@ -450,12 +441,10 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val model = ChatModel.GPT_4O
         val prompt = "Please describe what you see in both images."
 
-        val client = instrument(
-            createOpenAIClient(
-                url = patchedProviderUrl,
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ).apply { instrument(this) }
 
         val images = listOf(
             MediaSource.File(filepath = "image.jpg", contentType = "image/jpeg"),
@@ -484,7 +473,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         TracingManager.isTracingEnabled = false
 
         val model = ChatModel.GPT_4O_MINI
-        val client = instrument(createOpenAIClient())
+        val client = createOpenAIClient().apply { instrument(this) }
 
         val params = ChatCompletionCreateParams.builder()
             .addUserMessage("Generate polite greeting and introduce yourself")
@@ -501,12 +490,10 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val model = ChatModel.GPT_4O
         val prompt = "Please describe every media item attached"
 
-        val client = instrument(
-            createOpenAIClient(
-                url = patchedProviderUrl,
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ).apply { instrument(this) }
 
         val image = MediaSource.File("image.jpg", "image/jpeg")
         val file = MediaSource.File("sample.pdf", "application/pdf")
@@ -537,11 +524,9 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test single instrumented client is used for multiple endpoints`() = runTest(timeout = 3.minutes) {
-        val client = instrument(
-            createOpenAIClient(
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(
+            timeout = Duration.ofMinutes(3)
+        ).apply { instrument(this) }
 
         // I. chat completions
         val model1 = ChatModel.GPT_4O
@@ -622,8 +607,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     private fun partAudio(filepath: String): ChatCompletionContentPart {
         val audioData = loadFileAsBase64Encoded(filepath)
-        val ext = filepath.substringAfterLast(".")
-        val format = when (ext) {
+        val format = when (val ext = filepath.substringAfterLast(".")) {
             "wav" -> ChatCompletionContentPartInputAudio.InputAudio.Format.WAV
             "mp3" -> ChatCompletionContentPartInputAudio.InputAudio.Format.MP3
             else -> error("Unsupported file format $ext at $filepath")

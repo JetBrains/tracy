@@ -38,12 +38,10 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     fun `test tracing when editing a single image`() = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
-        val client = instrument(
-            createOpenAIClient(
-                url = patchedProviderUrl,
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ).apply { instrument(this) }
 
         val model = ImageModel.DALL_E_2
         val prompt = "Remove cat from the image"
@@ -84,12 +82,10 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     fun `test tracing when editing an image with a mask`() = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
-        val client = instrument(
-            createOpenAIClient(
-                url = patchedProviderUrl,
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ).apply { instrument(this) }
 
         val prompt = "Fill the mask area with beach deckchairs"
         val model = ImageModel.DALL_E_2
@@ -148,12 +144,10 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test tracing when editing an image with JPEG returned`() = runTest(timeout = 3.minutes) {
-        val client = instrument(
-            createOpenAIClient(
-                url = patchedProviderUrl,
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ).apply { instrument(this) }
 
         val model = ImageModel.GPT_IMAGE_1
         val prompt = "Add a 2nd cat to the image"
@@ -195,12 +189,10 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     fun `test tracing when editing two images`() = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
-        val client = instrument(
-            createOpenAIClient(
-                url = patchedProviderUrl,
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ).apply { instrument(this) }
 
         val model = ImageModel.GPT_IMAGE_1
         val prompt = "Merge two images. I want to see 2 cats and 2 dogs!"
@@ -247,12 +239,10 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     fun `test tracing when editing two images with streaming API`() = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
-        val client = instrument(
-            createOpenAIClient(
-                url = patchedProviderUrl,
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ).apply { instrument(this) }
 
         val model = ImageModel.GPT_IMAGE_1
         val prompt = "Merge two images!"
@@ -345,12 +335,10 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) = runTest(timeout = 3.minutes) {
         TracingManager.withCapturingPolicy(policy)
 
-        val client = instrument(
-            createOpenAIClient(
-                url = patchedProviderUrl,
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createOpenAIClient(
+            url = patchedProviderUrl,
+            timeout = Duration.ofMinutes(3)
+        ).apply { instrument(this) }
 
         val model = ImageModel.GPT_IMAGE_1
         val promptMessage = "Add a 2nd cat to the image"

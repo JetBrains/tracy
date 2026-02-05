@@ -39,7 +39,7 @@ class OpenAIClientTest : BaseOpenTelemetryTracingTest() {
 
     @BeforeAll
     fun createClient() {
-        client = instrument(createOpenAIClient(llmProviderUrl, llmProviderApiKey))
+        client = createOpenAIClient(llmProviderUrl, llmProviderApiKey).apply { instrument(this) }
     }
 
     @AfterAll

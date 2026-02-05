@@ -21,8 +21,9 @@ import com.openai.client.OpenAIClient
  *
  * @see OpenAILLMTracingAdapter
  */
-fun instrument(client: OpenAIClient): OpenAIClient {
-    return patchOpenAICompatibleClient(
+fun instrument(client: OpenAIClient) {
+    // adds an interceptor into the client in-place
+    patchOpenAICompatibleClient(
         client = client,
         interceptor = OpenTelemetryOkHttpInterceptor(adapter = OpenAILLMTracingAdapter())
     )
