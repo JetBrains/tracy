@@ -22,7 +22,7 @@
 
 <div class="grid cards" markdown>
 
--   :material-code-tags:{ .lg .middle } [**Tracing API**](./tracing)
+-   :material-code-tags:{ .lg .middle } [**Tracing API**](./tracing/index.md)
 
     ---
 
@@ -34,7 +34,7 @@
 
     Configure backends like Langfuse, Jaeger, and more
 
--   :material-robot:{ .lg .middle } [**LLM Tracing API**](#)
+-   :material-robot:{ .lg .middle } [**LLM Tracing API**](./tracing/autotracing.md)
 
     ---
 
