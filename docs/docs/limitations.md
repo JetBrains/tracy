@@ -72,7 +72,7 @@ The `@Trace` annotation should not be used on local (nested) functions:
 ```kotlin
 fun outer() {
     @Trace  // Not supported
-    fun inner() { ... }
+    fun inner() { /* ... */ }
 }
 ```
 
