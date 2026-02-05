@@ -35,8 +35,9 @@ fun main() {
 
     val apiToken = System.getenv("GEMINI_API_KEY") ?: error("Environment variable 'GEMINI_API_KEY' is not set")
     val geminiClient = Client.builder().apiKey(apiToken).build()
-    val instrumentedClient = instrument(geminiClient)
-    val result = instrumentedClient.models.generateContent(
+    instrument(geminiClient)
+    // now, `geminiClient` is patched with instrumentation
+    val result = geminiClient.models.generateContent(
         "gemini-2.5-flash",
         "Generate polite greeting and introduce yourself",
         GenerateContentConfig.builder().temperature(0.0f).build()

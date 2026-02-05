@@ -50,7 +50,7 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
     fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) = runTest {
         TracingManager.withCapturingPolicy(policy)
 
-        val client = instrument(createGeminiClient())
+        val client = createGeminiClient().apply { instrument(this) }
 
         val toolName = "hi"
         val greetTool = createTool(toolName)
@@ -115,7 +115,7 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
     fun `test capture policy hides sensitive data for attachments`(policy: ContentCapturePolicy) = runTest {
         TracingManager.withCapturingPolicy(policy)
 
-        val client = instrument(createGeminiClient())
+        val client = createGeminiClient().apply { instrument(this) }
 
         val model = "gemini-2.5-flash"
         val multiPartUserMessage = Content.builder()
@@ -155,7 +155,10 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
 
     @Test
     fun `test nested instrumentation calls don't cause duplicative tracing`() = runTest {
-        val client = instrument(instrument(instrument(createGeminiClient())))
+        val client = createGeminiClient()
+            .apply { instrument(this) }
+            .apply { instrument(this) }
+            .apply { instrument(this) }
 
         val model = "gemini-2.5-flash"
         client.models.generateContent(
@@ -172,11 +175,9 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
 
     @Test
     fun `test Gemini tool calling auto logging`() = runTest(timeout = 3.minutes) {
-        val client = instrument(
-            createGeminiClient(
-                timeout = Duration.ofMinutes(3)
-            )
-        )
+        val client = createGeminiClient(
+            timeout = Duration.ofMinutes(3)
+        ).apply { instrument(this) }
 
         val toolName = "hi"
         val greetTool = createTool(toolName)
@@ -212,7 +213,7 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
 
     @Test
     fun `test Gemini tool calling with tool call result`() = runTest {
-        val client = instrument(createGeminiClient())
+        val client = createGeminiClient().apply { instrument(this) }
 
         val toolName = "hi"
         val greetTool = createTool(toolName)
@@ -294,7 +295,7 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
 
     @Test
     fun `test Gemini multiple tools response to tool calls auto tracing`() = runTest {
-        val client = instrument(createGeminiClient())
+        val client = createGeminiClient().apply { instrument(this) }
 
         val greetToolName = "hi"
         val goodbyeToolName = "goodbye"
@@ -367,7 +368,7 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
 
     @Test
     fun `test Gemini auto tracing`() = runTest {
-        val client = instrument(createGeminiClient())
+        val client = createGeminiClient().apply { instrument(this) }
 
         val model = "gemini-2.5-flash"
 
@@ -399,7 +400,7 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
 
     @Test
     fun `test Gemini span error code when timeout occurs`() {
-        val client = instrument(createGeminiClient())
+        val client = createGeminiClient().apply { instrument(this) }
 
         val timeoutInterceptor = object : Interceptor {
             override fun intercept(chain: Interceptor.Chain): Response {
@@ -441,7 +442,7 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
 
     @Test
     fun `test Gemini span error code when requesting non-existent model`() {
-        val client = instrument(createGeminiClient())
+        val client = createGeminiClient().apply { instrument(this) }
 
         try {
             client.models.generateContent(
@@ -471,8 +472,8 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
 
     @Test
     fun `test Gemini additional attributes`() = runTest {
+        val client = createGeminiClient().apply { instrument(this) }
         val model = "gemini-2.5-flash"
-        val client = instrument(createGeminiClient())
 
         client.models.generateContent(
             model,

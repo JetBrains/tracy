@@ -24,13 +24,27 @@ import com.google.genai.Client as GeminiClient
  *
  * @see GeminiLLMTracingAdapter
  */
-fun instrument(client: GeminiClient): GeminiClient {
-    return patchClient(
+fun instrument(client: GeminiClient) {
+    patchClient(
         client,
         interceptor = OpenTelemetryOkHttpInterceptor(adapter = GeminiLLMTracingAdapter())
     )
 }
 
+
+/**
+ * Updates the provided Gemini client by injecting a specified interceptor into its HTTP client **in-place**.
+ *
+ * This method modifies the client's HTTP client interceptors to include the given interceptor
+ * if **not already present**. If the instrumentation is not supported due to an incompatible Gemini client version,
+ * an exception is thrown.
+ *
+ * @param client The GeminiClient instance whose HTTP client is to be patched.
+ * @param interceptor The Interceptor to be added to the HTTP client's interceptors.
+ * @return The updated GeminiClient instance with the patched HTTP client.
+ * @throws IllegalStateException If the Gemini client version is unsupported, or an error occurs
+ * while attempting to modify the HTTP client interceptors.
+ */
 private fun patchClient(client: GeminiClient, interceptor: Interceptor): GeminiClient {
     val apiClientField = GeminiClient::class.java.getDeclaredField("apiClient")
         .apply { isAccessible = true }
