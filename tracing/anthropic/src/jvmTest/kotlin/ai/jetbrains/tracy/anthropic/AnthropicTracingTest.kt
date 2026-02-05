@@ -39,7 +39,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
     fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) {
         TracingManager.withCapturingPolicy(policy)
 
-        val client = instrument(createAnthropicClient())
+        val client = createAnthropicClient().apply { instrument(this) }
         val model = Model.CLAUDE_3_5_HAIKU_LATEST
 
         val params = MessageCreateParams.builder()
@@ -101,7 +101,10 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
 
     @Test
     fun `test nested instrumentation calls don't cause duplicative tracing`() {
-        val client = instrument(instrument(instrument(createAnthropicClient())))
+        val client = createAnthropicClient()
+            .apply { instrument(this) }
+            .apply { instrument(this) }
+            .apply { instrument(this) }
 
         val params = MessageCreateParams.builder()
             .addUserMessage("Say hi!")
@@ -118,7 +121,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
 
     @Test
     fun `test Anthropic tool auto tracing`() {
-        val client = instrument(createAnthropicClient())
+        val client = createAnthropicClient().apply { instrument(this) }
 
         val toolName = "hi"
         val model = Model.CLAUDE_3_5_HAIKU_LATEST
@@ -163,7 +166,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
 
     @Test
     fun `test Anthropic tool auto tracing with a response to a tool call`() {
-        val client = instrument(createAnthropicClient())
+        val client = createAnthropicClient().apply { instrument(this) }
 
         val toolName = "hi"
         val greetTool = createTool(toolName)
@@ -246,7 +249,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
 
     @Test
     fun `test Anthropic multiple tools response to tool calls auto tracing`() {
-        val client = instrument(createAnthropicClient())
+        val client = createAnthropicClient().apply { instrument(this) }
 
         val greetToolName = "hi"
         val greetTool = createTool(greetToolName)
@@ -327,7 +330,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
 
     @Test
     fun `test Anthropic auto tracing`() = runTest {
-        val client = instrument(createAnthropicClient())
+        val client = createAnthropicClient().apply { instrument(this) }
 
         val model = Model.CLAUDE_3_5_HAIKU_LATEST
 
@@ -362,7 +365,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
 
     @Test
     fun `test Anthropic span error status when requesting non-existent model`() = runTest {
-        val client = instrument(createAnthropicClient())
+        val client = createAnthropicClient().apply { instrument(this) }
 
         val params = MessageCreateParams.builder()
             .maxTokens(1000L)
@@ -392,7 +395,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
 
     @Test
     fun `test Anthropic span error status when mocking 529 response code`() = runTest {
-        val client = instrument(createAnthropicClient())
+        val client = createAnthropicClient().apply { instrument(this) }
 
         val errorMessage = "Server is overloaded, please try again later."
 
@@ -449,7 +452,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
 
     @Test
     fun `test Anthropic additional attributes`() = runTest {
-        val client = instrument(createAnthropicClient())
+        val client = createAnthropicClient().apply { instrument(this) }
 
         val model = Model.CLAUDE_3_5_HAIKU_LATEST
         val paramsBuilder = MessageCreateParams.builder()
