@@ -34,14 +34,19 @@ fun main() {
     TracingManager.traceSensitiveContent()
 
     val apiToken = System.getenv("GEMINI_API_KEY") ?: error("Environment variable 'GEMINI_API_KEY' is not set")
-    val geminiClient = Client.builder().apiKey(apiToken).build()
-    instrument(geminiClient)
+
+    val instrumentedClient = Client.builder()
+        .apiKey(apiToken)
+        .build()
+        .apply { instrument(this) }
+
     // now, `geminiClient` is patched with instrumentation
-    val result = geminiClient.models.generateContent(
+    val result = instrumentedClient.models.generateContent(
         "gemini-2.5-flash",
         "Generate polite greeting and introduce yourself",
         GenerateContentConfig.builder().temperature(0.0f).build()
     )
+
     println("Result: $result\nSee trace details in the console.")
     // Manual flush - alternatively, configure automatic flushing via ExporterCommonSettings
     TracingManager.flushTraces()

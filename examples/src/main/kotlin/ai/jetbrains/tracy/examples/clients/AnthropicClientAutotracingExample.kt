@@ -37,7 +37,9 @@ fun main() {
 
     val apiToken = System.getenv("ANTHROPIC_API_KEY") ?: error("Environment variable 'ANTHROPIC_API_KEY' is not set")
 
-    val anthropicClient = AnthropicOkHttpClient.builder().apiKey(apiToken).build()
+    val instrumentedClient = AnthropicOkHttpClient.builder()
+        .apiKey(apiToken)
+        .build()
         .apply { instrument(this) }
 
     val params = MessageCreateParams.builder()
@@ -47,7 +49,7 @@ fun main() {
         .model(Model.CLAUDE_OPUS_4_0)
         .build()
 
-    val result = anthropicClient.messages().create(params).content().first().text().get().text()
+    val result = instrumentedClient.messages().create(params).content().first().text().get().text()
 
     println("Result: $result\nSee trace details in the console.")
     // Manual flush - alternatively, configure automatic flushing via ExporterCommonSettings

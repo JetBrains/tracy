@@ -54,7 +54,9 @@ suspend fun main() {
             json(Json { prettyPrint = true })
         }
     }
+
     val instrumentedClient = instrument(client, OpenAILLMTracingAdapter())
+
     val requestBody = buildJsonObject {
         put("model", JsonPrimitive("gpt-4o-mini"))
         put("messages", buildJsonArray {
@@ -65,11 +67,13 @@ suspend fun main() {
         })
         put("temperature", JsonPrimitive(1.0))
     }
+
     val response = instrumentedClient.post("https://api.openai.com/v1/chat/completions") {
         header(HttpHeaders.Authorization, "Bearer $apiToken")
         contentType(ContentType.Application.Json)
         setBody(requestBody)
     }
+
     println("Result: ${response.bodyAsText()}\nSee trace details in the console.")
     // Manual flush - alternatively, configure automatic flushing via ExporterCommonSettings
     TracingManager.flushTraces()

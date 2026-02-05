@@ -36,10 +36,18 @@ fun main() {
     TracingManager.traceSensitiveContent()
 
     val apiToken = System.getenv("OPENAI_API_KEY") ?: error("Environment variable 'OPENAI_API_KEY' is not set")
-    val client = OpenAIOkHttpClient.builder().apiKey(apiToken).build()
-    val instrumentedClient = instrument(client)
-    val request = ChatCompletionCreateParams.builder().addUserMessage("Generate polite greeting and introduce yourself")
-        .model(ChatModel.GPT_4O_MINI).temperature(0.0).build()
+
+    val instrumentedClient = OpenAIOkHttpClient.builder()
+        .apiKey(apiToken)
+        .build()
+        .apply { instrument(this) }
+
+    val request = ChatCompletionCreateParams.builder()
+        .addUserMessage("Generate polite greeting and introduce yourself")
+        .model(ChatModel.GPT_4O_MINI)
+        .temperature(0.0)
+        .build()
+
     val response = instrumentedClient.chat().completions().create(request)
     val content = response.choices().first().message().content().get()
     println("Result: $content\nSee trace details in the console.")
