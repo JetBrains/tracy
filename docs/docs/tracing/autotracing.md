@@ -23,8 +23,10 @@ import com.openai.client.okhttp.OpenAIOkHttpClient
 -->
 
 ```kotlin
-val client = OpenAIOkHttpClient.builder().apiKey("api-token").build()
-val instrumentedClient = instrument(client)
+val instrumentedClient = OpenAIOkHttpClient.builder()
+    .apiKey("api-token")
+    .build()
+    .apply { instrument(this) }
 ```
 
 <!--- KNIT example-autotracing-01.kt -->
@@ -44,8 +46,10 @@ import com.anthropic.client.okhttp.AnthropicOkHttpClient
 -->
 
 ```kotlin
-val anthropicClient = AnthropicOkHttpClient.builder().apiKey("api-token").build()
-val instrumentedClient = instrument(anthropicClient)
+val instrumentedClient = AnthropicOkHttpClient.builder()
+    .apiKey("api-token")
+    .build()
+   .apply { instrument(this) }
 ```
 
 <!--- KNIT example-autotracing-02.kt -->
@@ -65,8 +69,10 @@ import com.google.genai.Client
 -->
 
 ```kotlin
-val geminiClient = Client.builder().apiKey("api-token").build()
-val instrumentedClient = instrument(geminiClient)
+val instrumentedClient = Client.builder()
+    .apiKey("api-token")
+    .build()
+   .also { instrument(this) }
 ```
 
 <!--- KNIT example-autotracing-03.kt -->

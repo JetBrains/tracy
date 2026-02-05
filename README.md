@@ -290,14 +290,12 @@ TracingManager.setSdk(sdk)
 TracingManager.traceSensitiveContent()
 
 // Create an OpenAI client and instrument it with tracing capabilities
-val myOpenAIClient = OpenAIOkHttpClient.builder()
+val instrumentedClient: OpenAIClient = OpenAIOkHttpClient.builder()
     .baseUrl(url)
     .apiKey(apiKey)
     .timeout(timeout)
     .build()
-
-val instrumentedClient: OpenAIClient = instrument(myOpenAIClient)
-
+    .apply { instrument(this) }
 
 // Make request and receive response
 val request = ChatCompletionCreateParams.builder()

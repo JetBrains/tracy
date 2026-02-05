@@ -234,7 +234,11 @@ Simply wrap your client with [`instrument()`]({{ api_docs_url
 }}/tracing/openai/ai.jetbrains.tracy.openai.clients/instrument.html):
 
 ```kotlin
-val instrumentedClient = instrument(myOpenAIClient)
+// create an OpenAI client instance and instrument it
+val instrumentedClient: OpenAIClient = OpenAIOkHttpClient.builder()
+    .apiKey(apiKey)
+    .build()
+    .apply { instrument(this) }
 ```
 
 [:octicons-arrow-right-24: Learn more about LLM auto-tracing](tracing/autotracing.md)
