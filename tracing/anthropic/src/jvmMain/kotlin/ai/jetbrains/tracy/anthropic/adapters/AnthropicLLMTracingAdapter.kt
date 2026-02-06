@@ -1,10 +1,8 @@
 package ai.jetbrains.tracy.anthropic.adapters
 
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
-import ai.jetbrains.tracy.core.adapters.media.MediaContent
-import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractor
-import ai.jetbrains.tracy.core.adapters.media.MediaContentPart
-import ai.jetbrains.tracy.core.adapters.media.Resource
+import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter.Companion.PayloadType
+import ai.jetbrains.tracy.core.adapters.media.*
 import ai.jetbrains.tracy.core.http.protocol.Request
 import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.Url
@@ -13,13 +11,11 @@ import ai.jetbrains.tracy.core.policy.ContentKind
 import ai.jetbrains.tracy.core.policy.contentTracingAllowed
 import ai.jetbrains.tracy.core.policy.orRedactedInput
 import ai.jetbrains.tracy.core.policy.orRedactedOutput
+import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
-import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter.Companion.PayloadType
-import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractorImpl
 import kotlinx.serialization.json.*
 import mu.KotlinLogging
-import io.ktor.http.ContentType
 
 class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.ANTHROPIC) {
     override fun getRequestBodyAttributes(span: Span, request: Request) {
@@ -309,35 +305,33 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
         return resources
     }
 
-    companion object {
-        private val extractor: MediaContentExtractor = MediaContentExtractorImpl()
+    private val extractor: MediaContentExtractor = MediaContentExtractorImpl()
 
-        // https://docs.claude.com/en/api/messages
-        private val mappedRequestAttributes: List<String> = listOf(
-            "temperature",
-            "model",
-            "max_tokens",
-            "metadata",
-            "service_tier",
-            "system",
-            "top_k",
-            "top_p",
-            "messages",
-            "tools"
-        )
+    // https://docs.claude.com/en/api/messages
+    private val mappedRequestAttributes: List<String> = listOf(
+        "temperature",
+        "model",
+        "max_tokens",
+        "metadata",
+        "service_tier",
+        "system",
+        "top_k",
+        "top_p",
+        "messages",
+        "tools"
+    )
 
-        private val mappedResponseAttributes: List<String> = listOf(
-            "id",
-            "type",
-            "role",
-            "model",
-            "content",
-            "stop_reason",
-            "usage"
-        )
+    private val mappedResponseAttributes: List<String> = listOf(
+        "id",
+        "type",
+        "role",
+        "model",
+        "content",
+        "stop_reason",
+        "usage"
+    )
 
-        private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes
+    private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes
 
-        private val logger = KotlinLogging.logger {}
-    }
+    private val logger = KotlinLogging.logger {}
 }

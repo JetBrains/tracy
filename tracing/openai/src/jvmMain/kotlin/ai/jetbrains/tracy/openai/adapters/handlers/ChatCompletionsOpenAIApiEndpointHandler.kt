@@ -3,19 +3,11 @@ package ai.jetbrains.tracy.openai.adapters.handlers
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter.Companion.PayloadType
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
 import ai.jetbrains.tracy.core.adapters.handlers.EndpointApiHandler
-import ai.jetbrains.tracy.core.adapters.media.MediaContent
-import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractor
-import ai.jetbrains.tracy.core.adapters.media.MediaContentPart
-import ai.jetbrains.tracy.core.adapters.media.Resource
-import ai.jetbrains.tracy.core.adapters.media.isValidUrl
+import ai.jetbrains.tracy.core.adapters.media.*
 import ai.jetbrains.tracy.core.http.protocol.Request
 import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.asJson
-import ai.jetbrains.tracy.core.policy.ContentKind
-import ai.jetbrains.tracy.core.policy.contentTracingAllowed
-import ai.jetbrains.tracy.core.policy.orRedacted
-import ai.jetbrains.tracy.core.policy.orRedactedInput
-import ai.jetbrains.tracy.core.policy.orRedactedOutput
+import ai.jetbrains.tracy.core.policy.*
 import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
@@ -30,28 +22,6 @@ import mu.KotlinLogging
 internal class ChatCompletionsOpenAIApiEndpointHandler(
     private val extractor: MediaContentExtractor
 ) : EndpointApiHandler {
-
-    companion object {
-        // https://platform.openai.com/docs/api-reference/chat/create
-        private val mappedRequestAttributes: List<String> = listOf(
-            "messages",
-            "model",
-            "tools",
-            "choices",
-            "temperature"
-        )
-
-        // https://platform.openai.com/docs/api-reference/chat/object
-        private val mappedResponseAttributes: List<String> = listOf(
-            "choices",
-            "usage"
-        )
-
-        private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes
-
-        private val logger = KotlinLogging.logger {}
-    }
-
     override fun handleRequestAttributes(span: Span, request: Request) {
         val body = request.body.asJson()?.jsonObject ?: return
         OpenAIApiUtils.setCommonRequestAttributes(span, request)
@@ -331,4 +301,23 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
 
         return MediaContent(parts)
     }
+
+    // https://platform.openai.com/docs/api-reference/chat/create
+    private val mappedRequestAttributes: List<String> = listOf(
+        "messages",
+        "model",
+        "tools",
+        "choices",
+        "temperature"
+    )
+
+    // https://platform.openai.com/docs/api-reference/chat/object
+    private val mappedResponseAttributes: List<String> = listOf(
+        "choices",
+        "usage"
+    )
+
+    private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes
+
+    private val logger = KotlinLogging.logger {}
 }

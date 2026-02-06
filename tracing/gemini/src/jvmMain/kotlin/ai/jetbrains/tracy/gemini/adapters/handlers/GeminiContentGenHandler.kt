@@ -347,22 +347,22 @@ internal class GeminiContentGenHandler(
         }
     }
 
+    private val mappedRequestAttributes: List<String> = listOf(
+        "contents",
+        "tools",
+        "generationConfig"
+    )
+
+    private val mappedResponseAttributes: List<String> = listOf(
+        "responseId",
+        "modelVersion",
+        "candidates",
+        "usageMetadata"
+    )
+
+    private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes
+
     private val logger = KotlinLogging.logger {}
-
-        private val mappedRequestAttributes: List<String> = listOf(
-            "contents",
-            "tools",
-            "generationConfig"
-        )
-
-        private val mappedResponseAttributes: List<String> = listOf(
-            "responseId",
-            "modelVersion",
-            "candidates",
-            "usageMetadata"
-        )
-
-        private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes
 }
 
 internal fun ContentType.Companion.parseOrNull(mimeType: String) =

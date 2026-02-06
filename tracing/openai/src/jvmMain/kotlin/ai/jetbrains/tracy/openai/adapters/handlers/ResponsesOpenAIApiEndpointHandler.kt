@@ -3,11 +3,7 @@ package ai.jetbrains.tracy.openai.adapters.handlers
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter.Companion.PayloadType
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
 import ai.jetbrains.tracy.core.adapters.handlers.EndpointApiHandler
-import ai.jetbrains.tracy.core.adapters.media.MediaContent
-import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractor
-import ai.jetbrains.tracy.core.adapters.media.MediaContentPart
-import ai.jetbrains.tracy.core.adapters.media.Resource
-import ai.jetbrains.tracy.core.adapters.media.isValidUrl
+import ai.jetbrains.tracy.core.adapters.media.*
 import ai.jetbrains.tracy.core.http.protocol.Request
 import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.asJson
@@ -397,38 +393,36 @@ internal class ResponsesOpenAIApiEndpointHandler(
         return MediaContent(parts)
     }
 
-    companion object {
-        // https://platform.openai.com/docs/api-reference/responses/create
-        private val mappedRequestAttributes: List<String> = listOf(
-            "temperature",
-            "model",
-            "previous_response_id",
-            "store",
-            "top_p",
-            "max_output_tokens",
-            "truncation",
-            "parallel_tool_calls",
-            "stream",
-            "response_format",
-            "tool_choice",
-            "reasoning",
-            "text",
-            "input",
-            "instructions",
-            "tools",
-        )
+    // https://platform.openai.com/docs/api-reference/responses/create
+    private val mappedRequestAttributes: List<String> = listOf(
+        "temperature",
+        "model",
+        "previous_response_id",
+        "store",
+        "top_p",
+        "max_output_tokens",
+        "truncation",
+        "parallel_tool_calls",
+        "stream",
+        "response_format",
+        "tool_choice",
+        "reasoning",
+        "text",
+        "input",
+        "instructions",
+        "tools",
+    )
 
-        // https://platform.openai.com/docs/api-reference/responses/object
-        private val mappedResponseAttributes: List<String> = listOf(
-            // parsed by `OpenAIApiUtils.setCommonResponseAttributes`
-            "id",
-            "object",
-            "model",
+    // https://platform.openai.com/docs/api-reference/responses/object
+    private val mappedResponseAttributes: List<String> = listOf(
+        // parsed by `OpenAIApiUtils.setCommonResponseAttributes`
+        "id",
+        "object",
+        "model",
 
-            "output",
-            "usage",
-        )
+        "output",
+        "usage",
+    )
 
-        private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes
-    }
+    private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes
 }

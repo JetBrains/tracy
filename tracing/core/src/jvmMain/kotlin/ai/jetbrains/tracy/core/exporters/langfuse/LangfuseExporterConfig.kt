@@ -2,7 +2,6 @@ package ai.jetbrains.tracy.core.exporters.langfuse
 
 import ai.jetbrains.tracy.core.exporters.BaseExporterConfig
 import ai.jetbrains.tracy.core.exporters.ExporterCommonSettings
-import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig.Companion.LANGFUSE_BASE_URL
 import ai.jetbrains.tracy.core.exporters.otlp.ErrorDiagnosingOtlpHttpSpanExporter
 import ai.jetbrains.tracy.core.exporters.otlp.OtlpBaseExporterConfig
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter
@@ -17,6 +16,8 @@ import kotlinx.coroutines.SupervisorJob
 import mu.KotlinLogging
 import java.util.*
 import java.util.concurrent.TimeUnit
+
+private const val LANGFUSE_BASE_URL = "https://cloud.langfuse.com"
 
 /**
  * Configuration for exporting OpenTelemetry traces to [Langfuse](https://langfuse.com) via OTLP HTTP.
@@ -100,9 +101,5 @@ class LangfuseExporterConfig(
         if (settings.traceToConsole) {
             sdkTracerBuilder.addConsoleLoggingSpanProcessor()
         }
-    }
-
-    companion object {
-        private const val LANGFUSE_BASE_URL = "https://cloud.langfuse.com"
     }
 }

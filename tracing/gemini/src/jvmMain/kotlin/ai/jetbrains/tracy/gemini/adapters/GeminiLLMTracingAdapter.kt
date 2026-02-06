@@ -12,7 +12,7 @@ import ai.jetbrains.tracy.core.http.protocol.Url
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 
-class GeminiLLMTracingAdapter() : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.GEMINI) {
+class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.GEMINI) {
     override fun getRequestBodyAttributes(span: Span, request: Request) {
         val (model, operation) = request.url.modelAndOperation()
 
