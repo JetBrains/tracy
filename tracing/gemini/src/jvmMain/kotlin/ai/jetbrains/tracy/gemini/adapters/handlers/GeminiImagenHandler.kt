@@ -13,7 +13,6 @@ import ai.jetbrains.tracy.core.adapters.media.Resource
 import ai.jetbrains.tracy.core.http.protocol.Request
 import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.asJson
-import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import kotlinx.serialization.json.*
 import mu.KotlinLogging
@@ -110,15 +109,8 @@ class GeminiImagenHandler(
     private fun parseImagenImage(image: JsonObject): Resource? {
         val mimeType = image["mimeType"]?.jsonPrimitive?.content ?: return null
         val base64 = image["bytesBase64Encoded"]?.jsonPrimitive?.content ?: return null
-        val contentType = ContentType.parseOrNull(mimeType)
 
-        if (contentType == null) {
-            logger.warn("Cannot convert the mime type '$mimeType' to content type")
-            return null
-        }
-
-        return Resource.Base64(base64, contentType)
+        // NOTE: mediaType == mimeType when parameters are empty
+        return Resource.Base64(base64, mimeType)
     }
-
-    private val logger = KotlinLogging.logger {}
 }

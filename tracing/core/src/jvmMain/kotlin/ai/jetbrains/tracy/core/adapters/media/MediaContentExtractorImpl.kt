@@ -5,6 +5,7 @@
 
 package ai.jetbrains.tracy.core.adapters.media
 
+import ai.jetbrains.tracy.core.adapters.media.DataUrl.Companion.parseBase64
 import ai.jetbrains.tracy.core.adapters.media.DataUrl.Companion.parseInlineDataUrl
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.sdk.trace.ReadableSpan
@@ -34,19 +35,12 @@ class MediaContentExtractorImpl : MediaContentExtractor {
 
             when (resource) {
                 is Resource.Base64 -> {
-                    val contentType = resource.contentType
-                    val dataUrl = DataUrl(
-                        mediaType = "${contentType.contentType}/${contentType.contentSubtype}",
-                        parameters = buildMap {
-                            val groupedParameterValues = contentType.parameters.groupBy { it.name }
-                            for (param in groupedParameterValues) {
-                                put(param.key, param.value.map { it.value })
-                            }
-                        },
-                        base64 = true,
-                        data = resource.base64,
-                    )
-                    span.setDataUrlAttributes(dataUrl, field, index)
+                    val dataUrl = resource.parseBase64()
+                    if (dataUrl != null) {
+                        span.setDataUrlAttributes(dataUrl, field, index)
+                    } else {
+                        logger.warn { "Invalid data url, received: $resource" }
+                    }
                 }
 
                 is Resource.InlineDataUrl -> {

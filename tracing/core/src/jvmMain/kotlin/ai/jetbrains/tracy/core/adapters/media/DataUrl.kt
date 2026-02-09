@@ -40,6 +40,27 @@ data class DataUrl(
     }
 
     companion object {
+        fun Resource.Base64.parseBase64(): DataUrl? {
+            val mediaTypeRegex = Regex(
+                "^([^,;]*)((?:;[^,;=]+=[^,;]+)*)$",
+                RegexOption.DOT_MATCHES_ALL
+            )
+
+            val matchResult = mediaTypeRegex.matchEntire(this.mediaType) ?: return null
+
+            val mediaTypeRaw = matchResult.groupValues[1].trim()
+            val attributesRaw = matchResult.groupValues[2]
+
+            val (mediaType, parameters) = parseMediaTypeAndAttributes(mediaTypeRaw, attributesRaw)
+
+            return DataUrl(
+                mediaType,
+                parameters,
+                base64 = true,
+                data = this.base64,
+            )
+        }
+
         /**
          * Parses an inline data URL extracting media type, parameters, and data.
          *
@@ -67,6 +88,38 @@ data class DataUrl(
             val base64Marker = matchResult.groupValues[3]
             val data = matchResult.groupValues[4]
 
+            val (mediaType, parameters) = parseMediaTypeAndAttributes(mediaTypeRaw, attributesRaw)
+            val isBase64 = base64Marker.isNotEmpty()
+
+            return DataUrl(
+                mediaType = mediaType,
+                parameters = parameters,
+                base64 = isBase64,
+                data = data
+            )
+        }
+
+        /**
+         * Parses the given media type and its associated attributes into a structured format.
+         *
+         * If the media type is omitted or blank, it defaults to "text/plain".
+         * Additionally, if the media type starts with "text/" and the attributes do not specify a charset,
+         * the default charset is set to "US-ASCII" as per MIME type conventions.
+         *
+         * See [MDN MIME types](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types)
+         *
+         * @param mediaTypeRaw A raw string representing the media type (e.g., "text/plain").
+         * @param attributesRaw A raw string containing the media type's attributes in the format
+         *                      ";key1=value1;key2=value2".
+         *
+         * @return A pair where the first element is the processed media type as a string,
+         *         and the second element is a map of attributes, where each key is an attribute name
+         *         and its associated value is a list of corresponding values.
+         */
+        private fun parseMediaTypeAndAttributes(
+            mediaTypeRaw: String,
+            attributesRaw: String
+        ): Pair<String, Map<String, List<String>>> {
             // If media type omitted, it defaults to `text/plain;charset=US-ASCII` -> assign 'text/plain'
             val mediaType = if (mediaTypeRaw.isNotBlank()) mediaTypeRaw.trim() else "text/plain"
 
@@ -97,14 +150,7 @@ data class DataUrl(
                 }
             }
 
-            val isBase64 = base64Marker.isNotEmpty()
-
-            return DataUrl(
-                mediaType = mediaType,
-                parameters = parameters,
-                base64 = isBase64,
-                data = data
-            )
+            return mediaType to parameters
         }
     }
 }

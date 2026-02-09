@@ -45,6 +45,7 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
                 continue
             }
 
+            // decode content based on the expected content type
             val content = contentType.withoutParameters().let {
                 when {
                     it.match(ContentType.Image.Any) ->
@@ -81,7 +82,7 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
                     }
                     // save mask for further upload
                     mediaContentParts.add(
-                        MediaContentPart(resource = Resource.Base64(content, contentType))
+                        MediaContentPart(resource = Resource.Base64(content, contentType.toString()))
                     )
                 }
                 // either a single image or an array of images
@@ -95,7 +96,7 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
                     }
                     // save image for further upload
                     mediaContentParts.add(
-                        MediaContentPart(resource = Resource.Base64(content, contentType))
+                        MediaContentPart(resource = Resource.Base64(content, contentType.toString()))
                     )
                     ++imagesCount
                 }

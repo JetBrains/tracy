@@ -16,7 +16,6 @@ import ai.jetbrains.tracy.core.policy.ContentKind
 import ai.jetbrains.tracy.core.policy.contentTracingAllowed
 import ai.jetbrains.tracy.core.policy.orRedactedInput
 import ai.jetbrains.tracy.core.policy.orRedactedOutput
-import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
@@ -299,15 +298,8 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
             return null
         }
 
-        val contentType = try {
-            ContentType.parse(mediaType)
-        } catch (err: Exception) {
-            logger.warn(err) { "Failed to parse content type from media type of '$mediaType'" }
-            null
-        } ?: return null
-
         // add base64 resource
-        return Resource.Base64(data, contentType)
+        return Resource.Base64(data, mediaType)
     }
 
     private fun parseContent(messageType: String, source: JsonObject): List<Resource> {

@@ -13,7 +13,6 @@ import ai.jetbrains.tracy.core.http.protocol.Request
 import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.asJson
 import ai.jetbrains.tracy.core.policy.*
-import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
@@ -258,10 +257,11 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                 val mediaPart = when (type) {
                     "image_url" -> {
                         val url = part.jsonObject["image_url"]?.jsonObject["url"]?.jsonPrimitive?.content ?: continue
+
                         if (url.isValidUrl()) {
-                            MediaContentPart(Resource.Url(url))
+                            MediaContentPart(resource = Resource.Url(url))
                         } else if (url.startsWith("data:")) {
-                            MediaContentPart(Resource.InlineDataUrl(url))
+                            MediaContentPart(resource = Resource.InlineDataUrl(url))
                         } else {
                             null
                         }
@@ -274,24 +274,14 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                         val format = part.jsonObject["input_audio"]?.jsonObject["format"]?.jsonPrimitive?.content
                             ?: continue
 
-                        val contentType = try {
-                            ContentType.parse("audio/$format")
-                        } catch (err: Exception) {
-                            logger.trace(
-                                "Failed to parse content type: 'audio/$format'. Skipping this content part",
-                                err
-                            )
-                            null
-                        } ?: continue
-
-                        MediaContentPart(resource = Resource.Base64(data, contentType))
+                        MediaContentPart(resource = Resource.Base64(data, mediaType = "audio/$format"))
                     }
 
                     "file" -> {
                         // OpenAI expects a data url with a base64-encoded PDF file
                         val fileData = part.jsonObject["file"]?.jsonObject["file_data"]?.jsonPrimitive?.content
                             ?: continue
-                        MediaContentPart(Resource.InlineDataUrl(fileData))
+                        MediaContentPart(resource = Resource.InlineDataUrl(fileData))
                     }
 
                     else -> null
@@ -323,6 +313,4 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
     )
 
     private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes
-
-    private val logger = KotlinLogging.logger {}
 }

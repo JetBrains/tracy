@@ -5,7 +5,6 @@
 
 package ai.jetbrains.tracy.core.adapters.media
 
-import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 
 /**
@@ -71,6 +70,17 @@ data class MediaContentPart(val resource: Resource)
  */
 sealed class Resource {
     data class Url(val url: String) : Resource()
+
     data class InlineDataUrl(val inlineDataUrl: String) : Resource()
-    data class Base64(val base64: String, val contentType: ContentType) : Resource()
+
+    /**
+     * @property base64 The Base64-encoded string containing the resource data.
+     * @property mediaType The MIME type and optional parameters of the resource, which specifies the nature
+     * of the resource data (e.g., `image/png`, `text/plain;charset=UTF-8`).
+     */
+    data class Base64(val base64: String, val mediaType: String) : Resource() {
+        override fun toString(): String {
+            return "Base64(mediaType=$mediaType, base64=${base64.take(10)}...)"
+        }
+    }
 }

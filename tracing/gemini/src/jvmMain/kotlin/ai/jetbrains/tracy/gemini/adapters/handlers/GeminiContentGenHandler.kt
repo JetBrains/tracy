@@ -285,14 +285,9 @@ class GeminiContentGenHandler(
         val inlineData = this
         val data = inlineData["data"]?.jsonPrimitive?.content ?: return null
         val mimeType = inlineData["mimeType"]?.jsonPrimitive?.content ?: return null
-        val contentType = ContentType.parseOrNull(mimeType)
 
-        if (contentType == null) {
-            logger.warn("Cannot convert the mime type '$mimeType' to content type")
-            return null
-        }
-
-        return Resource.Base64(data, contentType)
+        // NOTE: mediaType == mimeType when parameters are empty
+        return Resource.Base64(data, mediaType = mimeType)
     }
 
     /**
@@ -366,9 +361,4 @@ class GeminiContentGenHandler(
     )
 
     private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes
-
-    private val logger = KotlinLogging.logger {}
 }
-
-internal fun ContentType.Companion.parseOrNull(mimeType: String) =
-    runCatching { ContentType.parse(mimeType) }.getOrNull()

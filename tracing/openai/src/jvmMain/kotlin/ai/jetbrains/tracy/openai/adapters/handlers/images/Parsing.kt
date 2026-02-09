@@ -15,7 +15,6 @@ import ai.jetbrains.tracy.core.policy.ContentKind
 import ai.jetbrains.tracy.core.policy.contentTracingAllowed
 import ai.jetbrains.tracy.core.policy.orRedactedOutput
 import ai.jetbrains.tracy.openai.adapters.handlers.asString
-import io.ktor.http.*
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
@@ -26,8 +25,6 @@ import mu.KotlinLogging.logger
 
 // See: https://platform.openai.com/docs/api-reference/images/create#images_create-output_format
 private const val defaultImageFormat = "png"
-
-private val logger = logger {}
 
 internal fun handleImageGenerationResponseAttributes(
     span: Span,
@@ -43,10 +40,10 @@ internal fun handleImageGenerationResponseAttributes(
         }
         // install media content for further upload
         val format = body["output_format"]?.jsonPrimitive?.content ?: defaultImageFormat
-        val contentType = "image/$format"
+        val mediaType = "image/$format"
 
         if (contentTracingAllowed(ContentKind.OUTPUT)) {
-            val mediaContent = parseMediaContent(data, contentType)
+            val mediaContent = parseMediaContent(data, mediaType)
             extractor.setUploadableContentAttributes(span, field = "output", mediaContent)
         }
     }
@@ -109,37 +106,26 @@ internal fun handleStreamedImage(
     if (contentTracingAllowed(ContentKind.OUTPUT)) {
         val base64 = data["b64_json"]?.jsonPrimitive?.content ?: return
         val format = data["output_format"]?.jsonPrimitive?.content ?: defaultImageFormat
-        val contentType = try {
-            ContentType.parse("image/$format")
-        } catch (err: Exception) {
-            logger.trace("Failed to parse content type: 'image/$format'. Skipping this content part", err)
-            null
-        } ?: return
+        val mediaType = "image/$format"
 
         val content = MediaContent(
             parts = listOf(
-                MediaContentPart(Resource.Base64(base64, contentType))
+                MediaContentPart(
+                    resource = Resource.Base64(base64, mediaType)
+                )
             )
         )
         extractor.setUploadableContentAttributes(span, field = "output", content)
     }
 }
 
-private fun parseMediaContent(data: JsonArray, contentType: String): MediaContent {
+private fun parseMediaContent(data: JsonArray, mediaType: String): MediaContent {
     val parts = buildList {
         for (part in data) {
             val image = part.jsonObject
             val contentPart = if (image.hasNonNull("b64_json")) {
                 val base64 = image["b64_json"]?.jsonPrimitive?.content ?: continue
-
-                val contentType = try {
-                    ContentType.parse(contentType)
-                } catch (err: Exception) {
-                    logger.trace("Failed to parse content type: '$contentType'. Skipping this data part", err)
-                    null
-                } ?: continue
-
-                MediaContentPart(Resource.Base64(base64, contentType))
+                MediaContentPart(Resource.Base64(base64, mediaType))
             } else if (image.hasNonNull("url")) {
                 val url = image["url"]?.jsonPrimitive?.content ?: continue
                 MediaContentPart(Resource.Url(url))
