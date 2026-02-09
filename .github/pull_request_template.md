@@ -34,7 +34,7 @@ Delete this section if not applicable.
 - [ ] The pull request includes a link to the issue
 - [ ] The change was discussed and approved in the issue
 - [ ] The pull request has a description of the proposed change
-- [ ] The pull request uses **`main (TODO)`** as the base branch
+- [ ] The pull request uses **`main`** as the base branch
 
 ### Development checklist
 - [ ] I have read the [Contributing Guidelines](https://github.com/JetBrains/tracy/blob/main/CONTRIBUTING.md)
