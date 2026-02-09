@@ -14,6 +14,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import mu.KotlinLogging
 import okhttp3.Interceptor
+import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.Buffer
@@ -243,20 +244,12 @@ class OpenTelemetryOkHttpInterceptor(
 
                 // register response
                 val response = chain.proceed(request)
-                val responseMediaType = response.body?.contentType()
 
                 return if (isStreamingRequest) {
                     val streamingMarker = JsonObject(mapOf("stream" to JsonPrimitive(true)))
                     val url = request.url.toProtocolUrl()
-                    adapter.registerResponse(
-                        span = span,
-                        response = Response(
-                            contentType = responseMediaType?.toContentType(),
-                            code = response.code,
-                            body = ResponseBody.Json(streamingMarker),
-                            url = url,
-                        ),
-                    )
+                    adapter.registerResponse(span, response = response.asResponseView(streamingMarker))
+
                     wrapStreamingResponse(response, url, span)
                 } else {
                     val decodedResponse = try {
@@ -264,15 +257,8 @@ class OpenTelemetryOkHttpInterceptor(
                     } catch (_: Exception) {
                         JsonObject(emptyMap())
                     }
-                    adapter.registerResponse(
-                        span = span,
-                        response = Response(
-                            contentType = responseMediaType?.toContentType(),
-                            code = response.code,
-                            body = ResponseBody.Json(decodedResponse),
-                            url = request.url.toProtocolUrl(),
-                        ),
-                    )
+
+                    adapter.registerResponse(span, response = response.asResponseView(decodedResponse))
                     response
                 }
             } catch (e: Exception) {
@@ -361,6 +347,25 @@ class OpenTelemetryOkHttpInterceptor(
         }
 
         return content to request
+    }
+
+    fun OkHttpResponse.asResponseView(body: JsonObject): Response {
+        val response = this
+        return object : Response {
+            private val responseContentType: MediaType? = response.body?.contentType()
+
+            override val contentType: ContentType? = responseContentType?.let {
+                object : ContentType {
+                    override val type: String = responseContentType.type
+                    override val subtype: String = responseContentType.subtype
+                    override fun asString(): String = responseContentType.toString()
+                }
+            }
+
+            override val code: Int = response.code
+            override val body: ai.jetbrains.tracy.core.http.protocol.ResponseBody = ResponseBody.Json(body)
+            override val url: Url = response.request.url.toProtocolUrl()
+        }
     }
 }
 

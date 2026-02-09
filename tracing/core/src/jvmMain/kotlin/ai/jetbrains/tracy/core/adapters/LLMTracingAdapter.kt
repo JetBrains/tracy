@@ -6,8 +6,6 @@
 package ai.jetbrains.tracy.core.adapters
 
 import ai.jetbrains.tracy.core.http.protocol.*
-import ai.jetbrains.tracy.core.http.protocol.Url
-import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.sdk.trace.ReadableSpan
@@ -70,20 +68,19 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
         runCatching {
             val body = response.body.asJson()?.jsonObject ?: return
             val isStreamingRequest = body["stream"]?.jsonPrimitive?.boolean == true
+            val mimeType = response.contentType?.mimeType
 
-            if (response.contentType != null) {
+            if (mimeType != null) {
                 when {
-                    response.contentType.match(REQUIRED_CONTENT_TYPE) -> {
+                    mimeType == APPLICATION_JSON_CONTENT_TYPE -> {
                         getResponseBodyAttributes(span, response)
                     }
-
-                    isStreamingRequest && response.contentType.match(EVENT_STREAM_CONTENT_TYPE) -> {
+                    isStreamingRequest && mimeType == EVENT_STREAM_CONTENT_TYPE -> {
                         span.setAttribute("gen_ai.response.streaming", true)
-                        span.setAttribute("gen_ai.completion.content.type", response.contentType.toString())
+                        span.setAttribute("gen_ai.completion.content.type", response.contentType?.asString())
                     }
-
                     else -> {
-                        span.setAttribute("gen_ai.completion.content.type", response.contentType.toString())
+                        span.setAttribute("gen_ai.completion.content.type", response.contentType?.asString())
                     }
                 }
             }
@@ -127,8 +124,8 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
     abstract fun handleStreaming(span: Span, url: Url, events: String)
 
     companion object {
-        private val REQUIRED_CONTENT_TYPE = ContentType.Application.Json
-        private val EVENT_STREAM_CONTENT_TYPE = ContentType.Text.EventStream
+        private const val APPLICATION_JSON_CONTENT_TYPE = "application/json"
+        private const val EVENT_STREAM_CONTENT_TYPE = "text/event-stream"
 
         private const val DROPPED_ATTRIBUTES_COUNT_ATTRIBUTE_KEY = "otel.dropped_attributes_count"
 

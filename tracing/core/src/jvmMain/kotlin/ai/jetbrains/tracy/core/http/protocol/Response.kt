@@ -5,9 +5,7 @@
 
 package ai.jetbrains.tracy.core.http.protocol
 
-import io.ktor.http.*
 import kotlinx.serialization.json.JsonElement
-
 
 /**
  * Represents an HTTP response including its metadata and body content.
@@ -20,12 +18,54 @@ import kotlinx.serialization.json.JsonElement
  *                represent different response formats, such as JSON.
  * @property url The URL associated with the HTTP response (i.e., where the initial request was made to).
  */
-data class Response(
-    val contentType: ContentType?,
-    val code: Int,
-    val body: ResponseBody,
-    val url: Url,
-)
+interface Response {
+    val contentType: ContentType?
+    val code: Int
+    val body: ResponseBody
+    val url: Url
+
+    fun isClientError(): Boolean {
+        return this.code in 400..499
+    }
+
+    fun isServerError(): Boolean {
+        return this.code in 500..599
+    }
+
+    fun isError() = isClientError() || isServerError()
+
+    companion object
+}
+
+/**
+ * Defines the structure and behavior for representing content types.
+ *
+ * A content type is typically used to describe the media type of data, consisting of a `type` and `subtype` component.
+ * Implementations of this interface encapsulate these components and provide a derived `mimeType` property that
+ * combines the type and subtype into a standard MIME type format.
+ *
+ * Example usages include specifying content types for HTTP requests and responses, file handling, and data serialization formats.
+ *
+ * @property type Represents the primary type of the content, such as `text`, `application`, or `image`.
+ * @property subtype Represents the specific subtype of the content within its primary type, such as `plain` or `json`.
+ * @property mimeType Concatenates the `type` and `subtype` properties into a single MIME type string, formatted as `type/subtype`.
+ *                   This provides a standardized representation of the content type.
+ */
+interface ContentType {
+    val type: String
+    val subtype: String
+
+    /**
+     * Represents the MIME type of the content, combining the type and subtype properties.
+     *
+     * The `mimeType` property generates a string in the format of `type/subtype`.
+     * It is derived by concatenating the `type` and `subtype` properties.
+     */
+    val mimeType: String
+        get() = "$type/$subtype"
+
+    fun asString(): String
+}
 
 /**
  * Encapsulates the body content of an HTTP response.
@@ -39,16 +79,6 @@ data class Response(
 sealed class ResponseBody {
     data class Json(val json: JsonElement) : ResponseBody()
 }
-
-fun Response.isClientError(): Boolean {
-    return this.code in 400..499
-}
-
-fun Response.isServerError(): Boolean {
-    return this.code in 500..599
-}
-
-fun Response.isError() = isClientError() || isServerError()
 
 fun ResponseBody.asJson(): JsonElement? {
     return when (this) {

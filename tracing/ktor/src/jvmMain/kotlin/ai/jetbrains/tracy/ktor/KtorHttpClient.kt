@@ -5,12 +5,10 @@
 
 package ai.jetbrains.tracy.ktor
 
-import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
-import ai.jetbrains.tracy.core.http.protocol.Request
-import ai.jetbrains.tracy.core.http.protocol.Response
-import ai.jetbrains.tracy.core.http.protocol.ResponseBody
-import ai.jetbrains.tracy.core.http.protocol.asRequestBody
+import ai.jetbrains.tracy.core.http.protocol.*
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.http.protocol.ContentType
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
 import io.ktor.client.request.*
@@ -18,6 +16,7 @@ import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.client.utils.*
 import io.ktor.http.*
+import io.ktor.http.Url
 import io.ktor.http.content.*
 import io.ktor.util.*
 import io.ktor.utils.io.*
@@ -42,7 +41,6 @@ import mu.KotlinLogging
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
 import ai.jetbrains.tracy.core.http.protocol.RequestBody as TracyRequestBody
-
 
 /**
  * Instruments a Ktor [HttpClient] with OpenTelemetry tracing for LLM provider API calls.
@@ -228,15 +226,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                     JsonObject(emptyMap())
                 }
 
-                adapter.registerResponse(
-                    span,
-                    response = Response(
-                        contentType = response.contentType(),
-                        code = response.status.value,
-                        body = ResponseBody.Json(body),
-                        url = response.request.url.toProtocolUrl(),
-                    ),
-                )
+                adapter.registerResponse(span, response = response.asResponseView(body))
                 span.end()
             }
 
@@ -254,17 +244,8 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 }
 
                 val body = JsonObject(mapOf("stream" to JsonPrimitive(true)))
-
-                adapter.registerResponse(
-                    span,
-                    response = Response(
-                        contentType = response.contentType()
-                            ?.let { ContentType(it.contentType, it.contentSubtype) },
-                        code = response.status.value,
-                        body = ResponseBody.Json(body),
-                        url = response.request.url.toProtocolUrl(),
-                    )
-                )
+                // registering response attributes into span
+                adapter.registerResponse(span, response = response.asResponseView(body))
 
                 val originalBody: ByteReadChannel = content
                 val tracingChannel = ByteChannel(autoFlush = true)
@@ -302,6 +283,24 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 if (typeInfo.type != ByteReadChannel::class) null else tracingChannel
             }
         })
+    }
+
+    private fun HttpResponse.asResponseView(body: JsonObject): Response {
+        val response = this
+        return object : Response {
+            private val responseContentType: io.ktor.http.ContentType? = response.contentType()
+
+            override val contentType = responseContentType?.let {
+                object : ContentType {
+                    override val type: String = responseContentType.contentType
+                    override val subtype: String = responseContentType.contentSubtype
+                    override fun asString(): String = responseContentType.toString()
+                }
+            }
+            override val code = response.status.value
+            override val body: ResponseBody = ResponseBody.Json(body)
+            override val url: ai.jetbrains.tracy.core.http.protocol.Url = response.request.url.toProtocolUrl()
+        }
     }
 
     /**
