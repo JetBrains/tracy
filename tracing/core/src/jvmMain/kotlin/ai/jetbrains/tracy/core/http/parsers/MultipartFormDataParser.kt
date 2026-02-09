@@ -1,7 +1,8 @@
 package ai.jetbrains.tracy.core.http.parsers
 
 import ai.jetbrains.tracy.core.http.protocol.toContentType
-import io.ktor.http.*
+import io.ktor.http.ContentType
+import io.ktor.http.charset
 import mu.KotlinLogging
 import okhttp3.MediaType
 import okio.Buffer
