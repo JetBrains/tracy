@@ -9,7 +9,6 @@ import ai.jetbrains.tracy.core.adapters.media.DataUrl
 import ai.jetbrains.tracy.core.adapters.media.DataUrl.Companion.parseInlineDataUrl
 import ai.jetbrains.tracy.core.adapters.media.Resource
 import ai.jetbrains.tracy.core.adapters.media.isValidUrl
-import io.ktor.http.*
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -25,7 +24,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:,Hello%2C%20World%21"),
                 expected = DataUrl(
                     "text/plain",
-                    mapOf("charset" to "US-ASCII").toHeaders(),
+                    mapOf("charset" to "US-ASCII").toParameters(),
                     false,
                     "Hello%2C%20World%21"
                 )
@@ -34,7 +33,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:text/plain,Hello"),
                 expected = DataUrl(
                     "text/plain",
-                    mapOf("charset" to "US-ASCII").toHeaders(),
+                    mapOf("charset" to "US-ASCII").toParameters(),
                     false,
                     "Hello"
                 )
@@ -43,7 +42,8 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:text/html,<h1>Hello</h1>"),
                 expected = DataUrl(
                     "text/html",
-                    Headers.Empty,
+                    // defaulted charset
+                    mapOf("charset" to "US-ASCII").toParameters(),
                     false,
                     "<h1>Hello</h1>"
                 )
@@ -54,7 +54,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:text/plain;charset=UTF-8,Hello"),
                 expected = DataUrl(
                     "text/plain",
-                    mapOf("charset" to "UTF-8").toHeaders(),
+                    mapOf("charset" to "UTF-8").toParameters(),
                     false,
                     "Hello"
                 )
@@ -63,7 +63,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:text/html;charset=ISO-8859-1,<h1>Hëllo</h1>"),
                 expected = DataUrl(
                     "text/html",
-                    mapOf("charset" to "ISO-8859-1").toHeaders(),
+                    mapOf("charset" to "ISO-8859-1").toParameters(),
                     false,
                     "<h1>Hëllo</h1>"
                 )
@@ -74,7 +74,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:text/plain;base64,SGVsbG8gV29ybGQ="),
                 expected = DataUrl(
                     "text/plain",
-                    mapOf("charset" to "US-ASCII").toHeaders(),
+                    mapOf("charset" to "US-ASCII").toParameters(),
                     true,
                     "SGVsbG8gV29ybGQ=",
                 )
@@ -83,7 +83,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:image/png;base64,iVBORw0KGgoAAAANS"),
                 expected = DataUrl(
                     "image/png",
-                    Headers.Empty,
+                    emptyMap(),
                     true,
                     "iVBORw0KGgoAAAANS"
                 )
@@ -92,7 +92,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:;base64,SGVsbG8="),
                 expected = DataUrl(
                     "text/plain",
-                    mapOf("charset" to "US-ASCII").toHeaders(),
+                    mapOf("charset" to "US-ASCII").toParameters(),
                     true,
                     "SGVsbG8="
                 )
@@ -103,7 +103,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:text/plain;charset=UTF-8;foo=bar,Hello"),
                 expected = DataUrl(
                     "text/plain",
-                    mapOf("charset" to "UTF-8", "foo" to "bar").toHeaders(),
+                    mapOf("charset" to "UTF-8", "foo" to "bar").toParameters(),
                     false,
                     "Hello"
                 )
@@ -112,7 +112,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:application/json;charset=UTF-8;version=1.0;base64,eyJ0ZXN0IjoxfQ=="),
                 expected = DataUrl(
                     "application/json",
-                    mapOf("charset" to "UTF-8", "version" to "1.0").toHeaders(),
+                    mapOf("charset" to "UTF-8", "version" to "1.0").toParameters(),
                     true,
                     "eyJ0ZXN0IjoxfQ=="
                 )
@@ -123,7 +123,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:,"),
                 expected = DataUrl(
                     "text/plain",
-                    mapOf("charset" to "US-ASCII").toHeaders(),
+                    mapOf("charset" to "US-ASCII").toParameters(),
                     false,
                     ""
                 )
@@ -132,7 +132,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:text/plain,"),
                 expected = DataUrl(
                     "text/plain",
-                    mapOf("charset" to "US-ASCII").toHeaders(),
+                    mapOf("charset" to "US-ASCII").toParameters(),
                     false,
                     ""
                 )
@@ -141,7 +141,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:image/png;base64,"),
                 expected = DataUrl(
                     "image/png",
-                    Headers.Empty,
+                    emptyMap(),
                     true,
                     ""
                 )
@@ -152,7 +152,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:text/plain,Hello,World"),
                 expected = DataUrl(
                     "text/plain",
-                    mapOf("charset" to "US-ASCII").toHeaders(),
+                    mapOf("charset" to "US-ASCII").toParameters(),
                     false,
                     "Hello,World"
                 )
@@ -161,7 +161,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:text/plain,data:test;foo=bar"),
                 expected = DataUrl(
                     "text/plain",
-                    mapOf("charset" to "US-ASCII").toHeaders(),
+                    mapOf("charset" to "US-ASCII").toParameters(),
                     false,
                     "data:test;foo=bar"
                 )
@@ -170,7 +170,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:text/plain,Line1\nLine2\nLine3"),
                 expected = DataUrl(
                     "text/plain",
-                    mapOf("charset" to "US-ASCII").toHeaders(),
+                    mapOf("charset" to "US-ASCII").toParameters(),
                     false,
                     "Line1\nLine2\nLine3"
                 )
@@ -181,7 +181,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data: text/plain ,Hello"),
                 expected = DataUrl(
                     "text/plain",
-                    mapOf("charset" to "US-ASCII").toHeaders(),
+                    mapOf("charset" to "US-ASCII").toParameters(),
                     false,
                     "Hello"
                 )
@@ -190,7 +190,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:text/plain; charset=UTF-8 ,Hello"),
                 expected = DataUrl(
                     "text/plain",
-                    mapOf("charset" to "UTF-8").toHeaders(),
+                    mapOf("charset" to "UTF-8").toParameters(),
                     false,
                     "Hello"
                 )
@@ -201,7 +201,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:application/json,{\"key\":\"value\"}"),
                 expected = DataUrl(
                     "application/json",
-                    Headers.Empty,
+                    emptyMap(),
                     false,
                     "{\"key\":\"value\"}"
                 )
@@ -210,7 +210,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:application/octet-stream;base64,AQIDBA=="),
                 expected = DataUrl(
                     "application/octet-stream",
-                    Headers.Empty,
+                    emptyMap(),
                     true,
                     "AQIDBA=="
                 )
@@ -221,7 +221,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:;charset=UTF-8,Hello123"),
                 expected = DataUrl(
                     "text/plain",
-                    mapOf("charset" to "UTF-8").toHeaders(),
+                    mapOf("charset" to "UTF-8").toParameters(),
                     false,
                     "Hello123"
                 )
@@ -260,7 +260,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:text/plain," + "a".repeat(10000)),
                 expected = DataUrl(
                     "text/plain",
-                    mapOf("charset" to "US-ASCII").toHeaders(),
+                    mapOf("charset" to "US-ASCII").toParameters(),
                     false,
                     "a".repeat(10000)
                 )
@@ -271,7 +271,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:text/plain;key=val=ue,Hello"),
                 expected = DataUrl(
                     "text/plain",
-                    mapOf("charset" to "US-ASCII", "key" to "val=ue").toHeaders(),
+                    mapOf("charset" to "US-ASCII", "key" to "val=ue").toParameters(),
                     false,
                     "Hello"
                 )
@@ -282,7 +282,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:text/plain;base64,SGVsbG87V29ybGQ="),
                 expected = DataUrl(
                     "text/plain",
-                    mapOf("charset" to "US-ASCII").toHeaders(),
+                    mapOf("charset" to "US-ASCII").toParameters(),
                     true,
                     "SGVsbG87V29ybGQ="
                 )
@@ -293,7 +293,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:text/plain,a=b"),
                 expected = DataUrl(
                     "text/plain",
-                    mapOf("charset" to "US-ASCII").toHeaders(),
+                    mapOf("charset" to "US-ASCII").toParameters(),
                     false,
                     "a=b"
                 )
@@ -304,7 +304,7 @@ class ParsingTest {
                 input = Resource.InlineDataUrl("data:text/plain;base64,SGVsbG8==="),
                 expected = DataUrl(
                     "text/plain",
-                    mapOf("charset" to "US-ASCII").toHeaders(),
+                    mapOf("charset" to "US-ASCII").toParameters(),
                     true,
                     "SGVsbG8==="
                 )
@@ -321,26 +321,57 @@ class ParsingTest {
     fun `asString should reconstruct data URL correctly`() {
         val testCases = listOf(
             // Basic cases
-            DataUrl("text/plain", mapOf("charset" to "US-ASCII").toHeaders(), false, "Hello") to
-                    "data:text/plain;charset=US-ASCII,Hello",
-            DataUrl("text/html", Headers.Empty, false, "<h1>Test</h1>") to
-                    "data:text/html,<h1>Test</h1>",
+            DataUrl(
+                "text/plain",
+                mapOf("charset" to "US-ASCII").toParameters(),
+                false,
+                "Hello"
+            ) to "data:text/plain;charset=US-ASCII,Hello",
+
+            DataUrl(
+                "text/html",
+                emptyMap(),
+                false,
+                "<h1>Test</h1>"
+            ) to "data:text/html,<h1>Test</h1>",
 
             // With base64
-            DataUrl("image/png", Headers.Empty, true, "iVBORw0KGg") to
-                    "data:image/png;base64,iVBORw0KGg",
-            DataUrl("text/plain", mapOf("charset" to "UTF-8").toHeaders(), true, "SGVsbG8=") to
-                    "data:text/plain;charset=UTF-8;base64,SGVsbG8=",
+            DataUrl(
+                "image/png",
+                emptyMap(),
+                true,
+                "iVBORw0KGg"
+            ) to "data:image/png;base64,iVBORw0KGg",
+
+            DataUrl(
+                "text/plain",
+                mapOf("charset" to "UTF-8").toParameters(),
+                true,
+                "SGVsbG8="
+            ) to "data:text/plain;charset=UTF-8;base64,SGVsbG8=",
 
             // Multiple headers
-            DataUrl("application/json", mapOf("charset" to "UTF-8", "version" to "1.0").toHeaders(), false, "{}") to
-                    "data:application/json;charset=UTF-8;version=1.0,{}",
+            DataUrl(
+                "application/json",
+                mapOf("charset" to "UTF-8", "version" to "1.0").toParameters(),
+                false,
+                "{}"
+            ) to "data:application/json;charset=UTF-8;version=1.0,{}",
 
             // Empty data
-            DataUrl("text/plain", Headers.Empty, false, "") to
-                    "data:text/plain,",
-            DataUrl("image/png", Headers.Empty, true, "") to
-                    "data:image/png;base64,"
+            DataUrl(
+                "text/plain",
+                emptyMap(),
+                false,
+                ""
+            ) to "data:text/plain,",
+
+            DataUrl(
+                "image/png",
+                emptyMap(),
+                true,
+                ""
+            ) to "data:image/png;base64,"
         )
 
         testCases.forEach { (dataUrl, expected) ->
@@ -434,11 +465,9 @@ class ParsingTest {
     )
 }
 
-private fun Map<String, String>.toHeaders(): Headers {
-    val headers = headers {
-        for ((key, value) in entries) {
-            set(key, value)
-        }
-    }
-    return headers
+/**
+ * Simply wraps entries' values into a list.
+ */
+private fun Map<String, String>.toParameters(): Map<String, List<String>> {
+    return this.mapValues { listOf(it.value) }
 }

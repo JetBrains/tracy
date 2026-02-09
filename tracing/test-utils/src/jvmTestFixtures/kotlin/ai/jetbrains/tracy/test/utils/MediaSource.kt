@@ -7,7 +7,6 @@ package ai.jetbrains.tracy.test.utils
 
 import ai.jetbrains.tracy.core.adapters.media.DataUrl
 import ai.jetbrains.tracy.core.adapters.media.SupportedMediaContentTypes
-import io.ktor.http.*
 import java.io.File
 import java.util.*
 
@@ -29,7 +28,7 @@ fun MediaSource.File.asDataUrl(): DataUrl {
     val encodedData = loadFileAsBase64Encoded(this.filepath)
     return DataUrl(
         mediaType = this.contentType,
-        headers = Headers.Empty,
+        parameters = emptyMap(),
         base64 = true,
         data = encodedData,
     )

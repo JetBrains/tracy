@@ -5,33 +5,43 @@
 
 package ai.jetbrains.tracy.core.adapters.media
 
-import io.ktor.http.*
-import io.ktor.util.*
 import java.nio.charset.StandardCharsets
 
 /**
  * Parts of the data URL.
  *
- * See details [here](https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/data#syntax).
+ * See details about data URLs at [MDN data URLs](https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/data#syntax).
+ *
+ * **Example**:
+ * 1. `data:text/plain;base64,SGVsbG8gV29ybGQ=`:
+ * ```kotlin
+ * DataUrl(
+ *    mediaType = "text/plain",
+ *    parameters = mapOf("charset" to "US-ASCII"),
+ *    base64 = true,
+ *    data = "SGVsbG8gV29ybGQ=",
+ * )
+ * ```
  */
 data class DataUrl(
     val mediaType: String,
-    val headers: Headers,
+    val parameters: Map<String, List<String>>,
     val base64: Boolean,
     val data: String,
 ) {
     fun asString(): String {
-        val headersString = headers.toMap().toList().joinToString(separator = ";") {
-            "${it.first}=${it.second.joinToString(separator = ",")}"
-        }.let { if (it.isNotEmpty()) ";$it" else it }
+        val parametersString = parameters.toMap().toList()
+            .joinToString(separator = ";") { "${it.first}=${it.second.joinToString(separator = ",")}" }
+                .let { if (it.isNotEmpty()) ";$it" else it }
+
         val base64String = if (base64) ";base64" else ""
 
-        return "data:$mediaType$headersString$base64String,$data"
+        return "data:$mediaType$parametersString$base64String,$data"
     }
 
     companion object {
         /**
-         * Parses an inline data URL extracting media type, headers, and data.
+         * Parses an inline data URL extracting media type, parameters, and data.
          *
          * See [MDN data URLs](https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/data)
          *
@@ -57,27 +67,32 @@ data class DataUrl(
             val base64Marker = matchResult.groupValues[3]
             val data = matchResult.groupValues[4]
 
-            // Default media type if not specified
-            val mediaType = if (mediaTypeRaw.isEmpty()) {
-                ContentType.Text.Plain
-            } else {
-                ContentType.parse(mediaTypeRaw)
-            }
+            // If media type omitted, it defaults to `text/plain;charset=US-ASCII` -> assign 'text/plain'
+            val mediaType = if (mediaTypeRaw.isNotBlank()) mediaTypeRaw.trim() else "text/plain"
 
-            // parse headers/attributes (e.g., ;charset=UTF-8)
-            val headers = headers {
-                // add default charset for text/plain if not specified
-                if (mediaType == ContentType.Text.Plain && !attributesRaw.contains("charset=")) {
-                    set("charset", StandardCharsets.US_ASCII.name())
+            val parameters = buildMap<String, MutableList<String>> {
+                // If the media type is text/* (or defaulted to text/*),
+                // the charset defaults to `charset=US-ASCII`.
+                // See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/MIME_types#structure_of_a_mime_type
+                if (mediaType.startsWith("text/") && !attributesRaw.contains("charset=")) {
+                    put("charset", mutableListOf(StandardCharsets.US_ASCII.name()))
                 }
 
+                // insert other attributes
                 if (attributesRaw.isNotEmpty()) {
                     // parse attributes (e.g., `;charset=UTF-8;foo=bar`)
                     val attributeRegex = Regex(";([^=]+)=([^;]+)")
-                    attributeRegex.findAll(attributesRaw).forEach { match ->
+                    val matches = attributeRegex.findAll(attributesRaw)
+                    for (match in matches) {
                         val key = match.groupValues[1].trim()
                         val value = match.groupValues[2].trim()
-                        set(key, value)
+
+                        if (!this.contains(key)) {
+                            put(key, mutableListOf(value))
+                            mutableListOf<String>()
+                        } else {
+                            this[key]?.add(value)
+                        }
                     }
                 }
             }
@@ -85,8 +100,8 @@ data class DataUrl(
             val isBase64 = base64Marker.isNotEmpty()
 
             return DataUrl(
-                mediaType = mediaType.toString(),
-                headers = if (!headers.isEmpty()) headers else Headers.Empty,
+                mediaType = mediaType,
+                parameters = parameters,
                 base64 = isBase64,
                 data = data
             )

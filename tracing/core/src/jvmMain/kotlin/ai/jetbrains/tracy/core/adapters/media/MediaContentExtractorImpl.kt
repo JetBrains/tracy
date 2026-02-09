@@ -6,7 +6,6 @@
 package ai.jetbrains.tracy.core.adapters.media
 
 import ai.jetbrains.tracy.core.adapters.media.DataUrl.Companion.parseInlineDataUrl
-import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.sdk.trace.ReadableSpan
 import mu.KotlinLogging
@@ -38,9 +37,10 @@ class MediaContentExtractorImpl : MediaContentExtractor {
                     val contentType = resource.contentType
                     val dataUrl = DataUrl(
                         mediaType = "${contentType.contentType}/${contentType.contentSubtype}",
-                        headers = headers {
-                            for (param in contentType.parameters) {
-                                set(param.name, param.value)
+                        parameters = buildMap {
+                            val groupedParameterValues = contentType.parameters.groupBy { it.name }
+                            for (param in groupedParameterValues) {
+                                put(param.key, param.value.map { it.value })
                             }
                         },
                         base64 = true,
