@@ -29,6 +29,8 @@ internal class LangfuseMediaUploadParams(
      *  Possible values are `input`, `output`, and `metadata`.
      *
      * See at [Langfuse API Reference](https://api.reference.langfuse.com/#tag/media/post/api/public/media.body.field).
+     *
+     * @throws IllegalStateException if the value is not one of the supported values.
      */
     val field: String,
     val contentType: String,
