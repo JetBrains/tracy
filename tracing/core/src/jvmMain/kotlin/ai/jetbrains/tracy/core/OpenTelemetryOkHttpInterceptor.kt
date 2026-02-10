@@ -13,6 +13,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import mu.KotlinLogging
+import okhttp3.HttpUrl
 import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
@@ -224,14 +225,13 @@ class OpenTelemetryOkHttpInterceptor(
                 val (bodyContent, request) = chain.request().withCopiedBodyContent()
 
                 if (bodyContent != null) {
+                    // building request view
                     val mediaType = request.body?.contentType()
-                    val req = bodyContent.asRequestBody(mediaType)?.let {
-                        Request(
-                            contentType = mediaType?.toContentType(),
-                            url = request.url.toProtocolUrl(),
-                            body = it,
-                        )
+                    val req: Request? = mediaType?.let {
+                        val body = bodyContent.asRequestBody(mediaType = it)
+                        body?.asRequestView(mediaType, request.url)
                     }
+
                     if (req != null) {
                         isStreamingRequest = adapter.isStreamingRequest(req)
                         adapter.registerRequest(span, req)
@@ -352,20 +352,29 @@ class OpenTelemetryOkHttpInterceptor(
     fun OkHttpResponse.asResponseView(body: JsonObject): Response {
         val response = this
         return object : Response {
-            private val responseContentType: MediaType? = response.body?.contentType()
+            private val mediaType = response.body?.contentType()
 
-            override val contentType: ContentType? = responseContentType?.let {
-                object : ContentType {
-                    override val type: String = responseContentType.type
-                    override val subtype: String = responseContentType.subtype
-                    override fun asString(): String = responseContentType.toString()
-                }
-            }
-
-            override val code: Int = response.code
-            override val body: ai.jetbrains.tracy.core.http.protocol.ResponseBody = ResponseBody.Json(body)
-            override val url: Url = response.request.url.toProtocolUrl()
+            override val contentType = mediaType?.toContentType()
+            override val code = response.code
+            override val body = ResponseBody.Json(body)
+            override val url = response.request.url.toProtocolUrl()
         }
     }
-}
 
+    private fun RequestBody.asRequestView(
+        mediaType: MediaType,
+        url: HttpUrl
+    ): Request {
+        val requestBody = this
+        return object : Request {
+            override val body = requestBody
+            override val url = url.toProtocolUrl()
+            override val contentType = mediaType.toContentType()
+        }
+    }
+
+    private fun ByteArray.asRequestBody(mediaType: MediaType) = this.asRequestBody(
+        contentType = mediaType.toContentType(),
+        charset = mediaType.charset() ?: Charsets.UTF_8,
+    )
+}

@@ -7,12 +7,10 @@ package ai.jetbrains.tracy.core.http.protocol
 
 import ai.jetbrains.tracy.core.http.parsers.FormData
 import ai.jetbrains.tracy.core.http.parsers.MultipartFormDataParser
-import io.ktor.http.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
 import mu.KotlinLogging
-import okhttp3.MediaType
 
 private val logger = KotlinLogging.logger {}
 
@@ -26,11 +24,11 @@ private val logger = KotlinLogging.logger {}
  * @param body The body of the request, containing the actual data to be sent.
  *             This can be represented as JSON or form data.
  */
-data class Request(
-    val url: Url,
-    val contentType: ContentType?,
-    val body: RequestBody,
-)
+interface Request {
+    val body: RequestBody
+    val contentType: ContentType
+    val url: Url
+}
 
 /**
  * Represents the body content of an HTTP request. It can either be a JSON payload or form data.
@@ -44,10 +42,7 @@ data class Request(
 sealed class RequestBody {
     data class Json(val json: JsonElement) : RequestBody()
     data class FormData(val data: ai.jetbrains.tracy.core.http.parsers.FormData) : RequestBody()
-    object Empty : RequestBody()
 }
-
-fun MediaType.toContentType(): ContentType = ContentType.parse(this.toString())
 
 fun RequestBody.asJson(): JsonElement? {
     return when (this) {
@@ -64,32 +59,27 @@ fun RequestBody.asFormData(): FormData? {
 }
 
 /**
- * Converts a [ByteArray] into a [RequestBody] based on the provided [mediaType].
+ * Converts a [ByteArray] into a [RequestBody] based on the provided [contentType].
+ * The given [ByteArray] is decoded according to the specified [charset].
  *
  * This method interprets the byte array input as either JSON or multipart form data,
- * depending on the specified [mediaType]. If the [mediaType] is recognized as
+ * depending on the specified [contentType]. If the [contentType] is recognized as
  * `application/json`, the method attempts to parse the byte array into a JSON object.
  * For `multipart/form-data`, it parses the byte array into a form data structure.
  *
- * @param mediaType The media type of the data. Used to determine how to interpret the byte array.
+ * @param contentType The mime type of the data (e.g., `application/json`). Used to determine how to interpret the byte array.
  *                  Can be null if no content type is specified.
+ * @param charset The character encoding used to decode the byte array.
+ *
  * @return A [RequestBody] instance representing the parsed content, or null if
- *         the [mediaType] is unsupported or parsing fails.
+ *         the [contentType] is unsupported or parsing fails.
  */
-fun ByteArray.asRequestBody(mediaType: MediaType?): RequestBody? = mediaType?.toContentType()
-    ?.let {
-        asRequestBody(it)
-    }
-
-fun ByteArray.asRequestBody(contentType: ContentType): RequestBody? {
+fun ByteArray.asRequestBody(contentType: ContentType, charset: Charset): RequestBody? {
     val bytes = this
-    // check for the content type regardless of the parameters
-    return when (contentType.withoutParameters()) {
-        ContentType.Application.Json -> {
+    return when (contentType.mimeType) {
+        ContentType.Application.Json.mimeType -> {
             val json = try {
-                Json.parseToJsonElement(
-                    bytes.toString(contentType.charset() ?: Charsets.UTF_8)
-                ).jsonObject
+                Json.parseToJsonElement(string = bytes.toString(charset)).jsonObject
             } catch (err: Exception) {
                 logger.trace("Error while parsing request body", err)
                 null
@@ -97,13 +87,11 @@ fun ByteArray.asRequestBody(contentType: ContentType): RequestBody? {
 
             RequestBody.Json(json)
         }
-
-        ContentType.MultiPart.FormData -> {
+        ContentType.MultiPart.FormData.mimeType -> {
             val parser = MultipartFormDataParser()
             val formData = parser.parse(contentType, bytes)
             RequestBody.FormData(formData)
         }
-
         else -> null
     }
 }

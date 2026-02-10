@@ -38,36 +38,6 @@ interface Response {
 }
 
 /**
- * Defines the structure and behavior for representing content types.
- *
- * A content type is typically used to describe the media type of data, consisting of a `type` and `subtype` component.
- * Implementations of this interface encapsulate these components and provide a derived `mimeType` property that
- * combines the type and subtype into a standard MIME type format.
- *
- * Example usages include specifying content types for HTTP requests and responses, file handling, and data serialization formats.
- *
- * @property type Represents the primary type of the content, such as `text`, `application`, or `image`.
- * @property subtype Represents the specific subtype of the content within its primary type, such as `plain` or `json`.
- * @property mimeType Concatenates the `type` and `subtype` properties into a single MIME type string, formatted as `type/subtype`.
- *                   This provides a standardized representation of the content type.
- */
-interface ContentType {
-    val type: String
-    val subtype: String
-
-    /**
-     * Represents the MIME type of the content, combining the type and subtype properties.
-     *
-     * The `mimeType` property generates a string in the format of `type/subtype`.
-     * It is derived by concatenating the `type` and `subtype` properties.
-     */
-    val mimeType: String
-        get() = "$type/$subtype"
-
-    fun asString(): String
-}
-
-/**
  * Encapsulates the body content of an HTTP response.
  *
  * This sealed class is used as part of the [Response] data structure to represent the various

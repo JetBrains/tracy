@@ -72,10 +72,10 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
 
             if (mimeType != null) {
                 when {
-                    mimeType == APPLICATION_JSON_CONTENT_TYPE -> {
+                    mimeType == ContentType.Application.Json.mimeType -> {
                         getResponseBodyAttributes(span, response)
                     }
-                    isStreamingRequest && mimeType == EVENT_STREAM_CONTENT_TYPE -> {
+                    isStreamingRequest && mimeType == ContentType.Text.EventStream.mimeType -> {
                         span.setAttribute("gen_ai.response.streaming", true)
                         span.setAttribute("gen_ai.completion.content.type", response.contentType?.asString())
                     }
@@ -124,9 +124,6 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
     abstract fun handleStreaming(span: Span, url: Url, events: String)
 
     companion object {
-        private const val APPLICATION_JSON_CONTENT_TYPE = "application/json"
-        private const val EVENT_STREAM_CONTENT_TYPE = "text/event-stream"
-
         private const val DROPPED_ATTRIBUTES_COUNT_ATTRIBUTE_KEY = "otel.dropped_attributes_count"
 
         /**

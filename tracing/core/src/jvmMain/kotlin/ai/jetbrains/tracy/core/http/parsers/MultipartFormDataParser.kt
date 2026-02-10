@@ -5,8 +5,8 @@
 
 package ai.jetbrains.tracy.core.http.parsers
 
+import ai.jetbrains.tracy.core.http.protocol.ContentType
 import ai.jetbrains.tracy.core.http.protocol.toContentType
-import io.ktor.http.*
 import mu.KotlinLogging
 import okhttp3.MediaType
 import okio.Buffer
@@ -16,6 +16,7 @@ import org.apache.james.mime4j.stream.BodyDescriptor
 import org.apache.james.mime4j.stream.Field
 import org.apache.james.mime4j.stream.MimeConfig
 import java.io.InputStream
+import java.nio.charset.Charset
 
 /**
  * Parses a `multipart/form-data` HTTP request body.
@@ -36,7 +37,7 @@ class MultipartFormDataParser {
         checkContentType(contentType)
 
         val config = MimeConfig.custom()
-            .setHeadlessParsing(contentType.toString())
+            .setHeadlessParsing(contentType.asString())
             .setMaxLineLen(-1)
             .setMaxHeaderLen(-1)
             .build()
@@ -79,17 +80,16 @@ class MultipartFormDataParser {
      * @throws IllegalArgumentException
      */
     private fun checkContentType(contentType: ContentType) {
-        val contentTypeWithoutParams = contentType.withoutParameters()
-        if (!ContentType.MultiPart.FormData.match(contentTypeWithoutParams)) {
+        if (contentType.mimeType != ContentType.MultiPart.FormData.mimeType) {
             throw IllegalArgumentException(
-                "Content type must be ${ContentType.MultiPart.FormData}, got $contentType."
+                "Content type must be ${ContentType.MultiPart.FormData.mimeType}, got ${contentType.asString()}."
             )
         }
 
         // require 'boundary' parameter to be present
-        val boundaryParam = contentType.parameters.firstOrNull { it.name == "boundary" }
-        if (boundaryParam == null || boundaryParam.value.isBlank()) {
-            throw IllegalArgumentException("Content type must contain non-blank 'boundary' parameter, got $contentType.")
+        val boundary = contentType.parameter("boundary")
+        if (boundary.isNullOrBlank()) {
+            throw IllegalArgumentException("Content type must contain non-blank 'boundary' parameter, got ${contentType.asString()}.")
         }
     }
 }
@@ -113,7 +113,13 @@ data class FormPart(
     override fun toString(): String {
         val contentStr = when (contentType) {
             null -> content.decodeToString()
-            else -> content.toString(contentType.charset() ?: Charsets.UTF_8)
+            else -> {
+                val charset = contentType.charset() ?: when(contentType.mimeType) {
+                    "text/plain" -> Charsets.US_ASCII
+                    else -> Charsets.UTF_8
+                }
+                content.toString(charset)
+            }
         }.let {
             if (it.length > 100) it.substring(0..97) + "..." else it
         }
@@ -181,16 +187,16 @@ private class MultipartContentHandler : AbstractContentHandler() {
             "content-type" -> {
                 // the very first encountered field is a content type of the entire body;
                 // therefore, we skip it
-                val contentType = try {
-                    ContentType.parse(field.body)
-                } catch (err: Exception) {
-                    logger.trace("Failed to parse Content-Type header: ${field.body}", err)
-                    null
+                val contentType = parseContentType(contentType = field.body)
+                if (contentType == null) {
+                    logger.warn("Failed to parse Content-Type header: ${field.body}")
                 }
 
-                // this field is the first one to encounter, and it is a multipart/form-data
+                // if this field is the first one encountered, and it is a `multipart/form-data`,
+                // then it is the content type of the entire body, and we skip it;
+                // otherwise, it is a content type of the body part's field.
                 val isBodyContentTypeFieldEncountered = !firstFieldEncountered &&
-                        contentType?.withoutParameters()?.match(ContentType.MultiPart.FormData) == true
+                        contentType?.mimeType == ContentType.MultiPart.FormData.mimeType
                 if (!isBodyContentTypeFieldEncountered) {
                     // if not, it is a content type of the actual field of a body part;
                     // otherwise, ignore to skip it
@@ -229,6 +235,93 @@ private class MultipartContentHandler : AbstractContentHandler() {
         }
         // reset for the next part
         currentContext = PartContext()
+    }
+
+    /**
+     * Parses the given content type string and returns a representation of the media type
+     * and its associated parameters, if valid.
+     *
+     * @param contentType the content type string to parse
+     * @return a ContentType instance representing the parsed type, subtype, and parameters,
+     *         or null if the content type is invalid or cannot be parsed
+     */
+    private fun parseContentType(contentType: String): ContentType? {
+        val trimmed = contentType.trim()
+        if (trimmed.isEmpty()) {
+            return null
+        }
+
+        // split media type from parameters
+        val parts = trimmed.split(';')
+        val mediaType = parts[0].trim()
+
+        // parse type/subtype
+        val slashIndex = mediaType.indexOf('/')
+        if (slashIndex <= 0 || slashIndex >= mediaType.length - 1) {
+            return null
+        }
+
+        val type = mediaType.substring(0, slashIndex).trim()
+        val subtype = mediaType.substring(slashIndex + 1).trim()
+
+        if (type.isEmpty() || subtype.isEmpty()) {
+            return null
+        }
+
+        // parse parameters (`name=value` or name="quoted value")
+        val parameters = mutableMapOf<String, String>()
+
+        for (i in 1 until parts.size) {
+            val param = parts[i].trim()
+            val eqIndex = param.indexOf('=')
+            if (eqIndex <= 0) {
+                continue
+            }
+
+            val name = param.substring(0, eqIndex).trim().lowercase()
+            var value = param.substring(eqIndex + 1).trim()
+
+            // unquote if needed
+            if (value.startsWith('"') && value.endsWith('"') && value.length >= 2) {
+                value = value.substring(1, value.length - 1)
+                    .replace("\\\"", "\"")
+                    .replace("\\\\", "\\")
+            }
+
+            parameters[name] = value
+        }
+
+        return object : ContentType {
+            override val type = type
+            override val subtype = subtype
+
+            override fun parameter(name: String) = parameters[name.lowercase()]
+
+            override fun charset() = parameters["charset"]?.let {
+                try { Charset.forName(it) } catch (_: Exception) { null }
+            }
+
+            override fun asString(): String {
+                val params = parameters.entries.joinToString("; ") { (k, v) ->
+                    if (v.any { it in " ;\"" }) {
+                        val value = v
+                            .replace("\\", "\\\\")
+                            .replace("\"", "\\\"")
+
+                        "$k=\"$value\""
+                    }
+                    else {
+                        "$k=$v"
+                    }
+                }
+
+                return if (params.isEmpty()) {
+                    "$type/$subtype"
+                } else {
+                    "$type/$subtype; $params"
+                }
+            }
+        }
     }
 
     private data class PartContext(

@@ -493,7 +493,7 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
         val bytes = ch.readRemaining().readByteArray()
 
         val parser = MultipartFormDataParser()
-        val data = parser.parse(body.contentType, bytes)
+        val data = parser.parse(contentType = body.contentType.toContentType(), bytes)
 
         assertEquals(
             3, data.parts.size,
@@ -519,7 +519,7 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
         )
         assertEquals(
             image.contentType,
-            imagePart.contentType?.toString(),
+            imagePart.contentType?.asString(),
             "Image content types don't match",
         )
         assertEquals(filename, imagePart.filename, "Filenames don't match")

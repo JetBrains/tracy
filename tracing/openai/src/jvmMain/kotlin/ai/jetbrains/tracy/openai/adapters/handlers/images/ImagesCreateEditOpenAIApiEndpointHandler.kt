@@ -46,16 +46,10 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
             }
 
             // decode content based on the expected content type
-            val content = contentType.withoutParameters().let {
-                when {
-                    it.match(ContentType.Image.Any) ->
-                        Base64.getEncoder().encodeToString(part.content)
-
-                    it.match(ContentType.Text.Any) ->
-                        part.content.toString(contentType.charset() ?: Charsets.UTF_8)
-
-                    else -> null
-                }
+            val content = when(contentType.type) {
+                "image" -> Base64.getEncoder().encodeToString(part.content)
+                "text" -> part.content.toString(contentType.charset() ?: Charsets.UTF_8)
+                else -> null
             }
 
             if (content == null) {
@@ -76,13 +70,13 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
                     // trace mask only when input content tracing is allowed.
                     // base64-encoded mask content
                     span.setAttribute("gen_ai.request.mask.content", content)
-                    span.setAttribute("gen_ai.request.mask.contentType", contentType.toString())
+                    span.setAttribute("gen_ai.request.mask.contentType", contentType.asString())
                     if (part.filename != null) {
                         span.setAttribute("gen_ai.request.mask.filename", part.filename)
                     }
                     // save mask for further upload
                     mediaContentParts.add(
-                        MediaContentPart(resource = Resource.Base64(content, contentType.toString()))
+                        MediaContentPart(resource = Resource.Base64(content, contentType.asString()))
                     )
                 }
                 // either a single image or an array of images
@@ -90,13 +84,13 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
                     // trace images only when input content tracing is allowed.
                     // base64-encoded image content
                     span.setAttribute("gen_ai.request.image.$imagesCount.content", content)
-                    span.setAttribute("gen_ai.request.image.$imagesCount.contentType", contentType.toString())
+                    span.setAttribute("gen_ai.request.image.$imagesCount.contentType", contentType.asString())
                     if (part.filename != null) {
                         span.setAttribute("gen_ai.request.image.$imagesCount.filename", part.filename)
                     }
                     // save image for further upload
                     mediaContentParts.add(
-                        MediaContentPart(resource = Resource.Base64(content, contentType.toString()))
+                        MediaContentPart(resource = Resource.Base64(content, contentType.asString()))
                     )
                     ++imagesCount
                 }

@@ -5,13 +5,14 @@
 
 package ai.jetbrains.tracy.core.http.parsers
 
-import io.ktor.http.*
+import ai.jetbrains.tracy.ktor.toContentType
+import io.ktor.http.ContentType
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import java.util.*
+import java.util.Base64
 
 class MultipartFormDataParserTest {
     @Test
@@ -39,9 +40,7 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = assertDoesNotThrow {
-            ContentType.parse("multipart/form-data; boundary=$boundary")
-        }
+        val contentType = contentType("multipart/form-data; boundary=$boundary")
 
         val parser = MultipartFormDataParser()
         val data = assertDoesNotThrow {
@@ -68,7 +67,7 @@ class MultipartFormDataParserTest {
     @Test
     fun `test parser throws incorrect content type`() = runTest {
         val body = "This is NOT multipart/form-data"
-        val contentType = ContentType.parse("text/plain")
+        val contentType = contentType("text/plain")
 
         val parser = MultipartFormDataParser()
         assertThrows<IllegalArgumentException> {
@@ -88,7 +87,7 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = assertDoesNotThrow { ContentType.parse("multipart/form-data") }
+        val contentType = contentType("multipart/form-data")
 
         val parser = MultipartFormDataParser()
         assertThrows<IllegalArgumentException> {
@@ -111,7 +110,8 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = contentType("multipart/form-data; boundary=$boundary")
+
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
@@ -120,7 +120,7 @@ class MultipartFormDataParserTest {
         Assertions.assertEquals("file", part.name)
         Assertions.assertEquals(fileName, part.filename)
         Assertions.assertEquals(fileContent, part.content.decodeToString())
-        Assertions.assertEquals(ContentType.Text.Plain, part.contentType)
+        Assertions.assertEquals("text/plain", part.contentType?.mimeType)
     }
 
     @Test
@@ -135,7 +135,7 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = contentType("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
@@ -162,7 +162,7 @@ class MultipartFormDataParserTest {
 
         val bodyBytes = header.toByteArray() + binaryData + footer.toByteArray()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = contentType("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, bodyBytes)
 
@@ -184,7 +184,7 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = contentType("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
@@ -216,7 +216,7 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = contentType("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
@@ -249,7 +249,7 @@ class MultipartFormDataParserTest {
             |--$boundary--
         """.trimMargin()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = contentType("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
@@ -271,7 +271,7 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = contentType("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
@@ -291,7 +291,7 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = contentType("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
@@ -307,7 +307,7 @@ class MultipartFormDataParserTest {
         val boundary = "EmptyBoundary"
         val body = "--$boundary--"
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = contentType("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
@@ -326,7 +326,7 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = contentType("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
@@ -358,7 +358,7 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = contentType("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
@@ -386,7 +386,7 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = contentType("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
@@ -413,7 +413,7 @@ class MultipartFormDataParserTest {
             --$boundary--
         """.trimIndent()
 
-        val contentType = ContentType.parse("multipart/form-data; boundary=$boundary")
+        val contentType = contentType("multipart/form-data; boundary=$boundary")
         val parser = MultipartFormDataParser()
         val data = parser.parse(contentType, body.toByteArray())
 
@@ -422,5 +422,9 @@ class MultipartFormDataParserTest {
 
         val expectedHeaders = mapOf("Content-ID" to "<custom-id-123>", "X-Custom-Header" to "custom-value")
         Assertions.assertEquals(expectedHeaders, part.headers)
+    }
+
+    private fun contentType(contentType: String) = assertDoesNotThrow {
+        ContentType.parse(contentType).toContentType()
     }
 }

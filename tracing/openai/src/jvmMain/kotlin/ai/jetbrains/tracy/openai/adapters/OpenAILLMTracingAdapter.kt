@@ -107,12 +107,10 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
                     value.toBooleanStrictOrNull() ?: false
                 }
             }
-
             is RequestBody.Json -> {
                 val body = request.body.asJson()?.jsonObject ?: return false
                 body["stream"]?.jsonPrimitive?.boolean ?: false
             }
-
             RequestBody.Empty -> false
         }
     }

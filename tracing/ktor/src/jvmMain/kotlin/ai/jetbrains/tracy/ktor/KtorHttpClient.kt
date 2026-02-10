@@ -5,9 +5,9 @@
 
 package ai.jetbrains.tracy.ktor
 
+import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
 import ai.jetbrains.tracy.core.http.protocol.*
-import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.http.protocol.ContentType
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
@@ -38,6 +38,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.serializer
 import mu.KotlinLogging
+import java.nio.charset.Charset
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
 import ai.jetbrains.tracy.core.http.protocol.RequestBody as TracyRequestBody
@@ -178,25 +179,29 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 span.makeCurrent().use {
                     request.attributes.put(httpSpanKey, span)
 
-                    val contentType = request.contentType()
+                    val contentType = request.contentType()?.toContentType()
+                    val charset = request.contentType()?.charset() ?: Charsets.UTF_8
                     val bodyContent = request.copyBodyContent()
 
+                    // parse request body and make a request view with it
                     val requestBody = when {
-                        (bodyContent != null) && (contentType != null) -> bodyContent.asRequestBody(contentType)
+                        (bodyContent != null) && (contentType != null) -> bodyContent.asRequestBody(contentType, charset)
                         else -> {
                             logger.warn("Either body or content type are null, defaulting to empty request body")
                             null
                         }
-                    } ?: TracyRequestBody.Empty
+                    }
 
-                    val req = Request(
-                        url = request.url.toProtocolUrl(),
-                        body = requestBody,
-                        contentType = contentType,
-                    )
+                    val req = if (requestBody != null && contentType != null) {
+                        requestBody.asRequestView(contentType, url = request.url.toProtocolUrl())
+                    } else {
+                        null
+                    }
 
-                    request.attributes.put(isStreamingRequestKey, value = adapter.isStreamingRequest(req))
-                    adapter.registerRequest(span, req)
+                    if (req != null) {
+                        request.attributes.put(isStreamingRequestKey, value = adapter.isStreamingRequest(req))
+                        adapter.registerRequest(span, req)
+                    }
                 }
             }
 
@@ -285,21 +290,25 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
         })
     }
 
+    private fun TracyRequestBody.asRequestView(
+        contentType: ContentType,
+        url: ai.jetbrains.tracy.core.http.protocol.Url
+    ): Request {
+        val requestBody = this
+        return object : Request {
+            override val body = requestBody
+            override val contentType = contentType
+            override val url = url
+        }
+    }
+
     private fun HttpResponse.asResponseView(body: JsonObject): Response {
         val response = this
         return object : Response {
-            private val responseContentType: io.ktor.http.ContentType? = response.contentType()
-
-            override val contentType = responseContentType?.let {
-                object : ContentType {
-                    override val type: String = responseContentType.contentType
-                    override val subtype: String = responseContentType.contentSubtype
-                    override fun asString(): String = responseContentType.toString()
-                }
-            }
+            override val contentType = response.contentType()?.toContentType()
             override val code = response.status.value
-            override val body: ResponseBody = ResponseBody.Json(body)
-            override val url: ai.jetbrains.tracy.core.http.protocol.Url = response.request.url.toProtocolUrl()
+            override val body = ResponseBody.Json(body)
+            override val url = response.request.url.toProtocolUrl()
         }
     }
 

@@ -54,6 +54,7 @@ kotlin {
                 implementation(libs.okhttp.mockwebserver)
                 implementation(libs.opentelemetry.sdk.testing)
                 implementation(libs.logback.classic)
+                implementation(project(":tracing:ktor"))
                 implementation(project.dependencies.testFixtures(project(":tracing:test-utils")))
             }
         }
