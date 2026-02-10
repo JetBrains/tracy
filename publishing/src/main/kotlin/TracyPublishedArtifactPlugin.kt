@@ -21,7 +21,7 @@ class TracyPublishedArtifactPlugin : Plugin<Project> {
 
         // Set artifact coordinates here to keep group/version consistent across all
         // publishable Tracy modules and composite builds, avoiding duplication.
-        project.group = "ai.jetbrains.tracy"
+        project.group = "org.jetbrains.ai.tracy"
         project.description = "Tracy library for Kotlin for tracing"
         project.version = VERSION
 
