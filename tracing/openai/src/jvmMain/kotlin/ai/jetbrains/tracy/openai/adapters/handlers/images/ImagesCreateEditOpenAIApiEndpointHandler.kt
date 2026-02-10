@@ -16,7 +16,6 @@ import ai.jetbrains.tracy.core.http.protocol.asFormData
 import ai.jetbrains.tracy.core.policy.ContentKind
 import ai.jetbrains.tracy.core.policy.contentTracingAllowed
 import ai.jetbrains.tracy.core.policy.orRedactedInput
-import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes
 import kotlinx.serialization.json.Json
