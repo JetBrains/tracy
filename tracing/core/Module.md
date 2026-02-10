@@ -9,9 +9,10 @@ Provides the foundational components for OpenTelemetry-based tracing of AI appli
 - **LLMTracingAdapter**: Base class for implementing provider-specific tracing adapters
 - **Content Capture Policies**: Controls for capturing or redacting sensitive input/output content
 - **HTTP Instrumentation**: OkHttp interceptor and protocol utilities for tracing HTTP calls
-- **Annotation-Based Tracing**: `@KotlinFlowTrace` annotation for declarative function tracing
+- **Annotation-Based Tracing**: `@Trace` annotation for declarative function tracing
 
-This module is required by all other tracing modules and should be included as a dependency when using any AI client instrumentation.
+This module is required by all other tracing modules and should be included as a dependency when using any AI client
+instrumentation.
 
 ## Using in your project
 
@@ -19,6 +20,6 @@ To use the core module in your project, add the following dependency:
 
 ```kotlin
 dependencies {
-    implementation("com.jetbrains:tracy-core:$version")
+    implementation("org.jetbrains.ai.tracy:tracy-core:$version")
 }
 ```

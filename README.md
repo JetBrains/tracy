@@ -49,12 +49,12 @@ Select the build system that matches your setup:
     
     dependencies {
         // Core Module with Shared Functionalities
-        implementation("com.jetbrains:tracy-core:0.0.24")
+        implementation("org.jetbrains.ai.tracy:tracy-core:0.0.24")
         // Client-specific Auto Tracing (select the one you need)
-        implementation("com.jetbrains:tracy-anthropic:0.0.24")
-        implementation("com.jetbrains:tracy-gemini:0.0.24")
-        implementation("com.jetbrains:tracy-ktor:0.0.24")
-        implementation("com.jetbrains:tracy-openai:0.0.24")
+        implementation("org.jetbrains.ai.tracy:tracy-anthropic:0.0.24")
+        implementation("org.jetbrains.ai.tracy:tracy-gemini:0.0.24")
+        implementation("org.jetbrains.ai.tracy:tracy-ktor:0.0.24")
+        implementation("org.jetbrains.ai.tracy:tracy-openai:0.0.24")
     }
     ```
 2. Make sure that you have `maven("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")` in
@@ -92,12 +92,12 @@ Select the build system that matches your setup:
     }
     
     dependencies {
-        implementation 'com.jetbrains:tracy-core:0.0.24'
+        implementation 'org.jetbrains.ai.tracy:tracy-core:0.0.24'
         // Client-specific Auto Tracing
-        implementation 'com.jetbrains:tracy-anthropic:0.0.24'
-        implementation 'com.jetbrains:tracy-gemini:0.0.24'
-        implementation 'com.jetbrains:tracy-ktor:0.0.24'
-        implementation 'com.jetbrains:tracy-openai:0.0.24'
+        implementation 'org.jetbrains.ai.tracy:tracy-anthropic:0.0.24'
+        implementation 'org.jetbrains.ai.tracy:tracy-gemini:0.0.24'
+        implementation 'org.jetbrains.ai.tracy:tracy-ktor:0.0.24'
+        implementation 'org.jetbrains.ai.tracy:tracy-openai:0.0.24'
     }
     ```
 2. Make sure that you have `maven("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")` in
@@ -153,7 +153,7 @@ Select the build system that matches your setup:
     
             <dependencies>
                 <dependency>
-                    <groupId>com.jetbrains</groupId>
+                     <groupId>org.jetbrains.ai.tracy</groupId>
                     <!--Use the Kotlin version matching your setup (e.g., 2.0.0 or 2.0.20).
                     Keep the same major and minor numbers but adjust the patch version
                     to the nearest supported value - either 0 or 20.
@@ -169,28 +169,28 @@ Select the build system that matches your setup:
     
     <dependencies>
         <dependency>
-          <groupId>com.jetbrains</groupId>
+           <groupId>org.jetbrains.ai.tracy</groupId>
           <artifactId>tracy-core-jvm</artifactId>
           <version>0.0.24</version>
         </dependency>
           <!-- Client-specific Auto Tracing -->
         <dependency>
-            <groupId>com.jetbrains</groupId>
+             <groupId>org.jetbrains.ai.tracy</groupId>
             <artifactId>tracy-anthropic-jvm</artifactId>
             <version>0.0.24</version>
         </dependency>
         <dependency>
-            <groupId>com.jetbrains</groupId>
+             <groupId>org.jetbrains.ai.tracy</groupId>
             <artifactId>tracy-gemini-jvm</artifactId>
             <version>0.0.24</version>
         </dependency>
         <dependency>
-            <groupId>com.jetbrains</groupId>
+             <groupId>org.jetbrains.ai.tracy</groupId>
             <artifactId>tracy-ktor-jvm</artifactId>
             <version>0.0.24</version>
         </dependency>
         <dependency>
-            <groupId>com.jetbrains</groupId>
+             <groupId>org.jetbrains.ai.tracy</groupId>
             <artifactId>tracy-openai-jvm</artifactId>
             <version>0.0.24</version>
         </dependency>
@@ -602,12 +602,7 @@ interface correctly. For more details, see the related issue: [KT-64873](https:/
 This project uses **Gradle composite builds**. Thus, running plain `publish` or `publishToMavenLocal` is **NOT enough**.
 Included builds are not published automatically.
 
-Use these tasks instead:
-
-* **Publish to remote Maven**
-    ```bash
-    ./gradlew publishAll
-    ```
+Use this task instead:
 
 * **Publish to Maven Local**
     ```bash

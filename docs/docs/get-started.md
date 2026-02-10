@@ -48,13 +48,13 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
 
     dependencies {
         // Core module (required)
-        implementation("com.jetbrains:tracy-core:0.0.24")
+        implementation("org.jetbrains.ai.tracy:tracy-core:0.0.24")
 
         // Client-specific auto-tracing (add the ones you need)
-        implementation("com.jetbrains:tracy-openai:0.0.24")
-        implementation("com.jetbrains:tracy-anthropic:0.0.24")
-        implementation("com.jetbrains:tracy-gemini:0.0.24")
-        implementation("com.jetbrains:tracy-ktor:0.0.24")
+        implementation("org.jetbrains.ai.tracy:tracy-openai:0.0.24")
+        implementation("org.jetbrains.ai.tracy:tracy-anthropic:0.0.24")
+        implementation("org.jetbrains.ai.tracy:tracy-gemini:0.0.24")
+        implementation("org.jetbrains.ai.tracy:tracy-ktor:0.0.24")
     }
     ```
 
@@ -95,13 +95,13 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
 
     dependencies {
         // Core module (required)
-        implementation 'com.jetbrains:tracy-core:0.0.24'
+        implementation 'org.jetbrains.ai.tracy:tracy-core:0.0.24'
 
         // Client-specific auto-tracing (add the ones you need)
-        implementation 'com.jetbrains:tracy-openai:0.0.24'
-        implementation 'com.jetbrains:tracy-anthropic:0.0.24'
-        implementation 'com.jetbrains:tracy-gemini:0.0.24'
-        implementation 'com.jetbrains:tracy-ktor:0.0.24'
+        implementation 'org.jetbrains.ai.tracy:tracy-openai:0.0.24'
+        implementation 'org.jetbrains.ai.tracy:tracy-anthropic:0.0.24'
+        implementation 'org.jetbrains.ai.tracy:tracy-gemini:0.0.24'
+        implementation 'org.jetbrains.ai.tracy:tracy-ktor:0.0.24'
     }
     ```
 
@@ -148,7 +148,7 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
 
             <dependencies>
                 <dependency>
-                    <groupId>com.jetbrains</groupId>
+                     <groupId>org.jetbrains.ai.tracy</groupId>
                     <!-- Match your Kotlin version (e.g., 2.1.0, 2.0.20) -->
                     <artifactId>tracy-compiler-plugin-2.1.0-jvm</artifactId>
                     <version>0.0.24</version>
@@ -159,28 +159,28 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
 
     <dependencies>
         <dependency>
-            <groupId>com.jetbrains</groupId>
+             <groupId>org.jetbrains.ai.tracy</groupId>
             <artifactId>tracy-core-jvm</artifactId>
             <version>0.0.24</version>
         </dependency>
         <!-- Client-specific auto-tracing (add the ones you need) -->
         <dependency>
-            <groupId>com.jetbrains</groupId>
+             <groupId>org.jetbrains.ai.tracy</groupId>
             <artifactId>tracy-openai-jvm</artifactId>
             <version>0.0.24</version>
         </dependency>
         <dependency>
-            <groupId>com.jetbrains</groupId>
+             <groupId>org.jetbrains.ai.tracy</groupId>
             <artifactId>tracy-anthropic-jvm</artifactId>
             <version>0.0.24</version>
         </dependency>
         <dependency>
-            <groupId>com.jetbrains</groupId>
+             <groupId>org.jetbrains.ai.tracy</groupId>
             <artifactId>tracy-gemini-jvm</artifactId>
             <version>0.0.24</version>
         </dependency>
         <dependency>
-            <groupId>com.jetbrains</groupId>
+             <groupId>org.jetbrains.ai.tracy</groupId>
             <artifactId>tracy-ktor-jvm</artifactId>
             <version>0.0.24</version>
         </dependency>
