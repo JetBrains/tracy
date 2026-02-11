@@ -35,14 +35,16 @@ kotlin {
                 implementation(libs.ktor.client)
                 implementation(libs.ktor.client.cio)
                 implementation(libs.ktor.client.negotiation)
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.opentelemetry.kotlin)
+                implementation(libs.opentelemetry.exporter.otlp)
+                implementation(libs.opentelemetry.exporter.otlp.common)
                 implementation(libs.ktor.serialization.json)
                 implementation(libs.okhttp)
                 implementation(libs.opentelemetry.exporter.logging)
                 implementation(libs.opentelemetry.exporter.logging.otlp)
-                implementation(libs.opentelemetry.exporter.otlp)
-                implementation(libs.opentelemetry.exporter.otlp.common)
-                implementation(libs.opentelemetry.kotlin)
                 implementation(libs.opentelemetry.semconv.incubating)
+                // implementation(libs.apache.mime4j)
             }
         }
 
