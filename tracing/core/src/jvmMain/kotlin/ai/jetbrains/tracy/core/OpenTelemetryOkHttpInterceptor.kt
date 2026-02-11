@@ -49,7 +49,8 @@ fun instrument(client: OkHttpClient, adapter: LLMTracingAdapter): OkHttpClient {
 }
 
 /**
- * Patches the OpenAI-compatible client by injecting a custom interceptor into its internal HTTP client.
+ * Patches the OpenAI-compatible client by injecting a custom interceptor into its internal HTTP client
+ * **in-place**.
  *
  * This method modifies the internal structure of the provided OpenAI-like client to replace its HTTP client interceptors
  * with the specified interceptor.
@@ -57,12 +58,8 @@ fun instrument(client: OkHttpClient, adapter: LLMTracingAdapter): OkHttpClient {
  *
  * @param client The instance of the OpenAI-compatible client to patch.
  * @param interceptor The interceptor to be injected into the internal HTTP client of the OpenAI-compatible client.
- * @return The patched client instance with the custom interceptor injected into its HTTP client.
  */
-fun <T> patchOpenAICompatibleClient(
-    client: T,
-    interceptor: Interceptor,
-): T {
+fun <T> patchOpenAICompatibleClient(client: T, interceptor: Interceptor) {
     val clientOptions = getFieldValue(client as Any, "clientOptions")
     val originalHttpClient = getFieldValue(clientOptions, "originalHttpClient")
 
@@ -77,8 +74,6 @@ fun <T> patchOpenAICompatibleClient(
     // add a given interceptor if the current list of interceptors doesn't contain it already
     val updatedInterceptors = patchInterceptors(okHttpClient.interceptors, interceptor)
     setFieldValue(okHttpClient, "interceptors", updatedInterceptors)
-
-    return client
 }
 
 internal fun getFieldValue(instance: Any, fieldName: String): Any {
