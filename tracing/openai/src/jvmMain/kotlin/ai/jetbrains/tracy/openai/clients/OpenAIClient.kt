@@ -11,13 +11,12 @@ import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
 import com.openai.client.OpenAIClient
 
 /**
- * Instruments an OpenAI client with OpenTelemetry tracing.
+ * Instruments an OpenAI client with OpenTelemetry tracing **in-place**.
  *
  * All LLM API calls made using this client will be automatically traced,
  * capturing request/response attributes as span data.
  *
  * @param client The [OpenAIClient] instance to instrument.
- * @return The same client instance with tracing instrumentation applied.
  *
  * @see OpenAILLMTracingAdapter
  */

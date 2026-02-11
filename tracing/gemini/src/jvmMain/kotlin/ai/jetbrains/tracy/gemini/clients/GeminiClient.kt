@@ -14,7 +14,7 @@ import com.google.genai.Client as GeminiClient
 
 
 /**
- * Instruments a Google Gemini client with OpenTelemetry tracing **inplace**.
+ * Instruments a Google Gemini client with OpenTelemetry tracing **in-place**.
  *
  * All LLM API calls made using this client will be automatically traced,
  * capturing request/response attributes as span data.

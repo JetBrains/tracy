@@ -11,7 +11,7 @@ import ai.jetbrains.tracy.core.patchOpenAICompatibleClient
 import com.anthropic.client.AnthropicClient
 
 /**
- * Instruments an Anthropic client with OpenTelemetry tracing **inplace**.
+ * Instruments an Anthropic client with OpenTelemetry tracing **in-place**.
  *
  * All LLM API calls made using this client will be automatically traced,
  * capturing request/response attributes as span data.
