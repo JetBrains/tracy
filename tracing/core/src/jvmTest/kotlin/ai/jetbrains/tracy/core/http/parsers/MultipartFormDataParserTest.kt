@@ -5,8 +5,8 @@
 
 package ai.jetbrains.tracy.core.http.parsers
 
-import ai.jetbrains.tracy.ktor.toContentType
 import io.ktor.http.ContentType
+import io.ktor.http.charset
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -425,6 +425,13 @@ class MultipartFormDataParserTest {
     }
 
     private fun contentType(contentType: String) = assertDoesNotThrow {
-        ContentType.parse(contentType).toContentType()
+        val contentType = ContentType.parse(contentType)
+        object : ai.jetbrains.tracy.core.http.protocol.ContentType {
+            override val type = contentType.contentType
+            override val subtype = contentType.contentSubtype
+            override fun asString() = contentType.toString()
+            override fun parameter(name: String) = contentType.parameter(name)
+            override fun charset() = contentType.charset()
+        }
     }
 }
