@@ -16,12 +16,14 @@ import com.openai.client.OpenAIClient
  * All LLM API calls made using this client will be automatically traced,
  * capturing request/response attributes as span data.
  *
+ * To patch the given client, the instrumentation
+ * adds an interceptor into the client in-place.
+ *
  * @param client The [OpenAIClient] instance to instrument.
  *
  * @see OpenAILLMTracingAdapter
  */
 fun instrument(client: OpenAIClient) {
-    // adds an interceptor into the client in-place
     patchOpenAICompatibleClient(
         client = client,
         interceptor = OpenTelemetryOkHttpInterceptor(adapter = OpenAILLMTracingAdapter())
