@@ -56,9 +56,10 @@ allprojects {
                     tasks.matching { it.name.startsWith("sign") && it.name.endsWith("Publication") })
             }
 
-            tasks.matching { it.name.endsWith("PublicationToArtifactsRepository") }.configureEach {
-                dependsOn(signAllPublications)
-            }
+            tasks.matching { it.name.startsWith("publish") && it.name.contains("PublicationTo") }
+                .configureEach {
+                    dependsOn(signAllPublications)
+                }
 
             extensions.configure<PublishingExtension> {
                 repositories.maven {
