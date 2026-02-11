@@ -72,7 +72,7 @@ import com.google.genai.Client
 val instrumentedClient = Client.builder()
     .apiKey("api-token")
     .build()
-   .also { instrument(this) }
+    .apply { instrument(this) }
 ```
 
 <!--- KNIT example-autotracing-03.kt -->
