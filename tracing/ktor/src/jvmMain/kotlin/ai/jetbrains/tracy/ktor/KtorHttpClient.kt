@@ -9,6 +9,7 @@ import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
 import ai.jetbrains.tracy.core.http.protocol.*
 import ai.jetbrains.tracy.core.http.protocol.ContentType
+import ai.jetbrains.tracy.core.http.protocol.Url
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
 import io.ktor.client.request.*
@@ -16,7 +17,6 @@ import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.client.utils.*
 import io.ktor.http.*
-import io.ktor.http.Url
 import io.ktor.http.content.*
 import io.ktor.util.*
 import io.ktor.utils.io.*
@@ -41,6 +41,7 @@ import mu.KotlinLogging
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
 import ai.jetbrains.tracy.core.http.protocol.RequestBody as TracyRequestBody
+import io.ktor.http.Url as KtorUrl
 
 /**
  * Instruments a Ktor [HttpClient] with OpenTelemetry tracing for LLM provider API calls.
@@ -291,7 +292,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
 
     private fun TracyRequestBody.asRequestView(
         contentType: ContentType,
-        url: ai.jetbrains.tracy.core.http.protocol.Url
+        url: Url
     ): Request {
         val requestBody = this
         return object : Request {
@@ -371,8 +372,20 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
     }
 }
 
-private fun URLBuilder.toProtocolUrl() =
-    ai.jetbrains.tracy.core.http.protocol.Url(protocol.name, host, pathSegments)
+private fun URLBuilder.toProtocolUrl(): Url {
+    val builder = this
+    return object : Url {
+        override val scheme = builder.protocol.name
+        override val host = builder.host
+        override val pathSegments = builder.pathSegments
+    }
+}
 
-private fun Url.toProtocolUrl() =
-    ai.jetbrains.tracy.core.http.protocol.Url(protocol.name, host, segments)
+private fun KtorUrl.toProtocolUrl(): Url {
+    val url = this
+    return object : Url {
+        override val scheme = url.protocol.name
+        override val host = url.host
+        override val pathSegments = url.segments
+    }
+}

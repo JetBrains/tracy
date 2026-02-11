@@ -7,10 +7,25 @@ package ai.jetbrains.tracy.core.http.protocol
 
 import okhttp3.HttpUrl
 
-data class Url(
-    val scheme: String,
-    val host: String,
-    val pathSegments: List<String>,
-)
+/**
+ * Represents a URL structure, defining its essential parts.
+ *
+ * @property scheme The scheme of the URL (e.g., "http", "https") representing the protocol.
+ * @property host The host of the URL, indicating the domain or IP address.
+ * @property pathSegments The path segments of the URL, representing
+ *                        the hierarchical structure of the resource location.
+ */
+interface Url {
+    val scheme: String
+    val host: String
+    val pathSegments: List<String>
+}
 
-fun HttpUrl.toProtocolUrl() = Url(scheme, host, pathSegments)
+fun HttpUrl.toProtocolUrl(): Url {
+    val httpUrl = this
+    return object : Url {
+        override val scheme = httpUrl.scheme
+        override val host = httpUrl.host
+        override val pathSegments = httpUrl.pathSegments
+    }
+}
