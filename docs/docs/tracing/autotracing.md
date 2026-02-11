@@ -7,7 +7,7 @@ execution time, without manually creating spans.
 ## How it works
 
 To enable autotracing, you use the `instrument()` function provided by the specific module for the client you are using.
-This function wraps your client instance with a proxy that records OpenTelemetry spans for every API call.
+This function modifies your client instance in-place to record OpenTelemetry spans for every API call.
 
 ## Supported Clients
 
