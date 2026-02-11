@@ -187,7 +187,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                     val requestBody = when {
                         (bodyContent != null) && (contentType != null) -> bodyContent.asRequestBody(contentType, charset)
                         else -> {
-                            logger.warn("Either body or content type are null, defaulting to empty request body")
+                            logger.warn("Either body or content type are null; request body will not be traced")
                             null
                         }
                     }
@@ -198,8 +198,12 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                         null
                     }
 
+                    request.attributes.put(
+                        isStreamingRequestKey,
+                        value = req?.let { adapter.isStreamingRequest(it) } ?: false
+                    )
+
                     if (req != null) {
-                        request.attributes.put(isStreamingRequestKey, value = adapter.isStreamingRequest(req))
                         adapter.registerRequest(span, req)
                     }
                 }
