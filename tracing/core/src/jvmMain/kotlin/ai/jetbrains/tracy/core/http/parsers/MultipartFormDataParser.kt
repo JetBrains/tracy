@@ -261,8 +261,8 @@ private class MultipartContentHandler : AbstractContentHandler() {
             return null
         }
 
-        val type = mediaType.substring(0, slashIndex).trim()
-        val subtype = mediaType.substring(slashIndex + 1).trim()
+        val type = mediaType.substring(0, slashIndex).trim().lowercase()
+        val subtype = mediaType.substring(slashIndex + 1).trim().lowercase()
 
         if (type.isEmpty() || subtype.isEmpty()) {
             return null
