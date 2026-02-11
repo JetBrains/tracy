@@ -202,6 +202,11 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                         value = req?.let { adapter.isStreamingRequest(it) } ?: false
                     )
 
+                    request.attributes.put(
+                        isStreamingRequestKey,
+                        value = req?.let { adapter.isStreamingRequest(it) } ?: false
+                    )
+
                     if (req != null) {
                         adapter.registerRequest(span, req)
                     }
