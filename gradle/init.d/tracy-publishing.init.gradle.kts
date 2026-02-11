@@ -125,6 +125,13 @@ allprojects {
                                 organization.set("JetBrains")
                                 organizationUrl.set("https://www.jetbrains.com")
                             }
+                            developer {
+                                id.set("nikolai.gruzinov")
+                                name.set("Nikolai Gruzinov")
+                                email.set("nikolai.gruzinov@jetbrains.com")
+                                organization.set("JetBrains")
+                                organizationUrl.set("https://www.jetbrains.com")
+                            }
                         }
 
                         scm {
