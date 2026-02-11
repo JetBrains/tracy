@@ -45,9 +45,11 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
             }
 
             // decode content based on the expected content type
-            val content = when(contentType.type) {
-                "image" -> Base64.getEncoder().encodeToString(part.content)
-                "text" -> part.content.toString(contentType.charset() ?: Charsets.UTF_8)
+            val content = when {
+                contentType.mimeType.startsWith("image") ->
+                    Base64.getEncoder().encodeToString(part.content)
+                contentType.mimeType.startsWith("text") ->
+                    part.content.toString(contentType.charset() ?: Charsets.UTF_8)
                 else -> null
             }
 
