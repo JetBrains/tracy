@@ -49,7 +49,7 @@ import com.anthropic.client.okhttp.AnthropicOkHttpClient
 val instrumentedClient = AnthropicOkHttpClient.builder()
     .apiKey("api-token")
     .build()
-   .apply { instrument(this) }
+    .apply { instrument(this) }
 ```
 
 <!--- KNIT example-autotracing-02.kt -->
