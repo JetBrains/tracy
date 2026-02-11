@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets
  * ```kotlin
  * DataUrl(
  *    mediaType = "text/plain",
- *    parameters = mapOf("charset" to "US-ASCII"),
+ *    parameters = mapOf("charset" to listOf("US-ASCII")),
  *    base64 = true,
  *    data = "SGVsbG8gV29ybGQ=",
  * )
@@ -142,7 +142,6 @@ data class DataUrl(
 
                         if (!this.contains(key)) {
                             put(key, mutableListOf(value))
-                            mutableListOf<String>()
                         } else {
                             this[key]?.add(value)
                         }

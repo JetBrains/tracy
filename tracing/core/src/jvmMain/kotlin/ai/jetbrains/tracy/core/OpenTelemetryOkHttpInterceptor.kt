@@ -349,7 +349,7 @@ class OpenTelemetryOkHttpInterceptor(
         return content to request
     }
 
-    fun OkHttpResponse.asResponseView(body: JsonObject): Response {
+    private fun OkHttpResponse.asResponseView(body: JsonObject): Response {
         val response = this
         return object : Response {
             private val mediaType = response.body?.contentType()

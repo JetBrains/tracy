@@ -21,7 +21,6 @@ private val logger = KotlinLogging.logger {}
  * @param url The URL to which the request is sent.
  *            This includes the scheme, host, and path segments.
  * @param contentType The content type of the request, indicating the type of data included in the body.
- *                    This may be null if not specified.
  * @param body The body of the request, containing the actual data to be sent.
  *             This can be represented as JSON or form data.
  */
@@ -69,7 +68,6 @@ fun RequestBody.asFormData(): FormData? {
  * For `multipart/form-data`, it parses the byte array into a form data structure.
  *
  * @param contentType The mime type of the data (e.g., `application/json`). Used to determine how to interpret the byte array.
- *                  Can be null if no content type is specified.
  * @param charset The character encoding used to decode the byte array.
  *
  * @return A [RequestBody] instance representing the parsed content, or null if
