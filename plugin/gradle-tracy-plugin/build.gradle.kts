@@ -37,11 +37,14 @@ java {
     }
 }
 
-publishing {
-    publications.withType<MavenPublication>().configureEach {
-        pom {
-            name.set(artifactId)
-            description.set("Gradle plugin for configuring Tracy annotation based tracing in Kotlin projects.")
+afterEvaluate {
+    extensions.configure<PublishingExtension> {
+        publications.withType<MavenPublication>().configureEach {
+            groupId = "org.jetbrains.ai.tracy"
+            pom {
+                name.set(artifactId)
+                description.set("Gradle plugin for configuring Tracy annotation based tracing in Kotlin projects.")
+            }
         }
     }
 }
