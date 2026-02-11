@@ -1,22 +1,23 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.openai.adapters
 
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
 import ai.jetbrains.tracy.core.adapters.handlers.EndpointApiHandler
+import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractorImpl
+import ai.jetbrains.tracy.core.http.protocol.*
+import ai.jetbrains.tracy.core.http.protocol.Url
 import ai.jetbrains.tracy.openai.adapters.handlers.ChatCompletionsOpenAIApiEndpointHandler
-import ai.jetbrains.tracy.openai.adapters.handlers.images.ImagesCreateEditOpenAIApiEndpointHandler
-import ai.jetbrains.tracy.openai.adapters.handlers.images.ImagesCreateOpenAIApiEndpointHandler
 import ai.jetbrains.tracy.openai.adapters.handlers.OpenAIApiUtils
 import ai.jetbrains.tracy.openai.adapters.handlers.ResponsesOpenAIApiEndpointHandler
-import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractorImpl
-import ai.jetbrains.tracy.core.http.protocol.Request
-import ai.jetbrains.tracy.core.http.protocol.RequestBody
-import ai.jetbrains.tracy.core.http.protocol.Response
-import ai.jetbrains.tracy.core.http.protocol.Url
-import ai.jetbrains.tracy.core.http.protocol.asFormData
-import ai.jetbrains.tracy.core.http.protocol.asJson
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
-import io.ktor.http.charset
+import ai.jetbrains.tracy.openai.adapters.handlers.images.ImagesCreateEditOpenAIApiEndpointHandler
+import ai.jetbrains.tracy.openai.adapters.handlers.images.ImagesCreateOpenAIApiEndpointHandler
+import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -30,10 +31,13 @@ import java.util.concurrent.ConcurrentHashMap
 private enum class OpenAIApiType(val route: String) {
     // See: https://platform.openai.com/docs/api-reference/completions
     CHAT_COMPLETIONS("completions"),
+
     // See: https://platform.openai.com/docs/api-reference/responses
     RESPONSES_API("responses"),
+
     // See: https://platform.openai.com/docs/api-reference/images/create
     IMAGES_GENERATIONS("images/generations"),
+
     // See: https://platform.openai.com/docs/api-reference/images/createEdit
     IMAGES_EDITS("images/edits");
 
@@ -73,10 +77,12 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
                     value.toBooleanStrictOrNull() ?: false
                 }
             }
+
             is RequestBody.Json -> {
                 val body = request.body.asJson()?.jsonObject ?: return false
                 body["stream"]?.jsonPrimitive?.boolean ?: false
             }
+
             RequestBody.Empty -> false
         }
     }
@@ -100,15 +106,19 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
             OpenAIApiType.CHAT_COMPLETIONS -> handlers.getOrPut(OpenAIApiType.CHAT_COMPLETIONS) {
                 ChatCompletionsOpenAIApiEndpointHandler(extractor)
             }
+
             OpenAIApiType.RESPONSES_API -> handlers.getOrPut(OpenAIApiType.RESPONSES_API) {
                 ResponsesOpenAIApiEndpointHandler(extractor)
             }
+
             OpenAIApiType.IMAGES_GENERATIONS -> handlers.getOrPut(OpenAIApiType.IMAGES_GENERATIONS) {
                 ImagesCreateOpenAIApiEndpointHandler(extractor)
             }
+
             OpenAIApiType.IMAGES_EDITS -> handlers.getOrPut(OpenAIApiType.IMAGES_EDITS) {
                 ImagesCreateEditOpenAIApiEndpointHandler(extractor)
             }
+
             null -> handlers.getOrPut(OpenAIApiType.CHAT_COMPLETIONS) {
                 logger.warn { "Unknown OpenAI API detected. Defaulting to 'chat completion'." }
                 ChatCompletionsOpenAIApiEndpointHandler(extractor)

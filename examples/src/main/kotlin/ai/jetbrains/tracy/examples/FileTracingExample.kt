@@ -1,9 +1,14 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.examples
 
-import ai.jetbrains.tracy.core.exporters.FileExporterConfig
-import ai.jetbrains.tracy.core.exporters.OutputFormat
 import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.exporters.FileExporterConfig
+import ai.jetbrains.tracy.core.exporters.OutputFormat
 import ai.jetbrains.tracy.core.fluent.Trace
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.createTempFile

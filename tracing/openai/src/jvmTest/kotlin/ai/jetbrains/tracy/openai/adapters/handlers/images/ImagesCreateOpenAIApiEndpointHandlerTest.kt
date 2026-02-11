@@ -1,10 +1,15 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.openai.adapters.handlers.images
 
-import ai.jetbrains.tracy.test.utils.MediaContentAttributeValues
-import ai.jetbrains.tracy.openai.clients.instrument
-import ai.jetbrains.tracy.openai.adapters.BaseOpenAITracingTest
 import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.policy.ContentCapturePolicy
+import ai.jetbrains.tracy.openai.adapters.BaseOpenAITracingTest
+import ai.jetbrains.tracy.openai.clients.instrument
+import ai.jetbrains.tracy.test.utils.MediaContentAttributeValues
 import com.openai.models.images.ImageGenerateParams
 import com.openai.models.images.ImageModel
 import io.opentelemetry.api.common.AttributeKey

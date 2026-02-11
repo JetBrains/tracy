@@ -1,3 +1,8 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 plugins {
     id("org.jetbrains.dokka")
     id("org.jetbrains.dokka-javadoc")
@@ -23,10 +28,10 @@ dokka {
     val versions = project.getVersions()
 
     dokkaSourceSets.configureEach {
-         includes.from("Module.md")
+        includes.from("Module.md")
 
         pluginsConfiguration.html {
-            footerMessage = "Copyright © 2000-2025 JetBrains s.r.o."
+            footerMessage = "Copyright © 2026 JetBrains s.r.o."
         }
 
         sourceLink {

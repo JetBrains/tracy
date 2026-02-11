@@ -1,13 +1,18 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.examples.clients
 
+import ai.jetbrains.tracy.anthropic.adapters.AnthropicLLMTracingAdapter
 import ai.jetbrains.tracy.core.OpenTelemetryOkHttpInterceptor
-import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
-import ai.jetbrains.tracy.core.instrument
 import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
-import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
+import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
+import ai.jetbrains.tracy.core.instrument
 import ai.jetbrains.tracy.gemini.adapters.GeminiLLMTracingAdapter
-import ai.jetbrains.tracy.anthropic.adapters.AnthropicLLMTracingAdapter
+import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray

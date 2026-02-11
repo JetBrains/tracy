@@ -1,3 +1,8 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.eval.utils
 
 import mu.KotlinLogging
@@ -41,7 +46,7 @@ fun averageSingleScoreEvalResults(results: List<SingleScoreEvalResult>): Double?
 
     val scoreNames = results.map { it.scoreName }.distinct()
     if (scoreNames.size != 1) {
-        logger.warn{"Score names are inconsistent, cannot compute score: $scoreNames"}
+        logger.warn { "Score names are inconsistent, cannot compute score: $scoreNames" }
         return null
     }
     return results.map { it.score }.average()
@@ -72,7 +77,7 @@ fun List<EvalResult>.toTable(): DataFrame<Float>? {
         val results = map { it as SingleScoreEvalResult }
         val scoreNames = results.map { it.scoreName }.distinct()
         if (scoreNames.size != 1) {
-            logger.warn{"Score names are inconsistent, could not convert List<SingleScoreEvalResult> to table: $scoreNames"}
+            logger.warn { "Score names are inconsistent, could not convert List<SingleScoreEvalResult> to table: $scoreNames" }
             return null
         }
         return dataFrameOf(scoreNames.first() to results.map { it.score }).cast()

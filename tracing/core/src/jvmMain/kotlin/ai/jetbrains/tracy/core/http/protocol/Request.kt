@@ -1,9 +1,13 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.core.http.protocol
 
-import ai.jetbrains.tracy.core.http.parsers.MultipartFormDataParser
 import ai.jetbrains.tracy.core.http.parsers.FormData
-import io.ktor.http.ContentType
-import io.ktor.http.charset
+import ai.jetbrains.tracy.core.http.parsers.MultipartFormDataParser
+import io.ktor.http.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
@@ -93,11 +97,13 @@ fun ByteArray.asRequestBody(contentType: ContentType): RequestBody? {
 
             RequestBody.Json(json)
         }
+
         ContentType.MultiPart.FormData -> {
             val parser = MultipartFormDataParser()
             val formData = parser.parse(contentType, bytes)
             RequestBody.FormData(formData)
         }
+
         else -> null
     }
 }

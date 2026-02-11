@@ -1,9 +1,14 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.core.fluent
 
-import ai.jetbrains.tracy.core.exporters.FileExporterConfig
-import ai.jetbrains.tracy.core.exporters.OutputFormat
 import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.exporters.FileExporterConfig
+import ai.jetbrains.tracy.core.exporters.OutputFormat
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.*
 import org.junit.jupiter.api.Assertions.assertTrue

@@ -1,7 +1,12 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.core.fluent
 
-import ai.jetbrains.tracy.test.utils.BaseOpenTelemetryTracingTest
 import ai.jetbrains.tracy.core.exporters.langfuse.addLangfuseTagsToCurrentTrace
+import ai.jetbrains.tracy.test.utils.BaseOpenTelemetryTracingTest
 import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.sdk.internal.ExceptionAttributeResolver

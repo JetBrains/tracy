@@ -1,10 +1,15 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.test.utils
 
-import ai.jetbrains.tracy.core.adapters.media.SupportedMediaContentTypes
 import ai.jetbrains.tracy.core.adapters.media.DataUrl
-import io.ktor.http.Headers
+import ai.jetbrains.tracy.core.adapters.media.SupportedMediaContentTypes
+import io.ktor.http.*
 import java.io.File
-import java.util.Base64
+import java.util.*
 
 sealed class MediaSource {
     data class File(

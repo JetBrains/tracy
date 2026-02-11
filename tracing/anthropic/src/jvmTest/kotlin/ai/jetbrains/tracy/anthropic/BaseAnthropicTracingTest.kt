@@ -1,5 +1,11 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.anthropic
 
+import ai.jetbrains.tracy.anthropic.BaseAnthropicTracingTest.Companion.ANTHROPIC_API_URL
 import ai.jetbrains.tracy.test.utils.BaseAITracingTest
 import com.anthropic.client.AnthropicClient
 import com.anthropic.client.okhttp.AnthropicOkHttpClient

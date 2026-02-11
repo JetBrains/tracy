@@ -1,17 +1,14 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.examples.eval
 
 import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig
 import ai.jetbrains.tracy.core.fluent.Trace
 import ai.jetbrains.tracy.eval.providers.langfuse.LangfuseEvaluationTest
-import ai.jetbrains.tracy.eval.utils.AggregateScore
-import ai.jetbrains.tracy.eval.utils.ConsoleEvaluationTest
-import ai.jetbrains.tracy.eval.utils.Evaluator
-import ai.jetbrains.tracy.eval.utils.Generator
-import ai.jetbrains.tracy.eval.utils.MultiScoreEvalResult
-import ai.jetbrains.tracy.eval.utils.NoGroundTruth
-import ai.jetbrains.tracy.eval.utils.SingleScoreEvalResult
-import ai.jetbrains.tracy.eval.utils.TestCase
-import ai.jetbrains.tracy.eval.utils.averageMultiScoreEvalResults
+import ai.jetbrains.tracy.eval.utils.*
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletionCreateParams

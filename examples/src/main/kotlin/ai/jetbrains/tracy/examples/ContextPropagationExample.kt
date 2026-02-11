@@ -1,10 +1,15 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.examples
 
-import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
 import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 import ai.jetbrains.tracy.core.currentSpanContext
 import ai.jetbrains.tracy.core.currentSpanContextElement
+import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
 import ai.jetbrains.tracy.core.fluent.Trace
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext

@@ -1,6 +1,14 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.core
 
 import ai.jetbrains.tracy.config.BuildConfig
+import ai.jetbrains.tracy.core.TracingManager.setSdk
+import ai.jetbrains.tracy.core.TracingManager.traceSensitiveContent
+import ai.jetbrains.tracy.core.TracingManager.withCapturingPolicy
 import ai.jetbrains.tracy.core.policy.ContentCapturePolicy
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.trace.Tracer

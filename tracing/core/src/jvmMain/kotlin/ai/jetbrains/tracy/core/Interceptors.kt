@@ -1,3 +1,8 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.core
 
 import okhttp3.Interceptor
@@ -18,8 +23,9 @@ fun patchInterceptors(interceptors: List<Interceptor>, interceptor: Interceptor)
 
 internal fun patchInterceptorsInplace(interceptors: MutableList<Interceptor>, interceptor: Interceptor) {
     val interceptorExists = interceptors.any {
-        it == interceptor || it.javaClass.name == interceptor.javaClass.name }
-     if (!interceptorExists) {
+        it == interceptor || it.javaClass.name == interceptor.javaClass.name
+    }
+    if (!interceptorExists) {
         interceptors.add(interceptor)
-     }
+    }
 }

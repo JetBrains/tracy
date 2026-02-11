@@ -1,30 +1,26 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.openai.adapters.handlers.images
 
 import ai.jetbrains.tracy.core.adapters.media.MediaContent
 import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractor
 import ai.jetbrains.tracy.core.adapters.media.MediaContentPart
 import ai.jetbrains.tracy.core.adapters.media.Resource
-import ai.jetbrains.tracy.openai.adapters.handlers.asString
 import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.asJson
 import ai.jetbrains.tracy.core.policy.ContentKind
 import ai.jetbrains.tracy.core.policy.contentTracingAllowed
 import ai.jetbrains.tracy.core.policy.orRedactedOutput
-import io.ktor.http.ContentType
+import ai.jetbrains.tracy.openai.adapters.handlers.asString
+import io.ktor.http.*
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlin.collections.component1
-import kotlin.collections.component2
+import kotlinx.serialization.json.*
 import mu.KotlinLogging.logger
 
 

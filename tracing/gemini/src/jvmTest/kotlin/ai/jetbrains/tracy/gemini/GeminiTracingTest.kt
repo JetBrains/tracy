@@ -1,8 +1,13 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.gemini
 
-import ai.jetbrains.tracy.gemini.clients.instrument
 import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.policy.ContentCapturePolicy
+import ai.jetbrains.tracy.gemini.clients.instrument
 import com.google.genai.errors.GenAiIOException
 import com.google.genai.types.Content
 import com.google.genai.types.GenerateContentResponse
@@ -167,9 +172,11 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
 
     @Test
     fun `test Gemini tool calling auto logging`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createGeminiClient(
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createGeminiClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val toolName = "hi"
         val greetTool = createTool(toolName)

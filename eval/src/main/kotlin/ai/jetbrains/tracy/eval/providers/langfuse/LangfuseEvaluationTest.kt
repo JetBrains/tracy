@@ -1,12 +1,12 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.eval.providers.langfuse
 
 import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig
-import ai.jetbrains.tracy.eval.utils.AIInput
-import ai.jetbrains.tracy.eval.utils.AIOutput
-import ai.jetbrains.tracy.eval.utils.BaseEvaluationTest
-import ai.jetbrains.tracy.eval.utils.EvalResult
-import ai.jetbrains.tracy.eval.utils.GroundTruth
-import ai.jetbrains.tracy.eval.utils.createRandomRunNameAdjectiveNounNumber
+import ai.jetbrains.tracy.eval.utils.*
 
 /**
  * A base abstract class for conducting evaluation tests on AI functionality.

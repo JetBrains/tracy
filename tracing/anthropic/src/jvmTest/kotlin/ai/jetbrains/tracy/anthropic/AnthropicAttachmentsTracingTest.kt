@@ -1,11 +1,16 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.anthropic
 
-import ai.jetbrains.tracy.test.utils.MediaSource
-import ai.jetbrains.tracy.core.TracingManager
-import ai.jetbrains.tracy.test.utils.asDataUrl
-import ai.jetbrains.tracy.core.policy.ContentCapturePolicy
-import ai.jetbrains.tracy.test.utils.toMediaContentAttributeValues
 import ai.jetbrains.tracy.anthropic.clients.instrument
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.policy.ContentCapturePolicy
+import ai.jetbrains.tracy.test.utils.MediaSource
+import ai.jetbrains.tracy.test.utils.asDataUrl
+import ai.jetbrains.tracy.test.utils.toMediaContentAttributeValues
 import com.anthropic.core.JsonValue
 import com.anthropic.models.messages.*
 import io.opentelemetry.api.common.AttributeKey

@@ -1,3 +1,8 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.gemini
 
 import ai.jetbrains.tracy.gemini.clients.instrument
@@ -25,9 +30,11 @@ import com.google.genai.types.GenerateContentConfig as GeminiGenerateContentConf
 class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
     @Test
     fun `test generated image get traced`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createGeminiClient(
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createGeminiClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val model = "gemini-2.5-flash-image"
         val params = GeminiGenerateContentConfig.builder()
@@ -48,16 +55,20 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
             contentType = "image/png",
             data = null,
         )
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            expectedImage,
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                expectedImage,
+            )
+        )
     }
 
     @Test
     fun `test generated image and attached reference get traced`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createGeminiClient(
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createGeminiClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val model = "gemini-2.5-flash-image"
         val params = GeminiGenerateContentConfig.builder()
@@ -88,17 +99,21 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
             contentType = "image/png",
             data = null,
         )
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            image.toMediaContentAttributeValues(field = "input"),
-            expectedImage,
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                image.toMediaContentAttributeValues(field = "input"),
+                expectedImage,
+            )
+        )
     }
 
     @Test
     fun `test image generated in chat gets traced`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createGeminiClient(
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createGeminiClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val model = "gemini-2.5-flash-image"
         val params = GeminiGenerateContentConfig.builder()
@@ -116,16 +131,20 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
             contentType = "image/png",
             data = null,
         )
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            expectedImage,
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                expectedImage,
+            )
+        )
     }
 
     @Test
     fun `test images generated in multi-turn chat generation get traced`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createGeminiClient(
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createGeminiClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val model = "gemini-2.5-flash-image"
         val params = GeminiGenerateContentConfig.builder()
@@ -150,29 +169,37 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
             data = null,
         )
 
-        verifyMediaContentUploadAttributes(trace1, expected = listOf(
-            expectedImage
-        ))
+        verifyMediaContentUploadAttributes(
+            trace1, expected = listOf(
+                expectedImage
+            )
+        )
         // the first image becomes an input
-        verifyMediaContentUploadAttributes(trace2, expected = listOf(
-            expectedImage.copy(field = "input"),
-            expectedImage,
-        ))
+        verifyMediaContentUploadAttributes(
+            trace2, expected = listOf(
+                expectedImage.copy(field = "input"),
+                expectedImage,
+            )
+        )
     }
 
     @Test
     fun `test image generated with high-resolution gets traced`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createGeminiClient(
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createGeminiClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val model = "gemini-2.5-flash-image"
         val params = GeminiGenerateContentConfig.builder()
             .responseModalities("TEXT", "IMAGE")
-            .imageConfig(ImageConfig.builder()
-                .aspectRatio("16:9")
-                .imageSize("4K")
-                .build())
+            .imageConfig(
+                ImageConfig.builder()
+                    .aspectRatio("16:9")
+                    .imageSize("4K")
+                    .build()
+            )
             .build()
 
         client.models.generateContent(
@@ -189,16 +216,20 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
             contentType = "image/png",
             data = null,
         )
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            expectedImage,
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                expectedImage,
+            )
+        )
     }
 
     @Test
     fun `test attached audio file gets traced`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createGeminiClient(
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createGeminiClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val model = "gemini-2.5-flash"
         val params = GeminiGenerateContentConfig.builder()
@@ -220,16 +251,20 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
         validateBasicTracing(model)
         val trace = analyzeSpans().first()
 
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            file.toMediaContentAttributeValues(field = "input"),
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                file.toMediaContentAttributeValues(field = "input"),
+            )
+        )
     }
 
     @Test
     fun `test images generated with Imagen API get traced`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createGeminiClient(
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createGeminiClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val model = "imagen-4.0-generate-001"
         val params = GenerateImagesConfig.builder()
@@ -251,16 +286,20 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
             contentType = "image/png",
             data = null,
         )
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            expectedImage, expectedImage, expectedImage
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                expectedImage, expectedImage, expectedImage
+            )
+        )
     }
 
     @Test
     fun `test image editing API gets traced`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createGeminiClient(
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createGeminiClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val model = "imagen-3.0-capability-001"
         val params = EditImageConfig.builder()
@@ -270,7 +309,8 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
             .editMode(EditMode.Known.EDIT_MODE_DEFAULT)
             .build()
 
-        val prompt = "I attached two images: Naruto and a comics image in Noir style. Draw Naruto in the style of the given comics image. Modify only the Naruto image, the 2nd one is given as an inspiration and shouldn't be used directly"
+        val prompt =
+            "I attached two images: Naruto and a comics image in Noir style. Draw Naruto in the style of the given comics image. Modify only the Naruto image, the 2nd one is given as an inspiration and shouldn't be used directly"
 
         val subjectImage = MediaSource.File("naruto.png", "image/png")
         val styleImage = MediaSource.File("noir-style-image.jpg", "image/jpeg")
@@ -321,26 +361,30 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
             contentType = "image/png",
             data = null,
         )
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            subjectImage.toMediaContentAttributeValues(field = "input"),
-            styleImage.toMediaContentAttributeValues(field = "input"),
-            expectedImage,
-            expectedImage,
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                subjectImage.toMediaContentAttributeValues(field = "input"),
+                styleImage.toMediaContentAttributeValues(field = "input"),
+                expectedImage,
+                expectedImage,
+            )
+        )
     }
 
     @Test
     fun `test image upscaling API gets traced`() = runTest(timeout = 3.minutes) {
-        val client = instrument(createGeminiClient(
-            timeout = Duration.ofMinutes(3)
-        ))
+        val client = instrument(
+            createGeminiClient(
+                timeout = Duration.ofMinutes(3)
+            )
+        )
 
         val model = "imagen-4.0-upscale-preview"
         val outputMimeType = "image/jpeg"
         val params = UpscaleImageConfig.builder()
-             .outputMimeType(outputMimeType)
-             .imagePreservationFactor(0.8f)
-             .labels(mapOf("label1" to "value1", "label2" to "value2"))
+            .outputMimeType(outputMimeType)
+            .imagePreservationFactor(0.8f)
+            .labels(mapOf("label1" to "value1", "label2" to "value2"))
             .build()
         val upscaleFactor = ""
 
@@ -362,9 +406,11 @@ class GeminiMediaContentTracingTest : BaseGeminiTracingTest() {
             contentType = outputMimeType,
             data = null,
         )
-        verifyMediaContentUploadAttributes(trace, expected = listOf(
-            image.toMediaContentAttributeValues(field = "input"),
-            expectedImage,
-        ))
+        verifyMediaContentUploadAttributes(
+            trace, expected = listOf(
+                image.toMediaContentAttributeValues(field = "input"),
+                expectedImage,
+            )
+        )
     }
 }

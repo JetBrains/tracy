@@ -1,12 +1,17 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.core.http.parsers
 
-import io.ktor.http.ContentType
+import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import java.util.Base64
+import java.util.*
 
 class MultipartFormDataParserTest {
     @Test

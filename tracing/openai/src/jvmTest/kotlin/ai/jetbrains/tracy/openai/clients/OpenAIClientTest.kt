@@ -1,8 +1,13 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.openai.clients
 
-import ai.jetbrains.tracy.test.utils.BaseOpenTelemetryTracingTest
 import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.fluent.processor.withSpan
+import ai.jetbrains.tracy.test.utils.BaseOpenTelemetryTracingTest
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
@@ -12,11 +17,7 @@ import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_SYSTEM
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Tag
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.*
 import java.time.Duration
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull

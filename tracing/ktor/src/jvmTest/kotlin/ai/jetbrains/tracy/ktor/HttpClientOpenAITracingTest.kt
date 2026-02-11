@@ -1,7 +1,12 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.ktor
 
-import ai.jetbrains.tracy.core.http.parsers.MultipartFormDataParser
 import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.http.parsers.MultipartFormDataParser
 import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
 import ai.jetbrains.tracy.test.utils.BaseAITracingTest
 import ai.jetbrains.tracy.test.utils.MediaContentAttributeValues
@@ -10,8 +15,8 @@ import ai.jetbrains.tracy.test.utils.toMediaContentAttributeValues
 import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
 import io.ktor.client.*
 import io.ktor.client.engine.mock.*
+import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.plugins.timeout
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*

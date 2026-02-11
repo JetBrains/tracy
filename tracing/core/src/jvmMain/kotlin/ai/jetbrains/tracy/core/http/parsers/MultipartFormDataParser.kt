@@ -1,8 +1,12 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.core.http.parsers
 
 import ai.jetbrains.tracy.core.http.protocol.toContentType
-import io.ktor.http.ContentType
-import io.ktor.http.charset
+import io.ktor.http.*
 import mu.KotlinLogging
 import okhttp3.MediaType
 import okio.Buffer

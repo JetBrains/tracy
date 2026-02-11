@@ -1,8 +1,13 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.gemini.clients
 
 import ai.jetbrains.tracy.core.OpenTelemetryOkHttpInterceptor
-import ai.jetbrains.tracy.gemini.adapters.GeminiLLMTracingAdapter
 import ai.jetbrains.tracy.core.patchInterceptors
+import ai.jetbrains.tracy.gemini.adapters.GeminiLLMTracingAdapter
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import com.google.genai.Client as GeminiClient
@@ -43,7 +48,8 @@ private fun patchClient(client: GeminiClient, interceptor: Interceptor): GeminiC
         interceptorsField.set(httpClient, updatedInterceptors)
     } catch (e: IllegalArgumentException) {
         throw IllegalStateException(
-            "Unsupported Gemini client version. Instrumentation is supported for java-genai version 1.8.0 or higher.", e)
+            "Unsupported Gemini client version. Instrumentation is supported for java-genai version 1.8.0 or higher.", e
+        )
     }
 
     return client

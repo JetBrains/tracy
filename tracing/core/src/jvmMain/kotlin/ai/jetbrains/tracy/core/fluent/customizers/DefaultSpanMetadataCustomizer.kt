@@ -1,10 +1,14 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.core.fluent.customizers
 
-import java.lang.reflect.Method
-import kotlin.coroutines.Continuation
-import kotlin.jvm.java
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import java.lang.reflect.Method
+import kotlin.coroutines.Continuation
 
 actual typealias PlatformMethod = Method
 

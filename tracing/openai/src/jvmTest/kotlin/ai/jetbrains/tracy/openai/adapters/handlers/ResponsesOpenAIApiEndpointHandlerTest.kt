@@ -1,13 +1,18 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.openai.adapters.handlers
 
-import ai.jetbrains.tracy.openai.clients.instrument
-import ai.jetbrains.tracy.test.utils.MediaSource
 import ai.jetbrains.tracy.core.TracingManager
-import ai.jetbrains.tracy.test.utils.toDataUrl
-import ai.jetbrains.tracy.test.utils.toMediaContentAttributeValues
+import ai.jetbrains.tracy.core.policy.ContentCapturePolicy
 import ai.jetbrains.tracy.openai.adapters.BaseOpenAITracingTest
 import ai.jetbrains.tracy.openai.adapters.containsToolCall
-import ai.jetbrains.tracy.core.policy.ContentCapturePolicy
+import ai.jetbrains.tracy.openai.clients.instrument
+import ai.jetbrains.tracy.test.utils.MediaSource
+import ai.jetbrains.tracy.test.utils.toDataUrl
+import ai.jetbrains.tracy.test.utils.toMediaContentAttributeValues
 import com.openai.core.JsonValue
 import com.openai.models.ChatModel
 import com.openai.models.responses.*

@@ -1,5 +1,14 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.core.exporters
 
+import ai.jetbrains.tracy.core.exporters.ExporterCommonSettings.Companion.DEFAULT_FLUSH_INTERVAL_MS
+import ai.jetbrains.tracy.core.exporters.ExporterCommonSettings.Companion.DEFAULT_FLUSH_THRESHOLD
+import ai.jetbrains.tracy.core.exporters.ExporterCommonSettings.Companion.DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES
+import ai.jetbrains.tracy.core.exporters.ExporterCommonSettings.Companion.DEFAULT_SPAN_ATTRIBUTE_VALUE_LENGTH
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor
 
 /**

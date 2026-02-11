@@ -1,3 +1,8 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.core.exporters.otlp
 
 import io.opentelemetry.exporter.internal.http.HttpExporter
@@ -112,6 +117,7 @@ internal class ErrorDiagnosingOtlpHttpSpanExporter private constructor(
                     logger.error { "Failed to extract HttpSender from HttpExporter" }
                     null
                 }
+
                 else -> value
             }
         }
@@ -173,12 +179,14 @@ private class DiagnosticHttpSender(
                 is InterruptedIOException -> logger.error { buildDiagnosticMessageTimeout() }
                 is UnknownHostException -> logger.error { buildDiagnosticMessageUnknownHost() }
                 else -> {
-                    logger.error("""
+                    logger.error(
+                        """
                         | Failed to export traces.
                         | Error message: '${error.message}'
                         | The stacktrace:
                         | ${error.stackTraceToString()}
-                    """.trimMargin())
+                    """.trimMargin()
+                    )
                 }
             }
             // continue with the original callback

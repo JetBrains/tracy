@@ -1,8 +1,13 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.eval.providers.langfuse
 
-import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig
 import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig
 import ai.jetbrains.tracy.eval.utils.MultiScoreEvalResult
 import ai.jetbrains.tracy.eval.utils.SingleScoreEvalResult
 import kotlinx.serialization.json.jsonObject

@@ -1,18 +1,19 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.core.fluent
 
-import ai.jetbrains.tracy.test.utils.BaseOpenTelemetryTracingTest
 import ai.jetbrains.tracy.core.exporters.langfuse.addLangfuseTagsToCurrentTrace
+import ai.jetbrains.tracy.test.utils.BaseOpenTelemetryTracingTest
 import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.sdk.internal.ExceptionAttributeResolver
 import io.opentelemetry.sdk.trace.data.ExceptionEventData
 import io.opentelemetry.sdk.trace.data.StatusData
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals

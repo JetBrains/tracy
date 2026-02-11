@@ -1,7 +1,12 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.core.otlp
 
-import ai.jetbrains.tracy.core.exporters.otlp.ErrorDiagnosingOtlpHttpSpanExporter
 import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig
+import ai.jetbrains.tracy.core.exporters.otlp.ErrorDiagnosingOtlpHttpSpanExporter
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow

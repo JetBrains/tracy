@@ -1,3 +1,8 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.core.exporters
 
 import io.opentelemetry.exporter.logging.LoggingSpanExporter
@@ -27,11 +32,13 @@ abstract class BaseExporterConfig(
     val settings: ExporterCommonSettings
 ) {
     protected val resolvedMaxAttributes: Int = settings.maxNumberOfSpanAttributes
-        ?: resolveEnvInt("MAX_NUMBER_OF_SPAN_ATTRIBUTES",
+        ?: resolveEnvInt(
+            "MAX_NUMBER_OF_SPAN_ATTRIBUTES",
             ExporterCommonSettings.DEFAULT_NUMBER_OF_SPAN_ATTRIBUTES
         )
     protected val resolvedMaxAttributeLength: Int = settings.maxSpanAttributeValueLength
-        ?: resolveEnvInt("MAX_SPAN_ATTRIBUTE_VALUE_LENGTH",
+        ?: resolveEnvInt(
+            "MAX_SPAN_ATTRIBUTE_VALUE_LENGTH",
             ExporterCommonSettings.DEFAULT_SPAN_ATTRIBUTE_VALUE_LENGTH
         )
 
@@ -111,6 +118,7 @@ abstract class BaseExporterConfig(
 enum class OutputFormat {
     /* Human-readable plain text output */
     PLAIN_TEXT,
+
     /* OTLP JSON format following OpenTelemetry specification */
     JSON,
 }

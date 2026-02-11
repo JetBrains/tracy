@@ -1,9 +1,12 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.core.adapters.media
 
-import io.ktor.http.ContentType
-import io.ktor.http.Headers
-import io.ktor.http.headers
-import io.ktor.util.toMap
+import io.ktor.http.*
+import io.ktor.util.*
 import java.nio.charset.StandardCharsets
 
 /**

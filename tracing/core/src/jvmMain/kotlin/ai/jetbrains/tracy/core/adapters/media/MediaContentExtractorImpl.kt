@@ -1,7 +1,12 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.core.adapters.media
 
 import ai.jetbrains.tracy.core.adapters.media.DataUrl.Companion.parseInlineDataUrl
-import io.ktor.http.headers
+import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.sdk.trace.ReadableSpan
 import mu.KotlinLogging

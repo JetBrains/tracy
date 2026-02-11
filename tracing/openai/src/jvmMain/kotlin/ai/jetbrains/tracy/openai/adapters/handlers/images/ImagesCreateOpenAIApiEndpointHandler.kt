@@ -1,12 +1,17 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.openai.adapters.handlers.images
 
 import ai.jetbrains.tracy.core.adapters.handlers.EndpointApiHandler
 import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractor
-import ai.jetbrains.tracy.openai.adapters.handlers.asString
 import ai.jetbrains.tracy.core.http.protocol.Request
 import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.asJson
 import ai.jetbrains.tracy.core.policy.orRedactedInput
+import ai.jetbrains.tracy.openai.adapters.handlers.asString
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
 import kotlinx.serialization.json.Json

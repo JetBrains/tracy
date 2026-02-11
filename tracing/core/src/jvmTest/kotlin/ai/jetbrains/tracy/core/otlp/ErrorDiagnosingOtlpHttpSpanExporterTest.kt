@@ -1,3 +1,8 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
 package ai.jetbrains.tracy.core.otlp
 
 import ai.jetbrains.tracy.core.exporters.otlp.ErrorDiagnosingOtlpHttpSpanExporter
@@ -19,8 +24,8 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
-import kotlin.test.assertNotNull
 import java.util.concurrent.TimeUnit
+import kotlin.test.assertNotNull
 
 /**
  * Comprehensive tests for ErrorDiagnosingOtlpHttpSpanExporter diagnostic logging functionality.
@@ -73,8 +78,8 @@ class ErrorDiagnosingOtlpHttpSpanExporterTest {
         // Assert
         val warningLogs = logAppender.list.filter { it.level == Level.WARN }
         assertTrue(warningLogs.isNotEmpty(), "Expected warning logs for HTTP 401")
-        
-        val diagnosticLog = warningLogs.firstOrNull { 
+
+        val diagnosticLog = warningLogs.firstOrNull {
             it.formattedMessage.contains("AUTHENTICATION ERROR (HTTP 401)")
         }
         assertNotNull(diagnosticLog, "Expected diagnostic message for HTTP 401")
@@ -107,11 +112,11 @@ class ErrorDiagnosingOtlpHttpSpanExporterTest {
         // Assert
         val warningLogs = logAppender.list.filter { it.level == Level.WARN }
         assertTrue(warningLogs.isNotEmpty(), "Expected warning logs for HTTP 403")
-        
-        val diagnosticLog = warningLogs.firstOrNull { 
+
+        val diagnosticLog = warningLogs.firstOrNull {
             it.formattedMessage.contains("AUTHORIZATION ERROR (HTTP 403)")
         }
-        
+
         assertNotNull(diagnosticLog, "Expected diagnostic message for HTTP 403")
         assertTrue(
             diagnosticLog.formattedMessage.contains("don't have permission"),
@@ -138,11 +143,11 @@ class ErrorDiagnosingOtlpHttpSpanExporterTest {
         // Assert
         val warningLogs = logAppender.list.filter { it.level == Level.WARN }
         assertTrue(warningLogs.isNotEmpty(), "Expected warning logs for HTTP 404")
-        
-        val diagnosticLog = warningLogs.firstOrNull { 
+
+        val diagnosticLog = warningLogs.firstOrNull {
             it.formattedMessage.contains("ENDPOINT NOT FOUND (HTTP 404)")
         }
-        
+
         assertNotNull(diagnosticLog, "Expected diagnostic message for HTTP 404")
         assertTrue(
             diagnosticLog.formattedMessage.contains("Incorrect endpoint URL"),
@@ -173,11 +178,11 @@ class ErrorDiagnosingOtlpHttpSpanExporterTest {
         // Assert - no diagnostic error/warning logs should be present
         val diagnosticLogs = logAppender.list.filter {
             it.formattedMessage.contains("════════════════════════════════") ||
-            it.formattedMessage.contains("AUTHENTICATION ERROR") ||
-            it.formattedMessage.contains("AUTHORIZATION ERROR") ||
-            it.formattedMessage.contains("ENDPOINT NOT FOUND")
+                    it.formattedMessage.contains("AUTHENTICATION ERROR") ||
+                    it.formattedMessage.contains("AUTHORIZATION ERROR") ||
+                    it.formattedMessage.contains("ENDPOINT NOT FOUND")
         }
-        
+
         assertTrue(
             diagnosticLogs.isEmpty(),
             "No diagnostic error messages should be logged for successful export"
@@ -202,11 +207,11 @@ class ErrorDiagnosingOtlpHttpSpanExporterTest {
 
         // Assert
         val warningLogs = logAppender.list.filter { it.level == Level.WARN }
-        
-        val diagnosticLog = warningLogs.firstOrNull { 
+
+        val diagnosticLog = warningLogs.firstOrNull {
             it.formattedMessage.contains("AUTHENTICATION ERROR (HTTP 401)")
         }
-        
+
         assertNotNull(diagnosticLog)
         assertTrue(
             diagnosticLog.formattedMessage.contains(mockWebServer.url("/v1/traces").toString()),
@@ -234,7 +239,7 @@ class ErrorDiagnosingOtlpHttpSpanExporterTest {
         val diagnosticLogs = logAppender.list.filter {
             it.formattedMessage.contains("════════════════════════════════")
         }
-        
+
         assertTrue(
             diagnosticLogs.isEmpty(),
             "Server errors (5xx) should not trigger custom diagnostic messages"
@@ -246,12 +251,12 @@ class ErrorDiagnosingOtlpHttpSpanExporterTest {
      */
     private fun createExporter(): SpanExporter {
         val endpoint = mockWebServer.url("/v1/traces").toString()
-        
+
         val baseExporter = OtlpHttpSpanExporter.builder()
             .setEndpoint(endpoint)
             .setTimeout(5, TimeUnit.SECONDS)
             .build()
-        
+
         return ErrorDiagnosingOtlpHttpSpanExporter.create(
             exporter = baseExporter,
             endpointUrl = endpoint
