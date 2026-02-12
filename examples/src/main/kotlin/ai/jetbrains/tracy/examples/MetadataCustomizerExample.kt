@@ -57,6 +57,7 @@ object ExampleWithMetadataCustomizer : SpanMetadataCustomizer {
  *
  */
 fun main() {
+    TracingManager.isTracingEnabled = true
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     greetUser("Alice")
     println("See trace details in the console.")

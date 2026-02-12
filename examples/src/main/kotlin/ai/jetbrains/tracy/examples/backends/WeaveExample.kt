@@ -25,6 +25,7 @@ import ai.jetbrains.tracy.core.exporters.otlp.WeaveExporterConfig
  */
 
 fun main() {
+    TracingManager.isTracingEnabled = true
     TracingManager.setSdk(configureOpenTelemetrySdk(WeaveExporterConfig()))
     printName("Bob")
     println("See trace details in W&B.")

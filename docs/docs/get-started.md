@@ -25,8 +25,7 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
     ```kotlin
     pluginManagement {
         repositories {
-            gradlePluginPortal()
-            maven("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")
+            mavenCentral()
         }
     }
     ```
@@ -34,7 +33,7 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
     **build.gradle.kts**
     ```kotlin
     repositories {
-        maven("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")
+        mavenCentral()
     }
     ```
 
@@ -68,10 +67,7 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
     ```groovy
     pluginManagement {
         repositories {
-            gradlePluginPortal()
-            maven {
-                url "https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit"
-            }
+            mavenCentral()
         }
     }
     ```
@@ -79,9 +75,7 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
     **build.gradle**
     ```groovy
     repositories {
-        maven {
-            url "https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit"
-        }
+        mavenCentral()
     }
     ```
 
@@ -107,27 +101,7 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
 
 === "Maven"
 
-    ### 1. Configure Repositories
-
-    Add the Tracy Maven repository to your `pom.xml`:
-
-    ```xml
-    <repositories>
-        <repository>
-            <id>tracy</id>
-            <url>https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit</url>
-        </repository>
-    </repositories>
-
-    <pluginRepositories>
-        <pluginRepository>
-            <id>tracy-plugins</id>
-            <url>https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit</url>
-        </pluginRepository>
-    </pluginRepositories>
-    ```
-
-    ### 2. Configure the Compiler Plugin and Add Dependencies
+    ### Configure the Compiler Plugin and Add Dependencies
 
     ```xml
     <plugins>
@@ -203,6 +177,10 @@ import ai.jetbrains.tracy.core.fluent.Trace
 fun greet(name: String) = println("Hello, $name!")
 
 fun main() {
+    // Enable tracing via the `IS_TRACY_ENABLED` environment variable
+    // or programmatically, as shown below:
+    TracingManager.isTracingEnabled = true
+
     // 1. Configure SDK with console exporter
     val sdk = configureOpenTelemetrySdk(ConsoleExporterConfig())
 

@@ -43,6 +43,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * Choose the adapter that matches the provider your client uses.
  */
 fun main() {
+    TracingManager.isTracingEnabled = true
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     TracingManager.traceSensitiveContent()
 

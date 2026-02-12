@@ -33,6 +33,7 @@ fun handleUserLogin(username: String, password: String) =
  * - Two child spans named **HandleUserLogin**, each corresponding to a user authentication attempt.
  */
 fun main() {
+    TracingManager.isTracingEnabled = true
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     withSpan("LoginAttempt") {
         handleUserLogin("alice", "secret123")

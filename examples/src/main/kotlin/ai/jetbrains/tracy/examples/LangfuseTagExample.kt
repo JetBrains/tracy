@@ -40,6 +40,7 @@ fun greetUser(name: String, isPremium: Boolean): String {
  * @see addLangfuseTagsToCurrentTrace
  */
 fun main() {
+    TracingManager.isTracingEnabled = true
     TracingManager.setSdk(configureOpenTelemetrySdk(LangfuseExporterConfig()))
     greetUser("Alice", isPremium = true)
     greetUser("Bob", isPremium = false)

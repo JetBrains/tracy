@@ -30,6 +30,7 @@ private fun printName(name: String): String {
  * representing the execution of the [printName] function.
  */
 fun main() {
+    TracingManager.isTracingEnabled = true
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     printName("Bob")
     println("See trace details in the console.")
