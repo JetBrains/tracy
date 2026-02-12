@@ -15,8 +15,8 @@ The [`configureOpenTelemetrySdk()`]({{ api_docs_url }}/tracing/core/ai.jetbrains
 
 You can customize the [service name](https://opentelemetry.io/docs/specs/semconv/registry/attributes/service/#service-name), [service version](https://opentelemetry.io/docs/specs/semconv/registry/attributes/service/#service-version), and other [resource attributes](https://opentelemetry.io/docs/specs/semconv/registry/attributes/service/):
 <!--- INCLUDE
-import ai.dev.kit.exporters.otlp.LangfuseExporterConfig
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig
+import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.sdk.resources.Resource
@@ -56,9 +56,9 @@ All exporter configurations accept an [`ExporterCommonSettings`]({{ api_docs_url
 ### Example with Custom Settings
 
 <!--- INCLUDE
-import ai.dev.kit.exporters.ExporterCommonSettings
-import ai.dev.kit.exporters.otlp.LangfuseExporterConfig
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.exporters.ExporterCommonSettings
+import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig
+import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 
 fun main() {
 -->

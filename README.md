@@ -504,7 +504,7 @@ Once the SDK is configured, initialize tracing with `TracingManager.setSdk(sdk)`
 | `weaveProjectName`            | `WEAVE_PROJECT_NAME`              | true     | -                                                  |
 | `weaveApiKey`                 | `WEAVE_API_KEY`                   | true     | -                                                  |
 | `traceToConsole`              | -                                 | false    | `false`                                            |
-| `exporterTimeoutSeconds`      | -o                                | false    | `10`                                               |
+| `exporterTimeoutSeconds`      | -                                 | false    | `10`                                               |
 | `maxNumberOfSpanAttributes`   | `MAX_NUMBER_OF_SPAN_ATTRIBUTES`   | false    | `256`                                              |
 | `maxSpanAttributeValueLength` | `MAX_SPAN_ATTRIBUTE_VALUE_LENGTH` | false    | `Int.MAX_VALUE`                                    |
 
