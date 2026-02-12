@@ -84,7 +84,7 @@ Select the build system that matches your setup:
 
 ### Gradle (Groovy)
 
-1. Add dependencies to the `build.gradle.kts` file:
+1. Add dependencies to the `build.gradle` file:
     ```groovy
     plugins {
         id 'org.jetbrains.ai.tracy' version '0.0.26'
@@ -108,7 +108,7 @@ Select the build system that matches your setup:
         mavenCentral()
     }
     ```
-   #### `settings.gradle.kts`
+   #### `settings.gradle`
     ```groovy
     pluginManagement {
         repositories {
