@@ -35,9 +35,6 @@ kotlin {
                 implementation(libs.ktor.client.cio)
                 implementation(libs.okhttp)
                 implementation(libs.opentelemetry)
-                implementation(libs.opentelemetry.kotlin)
-                implementation(libs.opentelemetry.sdk)
-                implementation(libs.opentelemetry.semconv.incubating)
                 implementation(libs.kotlin.logging)
             }
         }
@@ -51,6 +48,7 @@ kotlin {
                 implementation(libs.ktor.client.negotiation)
                 implementation(libs.ktor.serialization.json)
                 implementation(libs.opentelemetry.sdk.testing)
+                implementation(libs.opentelemetry.semconv.incubating)
                 implementation(project(":tracing:test-utils"))
                 implementation(project(":tracing:openai"))
                 implementation(project(":tracing:anthropic"))

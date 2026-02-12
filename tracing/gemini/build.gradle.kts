@@ -33,8 +33,6 @@ kotlin {
                 implementation(libs.gemini)
                 implementation(libs.okhttp)
                 implementation(libs.opentelemetry)
-                implementation(libs.opentelemetry.kotlin)
-                implementation(libs.opentelemetry.sdk)
                 implementation(libs.opentelemetry.semconv.incubating)
                 implementation(libs.ktor.client)
                 implementation(libs.kotlin.logging)

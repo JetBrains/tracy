@@ -33,8 +33,6 @@ kotlin {
                 implementation(libs.openai)
                 implementation(libs.okhttp)
                 implementation(libs.opentelemetry)
-                implementation(libs.opentelemetry.kotlin)
-                implementation(libs.opentelemetry.sdk)
                 implementation(libs.opentelemetry.semconv.incubating)
                 implementation(libs.kotlin.logging)
                 implementation(libs.ktor.client)

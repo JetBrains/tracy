@@ -33,7 +33,7 @@ kotlin {
                 implementation(libs.ktor.serialization.json)
                 implementation(libs.ktor.client.negotiation)
                 implementation(libs.kotlin.reflect)
-                implementation(libs.opentelemetry.sdk)
+                api(libs.opentelemetry.sdk)
                 implementation(libs.opentelemetry.kotlin)
                 implementation(libs.opentelemetry.exporter.otlp)
                 implementation(libs.opentelemetry.exporter.otlp.common)
