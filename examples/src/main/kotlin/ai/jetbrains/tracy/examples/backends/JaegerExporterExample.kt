@@ -40,6 +40,7 @@ import ai.jetbrains.tracy.core.fluent.Trace
  * @see OtlpGrpcExporterConfig
  */
 fun main() {
+    TracingManager.isTracingEnabled = true
     TracingManager.setSdk(
         configureOpenTelemetrySdk(OtlpHttpExporterConfig(url = "http://localhost:4318"))
     )

@@ -57,21 +57,20 @@ Select the build system that matches your setup:
         implementation("org.jetbrains.ai.tracy:tracy-openai:0.0.25")
     }
     ```
-2. Make sure that you have `maven("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")` in
+2. Make sure that you have `mavenCentral()` in
    both your plugin management and project repositories sections.
 
    #### `build.gradle.kts`
     ```kotlin
     repositories {
-        maven("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")
+        mavenCentral()
     }
     ```
    #### `settings.gradle.kts`
     ```kotlin
     pluginManagement {
         repositories {
-            gradlePluginPortal()
-            maven("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")
+            mavenCentral()
         }
     }
     ```
@@ -100,25 +99,20 @@ Select the build system that matches your setup:
         implementation 'org.jetbrains.ai.tracy:tracy-openai:0.0.25'
     }
     ```
-2. Make sure that you have `maven("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")` in
+2. Make sure that you have `mavenCentral()` in
    both your plugin management and project repositories sections.
 
    #### `build.gradle`
     ```groovy
     repositories {
-        maven {
-            url "https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit"
-        }
+        mavenCentral()
     }
     ```
    #### `settings.gradle.kts`
     ```groovy
     pluginManagement {
         repositories {
-            gradlePluginPortal()
-            maven {
-                url "https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit"
-            }
+            mavenCentral()
         }
     }
     ```
@@ -132,87 +126,88 @@ Select the build system that matches your setup:
 
 ### Maven
 
-1. Add dependencies to the `pom.xml` file:
-    ```xml
-    
-    <plugins>
-        <plugin>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-maven-plugin</artifactId>
-            <configuration>
-                <jvmTarget>19</jvmTarget>
-            </configuration>
-            <version>${kotlin.version}</version>
-            <executions>
-                <execution>
-                    <goals>
-                        <goal>compile</goal>
-                    </goals>
-                </execution>
-            </executions>
-    
-            <dependencies>
-                <dependency>
-                     <groupId>org.jetbrains.ai.tracy</groupId>
-                    <!--Use the Kotlin version matching your setup (e.g., 2.0.0 or 2.0.20).
-                    Keep the same major and minor numbers but adjust the patch version
-                    to the nearest supported value - either 0 or 20.
-                    Examples:
-                    - 2.1.19 -> 2.1.0
-                    - 2.1.23 -> 2.1.20 -->
-                    <artifactId>tracy-compiler-plugin-2.1.0-jvm</artifactId>
-                    <version>0.0.25</version>
-                  </dependency>
-              </dependencies>
-          </plugin>
-      </plugins>
-    
+Add dependencies to the `pom.xml` file:
+
+```xml
+
+<project>
+    <!-- ... other project config (groupId, artifactId, version, etc.) ... -->
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-maven-plugin</artifactId>
+                <version>${kotlin.version}</version>
+
+                <configuration>
+                    <jvmTarget>19</jvmTarget>
+                </configuration>
+
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+
+                <dependencies>
+                    <dependency>
+                        <groupId>org.jetbrains.ai.tracy</groupId>
+
+                        <!--Use the Kotlin version matching your setup (e.g., 2.0.0 or 2.0.20).
+                        Keep the same major and minor numbers but adjust the patch version
+                        to the nearest supported value - either 0 or 20.
+                        Examples:
+                        - 2.1.19 -> 2.1.0
+                        - 2.1.23 -> 2.1.20 -->
+                        <artifactId>tracy-compiler-plugin-2.1.0-jvm</artifactId>
+
+                        <version>0.0.25</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
-           <groupId>org.jetbrains.ai.tracy</groupId>
-          <artifactId>tracy-core-jvm</artifactId>
-          <version>0.0.25</version>
+            <groupId>org.jetbrains.ai.tracy</groupId>
+            <artifactId>tracy-core-jvm</artifactId>
+            <version>0.0.25</version>
         </dependency>
-          <!-- Client-specific Auto Tracing -->
+
+        <!-- Client-specific Auto Tracing -->
+
         <dependency>
-             <groupId>org.jetbrains.ai.tracy</groupId>
+            <groupId>org.jetbrains.ai.tracy</groupId>
             <artifactId>tracy-anthropic-jvm</artifactId>
             <version>0.0.25</version>
         </dependency>
+
         <dependency>
-             <groupId>org.jetbrains.ai.tracy</groupId>
+            <groupId>org.jetbrains.ai.tracy</groupId>
             <artifactId>tracy-gemini-jvm</artifactId>
             <version>0.0.25</version>
         </dependency>
+
         <dependency>
-             <groupId>org.jetbrains.ai.tracy</groupId>
+            <groupId>org.jetbrains.ai.tracy</groupId>
             <artifactId>tracy-ktor-jvm</artifactId>
             <version>0.0.25</version>
         </dependency>
+
         <dependency>
-             <groupId>org.jetbrains.ai.tracy</groupId>
+            <groupId>org.jetbrains.ai.tracy</groupId>
             <artifactId>tracy-openai-jvm</artifactId>
             <version>0.0.25</version>
         </dependency>
     </dependencies>
-      ```
-2. Make sure that you have `https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit` in
-   both your plugin repositories and project repositories sections.
-    ```xml
-    <repositories>
-        <repository>
-            <id>tracy</id>
-            <url>https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit</url>
-        </repository>
-    </repositories>
-    
-    <pluginRepositories>
-        <pluginRepository>
-            <id>tracy-plugins</id>
-            <url>https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit</url>
-        </pluginRepository>
-    </pluginRepositories>
-    ```
+
+</project>
+
+```
 
 </details>
 
@@ -282,6 +277,9 @@ Below is a minimal OpenAI example. For others, check the examples directory:
 * [Gemini Client Auto Tracing Example](examples/src/main/kotlin/ai/jetbrains/tracy/examples/clients/GeminiClientAutotracingExample.kt)
 
 ```kotlin
+// Enable tracing via the `IS_TRACY_ENABLED` environment variable
+// or programmatically, as shown below:
+TracingManager.isTracingEnabled = true
 // Initialize tracing and export spans to the console
 val sdk: OpenTelemetrySdk = configureOpenTelemetrySdk(
     exporterConfig = ConsoleExporterConfig()
@@ -371,6 +369,9 @@ fun greetUser(name: String): String {
 }
 
 fun main() {
+    // Enable tracing via the `IS_TRACY_ENABLED` environment variable
+    // or programmatically, as shown below:
+    TracingManager.isTracingEnabled = true
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     greetUser("Alice")
     // Traces are automatically flushed based on ExporterCommonSettings:

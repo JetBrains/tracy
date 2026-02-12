@@ -41,7 +41,7 @@ object TracingManager {
     /*
      * Default name of the tracer.
      */
-    private const val AI_DEVELOPMENT_KIT_TRACER = "tracy"
+    private const val TRACY_INSTRUMENTATION_SCOPE_NAME = "tracy"
 
     private val logger = KotlinLogging.logger {}
 
@@ -83,7 +83,7 @@ object TracingManager {
                 return NOOP_TRACER
             }
             openTelemetrySdk?.let { sdk ->
-                return sdk.getTracer(AI_DEVELOPMENT_KIT_TRACER, BuildConfig.VERSION)
+                return sdk.getTracer(TRACY_INSTRUMENTATION_SCOPE_NAME, BuildConfig.VERSION)
             }
             // First access when SDK missing and tracing enabled: warn, then use no‑op
             if (hasLoggedMissingSdk.compareAndSet(false, true)) {
@@ -94,7 +94,7 @@ object TracingManager {
             return NOOP_TRACER
         }
 
-    private val NOOP_TRACER: Tracer = OpenTelemetry.noop().getTracer(AI_DEVELOPMENT_KIT_TRACER)
+    private val NOOP_TRACER: Tracer = OpenTelemetry.noop().getTracer(TRACY_INSTRUMENTATION_SCOPE_NAME)
 
 
     /**

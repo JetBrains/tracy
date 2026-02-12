@@ -31,6 +31,7 @@ import com.openai.models.chat.completions.ChatCompletionCreateParams
  * Run the example. Request and response spans will appear in the console output.
  */
 fun main() {
+    TracingManager.isTracingEnabled = true
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     TracingManager.traceSensitiveContent()
 
