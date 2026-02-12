@@ -9,7 +9,7 @@ plugins {
     kotlin("multiplatform")
     alias(libs.plugins.kotlin.serialization)
     id("ai.jetbrains.tracy.published-artifact")
-    id("ai.jetbrains.tracy")
+    id("org.jetbrains.ai.tracy")
     id("ai.kotlin.dokka")
 }
 

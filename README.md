@@ -44,7 +44,7 @@ Select the build system that matches your setup:
 1. Add dependencies to the `build.gradle.kts` file:
     ```kotlin
     plugins {
-        id("ai.jetbrains.tracy") version "0.0.25"
+        id("org.jetbrains.ai.tracy") version "0.0.25"
     }
     
     dependencies {
@@ -88,7 +88,7 @@ Select the build system that matches your setup:
 1. Add dependencies to the `build.gradle.kts` file:
     ```groovy
     plugins {
-        id 'ai.jetbrains.tracy' version '0.0.25'
+        id 'org.jetbrains.ai.tracy' version '0.0.25'
     }
     
     dependencies {

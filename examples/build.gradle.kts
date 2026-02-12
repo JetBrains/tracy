@@ -7,7 +7,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm")
-    id("ai.jetbrains.tracy")
+    id("org.jetbrains.ai.tracy")
 }
 
 dependencies {

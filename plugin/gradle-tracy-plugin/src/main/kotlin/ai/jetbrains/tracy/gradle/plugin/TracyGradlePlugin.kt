@@ -34,7 +34,7 @@ class TracyGradlePlugin : KotlinCompilerPluginSupportPlugin {
         return enablePlugin?.toBoolean() != false
     }
 
-    override fun getCompilerPluginId(): String = "ai.jetbrains.tracy"
+    override fun getCompilerPluginId(): String = "org.jetbrains.ai.tracy"
 
     override fun getPluginArtifact(): SubpluginArtifact {
         val kotlinVersion = getKotlinPluginVersion(logger)
