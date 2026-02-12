@@ -17,7 +17,7 @@ dependencies {
 gradlePlugin {
     plugins {
         create("TracyPublishingPlugin") {
-            id = "ai.jetbrains.tracy"
+            id = "org.jetbrains.ai.tracy"
             implementationClass = "ai.jetbrains.tracy.gradle.plugin.TracyGradlePlugin"
         }
     }
@@ -41,6 +41,7 @@ afterEvaluate {
     extensions.configure<PublishingExtension> {
         publications.withType<MavenPublication>().configureEach {
             groupId = "org.jetbrains.ai.tracy"
+            artifactId = "org.jetbrains.ai.tracy.gradle.plugin"
             pom {
                 name.set(artifactId)
                 description.set("Gradle plugin for configuring Tracy annotation based tracing in Kotlin projects.")

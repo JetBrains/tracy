@@ -166,7 +166,7 @@ class TracyGeneratorExtension : IrGenerationExtension {
 
 @OptIn(ExperimentalCompilerApi::class)
 class TracyPluginRegistrar : CompilerPluginRegistrar() {
-    override val pluginId: String = "ai.jetbrains.tracy"
+    override val pluginId: String = "org.jetbrains.ai.tracy"
     override val supportsK2: Boolean = true
     override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
         IrGenerationExtension.registerExtension(TracyGeneratorExtension())

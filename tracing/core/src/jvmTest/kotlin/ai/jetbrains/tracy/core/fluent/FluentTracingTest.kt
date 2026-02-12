@@ -175,7 +175,7 @@ class FluentTracingTest : BaseOpenTelemetryTracingTest() {
         val outputs = trace.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS)
 
         assertTrue(inputs!!.contains("\"name\":\"name\""))
-        assertTrue(inputs.contains("\"block\":\"ai.jetbrains.tracy"))
+        assertTrue(inputs.contains("\"block\":\"ai.jetbrains.tracy.core.fluent.FluentTracingTest"))
 
         assertEquals(
             "(name, ${input.reversed()})",
