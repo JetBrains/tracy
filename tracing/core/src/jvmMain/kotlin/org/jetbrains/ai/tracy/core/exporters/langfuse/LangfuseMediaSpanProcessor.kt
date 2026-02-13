@@ -86,7 +86,7 @@ internal class LangfuseMediaSpanProcessor(
                         ?: error("Data attribute not found for media item at index $index")
 
                     scope.launch {
-                        uploadMediaFileToLangfuse(
+                        val result = uploadMediaFileToLangfuse(
                             params = LangfuseMediaUploadParams(
                                 traceId = traceId,
                                 field = field,
@@ -94,6 +94,9 @@ internal class LangfuseMediaSpanProcessor(
                                 data = data,
                             ), client = client, url = langfuseUrl, auth = langfuseBasicAuth
                         )
+                        if (result.isFailure) {
+                            logger.error(result.exceptionOrNull()) { "Failed to upload media file to $langfuseUrl for trace $traceId" }
+                        }
                     }
                 }
 
@@ -146,7 +149,7 @@ internal class LangfuseMediaSpanProcessor(
             return@withContext
         }
 
-        uploadMediaFileToLangfuse(
+        val result = uploadMediaFileToLangfuse(
             params = LangfuseMediaUploadParams(
                 traceId = traceId,
                 field = field,
@@ -154,6 +157,9 @@ internal class LangfuseMediaSpanProcessor(
                 data = data,
             ), client = client, url = langfuseUrl, auth = langfuseBasicAuth
         )
+        if (result.isFailure) {
+            logger.error(result.exceptionOrNull()) { "Failed to upload media file from $url for trace $traceId" }
+        }
     }
 }
 
