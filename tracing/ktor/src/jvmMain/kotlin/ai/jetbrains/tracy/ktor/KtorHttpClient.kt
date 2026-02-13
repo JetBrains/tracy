@@ -7,8 +7,9 @@ package ai.jetbrains.tracy.ktor
 
 import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
-import ai.jetbrains.tracy.core.http.protocol.*
-import ai.jetbrains.tracy.core.http.protocol.Url
+import ai.jetbrains.tracy.core.http.protocol.Response
+import ai.jetbrains.tracy.core.http.protocol.asRequestBody
+import ai.jetbrains.tracy.core.http.protocol.asRequestView
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
 import io.ktor.client.request.*
@@ -39,7 +40,6 @@ import kotlinx.serialization.serializer
 import mu.KotlinLogging
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
-import io.ktor.http.Url as KtorUrl
 
 /**
  * Instruments a Ktor [HttpClient] with OpenTelemetry tracing for LLM provider API calls.
@@ -292,17 +292,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
         })
     }
 
-    private fun HttpResponse.asResponseView(body: JsonObject): Response {
-        val response = this
-        return object : Response {
-            override val contentType = response.contentType()?.toContentType()
-            override val code = response.status.value
-            override val body = ResponseBody.Json(body)
-            override val url = response.request.url.toProtocolUrl()
-
-            override fun isError() = response.status.isSuccess().not()
-        }
-    }
+    private fun HttpResponse.asResponseView(body: JsonObject): Response = ResponseView(response = this, body)
 
     /**
      * Helper function to serialize `@Serializable` objects with an unknown type
@@ -362,22 +352,4 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
             encodeDefaults = true
         }
     }
-}
-
-private fun URLBuilder.toProtocolUrl(): Url {
-    val builder = this
-    return UrlImpl(
-        scheme = builder.protocol.name,
-        host = builder.host,
-        pathSegments = builder.pathSegments,
-    )
-}
-
-private fun KtorUrl.toProtocolUrl(): Url {
-    val url = this
-    return UrlImpl(
-        scheme = url.protocol.name,
-        host = url.host,
-        pathSegments = url.segments,
-    )
 }

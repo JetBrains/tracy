@@ -1,8 +1,17 @@
 package ai.jetbrains.tracy.ktor
 
 import ai.jetbrains.tracy.core.http.protocol.ContentType
+import ai.jetbrains.tracy.core.http.protocol.Response
+import ai.jetbrains.tracy.core.http.protocol.ResponseBody
 import ai.jetbrains.tracy.core.http.protocol.Url
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.request
+import io.ktor.http.URLBuilder
+import io.ktor.http.Url as KtorUrl
 import io.ktor.http.charset
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
+import kotlinx.serialization.json.JsonObject
 
 fun io.ktor.http.ContentType.toContentType(): ContentType {
     val contentType = this
@@ -15,7 +24,37 @@ fun io.ktor.http.ContentType.toContentType(): ContentType {
     }
 }
 
-internal data class UrlImpl(
+internal class ResponseView(
+    private val response: HttpResponse,
+    body: JsonObject,
+) : Response {
+    override val contentType = response.contentType()?.toContentType()
+    override val code = response.status.value
+    override val body = ResponseBody.Json(body)
+    override val url = response.request.url.toProtocolUrl()
+
+    override fun isError() = response.status.isSuccess().not()
+}
+
+internal fun URLBuilder.toProtocolUrl(): Url {
+    val builder = this
+    return UrlImpl(
+        scheme = builder.protocol.name,
+        host = builder.host,
+        pathSegments = builder.pathSegments,
+    )
+}
+
+internal fun KtorUrl.toProtocolUrl(): Url {
+    val url = this
+    return UrlImpl(
+        scheme = url.protocol.name,
+        host = url.host,
+        pathSegments = url.segments,
+    )
+}
+
+private data class UrlImpl(
     override val scheme: String,
     override val host: String,
     override val pathSegments: List<String>
