@@ -48,10 +48,10 @@ interface Response {
  */
 sealed class ResponseBody {
     data class Json(val json: JsonElement) : ResponseBody()
-}
 
-fun ResponseBody.asJson(): JsonElement? {
-    return when (this) {
-        is ResponseBody.Json -> this.json
+    fun asJson(): JsonElement? {
+        return when (this) {
+            is Json -> this.json
+        }
     }
 }
