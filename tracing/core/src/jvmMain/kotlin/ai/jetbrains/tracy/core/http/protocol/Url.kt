@@ -21,11 +21,17 @@ interface Url {
     val pathSegments: List<String>
 }
 
+private data class UrlImpl(
+    override val scheme: String,
+    override val host: String,
+    override val pathSegments: List<String>
+) : Url
+
 fun HttpUrl.toProtocolUrl(): Url {
     val httpUrl = this
-    return object : Url {
-        override val scheme = httpUrl.scheme
-        override val host = httpUrl.host
-        override val pathSegments = httpUrl.pathSegments
-    }
+    return UrlImpl(
+        scheme = httpUrl.scheme,
+        host = httpUrl.host,
+        pathSegments = httpUrl.pathSegments,
+    )
 }
