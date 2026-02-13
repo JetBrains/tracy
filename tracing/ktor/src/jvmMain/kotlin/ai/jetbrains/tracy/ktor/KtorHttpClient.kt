@@ -366,18 +366,18 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
 
 private fun URLBuilder.toProtocolUrl(): Url {
     val builder = this
-    return object : Url {
-        override val scheme = builder.protocol.name
-        override val host = builder.host
-        override val pathSegments = builder.pathSegments
-    }
+    return UrlImpl(
+        scheme = builder.protocol.name,
+        host = builder.host,
+        pathSegments = builder.pathSegments,
+    )
 }
 
 private fun KtorUrl.toProtocolUrl(): Url {
     val url = this
-    return object : Url {
-        override val scheme = url.protocol.name
-        override val host = url.host
-        override val pathSegments = url.segments
-    }
+    return UrlImpl(
+        scheme = url.protocol.name,
+        host = url.host,
+        pathSegments = url.segments,
+    )
 }

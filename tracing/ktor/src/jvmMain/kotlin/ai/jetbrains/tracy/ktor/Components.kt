@@ -1,6 +1,7 @@
 package ai.jetbrains.tracy.ktor
 
 import ai.jetbrains.tracy.core.http.protocol.ContentType
+import ai.jetbrains.tracy.core.http.protocol.Url
 import io.ktor.http.charset
 
 fun io.ktor.http.ContentType.toContentType(): ContentType {
@@ -13,3 +14,9 @@ fun io.ktor.http.ContentType.toContentType(): ContentType {
         override fun charset() = contentType.charset()
     }
 }
+
+internal data class UrlImpl(
+    override val scheme: String,
+    override val host: String,
+    override val pathSegments: List<String>
+) : Url
