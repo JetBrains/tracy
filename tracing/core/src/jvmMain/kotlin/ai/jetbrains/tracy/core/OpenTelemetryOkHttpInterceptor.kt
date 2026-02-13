@@ -353,13 +353,15 @@ class OpenTelemetryOkHttpInterceptor(
 
     private fun OkHttpResponse.asResponseView(body: JsonObject): Response {
         val response = this
-        return object : Response {
-            private val mediaType = response.body?.contentType()
+        val mediaType = response.body?.contentType()
 
+        return object : Response {
             override val contentType = mediaType?.toContentType()
             override val code = response.code
             override val body = ResponseBody.Json(body)
             override val url = response.request.url.toProtocolUrl()
+
+            override fun isError() = response.isSuccessful.not()
         }
     }
 

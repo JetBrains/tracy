@@ -24,17 +24,7 @@ interface Response {
     val body: ResponseBody
     val url: Url
 
-    fun isClientError(): Boolean {
-        return this.code in 400..499
-    }
-
-    fun isServerError(): Boolean {
-        return this.code in 500..599
-    }
-
-    fun isError() = isClientError() || isServerError()
-
-    companion object
+    fun isError(): Boolean
 }
 
 /**

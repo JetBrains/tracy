@@ -299,6 +299,8 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
             override val code = response.status.value
             override val body = ResponseBody.Json(body)
             override val url = response.request.url.toProtocolUrl()
+
+            override fun isError() = response.status.isSuccess().not()
         }
     }
 
