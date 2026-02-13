@@ -229,7 +229,10 @@ class OpenTelemetryOkHttpInterceptor(
                     val mediaType = request.body?.contentType()
                     val req: Request? = mediaType?.let {
                         val body = bodyContent.asRequestBody(mediaType = it)
-                        body?.asRequestView(mediaType, request.url)
+                        body?.asRequestView(
+                            contentType = mediaType.toContentType(),
+                            url = request.url.toProtocolUrl(),
+                        )
                     }
 
                     if (req != null) {
@@ -358,18 +361,6 @@ class OpenTelemetryOkHttpInterceptor(
             override val code = response.code
             override val body = ResponseBody.Json(body)
             override val url = response.request.url.toProtocolUrl()
-        }
-    }
-
-    private fun RequestBody.asRequestView(
-        mediaType: MediaType,
-        url: HttpUrl
-    ): Request {
-        val requestBody = this
-        return object : Request {
-            override val body = requestBody
-            override val url = url.toProtocolUrl()
-            override val contentType = mediaType.toContentType()
         }
     }
 

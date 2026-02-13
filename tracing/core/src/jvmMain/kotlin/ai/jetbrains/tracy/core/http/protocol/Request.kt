@@ -94,3 +94,15 @@ fun ByteArray.asRequestBody(contentType: ContentType, charset: Charset): Request
         else -> null
     }
 }
+
+fun RequestBody.asRequestView(
+    contentType: ContentType,
+    url: Url
+): Request {
+    val requestBody = this
+    return object : Request {
+        override val body = requestBody
+        override val contentType = contentType
+        override val url = url
+    }
+}

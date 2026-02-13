@@ -8,7 +8,6 @@ package ai.jetbrains.tracy.ktor
 import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
 import ai.jetbrains.tracy.core.http.protocol.*
-import ai.jetbrains.tracy.core.http.protocol.ContentType
 import ai.jetbrains.tracy.core.http.protocol.Url
 import io.ktor.client.*
 import io.ktor.client.plugins.api.*
@@ -40,7 +39,6 @@ import kotlinx.serialization.serializer
 import mu.KotlinLogging
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
-import ai.jetbrains.tracy.core.http.protocol.RequestBody as TracyRequestBody
 import io.ktor.http.Url as KtorUrl
 
 /**
@@ -292,18 +290,6 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 if (typeInfo.type != ByteReadChannel::class) null else tracingChannel
             }
         })
-    }
-
-    private fun TracyRequestBody.asRequestView(
-        contentType: ContentType,
-        url: Url
-    ): Request {
-        val requestBody = this
-        return object : Request {
-            override val body = requestBody
-            override val contentType = contentType
-            override val url = url
-        }
     }
 
     private fun HttpResponse.asResponseView(body: JsonObject): Response {
