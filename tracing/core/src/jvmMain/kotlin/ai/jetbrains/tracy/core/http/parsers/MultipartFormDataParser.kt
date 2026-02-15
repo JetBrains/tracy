@@ -124,7 +124,7 @@ data class FormPart(
             if (it.length > 100) it.substring(0..97) + "..." else it
         }
 
-        return "FormPart(name=$name, filename=$filename, contentType=$contentType, headers=$headers, content=`$contentStr`)"
+        return "FormPart(name=$name, filename=$filename, contentType=${contentType?.asString()}, headers=$headers, content=`$contentStr`)"
     }
 }
 
