@@ -16,10 +16,6 @@ kotlin {
 
     jvm {
         compilerOptions.jvmTarget = JVM_17
-
-        testRuns["test"].executionTask.configure {
-            useJUnitPlatform()
-        }
     }
 
     sourceSets {
