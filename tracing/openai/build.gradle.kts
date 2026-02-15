@@ -55,6 +55,11 @@ kotlin {
     }
 }
 
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        freeCompilerArgs.add("-Xopt-in=ai.jetbrains.tracy.core.InternalTracyApi")
+    }
+}
 
 publishing {
     publications.withType<MavenPublication>().configureEach {

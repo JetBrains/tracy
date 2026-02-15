@@ -108,10 +108,13 @@ tasks.named("jvmSourcesJar") {
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     dependsOn(generateBuildConfig)
     compilerOptions {
-        freeCompilerArgs.addAll("-java-parameters", "-Xexpect-actual-classes")
+        freeCompilerArgs.addAll(
+            "-java-parameters",
+            "-Xexpect-actual-classes",
+            "-Xopt-in=ai.jetbrains.tracy.core.InternalTracyApi",
+        )
     }
 }
-
 
 publishing {
     publications.withType<MavenPublication>().configureEach {
