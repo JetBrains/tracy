@@ -5,6 +5,7 @@
 
 package ai.jetbrains.tracy.core.adapters.media
 
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import java.nio.charset.StandardCharsets
 
 /**
@@ -52,6 +53,7 @@ data class DataUrl(
             val attributesRaw = matchResult.groupValues[2]
 
             val (mediaType, parameters) = parseMediaTypeAndAttributes(mediaTypeRaw, attributesRaw)
+                ?: return null
 
             return DataUrl(
                 mediaType,
@@ -89,6 +91,8 @@ data class DataUrl(
             val data = matchResult.groupValues[4]
 
             val (mediaType, parameters) = parseMediaTypeAndAttributes(mediaTypeRaw, attributesRaw)
+                ?: return null
+
             val isBase64 = base64Marker.isNotEmpty()
 
             return DataUrl(
@@ -114,14 +118,23 @@ data class DataUrl(
          *
          * @return A pair where the first element is the processed media type as a string,
          *         and the second element is a map of attributes, where each key is an attribute name
-         *         and its associated value is a list of corresponding values.
+         *         and its associated value is a list of corresponding values. If the media type is invalid,
+         *         returns `null`.
          */
         private fun parseMediaTypeAndAttributes(
             mediaTypeRaw: String,
             attributesRaw: String
-        ): Pair<String, Map<String, List<String>>> {
+        ): Pair<String, Map<String, List<String>>>? {
             // If media type omitted, it defaults to `text/plain;charset=US-ASCII` -> assign 'text/plain'
-            val mediaType = if (mediaTypeRaw.isNotBlank()) mediaTypeRaw.trim() else "text/plain"
+            val mediaType = if (mediaTypeRaw.isNotBlank()) {
+                mediaTypeRaw.toMediaTypeOrNull()?.toString()
+            } else {
+                "text/plain"
+            }
+
+            if (mediaType == null) {
+                return null
+            }
 
             val parameters = buildMap<String, MutableList<String>> {
                 // If the media type is text/* (or defaulted to text/*),
