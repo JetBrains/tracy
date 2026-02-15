@@ -5,6 +5,7 @@
 
 package ai.jetbrains.tracy.core.http.protocol
 
+import ai.jetbrains.tracy.core.InternalTracyApi
 import kotlinx.serialization.json.JsonElement
 
 /**
@@ -18,6 +19,7 @@ import kotlinx.serialization.json.JsonElement
  *                represent different response formats, such as JSON.
  * @property url The URL associated with the HTTP response (i.e., where the initial request was made to).
  */
+@InternalTracyApi
 interface Response {
     val contentType: ContentType?
     val code: Int
@@ -36,6 +38,7 @@ interface Response {
  * - [Json]: Represents a JSON response body containing structured data, which can be parsed
  *           and accessed as a [JsonElement].
  */
+@InternalTracyApi
 sealed class ResponseBody {
     data class Json(val json: JsonElement) : ResponseBody()
 

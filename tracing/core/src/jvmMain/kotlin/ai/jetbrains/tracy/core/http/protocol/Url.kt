@@ -5,6 +5,7 @@
 
 package ai.jetbrains.tracy.core.http.protocol
 
+import ai.jetbrains.tracy.core.InternalTracyApi
 import okhttp3.HttpUrl
 
 /**
@@ -17,6 +18,7 @@ import okhttp3.HttpUrl
  *
  * @see UrlImpl
  */
+@InternalTracyApi
 interface Url {
     val scheme: String
     val host: String
@@ -28,6 +30,7 @@ interface Url {
  *
  * Use it whenever you need to create an instance of [Url].
  */
+@InternalTracyApi
 data class UrlImpl(
     override val scheme: String,
     override val host: String,
@@ -40,6 +43,7 @@ data class UrlImpl(
  *
  * @return A [Url] representation of the current [HttpUrl].
  */
+@InternalTracyApi
 fun HttpUrl.toProtocolUrl(): Url {
     val httpUrl = this
     return UrlImpl(

@@ -5,6 +5,7 @@
 
 package ai.jetbrains.tracy.core.http.protocol
 
+import ai.jetbrains.tracy.core.InternalTracyApi
 import ai.jetbrains.tracy.core.http.parsers.FormData
 import ai.jetbrains.tracy.core.http.parsers.MultipartFormDataParser
 import kotlinx.serialization.json.Json
@@ -24,6 +25,7 @@ private val logger = KotlinLogging.logger {}
  * @param body The body of the request, containing the actual data to be sent.
  *             This can be represented as JSON or form data.
  */
+@InternalTracyApi
 interface Request {
     val body: RequestBody
     val contentType: ContentType
@@ -39,11 +41,13 @@ interface Request {
  * - [Json]: Represents a JSON body containing structured data.
  * - [FormData]: Represents form-data typically used in multipart requests.
  */
+@InternalTracyApi
 sealed class RequestBody {
     data class Json(val json: JsonElement) : RequestBody()
     data class FormData(val data: ai.jetbrains.tracy.core.http.parsers.FormData) : RequestBody()
 }
 
+@InternalTracyApi
 fun RequestBody.asJson(): JsonElement? {
     return when (this) {
         is RequestBody.Json -> this.json
@@ -51,6 +55,7 @@ fun RequestBody.asJson(): JsonElement? {
     }
 }
 
+@InternalTracyApi
 fun RequestBody.asFormData(): FormData? {
     return when (this) {
         is RequestBody.FormData -> this.data
@@ -73,6 +78,7 @@ fun RequestBody.asFormData(): FormData? {
  * @return A [RequestBody] instance representing the parsed content, or null if
  *         the [contentType] is unsupported or parsing fails.
  */
+@InternalTracyApi
 fun ByteArray.asRequestBody(contentType: ContentType, charset: Charset): RequestBody? {
     val bytes = this
     return when (contentType.mimeType) {
@@ -95,6 +101,7 @@ fun ByteArray.asRequestBody(contentType: ContentType, charset: Charset): Request
     }
 }
 
+@InternalTracyApi
 fun RequestBody.asRequestView(
     contentType: ContentType,
     url: Url

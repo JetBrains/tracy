@@ -5,6 +5,7 @@
 
 package ai.jetbrains.tracy.core.http.protocol
 
+import ai.jetbrains.tracy.core.InternalTracyApi
 import okhttp3.MediaType
 import java.nio.charset.Charset
 
@@ -22,6 +23,7 @@ import java.nio.charset.Charset
  * @property mimeType Concatenates the `type` and `subtype` properties into a single MIME type string, formatted as `type/subtype`.
  *                   This provides a standardized representation of the content type.
  */
+@InternalTracyApi
 interface ContentType {
     val type: String
     val subtype: String
@@ -176,6 +178,7 @@ interface ContentType {
  *
  * @return A [ContentType] object representing the current [MediaType].
  */
+@InternalTracyApi
 fun MediaType.toContentType(): ContentType {
     val mediaType = this
     return object : ContentType {
