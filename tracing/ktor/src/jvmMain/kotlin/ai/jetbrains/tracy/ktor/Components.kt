@@ -4,6 +4,7 @@ import ai.jetbrains.tracy.core.http.protocol.ContentType
 import ai.jetbrains.tracy.core.http.protocol.Response
 import ai.jetbrains.tracy.core.http.protocol.ResponseBody
 import ai.jetbrains.tracy.core.http.protocol.Url
+import ai.jetbrains.tracy.core.http.protocol.UrlImpl
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.request
 import io.ktor.http.URLBuilder
@@ -53,9 +54,3 @@ internal fun KtorUrl.toProtocolUrl(): Url {
         pathSegments = url.segments,
     )
 }
-
-private data class UrlImpl(
-    override val scheme: String,
-    override val host: String,
-    override val pathSegments: List<String>
-) : Url

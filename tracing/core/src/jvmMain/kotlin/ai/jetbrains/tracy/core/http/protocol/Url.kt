@@ -14,6 +14,8 @@ import okhttp3.HttpUrl
  * @property host The host of the URL, indicating the domain or IP address.
  * @property pathSegments The path segments of the URL, representing
  *                        the hierarchical structure of the resource location.
+ *
+ * @see UrlImpl
  */
 interface Url {
     val scheme: String
@@ -21,12 +23,23 @@ interface Url {
     val pathSegments: List<String>
 }
 
-private data class UrlImpl(
+/**
+ * Direct implementation of [Url].
+ *
+ * Use it whenever you need to create an instance of [Url].
+ */
+data class UrlImpl(
     override val scheme: String,
     override val host: String,
     override val pathSegments: List<String>
 ) : Url
 
+/**
+ * Converts an instance of [HttpUrl] into a [Url] object by extracting its
+ * scheme, host, and path segments, and constructing a new [UrlImpl] instance.
+ *
+ * @return A [Url] representation of the current [HttpUrl].
+ */
 fun HttpUrl.toProtocolUrl(): Url {
     val httpUrl = this
     return UrlImpl(
