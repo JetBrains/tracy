@@ -39,7 +39,8 @@ class MediaContentExtractorImpl : MediaContentExtractor {
                     if (dataUrl != null) {
                         span.setDataUrlAttributes(dataUrl, field, index)
                     } else {
-                        logger.warn { "Invalid data url, received: $resource" }
+                        logger.warn { "Failed to construct data URL from Base64 resource " +
+                                "(possibly invalid or unsupported media type), resource: $resource" }
                     }
                 }
 
