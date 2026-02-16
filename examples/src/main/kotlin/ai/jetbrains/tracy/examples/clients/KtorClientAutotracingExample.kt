@@ -12,6 +12,7 @@ import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
 import ai.jetbrains.tracy.gemini.adapters.GeminiLLMTracingAdapter
 import ai.jetbrains.tracy.ktor.instrument
 import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
+import com.openai.models.ChatModel
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
@@ -58,7 +59,7 @@ suspend fun main() {
     val instrumentedClient = instrument(client, OpenAILLMTracingAdapter())
 
     val requestBody = buildJsonObject {
-        put("model", JsonPrimitive("gpt-4o-mini"))
+        put("model", JsonPrimitive(ChatModel.GPT_4O_MINI.asString()))
         put("messages", buildJsonArray {
             add(buildJsonObject {
                 put("role", JsonPrimitive("user"))

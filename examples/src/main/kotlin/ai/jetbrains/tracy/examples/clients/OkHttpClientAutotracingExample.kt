@@ -13,6 +13,7 @@ import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
 import ai.jetbrains.tracy.core.instrument
 import ai.jetbrains.tracy.gemini.adapters.GeminiLLMTracingAdapter
 import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
+import com.openai.models.ChatModel
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
@@ -50,7 +51,7 @@ fun main() {
     val apiToken = System.getenv("OPENAI_API_KEY") ?: error("Environment variable 'OPENAI_API_KEY' is not set")
 
     val requestBodyJson = buildJsonObject {
-        put("model", JsonPrimitive("gpt-4o-mini"))
+        put("model", JsonPrimitive(ChatModel.GPT_4O_MINI.asString()))
         put("messages", buildJsonArray {
             add(buildJsonObject {
                 put("role", JsonPrimitive("user"))

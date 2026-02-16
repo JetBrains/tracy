@@ -110,7 +110,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
             .addUserMessage("Say hi!")
             .maxTokens(1000L)
             .temperature(0.0)
-            .model(Model.CLAUDE_3_7_SONNET_20250219)
+            .model(Model.CLAUDE_3_7_SONNET_LATEST)
             .build()
 
         client.messages().create(params)

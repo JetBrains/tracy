@@ -39,7 +39,7 @@ import mu.KotlinLogging
  *         {
  *             "max_tokens": 1024,
  *             "messages": [{"content": "Hello!", "role": "user"}],
- *             "model": "claude-sonnet-4-20250514"
+ *             "model": "claude-3-7-sonnet-latest"
  *         }
  *     """)
  * }
