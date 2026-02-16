@@ -8,6 +8,23 @@ package ai.jetbrains.tracy.core.adapters.media
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import java.nio.charset.StandardCharsets
 
+
+// Pattern: data:[<media-type>][;<attribute>=<value>]*[;base64],<data>
+private val DATA_URL_REGEX = Regex(
+    "^data:([^,;]*)((?:;[^,;=]+=[^,;]+)*)(;base64)?,(.*)$",
+    RegexOption.DOT_MATCHES_ALL
+)
+
+// Pattern: <media-type>[;<attribute>=<value>]
+private val MEDIA_TYPE_REGEX = Regex(
+    "^([^,;]*)((?:;[^,;=]+=[^,;]+)*)$",
+    RegexOption.DOT_MATCHES_ALL
+)
+
+// Pattern: <attribute>=<value>
+private val MEDIA_TYPE_ATTRIBUTE_REGEX = Regex(";([^=]+)=([^;]+)")
+
+
 /**
  * Parts of the data URL.
  *
@@ -42,12 +59,7 @@ data class DataUrl(
 
     companion object {
         fun Resource.Base64.parseBase64(): DataUrl? {
-            val mediaTypeRegex = Regex(
-                "^([^,;]*)((?:;[^,;=]+=[^,;]+)*)$",
-                RegexOption.DOT_MATCHES_ALL
-            )
-
-            val matchResult = mediaTypeRegex.matchEntire(this.mediaType) ?: return null
+            val matchResult = MEDIA_TYPE_REGEX.matchEntire(this.mediaType) ?: return null
 
             val mediaTypeRaw = matchResult.groupValues[1].trim()
             val attributesRaw = matchResult.groupValues[2]
@@ -77,13 +89,7 @@ data class DataUrl(
                 return null
             }
 
-            // Pattern: data:[<media-type>][;<attribute>=<value>]*[;base64],<data>
-            val dataUrlRegex = Regex(
-                "^data:([^,;]*)((?:;[^,;=]+=[^,;]+)*)(;base64)?,(.*)$",
-                RegexOption.DOT_MATCHES_ALL
-            )
-
-            val matchResult = dataUrlRegex.matchEntire(url) ?: return null
+            val matchResult = DATA_URL_REGEX.matchEntire(url) ?: return null
 
             val mediaTypeRaw = matchResult.groupValues[1].trim()
             val attributesRaw = matchResult.groupValues[2]
@@ -147,8 +153,7 @@ data class DataUrl(
                 // insert other attributes
                 if (attributesRaw.isNotEmpty()) {
                     // parse attributes (e.g., `;charset=UTF-8;foo=bar`)
-                    val attributeRegex = Regex(";([^=]+)=([^;]+)")
-                    val matches = attributeRegex.findAll(attributesRaw)
+                    val matches = MEDIA_TYPE_ATTRIBUTE_REGEX.findAll(attributesRaw)
                     for (match in matches) {
                         val key = match.groupValues[1].trim()
                         val value = match.groupValues[2].trim()
