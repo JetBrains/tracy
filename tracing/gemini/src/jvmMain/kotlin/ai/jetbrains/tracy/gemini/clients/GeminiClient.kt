@@ -223,6 +223,7 @@ import com.google.genai.Client as GeminiClient
  * - Tracing can be controlled globally via `TracingManager.isTracingEnabled`.
  * - Content capture policies can be configured via `TracingManager.withCapturingPolicy(policy)`
  *   to redact sensitive input/output data.
+ * - Error responses are automatically captured with error status and messages.
  * - Media content (images, audio) is traced with upload attributes including content type and data URLs.
  *
  * @param client The Gemini client to instrument

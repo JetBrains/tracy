@@ -116,6 +116,7 @@ import okhttp3.ResponseBody as OkHttpResponseBody
  *   will not result in duplicate interceptors.
  * - Tracing can be controlled globally via `TracingManager.isTracingEnabled`.
  * - **The original client is not modified; a new client instance with instrumentation is returned**.
+ * - Error responses are automatically captured with error status and messages.
  *
  * @param client The OkHttp client to instrument
  * @param adapter The [LLMTracingAdapter] specifying which LLM provider adapter to use for tracing

@@ -143,6 +143,7 @@ import ai.jetbrains.tracy.core.http.protocol.RequestBody as TracyRequestBody
  * - Tracing can be controlled globally via `TracingManager.isTracingEnabled`.
  * - The response body is **peeked** (not consumed), so it remains available for further processing.
  * - Content capture policies [TracingManager.contentCapturePolicy] can be configured to redact sensitive data.
+ * - Error responses are automatically captured with error status and messages.
  *
  * @param client The [HttpClient] instance to be configured for tracing
  * @param adapter The [LLMTracingAdapter] specifying which LLM provider adapter to use for tracing

@@ -82,6 +82,7 @@ import com.openai.client.OpenAIClient
  * - This function is **idempotent**: calling `instrument()` multiple times on the same client
  *   will not result in duplicate tracing.
  * - Tracing can be controlled globally via `TracingManager.isTracingEnabled`.
+ * - Error responses are automatically captured with error status and messages.
  * - Content capture policies can be configured via `TracingManager.withCapturingPolicy(policy)`
  *   to redact sensitive input/output data.
  *
