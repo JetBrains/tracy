@@ -9,8 +9,8 @@ import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter.Companion.PayloadType
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
 import ai.jetbrains.tracy.core.adapters.handlers.EndpointApiHandler
 import ai.jetbrains.tracy.core.adapters.media.*
-import ai.jetbrains.tracy.core.http.protocol.Request
-import ai.jetbrains.tracy.core.http.protocol.Response
+import ai.jetbrains.tracy.core.http.protocol.TracyHttpRequest
+import ai.jetbrains.tracy.core.http.protocol.TracyHttpResponse
 import ai.jetbrains.tracy.core.http.protocol.asJson
 import ai.jetbrains.tracy.core.policy.ContentKind
 import ai.jetbrains.tracy.core.policy.contentTracingAllowed
@@ -27,7 +27,7 @@ import kotlinx.serialization.json.*
 internal class ResponsesOpenAIApiEndpointHandler(
     private val extractor: MediaContentExtractor
 ) : EndpointApiHandler {
-    override fun handleRequestAttributes(span: Span, request: Request) {
+    override fun handleRequestAttributes(span: Span, request: TracyHttpRequest) {
         val body = request.body.asJson()?.jsonObject ?: return
         OpenAIApiUtils.setCommonRequestAttributes(span, request)
 
@@ -136,7 +136,7 @@ internal class ResponsesOpenAIApiEndpointHandler(
      *
      * See [Response Object, Responses API](https://platform.openai.com/docs/api-reference/responses/object)
      */
-    override fun handleResponseAttributes(span: Span, response: Response) {
+    override fun handleResponseAttributes(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
         OpenAIApiUtils.setCommonResponseAttributes(span, response)
 

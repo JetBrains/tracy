@@ -7,8 +7,8 @@ package ai.jetbrains.tracy.openai.adapters.handlers.images
 
 import ai.jetbrains.tracy.core.adapters.handlers.EndpointApiHandler
 import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractor
-import ai.jetbrains.tracy.core.http.protocol.Request
-import ai.jetbrains.tracy.core.http.protocol.Response
+import ai.jetbrains.tracy.core.http.protocol.TracyHttpRequest
+import ai.jetbrains.tracy.core.http.protocol.TracyHttpResponse
 import ai.jetbrains.tracy.core.http.protocol.asJson
 import ai.jetbrains.tracy.core.policy.orRedactedInput
 import ai.jetbrains.tracy.openai.adapters.handlers.asString
@@ -26,7 +26,7 @@ import kotlinx.serialization.json.jsonPrimitive
 internal class ImagesCreateOpenAIApiEndpointHandler(
     private val extractor: MediaContentExtractor
 ) : EndpointApiHandler {
-    override fun handleRequestAttributes(span: Span, request: Request) {
+    override fun handleRequestAttributes(span: Span, request: TracyHttpRequest) {
         val body = request.body.asJson()?.jsonObject ?: return
 
         body["prompt"]?.let { span.setAttribute("gen_ai.prompt.0.content", it.jsonPrimitive.content.orRedactedInput()) }
@@ -41,7 +41,7 @@ internal class ImagesCreateOpenAIApiEndpointHandler(
         }
     }
 
-    override fun handleResponseAttributes(span: Span, response: Response) {
+    override fun handleResponseAttributes(span: Span, response: TracyHttpResponse) {
         handleImageGenerationResponseAttributes(span, response, extractor)
     }
 

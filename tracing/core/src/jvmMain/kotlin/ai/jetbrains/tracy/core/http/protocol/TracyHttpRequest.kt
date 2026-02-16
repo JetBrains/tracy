@@ -26,45 +26,45 @@ private val logger = KotlinLogging.logger {}
  *             This can be represented as JSON or form data.
  */
 @InternalTracyApi
-interface Request {
-    val body: RequestBody
-    val contentType: ContentType?
-    val url: Url
+interface TracyHttpRequest {
+    val body: TracyHttpRequestBody
+    val contentType: TracyContentType?
+    val url: TracyHttpUrl
 }
 
 /**
  * Represents the body content of an HTTP request. It can either be a JSON payload or form data.
  *
- * This sealed class is used as part of the [Request] data structure to encapsulate the various
+ * This sealed class is used as part of the [TracyHttpRequest] data structure to encapsulate the various
  * types of data that can be transmitted as the body of an HTTP request.
  *
  * - [Json]: Represents a JSON body containing structured data.
  * - [FormData]: Represents form-data typically used in multipart requests.
  */
 @InternalTracyApi
-sealed class RequestBody {
-    data class Json(val json: JsonElement) : RequestBody()
-    data class FormData(val data: ai.jetbrains.tracy.core.http.parsers.FormData) : RequestBody()
+sealed class TracyHttpRequestBody {
+    data class Json(val json: JsonElement) : TracyHttpRequestBody()
+    data class FormData(val data: ai.jetbrains.tracy.core.http.parsers.FormData) : TracyHttpRequestBody()
 }
 
 @InternalTracyApi
-fun RequestBody.asJson(): JsonElement? {
+fun TracyHttpRequestBody.asJson(): JsonElement? {
     return when (this) {
-        is RequestBody.Json -> this.json
+        is TracyHttpRequestBody.Json -> this.json
         else -> null
     }
 }
 
 @InternalTracyApi
-fun RequestBody.asFormData(): FormData? {
+fun TracyHttpRequestBody.asFormData(): FormData? {
     return when (this) {
-        is RequestBody.FormData -> this.data
+        is TracyHttpRequestBody.FormData -> this.data
         else -> null
     }
 }
 
 /**
- * Converts a [ByteArray] into a [RequestBody] based on the provided [contentType].
+ * Converts a [ByteArray] into a [TracyHttpRequestBody] based on the provided [contentType].
  * The given [ByteArray] is decoded according to the specified [charset].
  *
  * This method interprets the byte array input as either JSON or multipart form data,
@@ -75,14 +75,14 @@ fun RequestBody.asFormData(): FormData? {
  * @param contentType The mime type of the data (e.g., `application/json`). Used to determine how to interpret the byte array.
  * @param charset The character encoding used to decode the byte array.
  *
- * @return A [RequestBody] instance representing the parsed content, or null if
+ * @return A [TracyHttpRequestBody] instance representing the parsed content, or null if
  *         the [contentType] is unsupported or parsing fails.
  */
 @InternalTracyApi
-fun ByteArray.asRequestBody(contentType: ContentType, charset: Charset): RequestBody? {
+fun ByteArray.asRequestBody(contentType: TracyContentType, charset: Charset): TracyHttpRequestBody? {
     val bytes = this
     return when (contentType.mimeType) {
-        ContentType.Application.Json.mimeType -> {
+        TracyContentType.Application.Json.mimeType -> {
             val json = try {
                 Json.parseToJsonElement(string = bytes.toString(charset)).jsonObject
             } catch (err: Exception) {
@@ -90,24 +90,24 @@ fun ByteArray.asRequestBody(contentType: ContentType, charset: Charset): Request
                 null
             } ?: return null
 
-            RequestBody.Json(json)
+            TracyHttpRequestBody.Json(json)
         }
-        ContentType.MultiPart.FormData.mimeType -> {
+        TracyContentType.MultiPart.FormData.mimeType -> {
             val parser = MultipartFormDataParser()
             val formData = parser.parse(contentType, bytes)
-            RequestBody.FormData(formData)
+            TracyHttpRequestBody.FormData(formData)
         }
         else -> null
     }
 }
 
 @InternalTracyApi
-fun RequestBody.asRequestView(
-    contentType: ContentType?,
-    url: Url,
-): Request {
+fun TracyHttpRequestBody.asRequestView(
+    contentType: TracyContentType?,
+    url: TracyHttpUrl,
+): TracyHttpRequest {
     val requestBody = this
-    return object : Request {
+    return object : TracyHttpRequest {
         override val body = requestBody
         override val contentType = contentType
         override val url = url

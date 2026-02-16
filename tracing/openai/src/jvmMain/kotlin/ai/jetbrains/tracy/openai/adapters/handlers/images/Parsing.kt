@@ -9,8 +9,7 @@ import ai.jetbrains.tracy.core.adapters.media.MediaContent
 import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractor
 import ai.jetbrains.tracy.core.adapters.media.MediaContentPart
 import ai.jetbrains.tracy.core.adapters.media.Resource
-import ai.jetbrains.tracy.core.http.protocol.Response
-import ai.jetbrains.tracy.core.http.protocol.asJson
+import ai.jetbrains.tracy.core.http.protocol.TracyHttpResponse
 import ai.jetbrains.tracy.core.policy.ContentKind
 import ai.jetbrains.tracy.core.policy.contentTracingAllowed
 import ai.jetbrains.tracy.core.policy.orRedactedOutput
@@ -20,7 +19,6 @@ import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
 import kotlinx.serialization.json.*
-import mu.KotlinLogging.logger
 
 
 // See: https://platform.openai.com/docs/api-reference/images/create#images_create-output_format
@@ -28,7 +26,7 @@ private const val defaultImageFormat = "png"
 
 internal fun handleImageGenerationResponseAttributes(
     span: Span,
-    response: Response,
+    response: TracyHttpResponse,
     extractor: MediaContentExtractor,
 ) {
     val body = response.body.asJson()?.jsonObject ?: return

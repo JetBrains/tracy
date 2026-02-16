@@ -5,8 +5,8 @@
 
 package ai.jetbrains.tracy.openai.adapters.handlers
 
-import ai.jetbrains.tracy.core.http.protocol.Request
-import ai.jetbrains.tracy.core.http.protocol.Response
+import ai.jetbrains.tracy.core.http.protocol.TracyHttpRequest
+import ai.jetbrains.tracy.core.http.protocol.TracyHttpResponse
 import ai.jetbrains.tracy.core.http.protocol.asJson
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
@@ -20,7 +20,7 @@ internal object OpenAIApiUtils {
     /**
      * Sets common request attributes (temperature, model)
      */
-    fun setCommonRequestAttributes(span: Span, request: Request) {
+    fun setCommonRequestAttributes(span: Span, request: TracyHttpRequest) {
         val body = request.body.asJson()?.jsonObject ?: return
 
         body["temperature"]?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.jsonPrimitive.doubleOrNull) }
@@ -30,7 +30,7 @@ internal object OpenAIApiUtils {
     /**
      * Sets common response attributes (id, model, object type)
      */
-    fun setCommonResponseAttributes(span: Span, response: Response) {
+    fun setCommonResponseAttributes(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
 
         body["id"]?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }

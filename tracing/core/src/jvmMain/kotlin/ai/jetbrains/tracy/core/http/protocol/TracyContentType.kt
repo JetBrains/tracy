@@ -24,7 +24,7 @@ import java.nio.charset.Charset
  *                   This provides a standardized representation of the content type.
  */
 @InternalTracyApi
-interface ContentType {
+interface TracyContentType {
     val type: String
     val subtype: String
 
@@ -83,7 +83,7 @@ interface ContentType {
         /**
          * Represents the JSON content type used in HTTP communications.
          *
-         * This object implements the [ContentType] interface and defines the MIME type
+         * This object implements the [TracyContentType] interface and defines the MIME type
          * for JSON data. It overrides the `type`, `subtype`, and `asString` methods
          * to provide specific information about the JSON content type.
          *
@@ -91,7 +91,7 @@ interface ContentType {
          * - `subtype`: Specifies the subtype component of the MIME type, which is `json`.
          * - `asString()`: Returns the full MIME type as a string (e.g., `application/json`).
          */
-        object Json : ContentType {
+        object Json : TracyContentType {
             override val type = TYPE
             override val subtype = "json"
 
@@ -116,7 +116,7 @@ interface ContentType {
         /**
          * Represents a specific `multipart/form-data` content type.
          *
-         * This object is a concrete implementation of the [ContentType] interface and is used
+         * This object is a concrete implementation of the [TracyContentType] interface and is used
          * to encapsulate the `multipart/form-data` MIME type. It can be utilized in scenarios
          * where HTTP requests or responses involve submitting form data in a multipart format.
          *
@@ -125,7 +125,7 @@ interface ContentType {
          * - The `subtype` is set to `"form-data"`.
          * - Implements a string representation of the MIME type via the `asString` method.
          */
-        object FormData : ContentType {
+        object FormData : TracyContentType {
             override val type = TYPE
             override val subtype = "form-data"
 
@@ -147,7 +147,7 @@ interface ContentType {
         const val TYPE = "text"
 
         /**
-         * Represents a specific implementation of the [ContentType] for handling server-sent events.
+         * Represents a specific implementation of the [TracyContentType] for handling server-sent events.
          *
          * This object defines the `event-stream` subtype.
          *
@@ -155,11 +155,11 @@ interface ContentType {
          * event streams in HTTP protocols.
          *
          * @property type Specifies the overarching type of the content. In this case, it corresponds
-         *                to the constant `TYPE` from the [ContentType] class.
+         *                to the constant `TYPE` from the [TracyContentType] class.
          * @property subtype Defines the specific subtype `event-stream`, which identifies the content type as
          *                   a server-sent event stream.
          */
-        object EventStream : ContentType {
+        object EventStream : TracyContentType {
             override val type = TYPE
             override val subtype = "event-stream"
 
@@ -171,17 +171,17 @@ interface ContentType {
 }
 
 /**
- * Converts the current [MediaType] instance into a corresponding [ContentType] instance.
+ * Converts the current [MediaType] instance into a corresponding [TracyContentType] instance.
  *
- * This method maps the `type` and `subtype` components of the [MediaType] to a new [ContentType] object
+ * This method maps the `type` and `subtype` components of the [MediaType] to a new [TracyContentType] object
  * and provides functionality to represent the content type as a string using the `asString` method.
  *
- * @return A [ContentType] object representing the current [MediaType].
+ * @return A [TracyContentType] object representing the current [MediaType].
  */
 @InternalTracyApi
-fun MediaType.toContentType(): ContentType {
+fun MediaType.toContentType(): TracyContentType {
     val mediaType = this
-    return object : ContentType {
+    return object : TracyContentType {
         override val type = mediaType.type
         override val subtype = mediaType.subtype
         override fun asString() = mediaType.toString()

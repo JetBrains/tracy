@@ -12,18 +12,16 @@ import ai.jetbrains.tracy.core.adapters.media.MediaContent
 import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractor
 import ai.jetbrains.tracy.core.adapters.media.MediaContentPart
 import ai.jetbrains.tracy.core.adapters.media.Resource
-import ai.jetbrains.tracy.core.http.protocol.Request
-import ai.jetbrains.tracy.core.http.protocol.Response
+import ai.jetbrains.tracy.core.http.protocol.TracyHttpRequest
+import ai.jetbrains.tracy.core.http.protocol.TracyHttpResponse
 import ai.jetbrains.tracy.core.http.protocol.asJson
 import ai.jetbrains.tracy.core.policy.ContentKind
 import ai.jetbrains.tracy.core.policy.contentTracingAllowed
 import ai.jetbrains.tracy.core.policy.orRedactedInput
 import ai.jetbrains.tracy.core.policy.orRedactedOutput
-import io.ktor.http.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
-import mu.KotlinLogging
 
 /**
  * Parses Generate Content API requests and responses
@@ -33,7 +31,7 @@ import mu.KotlinLogging
 class GeminiContentGenHandler(
     private val extractor: MediaContentExtractor
 ) : EndpointApiHandler {
-    override fun handleRequestAttributes(span: Span, request: Request) {
+    override fun handleRequestAttributes(span: Span, request: TracyHttpRequest) {
         // See: https://ai.google.dev/api/caching#Content
         val body = request.body.asJson()?.jsonObject ?: return
 
@@ -120,7 +118,7 @@ class GeminiContentGenHandler(
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.REQUEST)
     }
 
-    override fun handleResponseAttributes(span: Span, response: Response) {
+    override fun handleResponseAttributes(span: Span, response: TracyHttpResponse) {
         // See: https://ai.google.dev/api/generate-content#v1beta.GenerateContentResponse
         val body = response.body.asJson()?.jsonObject ?: return
 

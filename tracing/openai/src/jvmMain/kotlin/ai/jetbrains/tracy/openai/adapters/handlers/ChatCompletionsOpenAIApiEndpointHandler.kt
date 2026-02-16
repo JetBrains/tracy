@@ -9,8 +9,8 @@ import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter.Companion.PayloadType
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
 import ai.jetbrains.tracy.core.adapters.handlers.EndpointApiHandler
 import ai.jetbrains.tracy.core.adapters.media.*
-import ai.jetbrains.tracy.core.http.protocol.Request
-import ai.jetbrains.tracy.core.http.protocol.Response
+import ai.jetbrains.tracy.core.http.protocol.TracyHttpRequest
+import ai.jetbrains.tracy.core.http.protocol.TracyHttpResponse
 import ai.jetbrains.tracy.core.http.protocol.asJson
 import ai.jetbrains.tracy.core.policy.*
 import io.opentelemetry.api.trace.Span
@@ -18,7 +18,6 @@ import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
 import kotlinx.serialization.json.*
-import mu.KotlinLogging
 
 /**
  * Handler for OpenAI Chat Completions API
@@ -26,7 +25,7 @@ import mu.KotlinLogging
 internal class ChatCompletionsOpenAIApiEndpointHandler(
     private val extractor: MediaContentExtractor
 ) : EndpointApiHandler {
-    override fun handleRequestAttributes(span: Span, request: Request) {
+    override fun handleRequestAttributes(span: Span, request: TracyHttpRequest) {
         val body = request.body.asJson()?.jsonObject ?: return
         OpenAIApiUtils.setCommonRequestAttributes(span, request)
 
@@ -116,7 +115,7 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
         span.setAttribute("gen_ai.prompt.$index.content", result.orRedacted(kind))
     }
 
-    override fun handleResponseAttributes(span: Span, response: Response) {
+    override fun handleResponseAttributes(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
 
         body["choices"]?.let { choices ->

@@ -226,7 +226,7 @@ class OpenTelemetryOkHttpInterceptor(
                 if (bodyContent != null) {
                     // building request view
                     val mediaType = request.body?.contentType()
-                    val req: Request? = mediaType?.let {
+                    val req: TracyHttpRequest? = mediaType?.let {
                         val body = bodyContent.asRequestBody(mediaType = it)
                         body?.asRequestView(
                             contentType = mediaType.toContentType(),
@@ -277,7 +277,7 @@ class OpenTelemetryOkHttpInterceptor(
 
     private fun wrapStreamingResponse(
         originalResponse: OkHttpResponse,
-        url: Url,
+        url: TracyHttpUrl,
         span: Span,
     ): OkHttpResponse {
         val originalBody = originalResponse.body ?: return originalResponse
@@ -351,14 +351,14 @@ class OpenTelemetryOkHttpInterceptor(
         return content to request
     }
 
-    private fun OkHttpResponse.asResponseView(body: JsonObject): Response {
+    private fun OkHttpResponse.asResponseView(body: JsonObject): TracyHttpResponse {
         val response = this
         val mediaType = response.body?.contentType()
 
-        return object : Response {
+        return object : TracyHttpResponse {
             override val contentType = mediaType?.toContentType()
             override val code = response.code
-            override val body = ResponseBody.Json(body)
+            override val body = TracyHttpResponseBody.Json(body)
             override val url = response.request.url.toProtocolUrl()
 
             override fun isError() = response.isSuccessful.not()

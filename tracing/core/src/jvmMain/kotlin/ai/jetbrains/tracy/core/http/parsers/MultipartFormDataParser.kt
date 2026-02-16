@@ -5,7 +5,7 @@
 
 package ai.jetbrains.tracy.core.http.parsers
 
-import ai.jetbrains.tracy.core.http.protocol.ContentType
+import ai.jetbrains.tracy.core.http.protocol.TracyContentType
 import ai.jetbrains.tracy.core.http.protocol.toContentType
 import mu.KotlinLogging
 import okhttp3.MediaType
@@ -33,7 +33,7 @@ class MultipartFormDataParser {
      * @param bytes An array containing the `multipart/form-data` content to be parsed.
      * @throws IllegalArgumentException if the provided content type is not multipart/form-data.
      */
-    fun parse(contentType: ContentType, bytes: ByteArray): FormData {
+    fun parse(contentType: TracyContentType, bytes: ByteArray): FormData {
         checkContentType(contentType)
 
         val config = MimeConfig.custom()
@@ -79,10 +79,10 @@ class MultipartFormDataParser {
      *
      * @throws IllegalArgumentException
      */
-    private fun checkContentType(contentType: ContentType) {
-        if (contentType.mimeType != ContentType.MultiPart.FormData.mimeType) {
+    private fun checkContentType(contentType: TracyContentType) {
+        if (contentType.mimeType != TracyContentType.MultiPart.FormData.mimeType) {
             throw IllegalArgumentException(
-                "Content type must be ${ContentType.MultiPart.FormData.mimeType}, got ${contentType.asString()}."
+                "Content type must be ${TracyContentType.MultiPart.FormData.mimeType}, got ${contentType.asString()}."
             )
         }
 
@@ -106,7 +106,7 @@ class MultipartFormDataParser {
 data class FormPart(
     val name: String?,
     val filename: String? = null,
-    val contentType: ContentType? = null,
+    val contentType: TracyContentType? = null,
     val headers: Map<String, String> = emptyMap(),
     val content: ByteArray,
 ) {
@@ -196,7 +196,7 @@ private class MultipartContentHandler : AbstractContentHandler() {
                 // then it is the content type of the entire body, and we skip it;
                 // otherwise, it is a content type of the body part's field.
                 val isBodyContentTypeFieldEncountered = !firstFieldEncountered &&
-                        contentType?.mimeType == ContentType.MultiPart.FormData.mimeType
+                        contentType?.mimeType == TracyContentType.MultiPart.FormData.mimeType
                 if (!isBodyContentTypeFieldEncountered) {
                     // if not, it is a content type of the actual field of a body part;
                     // otherwise, ignore to skip it
@@ -245,7 +245,7 @@ private class MultipartContentHandler : AbstractContentHandler() {
      * @return a ContentType instance representing the parsed type, subtype, and parameters,
      *         or null if the content type is invalid or cannot be parsed
      */
-    private fun parseContentType(contentType: String): ContentType? {
+    private fun parseContentType(contentType: String): TracyContentType? {
         val trimmed = contentType.trim()
         if (trimmed.isEmpty()) {
             return null
@@ -291,7 +291,7 @@ private class MultipartContentHandler : AbstractContentHandler() {
             parameters[name] = value
         }
 
-        return object : ContentType {
+        return object : TracyContentType {
             override val type = type
             override val subtype = subtype
 
@@ -327,7 +327,7 @@ private class MultipartContentHandler : AbstractContentHandler() {
     private data class PartContext(
         var name: String? = null,
         var filename: String? = null,
-        var contentType: ContentType? = null,
+        var contentType: TracyContentType? = null,
         var headers: MutableMap<String, String> = mutableMapOf(),
     )
 

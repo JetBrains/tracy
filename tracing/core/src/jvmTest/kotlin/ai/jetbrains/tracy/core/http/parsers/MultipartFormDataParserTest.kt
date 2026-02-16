@@ -426,7 +426,7 @@ class MultipartFormDataParserTest {
 
     private fun contentType(contentType: String) = assertDoesNotThrow {
         val contentType = ContentType.parse(contentType)
-        object : ai.jetbrains.tracy.core.http.protocol.ContentType {
+        object : ai.jetbrains.tracy.core.http.protocol.TracyContentType {
             override val type = contentType.contentType
             override val subtype = contentType.contentSubtype
             override fun asString() = contentType.toString()

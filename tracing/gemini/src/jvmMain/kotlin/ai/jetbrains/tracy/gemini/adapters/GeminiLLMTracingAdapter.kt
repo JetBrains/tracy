@@ -9,9 +9,9 @@ import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
 import ai.jetbrains.tracy.core.adapters.handlers.EndpointApiHandler
 import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractor
 import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractorImpl
-import ai.jetbrains.tracy.core.http.protocol.Request
-import ai.jetbrains.tracy.core.http.protocol.Response
-import ai.jetbrains.tracy.core.http.protocol.Url
+import ai.jetbrains.tracy.core.http.protocol.TracyHttpRequest
+import ai.jetbrains.tracy.core.http.protocol.TracyHttpResponse
+import ai.jetbrains.tracy.core.http.protocol.TracyHttpUrl
 import ai.jetbrains.tracy.gemini.adapters.handlers.GeminiContentGenHandler
 import ai.jetbrains.tracy.gemini.adapters.handlers.GeminiImagenHandler
 import io.opentelemetry.api.trace.Span
@@ -42,7 +42,7 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
  * See: [Gemini API](https://ai.google.dev/gemini-api/docs), [Imagen API](https://cloud.google.com/vertex-ai/docs/generative-ai/image/overview)
  */
 class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.GEMINI) {
-    override fun getRequestBodyAttributes(span: Span, request: Request) {
+    override fun getRequestBodyAttributes(span: Span, request: TracyHttpRequest) {
         val (model, operation) = request.url.modelAndOperation()
 
         model?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, model) }
@@ -52,32 +52,32 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
         handler.handleRequestAttributes(span, request)
     }
 
-    override fun getResponseBodyAttributes(span: Span, response: Response) {
+    override fun getResponseBodyAttributes(span: Span, response: TracyHttpResponse) {
         val handler = selectHandler(response.url)
         handler.handleResponseAttributes(span, response)
     }
 
-    override fun getSpanName(request: Request) = "Gemini-generation"
+    override fun getSpanName(request: TracyHttpRequest) = "Gemini-generation"
 
     // streaming is not supported
-    override fun isStreamingRequest(request: Request) = false
-    override fun handleStreaming(span: Span, url: Url, events: String) {
+    override fun isStreamingRequest(request: TracyHttpRequest) = false
+    override fun handleStreaming(span: Span, url: TracyHttpUrl, events: String) {
         val handler = selectHandler(url)
         handler.handleStreaming(span, events)
     }
 
-    private fun selectHandler(url: Url): EndpointApiHandler = when {
+    private fun selectHandler(url: TracyHttpUrl): EndpointApiHandler = when {
         url.isImagenUrl() -> GeminiImagenHandler(extractor)
         else -> GeminiContentGenHandler(extractor)
     }
 
-    private fun Url.modelAndOperation(): Pair<String?, String?> {
+    private fun TracyHttpUrl.modelAndOperation(): Pair<String?, String?> {
         // url ends with `[model]:[operation]`
         return this.pathSegments.lastOrNull()?.split(":")
             ?.let { it.firstOrNull() to it.lastOrNull() } ?: (null to null)
     }
 
-    private fun Url.isImagenUrl(): Boolean {
+    private fun TracyHttpUrl.isImagenUrl(): Boolean {
         val (model, operation) = this.modelAndOperation()
         return (model?.startsWith("imagen") == true) && (operation == "predict")
     }

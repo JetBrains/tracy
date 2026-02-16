@@ -10,8 +10,8 @@ import ai.jetbrains.tracy.core.adapters.media.MediaContent
 import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractor
 import ai.jetbrains.tracy.core.adapters.media.MediaContentPart
 import ai.jetbrains.tracy.core.adapters.media.Resource
-import ai.jetbrains.tracy.core.http.protocol.Request
-import ai.jetbrains.tracy.core.http.protocol.Response
+import ai.jetbrains.tracy.core.http.protocol.TracyHttpRequest
+import ai.jetbrains.tracy.core.http.protocol.TracyHttpResponse
 import ai.jetbrains.tracy.core.http.protocol.asFormData
 import ai.jetbrains.tracy.core.policy.ContentKind
 import ai.jetbrains.tracy.core.policy.contentTracingAllowed
@@ -31,7 +31,7 @@ import java.util.*
 internal class ImagesCreateEditOpenAIApiEndpointHandler(
     private val extractor: MediaContentExtractor
 ) : EndpointApiHandler {
-    override fun handleRequestAttributes(span: Span, request: Request) {
+    override fun handleRequestAttributes(span: Span, request: TracyHttpRequest) {
         val body = request.body.asFormData() ?: return
 
         val mediaContentParts = mutableListOf<MediaContentPart>()
@@ -114,7 +114,7 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
         }
     }
 
-    override fun handleResponseAttributes(span: Span, response: Response) {
+    override fun handleResponseAttributes(span: Span, response: TracyHttpResponse) {
         handleImageGenerationResponseAttributes(span, response, extractor)
     }
 

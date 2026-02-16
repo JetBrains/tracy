@@ -7,7 +7,7 @@ package ai.jetbrains.tracy.ktor
 
 import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter
-import ai.jetbrains.tracy.core.http.protocol.Response
+import ai.jetbrains.tracy.core.http.protocol.TracyHttpResponse
 import ai.jetbrains.tracy.core.http.protocol.asRequestBody
 import ai.jetbrains.tracy.core.http.protocol.asRequestView
 import io.ktor.client.*
@@ -288,7 +288,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
         })
     }
 
-    private fun HttpResponse.asResponseView(body: JsonObject): Response = ResponseView(response = this, body)
+    private fun HttpResponse.asResponseView(body: JsonObject): TracyHttpResponse = TracyHttpResponseView(response = this, body)
 
     /**
      * Helper function to serialize `@Serializable` objects with an unknown type

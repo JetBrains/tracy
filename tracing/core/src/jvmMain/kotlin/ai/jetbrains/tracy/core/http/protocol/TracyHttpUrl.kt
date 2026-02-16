@@ -16,37 +16,37 @@ import okhttp3.HttpUrl
  * @property pathSegments The path segments of the URL, representing
  *                        the hierarchical structure of the resource location.
  *
- * @see UrlImpl
+ * @see TracyHttpUrlImpl
  */
 @InternalTracyApi
-interface Url {
+interface TracyHttpUrl {
     val scheme: String
     val host: String
     val pathSegments: List<String>
 }
 
 /**
- * Direct implementation of [Url].
+ * Direct implementation of [TracyHttpUrl].
  *
- * Use it whenever you need to create an instance of [Url].
+ * Use it whenever you need to create an instance of [TracyHttpUrl].
  */
 @InternalTracyApi
-data class UrlImpl(
+data class TracyHttpUrlImpl(
     override val scheme: String,
     override val host: String,
     override val pathSegments: List<String>
-) : Url
+) : TracyHttpUrl
 
 /**
- * Converts an instance of [HttpUrl] into a [Url] object by extracting its
- * scheme, host, and path segments, and constructing a new [UrlImpl] instance.
+ * Converts an instance of [HttpUrl] into a [TracyHttpUrl] object by extracting its
+ * scheme, host, and path segments, and constructing a new [TracyHttpUrlImpl] instance.
  *
- * @return A [Url] representation of the current [HttpUrl].
+ * @return A [TracyHttpUrl] representation of the current [HttpUrl].
  */
 @InternalTracyApi
-fun HttpUrl.toProtocolUrl(): Url {
+fun HttpUrl.toProtocolUrl(): TracyHttpUrl {
     val httpUrl = this
-    return UrlImpl(
+    return TracyHttpUrlImpl(
         scheme = httpUrl.scheme,
         host = httpUrl.host,
         pathSegments = httpUrl.pathSegments,
