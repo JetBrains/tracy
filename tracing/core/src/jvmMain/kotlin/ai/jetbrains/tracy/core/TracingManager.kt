@@ -65,6 +65,8 @@ object TracingManager {
      * Disabled by default. Can be overridden programmatically at runtime.
      *
      * @see ContentCapturePolicy
+     * @see TracingManager.traceSensitiveContent
+     * @see TracingManager.withCapturingPolicy
      */
     @Volatile
     var contentCapturePolicy = ContentCapturePolicy.fromEnvironment()
@@ -141,11 +143,11 @@ object TracingManager {
     /**
      * Sets the capturing policy for handling sensitive content within spans.
      *
-     * @see [traceSensitiveContent]
-     *
      * @param policy the content capture policy that dictates whether inputs and outputs
      *               containing sensitive data should be captured. By default, sensitive
      *               content is not captured in accordance with OpenTelemetry guidelines.
+     *
+     * @see [traceSensitiveContent]
      */
     fun withCapturingPolicy(policy: ContentCapturePolicy) {
         contentCapturePolicy = policy

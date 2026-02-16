@@ -116,6 +116,7 @@ import okhttp3.ResponseBody as OkHttpResponseBody
  *   will not result in duplicate interceptors.
  * - Tracing can be controlled globally via `TracingManager.isTracingEnabled`.
  * - **The original client is not modified; a new client instance with instrumentation is returned**.
+ * - Content capture policies [TracingManager.contentCapturePolicy] can be configured to redact sensitive data.
  * - Error responses are automatically captured with error status and messages.
  *
  * @param client The OkHttp client to instrument
