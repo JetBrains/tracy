@@ -40,7 +40,6 @@ fun main() {
         .build()
         .apply { instrument(this) }
 
-    // now, `instrumentedClient` is patched with instrumentation
     val result = instrumentedClient.models.generateContent(
         "gemini-2.5-flash",
         "Generate polite greeting and introduce yourself",

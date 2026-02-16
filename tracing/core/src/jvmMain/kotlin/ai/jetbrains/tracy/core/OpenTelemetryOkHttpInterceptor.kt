@@ -35,7 +35,6 @@ import okhttp3.ResponseBody as OkHttpResponseBody
  *  (e.g., `ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter` for OpenAI).
  * @return A new [OkHttpClient] instance with tracing capabilities enabled.
  *
- *
  * @see OpenTelemetryOkHttpInterceptor
  * @see LLMTracingAdapter
  */

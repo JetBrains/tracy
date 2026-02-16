@@ -55,8 +55,6 @@ import ai.jetbrains.tracy.core.http.protocol.RequestBody as TracyRequestBody
  *  (e.g., `ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter` for OpenAI).
  * @return A configured [HttpClient] instance with tracing capabilities enabled.
  *
- * @return a new [HttpClient] instance with tracing capabilities enabled.
- *
  * @see LLMTracingAdapter
  */
 fun instrument(client: HttpClient, adapter: LLMTracingAdapter): HttpClient {
