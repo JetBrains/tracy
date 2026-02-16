@@ -19,10 +19,10 @@ private val logger = KotlinLogging.logger {}
 /**
  * Represents an HTTP request with its associated properties.
  *
- * @param url The URL to which the request is sent.
+ * @property url The URL to which the request is sent.
  *            This includes the scheme, host, and path segments.
- * @param contentType The content type of the request, indicating the type of data included in the body.
- * @param body The body of the request, containing the actual data to be sent.
+ * @property contentType The content type of the request, indicating the type of data included in the body.
+ * @property body The body of the request, containing the actual data to be sent.
  *             This can be represented as JSON or form data.
  */
 @InternalTracyApi
