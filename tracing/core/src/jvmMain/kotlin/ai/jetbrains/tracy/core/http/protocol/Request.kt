@@ -28,7 +28,7 @@ private val logger = KotlinLogging.logger {}
 @InternalTracyApi
 interface Request {
     val body: RequestBody
-    val contentType: ContentType
+    val contentType: ContentType?
     val url: Url
 }
 
@@ -103,8 +103,8 @@ fun ByteArray.asRequestBody(contentType: ContentType, charset: Charset): Request
 
 @InternalTracyApi
 fun RequestBody.asRequestView(
-    contentType: ContentType,
-    url: Url
+    contentType: ContentType?,
+    url: Url,
 ): Request {
     val requestBody = this
     return object : Request {
