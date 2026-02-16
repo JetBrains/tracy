@@ -8,16 +8,34 @@ package ai.jetbrains.tracy.openai.adapters.handlers
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter.Companion.PayloadType
 import ai.jetbrains.tracy.core.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
 import ai.jetbrains.tracy.core.adapters.handlers.EndpointApiHandler
-import ai.jetbrains.tracy.core.adapters.media.*
+import ai.jetbrains.tracy.core.adapters.media.MediaContent
+import ai.jetbrains.tracy.core.adapters.media.MediaContentExtractor
+import ai.jetbrains.tracy.core.adapters.media.MediaContentPart
+import ai.jetbrains.tracy.core.adapters.media.Resource
+import ai.jetbrains.tracy.core.adapters.media.isValidUrl
 import ai.jetbrains.tracy.core.http.protocol.TracyHttpRequest
 import ai.jetbrains.tracy.core.http.protocol.TracyHttpResponse
 import ai.jetbrains.tracy.core.http.protocol.asJson
-import ai.jetbrains.tracy.core.policy.*
+import ai.jetbrains.tracy.core.policy.ContentKind
+import ai.jetbrains.tracy.core.policy.contentTracingAllowed
+import ai.jetbrains.tracy.core.policy.orRedacted
+import ai.jetbrains.tracy.core.policy.orRedactedInput
+import ai.jetbrains.tracy.core.policy.orRedactedOutput
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+
 
 /**
  * Handler for OpenAI Chat Completions API
