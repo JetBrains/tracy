@@ -15,9 +15,9 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
 
 ## Installation
 
-=== "Gradle (Kotlin DSL)"
+### 1. Configure Repositories
 
-    ### 1. Configure Repositories
+=== "Gradle (Kotlin DSL)"
 
     Add the Tracy Maven repository to your project.
 
@@ -37,29 +37,7 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
     }
     ```
 
-    ### 2. Apply the Plugin and Add Dependencies
-
-    **build.gradle.kts**
-    ```kotlin
-    plugins {
-        id("org.jetbrains.ai.tracy") version "0.0.26"
-    }
-
-    dependencies {
-        // Core module (required)
-        implementation("org.jetbrains.ai.tracy:tracy-core:0.0.26")
-
-        // Client-specific auto-tracing (add the ones you need)
-        implementation("org.jetbrains.ai.tracy:tracy-openai:0.0.26")
-        implementation("org.jetbrains.ai.tracy:tracy-anthropic:0.0.26")
-        implementation("org.jetbrains.ai.tracy:tracy-gemini:0.0.26")
-        implementation("org.jetbrains.ai.tracy:tracy-ktor:0.0.26")
-    }
-    ```
-
 === "Gradle (Groovy)"
-
-    ### 1. Configure Repositories
 
     Add the Tracy Maven repository to your project.
 
@@ -78,19 +56,47 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
         mavenCentral()
     }
     ```
+=== "Maven"
 
-    ### 2. Apply the Plugin and Add Dependencies
+> **Note:** No additional repository configuration is required for Maven.
+> Tracy artifacts are published to Maven Central, which is used by default.
+
+### 2. Apply the Plugin and Add Dependencies
+
+=== "Gradle (Kotlin DSL)"
+
+    **build.gradle.kts**
+    
+    ```kotlin
+    plugins {
+        id("org.jetbrains.ai.tracy") version "0.0.26"
+    }
+    
+    dependencies {
+        // Core module (required)
+        implementation("org.jetbrains.ai.tracy:tracy-core:0.0.26")
+        
+        // Client-specific auto-tracing (add the ones you need)
+        implementation("org.jetbrains.ai.tracy:tracy-openai:0.0.26")
+        implementation("org.jetbrains.ai.tracy:tracy-anthropic:0.0.26")
+        implementation("org.jetbrains.ai.tracy:tracy-gemini:0.0.26")
+        implementation("org.jetbrains.ai.tracy:tracy-ktor:0.0.26")
+    }
+    ```
+
+=== "Gradle (Groovy)"
 
     **build.gradle**
+    
     ```groovy
     plugins {
         id 'org.jetbrains.ai.tracy' version '0.0.26'
     }
-
+    
     dependencies {
         // Core module (required)
         implementation 'org.jetbrains.ai.tracy:tracy-core:0.0.26'
-
+        
         // Client-specific auto-tracing (add the ones you need)
         implementation 'org.jetbrains.ai.tracy:tracy-openai:0.0.26'
         implementation 'org.jetbrains.ai.tracy:tracy-anthropic:0.0.26'
@@ -101,63 +107,61 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
 
 === "Maven"
 
-    ### Configure the Compiler Plugin and Add Dependencies
-
     ```xml
     <plugins>
-        <plugin>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-maven-plugin</artifactId>
-            <configuration>
-                <jvmTarget>19</jvmTarget>
-            </configuration>
-            <version>${kotlin.version}</version>
-            <executions>
-                <execution>
-                    <goals>
-                        <goal>compile</goal>
-                    </goals>
-                </execution>
-            </executions>
-
-            <dependencies>
-                <dependency>
-                     <groupId>org.jetbrains.ai.tracy</groupId>
-                    <!-- Match your Kotlin version (e.g., 2.1.0, 2.0.20) -->
-                    <artifactId>tracy-compiler-plugin-2.1.0-jvm</artifactId>
-                    <version>0.0.26</version>
-                </dependency>
-            </dependencies>
-        </plugin>
+      <plugin>
+          <groupId>org.jetbrains.kotlin</groupId>
+          <artifactId>kotlin-maven-plugin</artifactId>
+          <configuration>
+              <jvmTarget>19</jvmTarget>
+          </configuration>
+          <version>${kotlin.version}</version>
+          <executions>
+              <execution>
+                  <goals>
+                      <goal>compile</goal>
+                  </goals>
+              </execution>
+          </executions>
+    
+          <dependencies>
+              <dependency>
+                  <groupId>org.jetbrains.ai.tracy</groupId>
+                  <!-- Match your Kotlin version (e.g., 2.1.0, 2.0.20) -->
+                  <artifactId>tracy-compiler-plugin-2.1.0-jvm</artifactId>
+                  <version>0.0.26</version>
+              </dependency>
+          </dependencies>
+      </plugin>
     </plugins>
-
+    
     <dependencies>
-        <dependency>
-             <groupId>org.jetbrains.ai.tracy</groupId>
-            <artifactId>tracy-core-jvm</artifactId>
-            <version>0.0.26</version>
-        </dependency>
-        <!-- Client-specific auto-tracing (add the ones you need) -->
-        <dependency>
-             <groupId>org.jetbrains.ai.tracy</groupId>
-            <artifactId>tracy-openai-jvm</artifactId>
-            <version>0.0.26</version>
-        </dependency>
-        <dependency>
-             <groupId>org.jetbrains.ai.tracy</groupId>
-            <artifactId>tracy-anthropic-jvm</artifactId>
-            <version>0.0.26</version>
-        </dependency>
-        <dependency>
-             <groupId>org.jetbrains.ai.tracy</groupId>
-            <artifactId>tracy-gemini-jvm</artifactId>
-            <version>0.0.26</version>
-        </dependency>
-        <dependency>
-             <groupId>org.jetbrains.ai.tracy</groupId>
-            <artifactId>tracy-ktor-jvm</artifactId>
-            <version>0.0.26</version>
-        </dependency>
+    <dependency>
+        <groupId>org.jetbrains.ai.tracy</groupId>
+        <artifactId>tracy-core-jvm</artifactId>
+        <version>0.0.26</version>
+    </dependency>
+    <!-- Client-specific auto-tracing (add the ones you need) -->
+    <dependency>
+        <groupId>org.jetbrains.ai.tracy</groupId>
+        <artifactId>tracy-openai-jvm</artifactId>
+        <version>0.0.26</version>
+    </dependency>
+    <dependency>
+        <groupId>org.jetbrains.ai.tracy</groupId>
+        <artifactId>tracy-anthropic-jvm</artifactId>
+        <version>0.0.26</version>
+    </dependency>
+    <dependency>
+        <groupId>org.jetbrains.ai.tracy</groupId>
+        <artifactId>tracy-gemini-jvm</artifactId>
+        <version>0.0.26</version>
+    </dependency>
+    <dependency>
+        <groupId>org.jetbrains.ai.tracy</groupId>
+        <artifactId>tracy-ktor-jvm</artifactId>
+        <version>0.0.26</version>
+    </dependency>
     </dependencies>
     ```
 
