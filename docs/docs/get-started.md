@@ -57,9 +57,9 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
     }
     ```
 === "Maven"
-
-> **Note:** No additional repository configuration is required for Maven.
-> Tracy artifacts are published to Maven Central, which is used by default.
+    
+    > **Note:** No additional repository configuration is required for Maven.
+    > Tracy artifacts are published to Maven Central, which is used by default.
 
 ### 2. Apply the Plugin and Add Dependencies
 
