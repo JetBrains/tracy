@@ -31,6 +31,7 @@ fun printName(name: String): String {
  * @see LangfuseExporterConfig
  */
 fun main() {
+    TracingManager.isTracingEnabled = true
     TracingManager.setSdk(configureOpenTelemetrySdk(LangfuseExporterConfig()))
     printName("Bob")
     println("See trace details in Langfuse.")

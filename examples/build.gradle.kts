@@ -27,10 +27,6 @@ dependencies {
     testImplementation(libs.kotlin.test)
 }
 
-tasks.withType<JavaExec> {
-    environment("IS_TRACY_ENABLED", "true")
-}
-
 tasks.test {
     useJUnitPlatform()
 }

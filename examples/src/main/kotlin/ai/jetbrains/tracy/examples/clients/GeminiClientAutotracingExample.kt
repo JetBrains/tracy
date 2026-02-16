@@ -29,6 +29,7 @@ import com.google.genai.types.GenerateContentConfig
  * Run the example. Span will appear in the console output.
  */
 fun main() {
+    TracingManager.isTracingEnabled = true
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     TracingManager.traceSensitiveContent()
 

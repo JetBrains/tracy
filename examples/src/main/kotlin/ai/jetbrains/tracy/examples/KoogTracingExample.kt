@@ -53,6 +53,7 @@ object SortTools : ToolSet {
  * View trace spans in the console, including both the **Sort integers** tool span and the nested **Parse comma-separated list** span.
  */
 suspend fun main() {
+    TracingManager.isTracingEnabled = true
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     val apiToken = System.getenv("OPENAI_API_KEY") ?: error("Environment variable 'OPENAI_API_KEY' is not set")
     val agent = AIAgent(

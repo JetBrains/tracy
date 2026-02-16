@@ -44,6 +44,7 @@ import kotlinx.serialization.json.buildJsonObject
  * Choose the adapter that matches the provider your client uses.
  */
 suspend fun main() {
+    TracingManager.isTracingEnabled = true
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     TracingManager.traceSensitiveContent()
 

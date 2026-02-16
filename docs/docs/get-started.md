@@ -15,9 +15,9 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
 
 ## Installation
 
-=== "Gradle (Kotlin DSL)"
+### 1. Configure Repositories
 
-    ### 1. Configure Repositories
+=== "Gradle (Kotlin DSL)"
 
     Add the Tracy Maven repository to your project.
 
@@ -25,8 +25,7 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
     ```kotlin
     pluginManagement {
         repositories {
-            gradlePluginPortal()
-            maven("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")
+            mavenCentral()
         }
     }
     ```
@@ -34,22 +33,49 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
     **build.gradle.kts**
     ```kotlin
     repositories {
-        maven("https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit")
+        mavenCentral()
     }
     ```
 
-    ### 2. Apply the Plugin and Add Dependencies
+=== "Gradle (Groovy)"
+
+    Add the Tracy Maven repository to your project.
+
+    **settings.gradle**
+    ```groovy
+    pluginManagement {
+        repositories {
+            mavenCentral()
+        }
+    }
+    ```
+
+    **build.gradle**
+    ```groovy
+    repositories {
+        mavenCentral()
+    }
+    ```
+=== "Maven"
+    
+    > **Note:** No additional repository configuration is required for Maven.
+    > Tracy artifacts are published to Maven Central, which is used by default.
+
+### 2. Apply the Plugin and Add Dependencies
+
+=== "Gradle (Kotlin DSL)"
 
     **build.gradle.kts**
+    
     ```kotlin
     plugins {
         id("org.jetbrains.ai.tracy") version "0.0.26"
     }
-
+    
     dependencies {
         // Core module (required)
         implementation("org.jetbrains.ai.tracy:tracy-core:0.0.26")
-
+        
         // Client-specific auto-tracing (add the ones you need)
         implementation("org.jetbrains.ai.tracy:tracy-openai:0.0.26")
         implementation("org.jetbrains.ai.tracy:tracy-anthropic:0.0.26")
@@ -60,43 +86,17 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
 
 === "Gradle (Groovy)"
 
-    ### 1. Configure Repositories
-
-    Add the Tracy Maven repository to your project.
-
-    **settings.gradle**
-    ```groovy
-    pluginManagement {
-        repositories {
-            gradlePluginPortal()
-            maven {
-                url "https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit"
-            }
-        }
-    }
-    ```
-
     **build.gradle**
-    ```groovy
-    repositories {
-        maven {
-            url "https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit"
-        }
-    }
-    ```
-
-    ### 2. Apply the Plugin and Add Dependencies
-
-    **build.gradle**
+    
     ```groovy
     plugins {
         id 'org.jetbrains.ai.tracy' version '0.0.26'
     }
-
+    
     dependencies {
         // Core module (required)
         implementation 'org.jetbrains.ai.tracy:tracy-core:0.0.26'
-
+        
         // Client-specific auto-tracing (add the ones you need)
         implementation 'org.jetbrains.ai.tracy:tracy-openai:0.0.26'
         implementation 'org.jetbrains.ai.tracy:tracy-anthropic:0.0.26'
@@ -107,83 +107,61 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
 
 === "Maven"
 
-    ### 1. Configure Repositories
-
-    Add the Tracy Maven repository to your `pom.xml`:
-
-    ```xml
-    <repositories>
-        <repository>
-            <id>tracy</id>
-            <url>https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit</url>
-        </repository>
-    </repositories>
-
-    <pluginRepositories>
-        <pluginRepository>
-            <id>tracy-plugins</id>
-            <url>https://packages.jetbrains.team/maven/p/ai-development-kit/ai-development-kit</url>
-        </pluginRepository>
-    </pluginRepositories>
-    ```
-
-    ### 2. Configure the Compiler Plugin and Add Dependencies
-
     ```xml
     <plugins>
-        <plugin>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-maven-plugin</artifactId>
-            <configuration>
-                <jvmTarget>19</jvmTarget>
-            </configuration>
-            <version>${kotlin.version}</version>
-            <executions>
-                <execution>
-                    <goals>
-                        <goal>compile</goal>
-                    </goals>
-                </execution>
-            </executions>
-
-            <dependencies>
-                <dependency>
-                     <groupId>org.jetbrains.ai.tracy</groupId>
-                    <!-- Match your Kotlin version (e.g., 2.1.0, 2.0.20) -->
-                    <artifactId>tracy-compiler-plugin-2.1.0-jvm</artifactId>
-                    <version>0.0.26</version>
-                </dependency>
-            </dependencies>
-        </plugin>
+      <plugin>
+          <groupId>org.jetbrains.kotlin</groupId>
+          <artifactId>kotlin-maven-plugin</artifactId>
+          <configuration>
+              <jvmTarget>19</jvmTarget>
+          </configuration>
+          <version>${kotlin.version}</version>
+          <executions>
+              <execution>
+                  <goals>
+                      <goal>compile</goal>
+                  </goals>
+              </execution>
+          </executions>
+    
+          <dependencies>
+              <dependency>
+                  <groupId>org.jetbrains.ai.tracy</groupId>
+                  <!-- Match your Kotlin version (e.g., 2.1.0, 2.0.20) -->
+                  <artifactId>tracy-compiler-plugin-2.1.0-jvm</artifactId>
+                  <version>0.0.26</version>
+              </dependency>
+          </dependencies>
+      </plugin>
     </plugins>
-
+    
     <dependencies>
-        <dependency>
-             <groupId>org.jetbrains.ai.tracy</groupId>
-            <artifactId>tracy-core-jvm</artifactId>
-            <version>0.0.26</version>
-        </dependency>
-        <!-- Client-specific auto-tracing (add the ones you need) -->
-        <dependency>
-             <groupId>org.jetbrains.ai.tracy</groupId>
-            <artifactId>tracy-openai-jvm</artifactId>
-            <version>0.0.26</version>
-        </dependency>
-        <dependency>
-             <groupId>org.jetbrains.ai.tracy</groupId>
-            <artifactId>tracy-anthropic-jvm</artifactId>
-            <version>0.0.26</version>
-        </dependency>
-        <dependency>
-             <groupId>org.jetbrains.ai.tracy</groupId>
-            <artifactId>tracy-gemini-jvm</artifactId>
-            <version>0.0.26</version>
-        </dependency>
-        <dependency>
-             <groupId>org.jetbrains.ai.tracy</groupId>
-            <artifactId>tracy-ktor-jvm</artifactId>
-            <version>0.0.26</version>
-        </dependency>
+    <dependency>
+        <groupId>org.jetbrains.ai.tracy</groupId>
+        <artifactId>tracy-core-jvm</artifactId>
+        <version>0.0.26</version>
+    </dependency>
+    <!-- Client-specific auto-tracing (add the ones you need) -->
+    <dependency>
+        <groupId>org.jetbrains.ai.tracy</groupId>
+        <artifactId>tracy-openai-jvm</artifactId>
+        <version>0.0.26</version>
+    </dependency>
+    <dependency>
+        <groupId>org.jetbrains.ai.tracy</groupId>
+        <artifactId>tracy-anthropic-jvm</artifactId>
+        <version>0.0.26</version>
+    </dependency>
+    <dependency>
+        <groupId>org.jetbrains.ai.tracy</groupId>
+        <artifactId>tracy-gemini-jvm</artifactId>
+        <version>0.0.26</version>
+    </dependency>
+    <dependency>
+        <groupId>org.jetbrains.ai.tracy</groupId>
+        <artifactId>tracy-ktor-jvm</artifactId>
+        <version>0.0.26</version>
+    </dependency>
     </dependencies>
     ```
 
@@ -203,6 +181,10 @@ import ai.jetbrains.tracy.core.fluent.Trace
 fun greet(name: String) = println("Hello, $name!")
 
 fun main() {
+    // Enable tracing via the `IS_TRACY_ENABLED` environment variable
+    // or programmatically, as shown below:
+    TracingManager.isTracingEnabled = true
+
     // 1. Configure SDK with console exporter
     val sdk = configureOpenTelemetrySdk(ConsoleExporterConfig())
 
@@ -222,16 +204,16 @@ fun main() {
 This example uses:
 
 - [`@Trace`]({{ api_docs_url
-  }}/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html): [Annotation](../tracing/annotations) that enables
+  }}/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html): [Annotation](tracing/annotations.md) that enables
   automatic tracing for the function
 - [`configureOpenTelemetrySdk`]({{ api_docs_url
   }}/tracing/core/ai.jetbrains.tracy.core.tracing/configure-open-telemetry-sdk.html): Creates
-  an [OpenTelemetry SDK](../otel-config/sdk-configuration) with the specified exporter
+  an [OpenTelemetry SDK](otel-config/sdk-configuration.md) with the specified exporter
 - [`ConsoleExporterConfig`]({{ api_docs_url
   }}/tracing/core/ai.jetbrains.tracy.core.exporters/-console-exporter-config/index.html): Configuration
-  for [exporting](../otel-config/exporters/) traces to the console
+  for [exporting](otel-config/exporters.md) traces to the console
 - [`TracingManager`]({{ api_docs_url
-  }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/index.html): [Central point](../tracing/configuration/)
+  }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/index.html): [Central point](tracing/configuration.md)
   for configuring and controlling tracing
 
 Run your application, and you'll see trace output in the console.

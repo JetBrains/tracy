@@ -43,6 +43,7 @@ class PremiumOrderProcessor : DefaultOrderProcessor() {
  * is annotated with [Trace].
  */
 suspend fun main() {
+    TracingManager.isTracingEnabled = true
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     PremiumOrderProcessor().processOrder(101)
     DefaultOrderProcessor().processOrder(202)

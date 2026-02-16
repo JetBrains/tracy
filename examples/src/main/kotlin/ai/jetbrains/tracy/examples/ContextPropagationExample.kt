@@ -86,6 +86,7 @@ suspend fun handleRequestInNewThread(requestId: String) {
  * [runBlocking] and raw threads.
  */
 fun main() {
+    TracingManager.isTracingEnabled = true
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     runBlocking {
         handleRequestInCoroutine("REQ-101")

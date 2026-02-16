@@ -38,6 +38,7 @@ fun parentOperation(): String {
  * - A child span named **ChildOperation**, nested inside the parent.
  */
 fun main() {
+    TracingManager.isTracingEnabled = true
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     parentOperation()
     println("See trace details in the console.")

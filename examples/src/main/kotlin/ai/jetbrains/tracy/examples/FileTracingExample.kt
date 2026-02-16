@@ -34,6 +34,7 @@ private fun printName(name: String): String {
  * representing the execution of the [printName] function.
  */
 fun main() {
+    TracingManager.isTracingEnabled = true
     val tempFile = createTempFile()
     val config = FileExporterConfig(
         filepath = tempFile.absolutePathString(),
