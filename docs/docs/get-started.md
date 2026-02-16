@@ -200,16 +200,16 @@ fun main() {
 This example uses:
 
 - [`@Trace`]({{ api_docs_url
-  }}/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html): [Annotation](../tracing/annotations) that enables
+  }}/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html): [Annotation](tracing/annotations.md) that enables
   automatic tracing for the function
 - [`configureOpenTelemetrySdk`]({{ api_docs_url
   }}/tracing/core/ai.jetbrains.tracy.core.tracing/configure-open-telemetry-sdk.html): Creates
-  an [OpenTelemetry SDK](../otel-config/sdk-configuration) with the specified exporter
+  an [OpenTelemetry SDK](otel-config/sdk-configuration.md) with the specified exporter
 - [`ConsoleExporterConfig`]({{ api_docs_url
   }}/tracing/core/ai.jetbrains.tracy.core.exporters/-console-exporter-config/index.html): Configuration
-  for [exporting](../otel-config/exporters/) traces to the console
+  for [exporting](otel-config/exporters.md) traces to the console
 - [`TracingManager`]({{ api_docs_url
-  }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/index.html): [Central point](../tracing/configuration/)
+  }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/index.html): [Central point](tracing/configuration.md)
   for configuring and controlling tracing
 
 Run your application, and you'll see trace output in the console.
