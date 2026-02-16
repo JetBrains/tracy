@@ -528,7 +528,7 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
     @Test
     fun `test image edits endpoint with multipart form data gets traced`() = runTest(timeout = 3.minutes) {
         val client = instrument(HttpClient {
-            install(io.ktor.client.plugins.HttpTimeout) {
+            install(HttpTimeout) {
                 requestTimeoutMillis = 3.minutes.inWholeMilliseconds
             }
         }, adapter = llmTracingAdapter)
