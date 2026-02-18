@@ -50,7 +50,7 @@ object ExampleWithMetadataCustomizer : SpanMetadataCustomizer {
  * - Input and output data can be formatted into structured JSON metadata for each traced function.
  * - The tracing plugin automatically invokes the metadata customizer at runtime for annotated methods.
  *
- * When you run this example, you will see a span named "GreetSpan::Alice" created for the `greetUser` function.
+ * When you run this example, you will see a span named "Greeter::Alice" created for the `greetUser` function.
  * The span metadata includes custom JSON attributes such as
  * - `"input_name"` and `"method_name"` for the function parameters.
  * - `"output_message"` and `"status"` describing the function result.
