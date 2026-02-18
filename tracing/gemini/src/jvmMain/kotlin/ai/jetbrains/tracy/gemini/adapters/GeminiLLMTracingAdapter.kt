@@ -17,6 +17,30 @@ import ai.jetbrains.tracy.gemini.adapters.handlers.GeminiImagenHandler
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 
+/**
+ * Tracing adapter for Google Gemini and Imagen APIs.
+ *
+ * Handles tracing for both Gemini content generation (text, chat, tool calling, multimodal) and
+ * Imagen image operations (generation, editing, upscaling). Automatically selects the appropriate
+ * endpoint handler based on the request URL and model type.
+ *
+ * ## Example Usage
+ * ```kotlin
+ * val client = instrument(HttpClient(), GeminiLLMTracingAdapter())
+ *
+ * // Gemini content generation
+ * client.post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent") {
+ *     setBody("""{"contents": [{"parts": [{"text": "Hello!"}]}]}""")
+ * }
+ *
+ * // Imagen image generation
+ * client.post("https://us-central1-aiplatform.googleapis.com/v1/models/imagen-4.0-generate-001:predict") {
+ *     setBody("""{"instances": [{"prompt": "A robot"}], "parameters": {"sampleCount": 3}}""")
+ * }
+ * ```
+ *
+ * See: [Gemini API](https://ai.google.dev/gemini-api/docs), [Imagen API](https://cloud.google.com/vertex-ai/docs/generative-ai/image/overview)
+ */
 class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.GEMINI) {
     override fun getRequestBodyAttributes(span: Span, request: Request) {
         val (model, operation) = request.url.modelAndOperation()

@@ -7,6 +7,7 @@ package ai.jetbrains.tracy.ktor
 
 import ai.jetbrains.tracy.anthropic.adapters.AnthropicLLMTracingAdapter
 import ai.jetbrains.tracy.test.utils.BaseAITracingTest
+import com.anthropic.models.messages.Model
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -42,7 +43,7 @@ class HttpClientAnthropicAITracingTest : BaseAITracingTest() {
             ),
             adapter,
         )
-        val model = "claude-sonnet-4-20250514"
+        val model = Model.CLAUDE_3_7_SONNET_LATEST
         val promptMessage = "Say: 'Hello, world!'"
 
         client.post("$llmProviderUrl/v1/messages") {
@@ -78,7 +79,7 @@ class HttpClientAnthropicAITracingTest : BaseAITracingTest() {
     fun `test Ktor HttpClient auto tracing for Anthropic`() = runTest {
         val client: HttpClient = instrument(HttpClient(), AnthropicLLMTracingAdapter())
 
-        val model = "claude-sonnet-4-20250514"
+        val model = Model.CLAUDE_3_7_SONNET_20250219
         val promptMessage = "Hello, world!"
 
         val response = client.post("$llmProviderUrl/v1/messages") {
@@ -114,7 +115,7 @@ class HttpClientAnthropicAITracingTest : BaseAITracingTest() {
 
         val tracedModel = trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]
         assertNotNull(tracedModel)
-        assertTrue(tracedModel.startsWith(model))
+        assertTrue(tracedModel.startsWith(model.asString()))
 
         assertEquals("user", trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")])
         assertEquals(promptMessage, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]?.unquote())

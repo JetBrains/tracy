@@ -13,6 +13,8 @@ import ai.jetbrains.tracy.test.utils.MediaContentAttributeValues
 import ai.jetbrains.tracy.test.utils.MediaSource
 import ai.jetbrains.tracy.test.utils.toMediaContentAttributeValues
 import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
+import com.openai.models.ChatModel
+import com.openai.models.images.ImageModel
 import io.ktor.client.*
 import io.ktor.client.engine.mock.*
 import io.ktor.client.plugins.*
@@ -127,7 +129,7 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
     fun `test Ktor HttpClient auto tracing streaming for OpenAI`() = runTest {
         val client: HttpClient = instrument(HttpClient(), adapter = llmTracingAdapter)
 
-        val model = "gpt-4o-mini"
+        val model = ChatModel.GPT_4O_MINI.asString()
         val response = client.post("$baseUrl/v1/chat/completions") {
             addAuthHeaders(acceptStream = true)
             setBody(
@@ -170,7 +172,7 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
                 "messages": [
                     { "role": "user", "content": "hello world" }
                 ],
-                "model": "gpt-4o-mini",
+                "model": "${ChatModel.GPT_4O_MINI.asString()}",
                 "stream": true
             }
             """.trimIndent()
@@ -203,7 +205,7 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
                             "content": "hello world"
                         }
                     ],
-                    "model": "gpt-4o-mini",
+                    "model": "${ChatModel.GPT_4O_MINI.asString()}",
                     "stream": false
                 }
                 """.trimIndent()
@@ -261,7 +263,7 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
                             "content": "hello world"
                         }
                     ],
-                    "model": "gpt-4o-mini"
+                    "model": "${ChatModel.GPT_4O_MINI.asString()}"
                 }
             """.trimIndent()
             )
@@ -409,7 +411,7 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
     fun `test streaming requests`() = runTest {
         val client = instrument(HttpClient(), adapter = llmTracingAdapter)
 
-        val model = "gpt-4o-mini"
+        val model = ChatModel.GPT_4O_MINI.asString()
 
         val firstRequest = "first request"
         val secondRequest = "second request"
@@ -426,7 +428,7 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
     fun `test non-streaming requests`() = runTest {
         val client = instrument(HttpClient(), adapter = llmTracingAdapter)
 
-        val model = "gpt-4o-mini"
+        val model = ChatModel.GPT_4O_MINI.asString()
 
         val firstRequest = "first request"
         val secondRequest = "second request"
@@ -443,7 +445,7 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
     fun `test mixed stream and non-stream requests`() = runTest {
         val client = instrument(HttpClient(), adapter = llmTracingAdapter)
 
-        val model = "gpt-4o-mini"
+        val model = ChatModel.GPT_4O_MINI.asString()
 
         val firstRequest = "first request"
         val secondRequest = "second request"
@@ -458,7 +460,7 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
 
     @Test
     fun `test Ktor's form data content body gets parsed by form data parser`() = runTest {
-        val model = "gpt-image-1"
+        val model = ImageModel.GPT_IMAGE_1.asString()
         val prompt = "Remove all dogs from the image"
 
         val image = MediaSource.File("cat-n-dog-2-alpha.png", "image/png")
@@ -526,12 +528,12 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
     @Test
     fun `test image edits endpoint with multipart form data gets traced`() = runTest(timeout = 3.minutes) {
         val client = instrument(HttpClient {
-            install(io.ktor.client.plugins.HttpTimeout) {
+            install(HttpTimeout) {
                 requestTimeoutMillis = 3.minutes.inWholeMilliseconds
             }
         }, adapter = llmTracingAdapter)
 
-        val model = "gpt-image-1"
+        val model = ImageModel.GPT_IMAGE_1.asString()
         val prompt = "Remove all dogs from the image"
         val image = MediaSource.File("cat-n-dog-2-alpha.png", "image/png")
 
@@ -660,7 +662,7 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
             Arguments.of(
                 "Request as a string",
                 "greet me and introduce yourself",
-                "gpt-4o-mini",
+                ChatModel.GPT_4O_MINI.asString(),
                 """
                     {
                         "messages": [
@@ -676,12 +678,12 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
             Arguments.of(
                 "Request as a Serializable object",
                 "Introduce yourself",
-                "gpt-4o-mini",
+                ChatModel.GPT_4O_MINI.asString(),
                 Request(
                     messages = listOf(
                         Message(role = "user", content = "Introduce yourself")
                     ),
-                    model = "gpt-4o-mini"
+                    model = ChatModel.GPT_4O_MINI.asString()
                 )
             ),
         )
@@ -693,7 +695,7 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
                 "$llmProviderUrl/chat/completions",
                 """
                     {
-                        "model": "gpt-4.1-mini-2025-04-14",
+                        "model": "gpt-4.1-mini",
                         "messages": [
                             {
                                 "role": "user",

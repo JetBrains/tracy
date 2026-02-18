@@ -45,17 +45,111 @@ import ai.jetbrains.tracy.core.http.protocol.RequestBody as TracyRequestBody
 
 
 /**
- * Instruments a Ktor [HttpClient] with OpenTelemetry tracing for LLM API calls.
+ * Instruments a Ktor [HttpClient] with OpenTelemetry tracing for LLM provider API calls.
  *
- * All LLM API calls made using this client will be automatically traced,
- * capturing request/response attributes as span data.
+ * This function configures automatic tracing for HTTP requests made through the Ktor client to supported
+ * LLM providers. The provided [LLMTracingAdapter] determines how requests and responses are parsed and
+ * traced according to the specific provider's API format. Supports both streaming and non-streaming requests,
+ * handles multipart form data, and captures rich telemetry including token usage, model parameters, and errors.
  *
- * @param client The [HttpClient] instance to instrument.
- * @param adapter The [LLMTracingAdapter] that handles provider-specific attribute extraction
- *  (e.g., `ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter` for OpenAI).
- * @return A configured [HttpClient] instance with tracing capabilities enabled.
+ * ## Supported Adapters
+ * - **OpenAILLMTracingAdapter**: For OpenAI API (chat completions, responses, images)
+ * - **AnthropicLLMTracingAdapter**: For Anthropic Claude API
+ * - **GeminiLLMTracingAdapter**: For Google Gemini API
  *
- * @see LLMTracingAdapter
+ * ## Use Cases
+ *
+ * ### Basic OpenAI Chat Completion
+ * ```kotlin
+ * val client = instrument(HttpClient(), OpenAILLMTracingAdapter())
+ * val response = client.post("https://api.openai.com/v1/chat/completions") {
+ *     header("Authorization", "Bearer $apiKey")
+ *     setBody("""
+ *         {
+ *             "messages": [
+ *                 {
+ *                     "role": "user",
+ *                     "content": "greet me and introduce yourself"
+ *                 }
+ *             ],
+ *             "model": "gpt-4o-mini"
+ *         }
+ *     """.trimIndent())
+ * }
+ * // Request and response are automatically traced
+ * ```
+ *
+ * ### Streaming Request
+ * ```kotlin
+ * val client = instrument(HttpClient(), OpenAILLMTracingAdapter())
+ * val response = client.post("https://api.openai.com/v1/chat/completions") {
+ *     header("Authorization", "Bearer $apiKey")
+ *     header("Accept", "text/event-stream")
+ *     setBody("""
+ *         {
+ *             "messages": [{"role": "user", "content": "hello world"}],
+ *             "model": "gpt-4o-mini",
+ *             "stream": true
+ *         }
+ *     """.trimIndent())
+ * }
+ * response.bodyAsChannel() // Streaming data is captured and traced
+ * ```
+ *
+ * ### Multipart Form Data (Image Edits)
+ * ```kotlin
+ * val client = instrument(HttpClient(), OpenAILLMTracingAdapter())
+ * val response = client.post("https://api.openai.com/v1/images/edits") {
+ *     val body = MultiPartFormDataContent(formData {
+ *         append("model", "gpt-image-1")
+ *         append("prompt", "Remove all dogs from the image")
+ *         append("image", imageBytes, Headers.build {
+ *             append(HttpHeaders.ContentType, "image/png")
+ *             append(HttpHeaders.ContentDisposition, "filename=\"image.png\"")
+ *         })
+ *     })
+ *     header("Authorization", "Bearer $apiKey")
+ *     contentType(ContentType.MultiPart.FormData.withParameter("boundary", body.boundary))
+ *     setBody(body)
+ * }
+ * // Multipart form data is parsed and traced
+ * ```
+ *
+ * ### Using with Serializable Request Objects
+ * ```kotlin
+ * @Serializable
+ * data class Request(
+ *     val messages: List<Message>,
+ *     val model: String,
+ * )
+ *
+ * val client = instrument(HttpClient {
+ *     install(ContentNegotiation) {
+ *         json(Json { prettyPrint = true })
+ *     }
+ * }, OpenAILLMTracingAdapter())
+ *
+ * val response = client.post("https://api.openai.com/v1/chat/completions") {
+ *     header("Authorization", "Bearer $apiKey")
+ *     setBody<Request>(Request(
+ *         messages = listOf(Message(role = "user", content = "Introduce yourself")),
+ *         model = "gpt-4o-mini"
+ *     ))
+ * }
+ * // Serializable objects are automatically traced
+ * ```
+ *
+ * ## Notes
+ * - Tracing can be controlled globally via `TracingManager.isTracingEnabled`.
+ * - The response body is **peeked** (not consumed), so it remains available for further processing.
+ * - Content capture policies [TracingManager.contentCapturePolicy] can be configured to redact sensitive data.
+ * - Error responses are automatically captured with error status and messages.
+ *
+ * @param client The [HttpClient] instance to be configured for tracing
+ * @param adapter The [LLMTracingAdapter] specifying which LLM provider adapter to use for tracing
+ *
+ * @see TracingManager
+ * @see TracingManager.traceSensitiveContent
  */
 fun instrument(client: HttpClient, adapter: LLMTracingAdapter): HttpClient {
     return client.config {

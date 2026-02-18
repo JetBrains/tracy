@@ -30,7 +30,7 @@ import mu.KotlinLogging
  *
  * See [Generate Content API Docs](https://ai.google.dev/api/generate-content)
  */
-internal class GeminiContentGenHandler(
+class GeminiContentGenHandler(
     private val extractor: MediaContentExtractor
 ) : EndpointApiHandler {
     override fun handleRequestAttributes(span: Span, request: Request) {

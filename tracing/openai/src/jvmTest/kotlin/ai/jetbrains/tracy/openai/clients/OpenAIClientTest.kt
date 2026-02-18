@@ -11,6 +11,7 @@ import ai.jetbrains.tracy.test.utils.BaseOpenTelemetryTracingTest
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
+import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletion
 import com.openai.models.chat.completions.ChatCompletionCreateParams
 import io.opentelemetry.api.common.AttributeKey
@@ -49,7 +50,7 @@ class OpenAIClientTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun testChat() {
-        val model = "gpt-4o-mini"
+        val model = ChatModel.GPT_4O_MINI.asString()
         val systemMessage = "You are a helpful assistant!"
         val userMessage = "Tell me what model are you!"
         val temperature = 1.0
@@ -155,7 +156,7 @@ class OpenAIClientTest : BaseOpenTelemetryTracingTest() {
 
 private fun callChat(
     client: OpenAIClient,
-    model: String = "gpt-4o-mini",
+    model: String = ChatModel.GPT_4O_MINI.asString(),
     systemMessage: String = "You are a helpful assistant!",
     userMessage: String = "Tell me what model are you!",
     temperature: Double = 1.0

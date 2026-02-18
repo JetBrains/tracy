@@ -41,7 +41,6 @@ kotlin {
 
         jvmTest {
             dependencies {
-                implementation(libs.openai)
                 implementation(libs.kotlin.test)
                 implementation(libs.junit.params)
                 implementation(libs.kotlinx.coroutines.test)
@@ -50,6 +49,8 @@ kotlin {
                 implementation(libs.ktor.serialization.json)
                 implementation(libs.opentelemetry.sdk.testing)
                 implementation(libs.opentelemetry.semconv.incubating)
+                implementation(libs.openai)
+                implementation(libs.anthropic)
                 implementation(project(":tracing:openai"))
                 implementation(project(":tracing:anthropic"))
                 implementation(project(":tracing:gemini"))
