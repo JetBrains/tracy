@@ -48,7 +48,7 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
             val content = when(contentType.type) {
                 "image" -> Base64.getEncoder().encodeToString(part.content)
                 "text" -> part.content.toString(
-                    contentType.charset() ?: Charsets.UTF_8
+                    contentType.charset() ?: Charsets.US_ASCII
                 )
                 else -> null
             }
