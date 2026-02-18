@@ -181,9 +181,14 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                     val charset = request.contentType()?.charset() ?: Charsets.UTF_8
                     val bodyContent = request.copyBodyContent()
 
-                    // parse request body and make a request view with it
+                    // parse the request body and make a request view with it
                     val requestBody = when {
-                        (bodyContent != null) && (contentType != null) -> bodyContent.asRequestBody(contentType, charset)
+                        (bodyContent != null) && (contentType != null) -> try {
+                            bodyContent.asRequestBody(contentType, charset)
+                        } catch(e: Exception) {
+                            logger.warn(e) { "Failed to parse request body for tracing; request body will not be traced" }
+                            null
+                        }
                         else -> {
                             logger.warn("Either body or content type are null; request body will not be traced")
                             null
