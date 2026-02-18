@@ -6,6 +6,7 @@
 package ai.jetbrains.tracy.gemini.clients
 
 import ai.jetbrains.tracy.core.OpenTelemetryOkHttpInterceptor
+import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.patchInterceptors
 import ai.jetbrains.tracy.gemini.adapters.GeminiLLMTracingAdapter
 import okhttp3.Interceptor
@@ -229,6 +230,8 @@ import com.google.genai.Client as GeminiClient
  * @param client The Gemini client to instrument
  *
  * @see GeminiLLMTracingAdapter
+ * @see TracingManager
+ * @see TracingManager.traceSensitiveContent
  */
 fun instrument(client: GeminiClient) {
     patchClient(

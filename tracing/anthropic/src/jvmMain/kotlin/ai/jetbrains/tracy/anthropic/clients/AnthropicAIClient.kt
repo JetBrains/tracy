@@ -7,6 +7,7 @@ package ai.jetbrains.tracy.anthropic.clients
 
 import ai.jetbrains.tracy.anthropic.adapters.AnthropicLLMTracingAdapter
 import ai.jetbrains.tracy.core.OpenTelemetryOkHttpInterceptor
+import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.patchOpenAICompatibleClient
 import com.anthropic.client.AnthropicClient
 
@@ -119,6 +120,8 @@ import com.anthropic.client.AnthropicClient
  * @param client The Anthropic client to instrument
  *
  * @see AnthropicLLMTracingAdapter
+ * @see TracingManager
+ * @see TracingManager.traceSensitiveContent
  */
 fun instrument(client: AnthropicClient) {
     patchOpenAICompatibleClient(

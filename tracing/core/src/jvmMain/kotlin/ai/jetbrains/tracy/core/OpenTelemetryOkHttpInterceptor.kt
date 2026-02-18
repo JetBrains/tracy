@@ -122,6 +122,9 @@ import okhttp3.ResponseBody as OkHttpResponseBody
  * @param client The OkHttp client to instrument
  * @param adapter The [LLMTracingAdapter] specifying which LLM provider adapter to use for tracing
  * @return **A new [OkHttpClient] instance** with OpenTelemetry tracing enabled (i.e., the initial [client] remains **unmodified**)
+ *
+ * @see TracingManager
+ * @see TracingManager.traceSensitiveContent
  */
 fun instrument(client: OkHttpClient, adapter: LLMTracingAdapter): OkHttpClient {
     val clientBuilder = client.newBuilder()

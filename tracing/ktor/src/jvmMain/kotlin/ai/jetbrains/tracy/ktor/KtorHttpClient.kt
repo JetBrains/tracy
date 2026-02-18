@@ -147,6 +147,9 @@ import ai.jetbrains.tracy.core.http.protocol.RequestBody as TracyRequestBody
  *
  * @param client The [HttpClient] instance to be configured for tracing
  * @param adapter The [LLMTracingAdapter] specifying which LLM provider adapter to use for tracing
+ *
+ * @see TracingManager
+ * @see TracingManager.traceSensitiveContent
  */
 fun instrument(client: HttpClient, adapter: LLMTracingAdapter): HttpClient {
     return client.config {

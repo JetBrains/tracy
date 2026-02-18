@@ -9,6 +9,7 @@ import ai.jetbrains.tracy.core.OpenTelemetryOkHttpInterceptor
 import ai.jetbrains.tracy.core.patchOpenAICompatibleClient
 import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
 import com.openai.client.OpenAIClient
+import ai.jetbrains.tracy.core.TracingManager
 
 /**
  * Instruments an OpenAI client with OpenTelemetry tracing capabilities **inplace**.
@@ -89,6 +90,8 @@ import com.openai.client.OpenAIClient
  * @param client The OpenAI client to instrument
  *
  * @see OpenAILLMTracingAdapter
+ * @see TracingManager
+ * @see TracingManager.traceSensitiveContent
  */
 fun instrument(client: OpenAIClient) {
     patchOpenAICompatibleClient(
