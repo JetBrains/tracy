@@ -14,31 +14,31 @@ import ai.jetbrains.tracy.core.fluent.customizers.SpanMetadataCustomizer
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-@Trace(metadataCustomizer = ExampleWithMetadataCustomizer::class)
-fun greetUser(name: String): String {
-    println("Hello, $name!")
-    return "Greeting sent to $name"
+class Greeter {
+    @Trace(metadataCustomizer = ExampleWithMetadataCustomizer::class)
+    fun greetUser(name: String): String {
+        println("Hello, $name!")
+        return "Greeting sent to $name"
+    }
 }
 
 object ExampleWithMetadataCustomizer : SpanMetadataCustomizer {
-    override fun formatInputAttributes(method: PlatformMethod, args: Array<Any?>): String {
-        return buildJsonObject {
+    override fun resolveSpanName(method: PlatformMethod, args: Array<Any?>): String {
+        val name = args.getOrNull(0)?.toString()?.replaceFirstChar { it.uppercase() } ?: "User"
+        return "${method.declaringClass.simpleName}Span::$name"
+    }
+
+    override fun formatInputAttributes(method: PlatformMethod, args: Array<Any?>): String =
+        buildJsonObject {
             put("input_name", args.getOrNull(0)?.toString() ?: "unknown")
             put("method_name", method.name)
         }.toString()
-    }
 
-    override fun formatOutputAttribute(result: Any?): String {
-        return buildJsonObject {
+    override fun formatOutputAttribute(result: Any?): String =
+        buildJsonObject {
             put("output_message", result?.toString() ?: "null")
             put("status", "success")
         }.toString()
-    }
-
-    override fun resolveSpanName(method: PlatformMethod, args: Array<Any?>): String {
-        val name = args.getOrNull(0)?.toString()?.replaceFirstChar { it.uppercase() } ?: "User"
-        return "GreetSpan::$name"
-    }
 }
 
 /**
@@ -59,7 +59,7 @@ object ExampleWithMetadataCustomizer : SpanMetadataCustomizer {
 fun main() {
     TracingManager.isTracingEnabled = true
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
-    greetUser("Alice")
+    Greeter().greetUser("Alice")
     println("See trace details in the console.")
     // Manual flush - alternatively, configure automatic flushing via ExporterCommonSettings
     TracingManager.flushTraces()

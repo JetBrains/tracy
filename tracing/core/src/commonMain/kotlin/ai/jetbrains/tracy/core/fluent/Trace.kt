@@ -10,13 +10,12 @@ import ai.jetbrains.tracy.core.fluent.customizers.SpanMetadataCustomizer
 import kotlin.reflect.KClass
 
 /**
- * Annotation for tracing Kotlin functions.
- *
- * Applies to functions to automatically generate tracing spans.
+ * Annotates a function to automatically generate a tracing span on each invocation.
  *
  * @property name The name of the span. If left empty, a default name is derived from the function name.
- * @property metadataCustomizer A reference to a custom attribute handler that extends [SpanMetadataCustomizer].
- * Defaults to [DefaultSpanMetadataCustomizer].
+ * @property metadataCustomizer A [KClass] of a [SpanMetadataCustomizer] to customize span names and attributes.
+ *  Accepts either a Kotlin `object` or a class with a single no-arg (or all-optional) constructor.
+ *  Defaults to [DefaultSpanMetadataCustomizer].
  */
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.FUNCTION)

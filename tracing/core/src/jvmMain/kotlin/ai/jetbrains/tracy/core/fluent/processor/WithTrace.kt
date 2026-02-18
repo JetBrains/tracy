@@ -11,6 +11,7 @@ import ai.jetbrains.tracy.core.fluent.FluentSpanAttributes
 import ai.jetbrains.tracy.core.fluent.Trace
 import ai.jetbrains.tracy.core.fluent.TracingSessionProvider
 import ai.jetbrains.tracy.core.fluent.customizers.PlatformMethod
+import ai.jetbrains.tracy.core.fluent.customizers.SpanMetadataCustomizer
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.SpanBuilder
 import io.opentelemetry.api.trace.StatusCode
@@ -103,7 +104,7 @@ internal fun createSpan(
 
     /**
      * Resolution pipeline:
-     * 1. If [ai.jetbrains.tracy.core.fluent.customizers.SpanMetadataCustomizer.resolveSpanName]
+     * 1. If [SpanMetadataCustomizer.resolveSpanName]
      *    returns a non-null value, that name is used.
      * 2. Otherwise, the tracing system checks the annotation name.
      * 3. If blank, the method name is used.
@@ -163,8 +164,30 @@ internal fun configureTracingMetadata(
 }
 
 /**
- * Returns the metadata customizer instance from this [Trace].
+ * Returns the [SpanMetadataCustomizer] instance configured for this [Trace].
+ *
+ * Supported:
+ * - `object` singleton declarations
+ * - Classes with exactly one accessible constructor whose parameters are all optional
  */
-internal fun Trace.getSpanMetadataCustomizer() =
-    this.metadataCustomizer.objectInstance ?: error("Handler must be an object singleton")
+internal fun Trace.getSpanMetadataCustomizer(): SpanMetadataCustomizer {
+    val kClass = metadataCustomizer
+    // Kotlin `object` case
+    kClass.objectInstance?.let { return it }
+    // Find exactly one constructor that can be invoked without arguments
+    val constructor = kClass.constructors
+        .singleOrNull { ctor -> ctor.parameters.all { it.isOptional } }
+        ?: error("""
+            SpanMetadataCustomizer '${kClass.qualifiedName}'
+            must be an object or declare exactly one accessible constructor
+            with only optional parameters.
+        """.trimIndent())
 
+    return try {
+        constructor.callBy(emptyMap())
+    } catch (ex: Exception) {
+        throw IllegalArgumentException("""
+            Failed to instantiate SpanMetadataCustomizer '${kClass.qualifiedName}'.
+        """.trimIndent(), ex)
+    }
+}

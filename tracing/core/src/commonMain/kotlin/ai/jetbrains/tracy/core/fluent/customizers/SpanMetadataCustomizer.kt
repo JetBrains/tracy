@@ -16,9 +16,15 @@ import ai.jetbrains.tracy.core.fluent.FluentSpanAttributes
  * - Transform input arguments into structured string representations via [formatInputAttributes].
  * - Convert method return values into structured string representations via [formatOutputAttribute].
  *
- * ### Base implementation
- * - [DefaultSpanMetadataCustomizer]: Serializes input arguments and outputs
- *   into JSON-formatted strings.
+ * All methods are optional to override and each has a default implementation,
+ * so you only need to override what you want to customize:
+ *
+ * ```kotlin
+ * object MyCustomizer : SpanMetadataCustomizer {
+ *     override fun resolveSpanName(method: PlatformMethod, args: Array<Any?>): String =
+ *         "Tool: ${method.declaringClass.simpleName}"
+ * }
+ * ```
  */
 interface SpanMetadataCustomizer {
     /**
@@ -46,8 +52,10 @@ interface SpanMetadataCustomizer {
      *         to the span input attributes.
      *
      * @see FluentSpanAttributes.SPAN_INPUTS
+     * @see DefaultSpanMetadataCustomizer.formatInputAttributes
      */
-    fun formatInputAttributes(method: PlatformMethod, args: Array<Any?>): String
+    fun formatInputAttributes(method: PlatformMethod, args: Array<Any?>): String =
+        DefaultSpanMetadataCustomizer.formatInputAttributes(method, args)
 
     /**
      * Formats the **output attribute** for the span created around the given
