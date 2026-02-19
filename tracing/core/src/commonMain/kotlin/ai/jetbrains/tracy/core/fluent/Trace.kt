@@ -14,8 +14,7 @@ import kotlin.reflect.KClass
  *
  * @property name The name of the span. If left empty, a default name is derived from the function name.
  * @property metadataCustomizer A [KClass] of a [SpanMetadataCustomizer] to customize span names and attributes.
- *  Accepts either a Kotlin `object` or a class with a single no-arg (or all-optional) constructor.
- *  Defaults to [DefaultSpanMetadataCustomizer].
+ *  Must be a Kotlin `object`. Defaults to [DefaultSpanMetadataCustomizer].
  */
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.FUNCTION)

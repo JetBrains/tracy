@@ -45,8 +45,10 @@ object ExampleWithMetadataCustomizer : SpanMetadataCustomizer {
  * Demonstrates how to use a custom [SpanMetadataCustomizer] with [Trace]
  * to enrich spans with additional metadata.
  *
+ * Note: [SpanMetadataCustomizer] must be a Kotlin `object`, not a class.
+ *
  * This example shows how:
- * - You can provide a custom [SpanMetadataCustomizer] implementation to control span names and attributes.
+ * - You can provide a custom [SpanMetadataCustomizer] `object` to control span names and attributes.
  * - Input and output data can be formatted into structured JSON metadata for each traced function.
  * - The tracing plugin automatically invokes the metadata customizer at runtime for annotated methods.
  *

@@ -11,6 +11,8 @@ import ai.jetbrains.tracy.core.fluent.FluentSpanAttributes
  * Customizes span names and attributes
  * (input arguments and outputs) for instrumented method calls.
  *
+ * Implementations **must be Kotlin `object` declarations** — classes are not supported.
+ *
  * Use this interface to:
  * - Override the default span name resolution via [resolveSpanName].
  * - Transform input arguments into structured string representations via [formatInputAttributes].

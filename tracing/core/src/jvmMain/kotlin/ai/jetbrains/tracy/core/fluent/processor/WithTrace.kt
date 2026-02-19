@@ -151,32 +151,11 @@ internal fun addOutputAttributesToTracing(
 /**
  * Returns the [SpanMetadataCustomizer] instance configured for this [Trace].
  *
- * Supported:
- * - `object` singleton declarations
- * - Classes with exactly one accessible constructor whose parameters are all optional
+ * Only Kotlin `object` declarations are supported. Passing a class will throw an error.
  */
 @PublishedApi
-internal fun Trace.getSpanMetadataCustomizer(): SpanMetadataCustomizer {
-    val kClass = metadataCustomizer
-    // Kotlin `object` case
-    kClass.objectInstance?.let { return it }
-    // Find exactly one constructor that can be invoked without arguments
-    val constructor = kClass.constructors
-        .singleOrNull { ctor -> ctor.parameters.all { it.isOptional } }
-        ?: error("""
-            SpanMetadataCustomizer '${kClass.qualifiedName}'
-            must be an object or declare exactly one accessible constructor
-            with only optional parameters.
-        """.trimIndent())
-
-    return try {
-        constructor.callBy(emptyMap())
-    } catch (ex: Exception) {
-        throw IllegalArgumentException("""
-            Failed to instantiate SpanMetadataCustomizer '${kClass.qualifiedName}'.
-        """.trimIndent(), ex)
-    }
-}
+internal fun Trace.getSpanMetadataCustomizer(): SpanMetadataCustomizer = metadataCustomizer.objectInstance
+    ?: error("SpanMetadataCustomizer '${metadataCustomizer.qualifiedName}' must be a Kotlin object.")
 
 /**
  * Configures input and code metadata on the span builder.

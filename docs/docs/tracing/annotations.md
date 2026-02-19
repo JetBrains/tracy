@@ -110,6 +110,9 @@ See the full example: [TracingPropagationExample.kt](https://github.com/JetBrain
 
 You can customize how spans are named and how inputs/outputs are serialized by providing an implementation of the [**`SpanMetadataCustomizer`**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent.customizers/-span-metadata-customizer/index.html) interface.
 
+!!! warning "Must be a Kotlin `object`"
+    `SpanMetadataCustomizer` implementations must be declared as Kotlin `object`s. Passing a class will throw a runtime error.
+
 <!--- INCLUDE
 import ai.jetbrains.tracy.core.fluent.Trace
 import ai.jetbrains.tracy.core.fluent.customizers.PlatformMethod
@@ -119,7 +122,6 @@ import ai.jetbrains.tracy.core.fluent.customizers.SpanMetadataCustomizer
 
 ```kotlin
 object MyCustomizer : SpanMetadataCustomizer {
-    fun getSpanName(instance: Any?, args: Array<out Any?>): String = "CustomName"
     override fun formatInputAttributes(
         method: PlatformMethod,
         args: Array<Any?>

@@ -406,10 +406,8 @@ complete example.
 
 The tracing system offers flexible customization through the [
 `SpanMetadataCustomizer`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/fluent/customizers/SpanMetadataCustomizer.kt)
-interface.
-To use it, you must implement the interface as a Kotlin `object` and link it to a traced function via the [
+interface. Implement it as a Kotlin `object` (classes are not supported) and reference it in the [
 `@Trace`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/fluent/Trace.kt) annotation.
-This ensures that the metadata customizer is a singleton and can be efficiently reused at runtime.
 With a custom `SpanMetadataCustomizer`, you can define:
 
 - How input parameters are serialized.
