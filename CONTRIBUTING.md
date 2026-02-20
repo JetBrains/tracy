@@ -37,7 +37,7 @@ the TODO repository.
 ### Prerequisites
 
 - JDK 17+
-- Kotlin 1.9.0+
+- Kotlin 2.0.0+
 
 ### How to build
 
