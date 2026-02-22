@@ -1,0 +1,92 @@
+name: Publish Docs to GitHub Pages
+
+on:
+  push:
+    branches:
+      - amaltseva/TRACY-71-public-documentation-hosting
+    tags:
+      - '*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: docs-${{ github.ref_type }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Build Dokka HTML
+        run: ./gradlew --no-daemon dokkaGenerate
+
+      - name: Resolve Dokka HTML output
+        id: dokka
+        run: |
+          set -euo pipe fail
+          if [[ -d "build/dokka/html" ]]; then
+            echo "dir=build/dokka/html" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          found="$(find build -type d -path '*/dokka/html' | head -n 1 || true)"
+          if [[ -z "$found" ]]; then
+            echo "Dokka HTML directory not found under build/" >&2
+            exit 1
+          fi
+          echo "dir=$found" >> "$GITHUB_OUTPUT"
+
+      - name: Install MkDocs deps
+        working-directory: docs
+        run: |
+          uv sync --frozen --all-extras
+
+      - name: Install mike
+        working-directory: docs
+        run: |
+          uv pip install mike
+
+      - name: Prepare docs sources
+        run: |
+          set -euo pipefail
+
+          DOKKA_DIR="${{ steps.dokka.outputs.dir }}"
+          rm -rf docs/docs/api
+          mkdir -p docs/docs/api
+          rsync -a "$DOKKA_DIR"/ docs/docs/api/
+
+      - name: Publish with mike
+        working-directory: docs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME}"
+            uv run mike deploy --branch gh-pages --push "$VERSION"
+          else
+            uv run mike deploy --branch gh-pages --push --update-aliases latest
+            uv run mike set-default --branch gh-pages latest
+          fi
