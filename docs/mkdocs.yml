@@ -20,7 +20,7 @@ nav:
           - How Tracy Transforms Code: compiler-plugin/ir-transformation.md
       - Debugging Tips: debugging.md
       - Limitations: limitations.md
-  - API Reference: https://api-tracy.labs.jb.gg/
+  - API Reference: api/
 
 markdown_extensions:
   - pymdownx.highlight:
@@ -86,11 +86,14 @@ extra_css:
 repo_url: https://github.com/JetBrains/tracy
 repo_name: GitHub
 edit_uri: edit/develop/docs/docs/
-copyright: Copyright © 2000-2025 JetBrains s.r.o.
+copyright: Copyright © 2026 JetBrains s.r.o.
 
 extra:
-  api_docs_url: https://api-tracy.labs.jb.gg
+  version:
+    provider: mike
+    alias: true
+  api_docs_url: api/
   youtrack:
-    url: https://youtrack.jetbrains.com/projects/TRA/issues
+    url: https://youtrack.jetbrains.com/projects/TRACY/issues
     name: Issues
     icon: assets/img/youtrack-yt.jpg

@@ -42,7 +42,7 @@ jobs:
       - name: Resolve Dokka HTML output
         id: dokka
         run: |
-          set -euo pipe fail
+          set -euo pipefail
           if [[ -d "build/dokka/html" ]]; then
             echo "dir=build/dokka/html" >> "$GITHUB_OUTPUT"
             exit 0
@@ -85,8 +85,13 @@ jobs:
 
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             VERSION="${GITHUB_REF_NAME}"
-            uv run mike deploy --branch gh-pages --push "$VERSION"
+            # Strip leading "v" from tag for cleaner version labels (e.g. v1.2.3 -> 1.2.3)
+            if [[ "$VERSION" == v* ]]; then
+              VERSION="${VERSION#v}"
+            fi
+            uv run mike deploy --branch gh-pages --push --update-aliases "$VERSION" latest
+            uv run mike set-default --branch gh-pages --push latest
           else
-            uv run mike deploy --branch gh-pages --push --update-aliases latest
-            uv run mike set-default --branch gh-pages latest
+            # Publish main separately; keep "latest" pointing to the most recent tag.
+            uv run mike deploy --branch gh-pages --push main
           fi
