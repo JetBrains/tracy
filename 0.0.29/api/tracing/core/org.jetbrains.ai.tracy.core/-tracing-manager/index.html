@@ -1,0 +1,269 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>TracingManager</title>
+<link href="../../../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../../../";</script>
+    <script>document.documentElement.classList.replace("no-js", "js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+      if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      } else {
+        const savedDarkMode = JSON.parse(storage)
+        if (savedDarkMode === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../../styles/style.css" rel="Stylesheet">
+<link href="../../../../styles/main.css" rel="Stylesheet">
+<link href="../../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../../scripts/safe-local-storage_blocking.js"></script>
+<script type="text/javascript" src="../../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../../ui-kit/ui-kit.min.js" defer></script></head>
+<body>
+<div class="root">
+    <header class="navigation theme-dark" id="navigation-wrapper" role="banner">
+<a class="library-name--link" href="../../../../index.html" tabindex="1">
+                    tracy
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">
+        </div>
+        <div class="navigation-controls">
+        <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
+                <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true" data-filter=":tracing:core/jvmMain">jvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox" aria-label="Target filter">
+                    <div class="dropdown--header"><span>Target filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close target filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":tracing:core/jvmMain" data-filter=":tracing:core/jvmMain">
+                                <span class="checkbox--icon"></span>
+                                jvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </ul>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </header>
+    <div id="container">
+        <nav id="leftColumn" class="sidebar" data-item-type="SECTION" data-item-config="{&quot;defaultSize&quot;: 280, &quot;minSize&quot;: 200, &quot;maxSize&quot;: 400}">
+            <a class="toc--skip-link" href="#main">Skip to content</a>
+            <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox" aria-label="Table of contents">
+                    <div class="dropdown--header">
+                            <span>
+                                    tracy
+                            </span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                    <div class="sidebar--inner" id="sideMenu"></div>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </nav>
+        <div id="resizer" class="resizer" data-item-type="BAR"></div>
+        <div id="main" data-item-type="SECTION" role="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="core::org.jetbrains.ai.tracy.core/TracingManager///PointingToDeclaration//-640728044">
+  <div class="breadcrumbs"><a href="../../index.html">core</a><span class="delimiter">/</span><a href="../index.html">org.jetbrains.ai.tracy.core</a><span class="delimiter">/</span><span class="current">TracingManager</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>Tracing</span><wbr><span><span>Manager</span></span></h1>
+    <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+      <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain" data-active="" data-toggle=":tracing:core/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":tracing:core/jvmMain"><div class="symbol monospace"><span class="token keyword">object </span><a href="index.html">TracingManager</a><span class="source-link-wrapper"><span class="source-link" data-element-type="source-link">(<a href="https://github.com/JetBrains/tracy/tree/main/tracing/core/src/jvmMain/kotlin/org/jetbrains/ai/tracy/core/TracingManager.kt#L40">source</a>)</span></span></div><p class="paragraph">Manager for setting up and managing OpenTelemetry tracing for Tracy.</p><p class="paragraph">This object provides utilities to:</p><ul><li><p class="paragraph">Initialize and configure the OpenTelemetry SDK using a <a href="../../org.jetbrains.ai.tracy.core.exporters/-base-exporter-config/index.html">org.jetbrains.ai.tracy.core.exporters.BaseExporterConfig</a>.</p></li><li><p class="paragraph">Obtain a default <a href="https://javadoc.io/doc/io.opentelemetry/opentelemetry-api/1.51.0/io/opentelemetry/api/trace/Tracer.html">io.opentelemetry.api.trace.Tracer</a> for Tracy, used in automatic tracing     as well as annotation-based spans.</p></li><li><p class="paragraph">Flush and shut down traces gracefully.</p></li></ul><p class="paragraph">Usage example:</p><div class="sample-container"><pre><code class="block lang-kotlin" theme="idea">TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))<br>// ... your traced code ...<br>TracingManager.flushTraces()</code></pre><span class="copy-tooltip"><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div><span class="copy-icon"></span></span></div><h4 class="tableheader">See also</h4><div class="table"><div class="table-row table-row_content" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="../../org.jetbrains.ai.tracy.core.exporters/-base-exporter-config/index.html"><span>Base</span><wbr><span>Exporter</span><wbr><span><span>Config</span></span></a></div></span></div><div></div></div></div><div class="table-row table-row_content" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="https://javadoc.io/doc/io.opentelemetry/opentelemetry-sdk/1.51.0/io/opentelemetry/sdk/OpenTelemetrySdk.html"><span>Open</span><wbr><span>Telemetry</span><wbr><span><span>Sdk</span></span></a></div></span></div><div></div></div></div></div></div>    </div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="PROPERTY">
+        <h2 class="tableheader">Properties</h2>
+        <div class="table"><a data-name="-2047954671%2FProperties%2F-640728044" anchor-label="contentCapturePolicy" id="-2047954671%2FProperties%2F-640728044" data-filterable-set=":tracing:core/jvmMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="content-capture-policy.html"><span>content</span><wbr><span>Capture</span><wbr><span><span>Policy</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2047954671%2FProperties%2F-640728044"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain" data-active="" data-toggle=":tracing:core/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":tracing:core/jvmMain"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-volatile/index.html"><span class="token annotation builtin">Volatile</span></a></div></div><span class="token keyword">var </span><a href="content-capture-policy.html">contentCapturePolicy</a><span class="token operator">: </span><a href="../../org.jetbrains.ai.tracy.core.policy/-content-capture-policy/index.html">ContentCapturePolicy</a></div><div class="brief "><p class="paragraph">Policy that controls capturing inputs and outputs in spans. Disabled by default. Can be overridden programmatically at runtime.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1616814599%2FProperties%2F-640728044" anchor-label="isTracingEnabled" id="1616814599%2FProperties%2F-640728044" data-filterable-set=":tracing:core/jvmMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="is-tracing-enabled.html"><span>is</span><wbr><span>Tracing</span><wbr><span><span>Enabled</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1616814599%2FProperties%2F-640728044"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain" data-active="" data-toggle=":tracing:core/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":tracing:core/jvmMain"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-volatile/index.html"><span class="token annotation builtin">Volatile</span></a></div></div><span class="token keyword">var </span><a href="is-tracing-enabled.html">isTracingEnabled</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief "><p class="paragraph">Indicates whether tracing is enabled at runtime.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1037526429%2FProperties%2F-640728044" anchor-label="tracer" id="-1037526429%2FProperties%2F-640728044" data-filterable-set=":tracing:core/jvmMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="tracer.html"><span><span>tracer</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1037526429%2FProperties%2F-640728044"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain" data-active="" data-toggle=":tracing:core/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":tracing:core/jvmMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="tracer.html">tracer</a><span class="token operator">: </span><a href="https://javadoc.io/doc/io.opentelemetry/opentelemetry-api/1.51.0/io/opentelemetry/api/trace/Tracer.html">Tracer</a></div><div class="brief "><p class="paragraph">Provides the default <a href="https://javadoc.io/doc/io.opentelemetry/opentelemetry-api/1.51.0/io/opentelemetry/api/trace/Tracer.html">io.opentelemetry.api.trace.Tracer</a> instance for Tracy.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="tableheader">Functions</h2>
+        <div class="table"><a data-name="886776353%2FFunctions%2F-640728044" anchor-label="flushTraces" id="886776353%2FFunctions%2F-640728044" data-filterable-set=":tracing:core/jvmMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="flush-traces.html"><span>flush</span><wbr><span><span>Traces</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="886776353%2FFunctions%2F-640728044"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain" data-active="" data-toggle=":tracing:core/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":tracing:core/jvmMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="flush-traces.html"><span class="token function">flushTraces</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">timeoutSeconds<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a><span class="token operator"> = </span><span class="token constant">5</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="io.opentelemetry.sdk.common/CompletableResultCode///PointingToDeclaration/">CompletableResultCode</span><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Forces flushing of any pending spans to their respective exporters.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1945216900%2FFunctions%2F-640728044" anchor-label="setSdk" id="1945216900%2FFunctions%2F-640728044" data-filterable-set=":tracing:core/jvmMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="set-sdk.html"><span>set</span><wbr><span><span>Sdk</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1945216900%2FFunctions%2F-640728044"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain" data-active="" data-toggle=":tracing:core/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":tracing:core/jvmMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="set-sdk.html"><span class="token function">setSdk</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">sdk<span class="token operator">: </span><a href="https://javadoc.io/doc/io.opentelemetry/opentelemetry-sdk/1.51.0/io/opentelemetry/sdk/OpenTelemetrySdk.html">OpenTelemetrySdk</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Sets the <a href="https://javadoc.io/doc/io.opentelemetry/opentelemetry-sdk/1.51.0/io/opentelemetry/sdk/OpenTelemetrySdk.html">OpenTelemetrySdk</a>.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="107046203%2FFunctions%2F-640728044" anchor-label="shutdownTracing" id="107046203%2FFunctions%2F-640728044" data-filterable-set=":tracing:core/jvmMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="shutdown-tracing.html"><span>shutdown</span><wbr><span><span>Tracing</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="107046203%2FFunctions%2F-640728044"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain" data-active="" data-toggle=":tracing:core/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":tracing:core/jvmMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="shutdown-tracing.html"><span class="token function">shutdownTracing</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">timeoutSeconds<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a><span class="token operator"> = </span><span class="token constant">5</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="io.opentelemetry.sdk.common/CompletableResultCode///PointingToDeclaration/">CompletableResultCode</span><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Shuts down the OpenTelemetry SDK.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="623007266%2FFunctions%2F-640728044" anchor-label="traceSensitiveContent" id="623007266%2FFunctions%2F-640728044" data-filterable-set=":tracing:core/jvmMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="trace-sensitive-content.html"><span>trace</span><wbr><span>Sensitive</span><wbr><span><span>Content</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="623007266%2FFunctions%2F-640728044"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain" data-active="" data-toggle=":tracing:core/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":tracing:core/jvmMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="trace-sensitive-content.html"><span class="token function">traceSensitiveContent</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Enables the capture of sensitive content (inputs and outputs) for tracing spans.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="657573186%2FFunctions%2F-640728044" anchor-label="withCapturingPolicy" id="657573186%2FFunctions%2F-640728044" data-filterable-set=":tracing:core/jvmMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="with-capturing-policy.html"><span>with</span><wbr><span>Capturing</span><wbr><span><span>Policy</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="657573186%2FFunctions%2F-640728044"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain" data-active="" data-toggle=":tracing:core/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":tracing:core/jvmMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="with-capturing-policy.html"><span class="token function">withCapturingPolicy</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">policy<span class="token operator">: </span><a href="../../org.jetbrains.ai.tracy.core.policy/-content-capture-policy/index.html">ContentCapturePolicy</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Sets the capturing policy for handling sensitive content within spans.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <div class="footer--container">
+            <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+            <div class="footer--content">
+                <div>
+                    <span>Generated by </span>
+                    <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                        Dokka
+                    </a>
+                    <div>Copyright © 2026 JetBrains s.r.o.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
