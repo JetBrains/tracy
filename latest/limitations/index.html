@@ -1186,8 +1186,8 @@
 <p>Using <code>runBlocking</code> inside a suspend function creates a new execution boundary. Without manual propagation, child spans become detached and appear as separate traces.</p>
 <p><strong>Workaround</strong>: Use <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent.processor/current-span-context-element.html"><code>currentSpanContextElement</code></a> to propagate context:</p>
 <!--- INCLUDE
+import ai.jetbrains.tracy.core.currentSpanContextElement
 import ai.jetbrains.tracy.core.fluent.Trace
-import ai.jetbrains.tracy.core.fluent.processor.currentSpanContextElement
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.runBlocking
 
@@ -1211,7 +1211,7 @@ suspend fun processUserRequest(requestId: String) {
 <p>Threads created via <code>thread { ... }</code> do not inherit the OpenTelemetry context.</p>
 <p><strong>Workaround</strong>: Capture and propagate the context manually:</p>
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.fluent.processor.currentSpanContext
+import ai.jetbrains.tracy.core.currentSpanContext
 import kotlinx.coroutines.currentCoroutineContext
 import kotlin.concurrent.thread
 
@@ -1235,7 +1235,7 @@ suspend fun processUserRequest(requestId: String) {
 <p>The <code>@Trace</code> annotation should not be used on local (nested) functions:</p>
 <div class="language-kotlin highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kd">fun</span><span class="w"> </span><span class="nf">outer</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="nd">@Trace</span><span class="w">  </span><span class="c1">// Not supported</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="kd">fun</span><span class="w"> </span><span class="nf">inner</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="kd">fun</span><span class="w"> </span><span class="nf">inner</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* ... */</span><span class="w"> </span><span class="p">}</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="p">}</span>
 </span></code></pre></div>
 <p><strong>Reason</strong>: References to local functions do not implement the <code>KCallable</code> interface correctly in Kotlin. See <a href="https://youtrack.jetbrains.com/issue/KT-64873">KT-64873</a>.</p>

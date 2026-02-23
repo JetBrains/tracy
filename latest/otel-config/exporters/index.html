@@ -1319,7 +1319,8 @@
 
 <h1 id="exporters">Exporters</h1>
 <h2 id="langfuse">Langfuse</h2>
-<p><a href="https://langfuse.com/">Langfuse</a> is an open-source LLM engineering platform for observability, metrics, evaluations, and prompt management.</p>
+<p><a href="https://langfuse.com/">Langfuse</a> is an open-source LLM engineering platform for observability, metrics, evaluations,
+and prompt management.</p>
 <table>
 <thead>
 <tr>
@@ -1376,16 +1377,17 @@
 </table>
 <h3 id="example">Example</h3>
 <!--- INCLUDE
-import ai.dev.kit.exporters.ExporterCommonSettings
-import ai.dev.kit.exporters.otlp.LangfuseExporterConfig
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.exporters.ExporterCommonSettings
+import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 
 fun main() {
 -->
 <!--- SUFFIX
 }
 -->
+
 <div class="language-kotlin highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1">// Using environment variables</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1">// (don&#39;t forget to set `LANGFUSE_URL`, `LANGFUSE_PUBLIC_KEY`, and `LANGFUSE_SECRET_KEY` env variables)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kd">val</span><span class="w"> </span><span class="nv">sdk</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">configureOpenTelemetrySdk</span><span class="p">(</span><span class="n">LangfuseExporterConfig</span><span class="p">())</span>
@@ -1407,7 +1409,8 @@ fun main() {
 </span></code></pre></div>
 <!--- KNIT example-otel-exporters-04.kt -->
 
-<p>See the full example: <a href="https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/backends/LangfuseExample.kt">LangfuseExample.kt</a></p>
+<p>See the full
+example: <a href="https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/backends/LangfuseExample.kt">LangfuseExample.kt</a></p>
 <hr />
 <h2 id="weave">Weave (Weights &amp; Biases)</h2>
 <p><a href="https://wandb.ai/site/weave/">W&amp;B Weave</a> is the Weights &amp; Biases platform for LLM application tracing and evaluation.</p>
@@ -1475,16 +1478,17 @@ fun main() {
 </table>
 <h3 id="example_1">Example</h3>
 <!--- INCLUDE
-import ai.dev.kit.exporters.ExporterCommonSettings
-import ai.dev.kit.exporters.otlp.WeaveExporterConfig
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.exporters.ExporterCommonSettings
+import ai.jetbrains.tracy.core.exporters.otlp.WeaveExporterConfig
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 
 fun main() {
 -->
 <!--- SUFFIX
 }
 -->
+
 <div class="language-kotlin highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">// Using environment variables</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1">// (don&#39;t forget to set `WEAVE_URL`, `WEAVE_ENTITY`, `WEAVE_PROJECT_NAME`, `WEAVE_API_KEY` env variables)</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kd">val</span><span class="w"> </span><span class="nv">sdk</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">configureOpenTelemetrySdk</span><span class="p">(</span><span class="n">WeaveExporterConfig</span><span class="p">())</span>
@@ -1507,7 +1511,8 @@ fun main() {
 </span></code></pre></div>
 <!--- KNIT example-otel-exporters-05.kt -->
 
-<p>See the full example: <a href="https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/backends/WeaveExample.kt">WeaveExample.kt</a></p>
+<p>See the full
+example: <a href="https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/backends/WeaveExample.kt">WeaveExample.kt</a></p>
 <hr />
 <h2 id="otlp-http">OTLP HTTP</h2>
 <p>Export spans to any OTLP HTTP-compatible collector such as Jaeger, Grafana Tempo, or other OpenTelemetry backends.</p>
@@ -1548,16 +1553,17 @@ fun main() {
 <p>The exporter automatically appends <code>/v1/traces</code> to the provided URL.</p>
 <h3 id="example-jaeger">Example (Jaeger)</h3>
 <!--- INCLUDE
-import ai.dev.kit.exporters.ExporterCommonSettings
-import ai.dev.kit.exporters.otlp.OtlpHttpExporterConfig
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.exporters.ExporterCommonSettings
+import ai.jetbrains.tracy.core.exporters.otlp.OtlpHttpExporterConfig
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 
 fun main() {
 -->
 <!--- SUFFIX
 }
 -->
+
 <div class="language-kotlin highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1">// Export to Jaeger running locally</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kd">val</span><span class="w"> </span><span class="nv">sdk</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">configureOpenTelemetrySdk</span><span class="p">(</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="n">OtlpHttpExporterConfig</span><span class="p">(</span>
@@ -1573,7 +1579,8 @@ fun main() {
 </span></code></pre></div>
 <!--- KNIT example-otel-exporters-06.kt -->
 
-<p>See the full example: <a href="https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/backends/JaegerExporterExample.kt">JaegerExporterExample.kt</a></p>
+<p>See the full
+example: <a href="https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/backends/JaegerExporterExample.kt">JaegerExporterExample.kt</a></p>
 <hr />
 <h2 id="console">Console</h2>
 <p>Export traces to the console for local development and debugging.</p>
@@ -1605,7 +1612,8 @@ fun main() {
 </tbody>
 </table>
 <h3 id="output-format">Output Format</h3>
-<p>The <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.exporters/-output-format/index.html"><code>OutputFormat</code></a> enum controls the format for Console and File exporters:</p>
+<p>The <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.exporters/-output-format/index.html"><code>OutputFormat</code></a> enum
+controls the format for Console and File exporters:</p>
 <table>
 <thead>
 <tr>
@@ -1627,16 +1635,17 @@ fun main() {
 <p>Use JSON if you will analyze your traces programmatically; otherwise, use plain text (the default).</p>
 <h3 id="example_2">Example</h3>
 <!--- INCLUDE
-import ai.dev.kit.exporters.ConsoleExporterConfig
-import ai.dev.kit.exporters.OutputFormat
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
+import ai.jetbrains.tracy.core.exporters.OutputFormat
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 
 fun main() {
 -->
 <!--- SUFFIX
 }
 -->
+
 <div class="language-kotlin highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1">// Plain text output (default)</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kd">val</span><span class="w"> </span><span class="nv">sdk</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">configureOpenTelemetrySdk</span><span class="p">(</span><span class="n">ConsoleExporterConfig</span><span class="p">())</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
@@ -1695,16 +1704,17 @@ fun main() {
 </table>
 <h3 id="example_3">Example</h3>
 <!--- INCLUDE
-import ai.dev.kit.exporters.FileExporterConfig
-import ai.dev.kit.exporters.OutputFormat
-import ai.dev.kit.tracing.TracingManager
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.exporters.FileExporterConfig
+import ai.jetbrains.tracy.core.exporters.OutputFormat
+import ai.jetbrains.tracy.core.TracingManager
+import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 
 fun main() {
 -->
 <!--- SUFFIX
 }
 -->
+
 <div class="language-kotlin highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1">// Plain text file</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kd">val</span><span class="w"> </span><span class="nv">sdk</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">configureOpenTelemetrySdk</span><span class="p">(</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="n">FileExporterConfig</span><span class="p">(</span>
@@ -1726,7 +1736,8 @@ fun main() {
 </span></code></pre></div>
 <!--- KNIT example-otel-exporters-08.kt -->
 
-<p>See the full example: <a href="https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/FileTracingExample.kt">FileTracingExample.kt</a></p>
+<p>See the full
+example: <a href="https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/FileTracingExample.kt">FileTracingExample.kt</a></p>
 
 
 

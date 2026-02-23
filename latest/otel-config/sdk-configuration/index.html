@@ -1189,8 +1189,8 @@
 <h3 id="setting-service-name">Setting Service Name</h3>
 <p>You can customize the <a href="https://opentelemetry.io/docs/specs/semconv/registry/attributes/service/#service-name">service name</a>, <a href="https://opentelemetry.io/docs/specs/semconv/registry/attributes/service/#service-version">service version</a>, and other <a href="https://opentelemetry.io/docs/specs/semconv/registry/attributes/service/">resource attributes</a>:</p>
 <!--- INCLUDE
-import ai.dev.kit.exporters.otlp.LangfuseExporterConfig
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig
+import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.sdk.resources.Resource
@@ -1210,7 +1210,7 @@ fun main() {
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="p">)</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">)</span>
 </span></code></pre></div>
-<!--- KNIT example-otel-exporters-02.kt -->
+<!--- KNIT example-otel-exporters-01.kt -->
 
 <h2 id="common-exporter-settings">Common Exporter Settings</h2>
 <p>All exporter configurations accept an <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.exporters/-exporter-common-settings/index.html"><code>ExporterCommonSettings</code></a> object that controls common behavior:</p>
@@ -1271,9 +1271,9 @@ fun main() {
 </table>
 <h3 id="example-with-custom-settings">Example with Custom Settings</h3>
 <!--- INCLUDE
-import ai.dev.kit.exporters.ExporterCommonSettings
-import ai.dev.kit.exporters.otlp.LangfuseExporterConfig
-import ai.dev.kit.tracing.configureOpenTelemetrySdk
+import ai.jetbrains.tracy.core.exporters.ExporterCommonSettings
+import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig
+import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 
 fun main() {
 -->
@@ -1292,7 +1292,7 @@ fun main() {
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="p">)</span>
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="p">)</span>
 </span></code></pre></div>
-<!--- KNIT example-otel-exporters-03.kt -->
+<!--- KNIT example-otel-exporters-02.kt -->
 
 
 
