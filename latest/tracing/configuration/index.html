@@ -307,7 +307,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="https://api-tracy.labs.jb.gg/" class="md-tabs__link">
+      <a href="../../api/" class="md-tabs__link">
         
   
   
@@ -1117,7 +1117,7 @@
   
   
     <li class="md-nav__item">
-      <a href="https://api-tracy.labs.jb.gg/" class="md-nav__link">
+      <a href="../../api/" class="md-nav__link">
         
   
   
@@ -1308,7 +1308,7 @@
 <h1 id="configuration-sensitivity">Configuration &amp; Sensitivity</h1>
 <p>Tracy offers flexible configuration options to control how traces are collected and exported and how sensitive data is handled.</p>
 <h2 id="tracingmanager">TracingManager</h2>
-<p>The <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core/-tracing-manager/index.html"><code>TracingManager</code></a> is the central configuration point for the library.</p>
+<p>The <a href="api//tracing/core/ai.jetbrains.tracy.core/-tracing-manager/index.html"><code>TracingManager</code></a> is the central configuration point for the library.</p>
 <table>
 <thead>
 <tr>
@@ -1414,7 +1414,7 @@ fun main() {
 </li>
 </ol>
 <h3 id="manual-flushing">Manual Flushing</h3>
-<p>For cases where you need manual control (e.g., reading trace files before exit, or when <code>flushOnShutdown</code> is disabled), you can use <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/flush-traces.html"><code>flushTraces()</code></a> or <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/shutdown-tracing.html"><code>shutdownTracing()</code></a>:</p>
+<p>For cases where you need manual control (e.g., reading trace files before exit, or when <code>flushOnShutdown</code> is disabled), you can use <a href="api//tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/flush-traces.html"><code>flushTraces()</code></a> or <a href="api//tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/shutdown-tracing.html"><code>shutdownTracing()</code></a>:</p>
 <div class="language-kotlin highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1">// Flush pending spans (waits up to 5 seconds by default)</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">TracingManager</span><span class="p">.</span><span class="na">flushTraces</span><span class="p">()</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>

@@ -305,7 +305,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="https://api-tracy.labs.jb.gg/" class="md-tabs__link">
+      <a href="../api/" class="md-tabs__link">
         
   
   
@@ -1052,7 +1052,7 @@
   
   
     <li class="md-nav__item">
-      <a href="https://api-tracy.labs.jb.gg/" class="md-nav__link">
+      <a href="../api/" class="md-nav__link">
         
   
   
@@ -1184,7 +1184,7 @@
 <p>For complete examples, see <a href="https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/ContextPropagationExample.kt">ContextPropagationExample.kt</a>.</p>
 <h3 id="kotlin-coroutines-with-runblocking">Kotlin Coroutines with <code>runBlocking</code></h3>
 <p>Using <code>runBlocking</code> inside a suspend function creates a new execution boundary. Without manual propagation, child spans become detached and appear as separate traces.</p>
-<p><strong>Workaround</strong>: Use <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent.processor/current-span-context-element.html"><code>currentSpanContextElement</code></a> to propagate context:</p>
+<p><strong>Workaround</strong>: Use <a href="api//tracing/core/ai.jetbrains.tracy.core.fluent.processor/current-span-context-element.html"><code>currentSpanContextElement</code></a> to propagate context:</p>
 <!--- INCLUDE
 import ai.jetbrains.tracy.core.currentSpanContextElement
 import ai.jetbrains.tracy.core.fluent.Trace

@@ -307,7 +307,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="https://api-tracy.labs.jb.gg/" class="md-tabs__link">
+      <a href="../../api/" class="md-tabs__link">
         
   
   
@@ -1072,7 +1072,7 @@
   
   
     <li class="md-nav__item">
-      <a href="https://api-tracy.labs.jb.gg/" class="md-nav__link">
+      <a href="../../api/" class="md-nav__link">
         
   
   
@@ -1224,7 +1224,7 @@ execution time, without manually creating spans.</p>
 This function modifies your client instance in-place to record OpenTelemetry spans for every API call.</p>
 <h2 id="supported-clients">Supported Clients</h2>
 <h3 id="openai">OpenAI</h3>
-<p>To trace the OpenAI client, use the <a href="https://api-tracy.labs.jb.gg/tracing/openai/ai.jetbrains.tracy.openai.clients/instrument.html"><code>instrument</code></a> function from the <a href="https://api-tracy.labs.jb.gg/tracing/openai/index.html"><code>tracy.openai</code></a> module.</p>
+<p>To trace the OpenAI client, use the <a href="api//tracing/openai/ai.jetbrains.tracy.openai.clients/instrument.html"><code>instrument</code></a> function from the <a href="api//tracing/openai/index.html"><code>tracy.openai</code></a> module.</p>
 <!--- INCLUDE
 import ai.jetbrains.tracy.openai.clients.instrument
 import com.openai.client.okhttp.OpenAIOkHttpClient
@@ -1240,7 +1240,7 @@ import com.openai.client.okhttp.OpenAIOkHttpClient
 <p>See the full
 example: <a href="https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/clients/OpenAIClientAutotracingExample.kt">OpenAIClientAutotracingExample.kt</a></p>
 <h3 id="anthropic">Anthropic</h3>
-<p>To trace the Anthropic client, use the <a href="https://api-tracy.labs.jb.gg/tracing/anthropic/ai.jetbrains.tracy.anthropic.clients/instrument.html"><code>instrument</code></a> function from the <a href="https://api-tracy.labs.jb.gg/tracing/anthropic/index.html"><code>tracy.anthropic</code></a> module.</p>
+<p>To trace the Anthropic client, use the <a href="api//tracing/anthropic/ai.jetbrains.tracy.anthropic.clients/instrument.html"><code>instrument</code></a> function from the <a href="api//tracing/anthropic/index.html"><code>tracy.anthropic</code></a> module.</p>
 <!--- INCLUDE
 import ai.jetbrains.tracy.anthropic.clients.instrument
 import com.anthropic.client.okhttp.AnthropicOkHttpClient
@@ -1256,7 +1256,7 @@ import com.anthropic.client.okhttp.AnthropicOkHttpClient
 <p>See the full
 example: <a href="https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/clients/AnthropicClientAutotracingExample.kt">AnthropicClientAutotracingExample.kt</a></p>
 <h3 id="google-gemini">Google Gemini</h3>
-<p>To trace the Gemini client, use the <a href="https://api-tracy.labs.jb.gg/tracing/gemini/ai.jetbrains.tracy.gemini.clients/instrument.html"><code>instrument</code></a> function from the <a href="https://api-tracy.labs.jb.gg/tracing/gemini/index.html"><code>tracy.gemini</code></a> module.</p>
+<p>To trace the Gemini client, use the <a href="api//tracing/gemini/ai.jetbrains.tracy.gemini.clients/instrument.html"><code>instrument</code></a> function from the <a href="api//tracing/gemini/index.html"><code>tracy.gemini</code></a> module.</p>
 <!--- INCLUDE
 import ai.jetbrains.tracy.gemini.clients.instrument
 import com.google.genai.Client
@@ -1273,8 +1273,8 @@ import com.google.genai.Client
 example: <a href="https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/clients/GeminiClientAutotracingExample.kt">GeminiClientAutotracingExample.kt</a></p>
 <h3 id="ktor-http-client">Ktor HTTP Client</h3>
 <p>If you are using Ktor's <a href="https://api.ktor.io/ktor-client-core/io.ktor.client/-http-client/index.html"><code>HttpClient</code></a> for
-manual LLM calls or custom integrations, you can instrument it using the <a href="https://api-tracy.labs.jb.gg/tracing/ktor/index.html"><code>tracy.ktor</code></a> module. Although you need to explicitly pass an LLM-specific adapter that parses internal
-structures of requests and responses of the given LLM provider (see <a href="https://api-tracy.labs.jb.gg/tracing/ktor/ai.jetbrains.tracy.ktor/index.html"><code>instrument</code></a>). The usage is similar to other clients:</p>
+manual LLM calls or custom integrations, you can instrument it using the <a href="api//tracing/ktor/index.html"><code>tracy.ktor</code></a> module. Although you need to explicitly pass an LLM-specific adapter that parses internal
+structures of requests and responses of the given LLM provider (see <a href="api//tracing/ktor/ai.jetbrains.tracy.ktor/index.html"><code>instrument</code></a>). The usage is similar to other clients:</p>
 <!--- INCLUDE
 import ai.jetbrains.tracy.ktor.instrument
 import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter
@@ -1289,17 +1289,17 @@ import io.ktor.client.engine.cio.*
 <!--- KNIT example-autotracing-04.kt -->
 
 <p>Currently, Tracy supports the following LLM providers and provides the corresponding adapters (see the implementation
-of <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.adapters/-l-l-m-tracing-adapter/index.html"><code>LLMTracingAdapter</code></a> and its inheritors):</p>
+of <a href="api//tracing/core/ai.jetbrains.tracy.core.adapters/-l-l-m-tracing-adapter/index.html"><code>LLMTracingAdapter</code></a> and its inheritors):</p>
 <ol>
-<li>OpenAI: <a href="https://api-tracy.labs.jb.gg/tracing/openai/ai.jetbrains.tracy.openai.adapters/-open-a-i-l-l-m-tracing-adapter/index.html"><code>OpenAILLMTracingAdapter</code></a>.</li>
-<li>Anthropic: <a href="https://api-tracy.labs.jb.gg/tracing/anthropic/ai.jetbrains.tracy.anthropic.adapters/-anthropic-l-l-m-tracing-adapter/index.html"><code>AnthropicLLMTracingAdapter</code></a>.</li>
-<li>Gemini: <a href="https://api-tracy.labs.jb.gg/tracing/gemini/ai.jetbrains.tracy.gemini.adapters/-gemini-l-l-m-tracing-adapter/index.html"><code>GeminiLLMTracingAdapter</code></a>.</li>
+<li>OpenAI: <a href="api//tracing/openai/ai.jetbrains.tracy.openai.adapters/-open-a-i-l-l-m-tracing-adapter/index.html"><code>OpenAILLMTracingAdapter</code></a>.</li>
+<li>Anthropic: <a href="api//tracing/anthropic/ai.jetbrains.tracy.anthropic.adapters/-anthropic-l-l-m-tracing-adapter/index.html"><code>AnthropicLLMTracingAdapter</code></a>.</li>
+<li>Gemini: <a href="api//tracing/gemini/ai.jetbrains.tracy.gemini.adapters/-gemini-l-l-m-tracing-adapter/index.html"><code>GeminiLLMTracingAdapter</code></a>.</li>
 </ol>
 <p>See the full
 example: <a href="https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/clients/KtorClientAutotracingExample.kt">KtorClientAutotracingExample.kt</a></p>
 <h3 id="okhttp">OkHttp</h3>
-<p>For applications using OkHttp, Tracy provides an interceptor-based approach via the <a href="https://api-tracy.labs.jb.gg/tracing/core/index.html"><code>tracy.core</code></a> module (as it's used by many SDKs). Same as with Ktor, you need to pass an LLM-specific
-adapter to the <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core/instrument.html"><code>instrument</code></a> function:</p>
+<p>For applications using OkHttp, Tracy provides an interceptor-based approach via the <a href="api//tracing/core/index.html"><code>tracy.core</code></a> module (as it's used by many SDKs). Same as with Ktor, you need to pass an LLM-specific
+adapter to the <a href="api//tracing/core/ai.jetbrains.tracy.core/instrument.html"><code>instrument</code></a> function:</p>
 <!--- INCLUDE
 import ai.jetbrains.tracy.core.instrument
 import ai.jetbrains.tracy.openai.adapters.OpenAILLMTracingAdapter

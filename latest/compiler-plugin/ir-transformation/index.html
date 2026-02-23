@@ -307,7 +307,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="https://api-tracy.labs.jb.gg/" class="md-tabs__link">
+      <a href="../../api/" class="md-tabs__link">
         
   
   
@@ -1144,7 +1144,7 @@
   
   
     <li class="md-nav__item">
-      <a href="https://api-tracy.labs.jb.gg/" class="md-nav__link">
+      <a href="../../api/" class="md-nav__link">
         
   
   
@@ -1362,7 +1362,7 @@
 <h1 id="how-tracy-transforms-code">How Tracy Transforms Code</h1>
 <p>This page explains how Tracy's compiler plugin transforms your annotated functions at compile time. Understanding this transformation helps you debug issues and understand what happens "under the hood."</p>
 <h2 id="the-transformation-at-a-glance">The Transformation at a Glance</h2>
-<p>When you annotate a function with <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html"><code>@Trace</code></a>, Tracy's compiler plugin wraps your function body with tracing logic.</p>
+<p>When you annotate a function with <a href="api//tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html"><code>@Trace</code></a>, Tracy's compiler plugin wraps your function body with tracing logic.</p>
 <h3 id="before-compilation">Before Compilation</h3>
 <div class="language-kotlin highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@Trace</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;GreetUser&quot;</span><span class="p">)</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kd">fun</span><span class="w"> </span><span class="nf">greetUser</span><span class="p">(</span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="kt">String</span><span class="p">):</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="p">{</span>
@@ -1383,7 +1383,7 @@
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="p">)</span>
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="p">}</span>
 </span></code></pre></div>
-<p>The <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-trace.html"><code>withTrace</code></a> function handles:</p>
+<p>The <a href="api//tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-trace.html"><code>withTrace</code></a> function handles:</p>
 <ul>
 <li>Creating an OpenTelemetry span</li>
 <li>Recording function inputs and outputs</li>
@@ -1397,7 +1397,7 @@
 <p>For each annotated function, Tracy:</p>
 <ol>
 <li>
-<p><strong>Finds the annotation</strong>: Checks if the function (or any overridden function) has <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html"><code>@Trace</code></a></p>
+<p><strong>Finds the annotation</strong>: Checks if the function (or any overridden function) has <a href="api//tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html"><code>@Trace</code></a></p>
 </li>
 <li>
 <p><strong>Creates a function reference</strong>: Builds an IR reference to the original function for metadata extraction</p>
@@ -1409,16 +1409,16 @@
 <p><strong>Wraps the body in a lambda</strong>: Moves the original function body into a lambda expression</p>
 </li>
 <li>
-<p><strong>Generates the wrapper call</strong>: Replaces the function body with a call to <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-trace.html"><code>withTrace</code></a> or <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-trace-suspended.html"><code>withTraceSuspended</code></a></p>
+<p><strong>Generates the wrapper call</strong>: Replaces the function body with a call to <a href="api//tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-trace.html"><code>withTrace</code></a> or <a href="api//tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-trace-suspended.html"><code>withTraceSuspended</code></a></p>
 </li>
 </ol>
 <h2 id="suspend-function-support">Suspend Function Support</h2>
-<p>Tracy handles suspend functions differently from regular functions. Regular functions are wrapped with <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-trace.html"><code>withTrace</code></a>, while suspend functions use <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-trace-suspended.html"><code>withTraceSuspended</code></a>.</p>
+<p>Tracy handles suspend functions differently from regular functions. Regular functions are wrapped with <a href="api//tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-trace.html"><code>withTrace</code></a>, while suspend functions use <a href="api//tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-trace-suspended.html"><code>withTraceSuspended</code></a>.</p>
 <p>The suspend variant ensures proper coroutine context propagation and allows the traced function to suspend without blocking.</p>
 <h2 id="annotation-propagation">Annotation Propagation</h2>
 <p>One of Tracy's powerful features is <strong>automatic annotation propagation</strong> through inheritance hierarchies.</p>
 <h3 id="how-it-works">How It Works</h3>
-<p>When checking for <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html"><code>@Trace</code></a>, Tracy doesn't just look at the current function — it traverses all overridden functions in the hierarchy:</p>
+<p>When checking for <a href="api//tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html"><code>@Trace</code></a>, Tracy doesn't just look at the current function — it traverses all overridden functions in the hierarchy:</p>
 <div class="language-kotlin highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kd">interface</span><span class="w"> </span><span class="nc">Service</span><span class="w"> </span><span class="p">{</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="nd">@Trace</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="kd">fun</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="n">data</span><span class="p">:</span><span class="w"> </span><span class="kt">String</span><span class="p">):</span><span class="w"> </span><span class="n">Result</span>
@@ -1433,7 +1433,7 @@
 </span></code></pre></div>
 <p>The <code>ServiceImpl.process()</code> function will be traced because it overrides an annotated function in the <code>Service</code> interface.</p>
 <h3 id="implementation-detail">Implementation Detail</h3>
-<p>Tracy uses <code>allOverridden(true)</code> to traverse the entire override chain and find the first <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html"><code>@Trace</code></a> annotation:</p>
+<p>Tracy uses <code>allOverridden(true)</code> to traverse the entire override chain and find the first <a href="api//tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html"><code>@Trace</code></a> annotation:</p>
 <div class="language-kotlin highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kd">private</span><span class="w"> </span><span class="kd">fun</span><span class="w"> </span><span class="n">IrSimpleFunction</span><span class="p">.</span><span class="nf">findOverriddenAnnotationWithPropagation</span><span class="p">():</span><span class="w"> </span><span class="n">IrConstructorCall? </span><span class="o">=</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="na">allOverridden</span><span class="p">(</span><span class="kc">true</span><span class="p">).</span><span class="na">firstNotNullOfOrNull</span><span class="w"> </span><span class="p">{</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">        </span><span class="nb">it</span><span class="p">.</span><span class="na">annotations</span><span class="p">.</span><span class="na">findAnnotation</span><span class="p">(</span><span class="n">traceAnnotationFqName</span><span class="p">)</span>
@@ -1460,17 +1460,17 @@
 <div class="language-kotlin highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">args</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">arrayOf</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">age</span><span class="p">,</span><span class="w"> </span><span class="n">options</span><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="annotation-instance">Annotation Instance</h3>
-<p>The actual <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html"><code>@Trace</code></a> annotation is passed to the wrapper, including:</p>
+<p>The actual <a href="api//tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html"><code>@Trace</code></a> annotation is passed to the wrapper, including:</p>
 <ul>
 <li><code>name</code>: Custom span name (overrides the default method name)</li>
-<li><code>metadataCustomizer</code>: A <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent.handlers/-span-metadata-customizer/index.html"><code>SpanMetadataCustomizer</code></a> reference for custom serialization</li>
+<li><code>metadataCustomizer</code>: A <a href="api//tracing/core/ai.jetbrains.tracy.core.fluent.handlers/-span-metadata-customizer/index.html"><code>SpanMetadataCustomizer</code></a> reference for custom serialization</li>
 </ul>
 <p>At runtime, the <code>metadataCustomizer</code> controls how span names are resolved, and how inputs/outputs are serialized into span attributes.</p>
 <h2 id="multiplatform-considerations">Multiplatform Considerations</h2>
 <p>Tracy's compiler plugin supports Kotlin Multiplatform by:</p>
 <ol>
 <li>
-<p><strong>Finding the correct symbol</strong>: The plugin looks for the non-<code>expect</code> declaration of <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-trace.html"><code>withTrace</code></a>:</p>
+<p><strong>Finding the correct symbol</strong>: The plugin looks for the non-<code>expect</code> declaration of <a href="api//tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-trace.html"><code>withTrace</code></a>:</p>
 <div class="language-kotlin highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kd">private</span><span class="w"> </span><span class="kd">fun</span><span class="w"> </span><span class="nf">Collection</span><span class="o">&lt;</span><span class="n">IrSimpleFunctionSymbol</span><span class="o">&gt;</span><span class="p">.</span><span class="na">findMultiplatformSymbol</span><span class="p">():</span><span class="w"> </span><span class="n">IrSimpleFunctionSymbol</span><span class="w"> </span><span class="p">{</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">firstOrNull</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="o">!</span><span class="nb">it</span><span class="p">.</span><span class="na">owner</span><span class="p">.</span><span class="na">isExpect</span><span class="w"> </span><span class="p">}</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">        </span><span class="o">?:</span><span class="w"> </span><span class="n">error</span><span class="p">(</span><span class="s">&quot;Expect/actual declaration for `withTrace` not found&quot;</span><span class="p">)</span>

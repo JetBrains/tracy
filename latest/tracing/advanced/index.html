@@ -307,7 +307,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="https://api-tracy.labs.jb.gg/" class="md-tabs__link">
+      <a href="../../api/" class="md-tabs__link">
         
   
   
@@ -1075,7 +1075,7 @@
   
   
     <li class="md-nav__item">
-      <a href="https://api-tracy.labs.jb.gg/" class="md-nav__link">
+      <a href="../../api/" class="md-nav__link">
         
   
   
@@ -1229,7 +1229,7 @@
 <p>Context propagation works automatically with <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-context.html"><code>withContext</code></a>, <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/launch.html"><code>launch</code></a>, and <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html"><code>async</code></a>. But some models like <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html"><code>runBlocking</code></a> or raw threads create boundaries that require manual propagation.</p>
 <p>See the full examples: <a href="https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/ContextPropagationExample.kt">ContextPropagationExample.kt</a></p>
 <h4 id="runblocking"><a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html"><code>runBlocking</code></a></h4>
-<p>Use <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core/current-span-context-element.html"><code>currentSpanContextElement</code></a> to ensure child spans are linked to their parent when using <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html"><code>runBlocking</code></a> inside a suspend function.</p>
+<p>Use <a href="api//tracing/core/ai.jetbrains.tracy.core/current-span-context-element.html"><code>currentSpanContextElement</code></a> to ensure child spans are linked to their parent when using <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html"><code>runBlocking</code></a> inside a suspend function.</p>
 <!--- INCLUDE
 import ai.jetbrains.tracy.core.fluent.Trace
 import ai.jetbrains.tracy.core.currentSpanContextElement
@@ -1270,7 +1270,7 @@ import kotlin.concurrent.thread
 <h2 id="custom-tags">Custom Tags</h2>
 <p>You can enrich your traces with business-specific metadata using custom tags. These tags are especially useful for filtering and grouping traces in tools like Langfuse.</p>
 <h3 id="adding-langfuse-tags">Adding Langfuse Tags</h3>
-<p>Use <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.exporters.langfuse/add-langfuse-tags-to-current-trace.html"><code>addLangfuseTagsToCurrentTrace</code></a> to attach tags dynamically within any traced function.</p>
+<p>Use <a href="api//tracing/core/ai.jetbrains.tracy.core.exporters.langfuse/add-langfuse-tags-to-current-trace.html"><code>addLangfuseTagsToCurrentTrace</code></a> to attach tags dynamically within any traced function.</p>
 <!--- INCLUDE
 import ai.jetbrains.tracy.core.exporters.langfuse.addLangfuseTagsToCurrentTrace
 

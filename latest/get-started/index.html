@@ -307,7 +307,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="https://api-tracy.labs.jb.gg/" class="md-tabs__link">
+      <a href="../api/" class="md-tabs__link">
         
   
   
@@ -1111,7 +1111,7 @@
   
   
     <li class="md-nav__item">
-      <a href="https://api-tracy.labs.jb.gg/" class="md-nav__link">
+      <a href="../api/" class="md-nav__link">
         
   
   
@@ -1481,13 +1481,13 @@ import ai.jetbrains.tracy.core.fluent.Trace
 
 <p>This example uses:</p>
 <ul>
-<li><a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html"><code>@Trace</code></a>: <a href="../tracing/annotations/">Annotation</a> that enables
+<li><a href="../api/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/"><code>@Trace</code></a>: <a href="../tracing/annotations/">Annotation</a> that enables
   automatic tracing for the function</li>
-<li><a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.tracing/configure-open-telemetry-sdk.html"><code>configureOpenTelemetrySdk</code></a>: Creates
+<li><a href="api//tracing/core/ai.jetbrains.tracy.core.tracing/configure-open-telemetry-sdk.html"><code>configureOpenTelemetrySdk</code></a>: Creates
   an <a href="../otel-config/sdk-configuration/">OpenTelemetry SDK</a> with the specified exporter</li>
-<li><a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.exporters/-console-exporter-config/index.html"><code>ConsoleExporterConfig</code></a>: Configuration
+<li><a href="../api/tracing/core/ai.jetbrains.tracy.core.exporters/-console-exporter-config/"><code>ConsoleExporterConfig</code></a>: Configuration
   for <a href="../otel-config/exporters/">exporting</a> traces to the console</li>
-<li><a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/index.html"><code>TracingManager</code></a>: <a href="../tracing/configuration/">Central point</a>
+<li><a href="api//tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/index.html"><code>TracingManager</code></a>: <a href="../tracing/configuration/">Central point</a>
   for configuring and controlling tracing</li>
 </ul>
 <p>Run your application, and you'll see trace output in the console.</p>
@@ -1501,7 +1501,7 @@ GitHub.</p>
 <p>Tracy provides three ways to add tracing to your application:</p>
 <h3 id="llm-client-auto-tracing">LLM Client Auto-Tracing</h3>
 <p>Automatically capture spans for all calls made via supported LLM clients (OpenAI, Anthropic, Gemini, Ktor, OkHttp).
-Simply wrap your client with <a href="https://api-tracy.labs.jb.gg/tracing/openai/ai.jetbrains.tracy.openai.clients/instrument.html"><code>instrument()</code></a>:</p>
+Simply wrap your client with <a href="../api/tracing/openai/ai.jetbrains.tracy.openai.clients/instrument.html"><code>instrument()</code></a>:</p>
 <div class="language-kotlin highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1">// create an OpenAI client instance and instrument it</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="kd">val</span><span class="w"> </span><span class="nv">instrumentedClient</span><span class="p">:</span><span class="w"> </span><span class="n">OpenAIClient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OpenAIOkHttpClient</span><span class="p">.</span><span class="na">builder</span><span class="p">()</span>
 </span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="p">.</span><span class="na">apiKey</span><span class="p">(</span><span class="n">apiKey</span><span class="p">)</span>
@@ -1510,7 +1510,7 @@ Simply wrap your client with <a href="https://api-tracy.labs.jb.gg/tracing/opena
 </span></code></pre></div>
 <p><a href="../tracing/autotracing/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Learn more about LLM auto-tracing</a></p>
 <h3 id="annotation-based-tracing">Annotation-Based Tracing</h3>
-<p>Use the <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html"><code>@Trace</code></a> annotation to trace
+<p>Use the <a href="../api/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/"><code>@Trace</code></a> annotation to trace
 any Kotlin function, capturing its inputs, outputs, and duration:</p>
 <div class="language-kotlin highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nd">@Trace</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;ProcessOrder&quot;</span><span class="p">)</span>
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="kd">fun</span><span class="w"> </span><span class="nf">processOrder</span><span class="p">(</span><span class="n">orderId</span><span class="p">:</span><span class="w"> </span><span class="kt">String</span><span class="p">):</span><span class="w"> </span><span class="n">OrderResult</span><span class="w"> </span><span class="p">{</span>
@@ -1519,7 +1519,7 @@ any Kotlin function, capturing its inputs, outputs, and duration:</p>
 </span></code></pre></div>
 <p><a href="../tracing/annotations/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Learn more about annotation-based tracing</a></p>
 <h3 id="manual-tracing">Manual Tracing</h3>
-<p>For fine-grained control or Java interoperability, use the <a href="https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-span.html"><code>withSpan</code></a> function:</p>
+<p>For fine-grained control or Java interoperability, use the <a href="../api/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-span.html"><code>withSpan</code></a> function:</p>
 <div class="language-kotlin highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">withSpan</span><span class="p">(</span><span class="s">&quot;custom-operation&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">span</span><span class="w"> </span><span class="o">-&gt;</span>
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">    </span><span class="n">span</span><span class="p">.</span><span class="na">setAttribute</span><span class="p">(</span><span class="s">&quot;key&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;value&quot;</span><span class="p">)</span>
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="c1">// Your logic here</span>
