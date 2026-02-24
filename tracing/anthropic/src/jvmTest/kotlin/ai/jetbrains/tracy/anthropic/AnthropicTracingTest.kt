@@ -89,8 +89,13 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         val finishReasons = trace.attributes[AttributeKey.stringArrayKey("gen_ai.response.finish_reasons")]
         Assumptions.assumeTrue { finishReasons?.contains("tool_use") == true }
 
-        val toolName = trace.attributes[AttributeKey.stringKey("gen_ai.completion.1.tool.name")]
-        val toolArgs = trace.attributes[AttributeKey.stringKey("gen_ai.completion.1.tool.arguments")]
+        // when completion is null, then the tool call index will be 0,
+        // otherwise 1 (i.e., coming after the normal assistant response)
+        val toolCallIndex = if (completion == null) 0 else 1
+
+        val toolName = trace.attributes[AttributeKey.stringKey("gen_ai.completion.$toolCallIndex.tool.name")]
+        val toolArgs = trace.attributes[AttributeKey.stringKey("gen_ai.completion.$toolCallIndex.tool.arguments")]
+
         if (!policy.captureOutputs) {
             assertEquals("REDACTED", toolName, "Tool name content should be redacted")
             assertEquals("REDACTED", toolArgs, "Tool arguments content should be redacted")
