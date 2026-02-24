@@ -93,6 +93,36 @@ abstract class BaseAITracingTest : BaseOpenTelemetryTracingTest() {
     }
 
     /**
+     * Removes enclosing double quotes from the string if present and replaces escaped newline characters ("\n") with actual newlines.
+     *
+     * This method checks if the string starts and ends with double quotes. If true, it removes
+     * the leading and trailing double quotes. It then replaces all occurrences of the escaped newline
+     * sequence "\n" with actual newline characters.
+     *
+     * **Example**:
+     * ```
+     * The string:
+     * `"Hello World!\n\n123"`
+     *
+     * Will turn into:
+     * `Hello World!
+     *
+     * 123`
+     *
+     * ```
+     *
+     * @return A modified string with enclosing quotes removed and escaped newlines replaced with actual newlines.
+     */
+    protected fun String.unquoteAndUnescapeNewlines(): String {
+        val result = if (this.startsWith("\"") && this.endsWith("\"")) {
+            this.substring(1, this.length - 1)
+        } else {
+            this
+        }
+        return result.replace("\\n", "\n")
+    }
+
+    /**
      * Expects `image.jpg` image under `resources` directory of the test module.
      */
     protected fun provideImagesForUpload(): Stream<Arguments> {

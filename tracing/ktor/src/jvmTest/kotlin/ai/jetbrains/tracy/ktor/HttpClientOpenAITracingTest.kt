@@ -88,7 +88,7 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
         assertTrue(tracedModel.startsWith(model))
 
         assertEquals("user", trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")])
-        assertEquals(prompt, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]?.unquote())
+        assertEquals(prompt, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]?.unquoteAndUnescapeNewlines())
 
         val completionRole = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.role")]
         val completionContent = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
@@ -113,7 +113,7 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
         )
         assertEquals(
             responseJson["choices"]?.jsonArray[0]?.jsonObject["message"]?.jsonObject["content"]?.jsonPrimitive?.content,
-            completionContent.unquote()
+            completionContent.unquoteAndUnescapeNewlines()
         )
         assertEquals(
             responseJson["usage"]!!.jsonObject["prompt_tokens"]!!.jsonPrimitive.int,
@@ -745,11 +745,4 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
             ),
         )
     }
-}
-
-internal fun String.unquote(): String {
-    if (this.startsWith("\"") && this.endsWith("\"")) {
-        return this.substring(1, this.length - 1)
-    }
-    return this
 }
