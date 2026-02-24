@@ -19,7 +19,7 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import kotlinx.serialization.json.JsonObject
 
-fun io.ktor.http.ContentType.toContentType(): TracyContentType {
+internal fun io.ktor.http.ContentType.toContentType(): TracyContentType {
     val contentType = this
     return object : TracyContentType {
         override val type = contentType.contentType
