@@ -213,7 +213,7 @@ Add dependencies to the `pom.xml` file:
 
 ## Requirements
 
-Compatible with Kotlin from **2.0.0** and Java from **17+**.
+Compatible with Kotlin from **2.0.0** and Java from **17**.
 
 If you already have OpenTelemetry set up in your project, versions **1.2+** are supported.
 
