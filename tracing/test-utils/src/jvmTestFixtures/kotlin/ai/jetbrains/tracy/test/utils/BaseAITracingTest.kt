@@ -114,12 +114,7 @@ abstract class BaseAITracingTest : BaseOpenTelemetryTracingTest() {
      * @return A modified string with enclosing quotes removed and escaped newlines replaced with actual newlines.
      */
     protected fun String.unquoteAndUnescapeNewlines(): String {
-        val result = if (this.startsWith("\"") && this.endsWith("\"")) {
-            this.substring(1, this.length - 1)
-        } else {
-            this
-        }
-        return result.replace("\\n", "\n")
+        return this.removeSurrounding("\"").replace("\\n", "\n")
     }
 
     /**
