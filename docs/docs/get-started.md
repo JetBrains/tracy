@@ -4,14 +4,15 @@ This guide will help you set up Tracy in your Kotlin project and create your fir
 
 ## Requirements
 
-- **Kotlin**: 1.9.0 through 2.3.0
+- **Kotlin**: 2.0.0 through 2.3.0
 - **Java**: 17+
+- **OpenTelemetry** (if already set up in your project): 1.2+
 
 ### Supported LLM Client SDKs
 
 - OpenAI SDK `1.*–4.*`
 - Anthropic SDK `1.*–2.*`
-- Gemini SDK `1.8.*–1.24.*`
+- Gemini SDK `1.8.*–1.38.*`
 
 ## Installation
 

@@ -213,13 +213,15 @@ Add dependencies to the `pom.xml` file:
 
 ## Requirements
 
-Compatible with Kotlin **1.9.0 through 2.2.20** and Java **17+**.
+Compatible with Kotlin from **2.0.0** and Java from **17**.
+
+If you already have OpenTelemetry set up in your project, versions **1.2+** are supported.
 
 Supports integration with:
 
 - OpenAI SDK `1.*–4.*`
 - Anthropic SDK `1.*–2.*`
-- Gemini SDK `1.8.*–1.24.*` (earlier versions unsupported)
+- Gemini SDK `1.8.*–1.38.*` (earlier versions unsupported)
 
 ## Usage
 
