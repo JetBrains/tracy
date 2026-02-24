@@ -34,13 +34,14 @@ import kotlin.test.assertNotNull
 
 @Tag("anthropic")
 class AnthropicTracingTest : BaseAnthropicTracingTest() {
+    private val model = Model.CLAUDE_SONNET_4_5
+
     @ParameterizedTest
     @MethodSource("provideContentCapturePolicies")
     fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) {
         TracingManager.withCapturingPolicy(policy)
 
         val client = createAnthropicClient().apply { instrument(this) }
-        val model = Model.CLAUDE_3_5_HAIKU_LATEST
 
         val params = MessageCreateParams.builder()
             .addUserMessage("Use a provided `hi` tool to greet Alex. you MUST use the given tool!")
@@ -110,7 +111,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
             .addUserMessage("Say hi!")
             .maxTokens(1000L)
             .temperature(0.0)
-            .model(Model.CLAUDE_3_7_SONNET_LATEST)
+            .model(model)
             .build()
 
         client.messages().create(params)
@@ -124,7 +125,6 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         val client = createAnthropicClient().apply { instrument(this) }
 
         val toolName = "hi"
-        val model = Model.CLAUDE_3_5_HAIKU_LATEST
         val params = MessageCreateParams.builder()
             .addUserMessage("Call the `hi` tool with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool call.")
             .addTool(createTool(toolName))
@@ -171,7 +171,6 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         val toolName = "hi"
         val greetTool = createTool(toolName)
 
-        val model = Model.CLAUDE_3_5_HAIKU_LATEST
         val paramsBuilder = MessageCreateParams.builder()
             .addUserMessage("Call the `hi` tool with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool call.")
             .addTool(greetTool)
@@ -257,7 +256,6 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         val goodbyeToolName = "goodbye"
         val goodbyeTool = createTool(goodbyeToolName)
 
-        val model = Model.CLAUDE_3_5_HAIKU_LATEST
         val paramsBuilder = MessageCreateParams.builder()
             .addUserMessage("Call the `hi` tool with the argument `name` set to 'USER' and `goodbye` with the argument `name` set to 'USER'. Do not output any conversational text; only execute the tool calls.")
             .addTool(greetTool)
@@ -332,7 +330,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
     fun `test Anthropic auto tracing`() = runTest {
         val client = createAnthropicClient().apply { instrument(this) }
 
-        val model = Model.CLAUDE_3_5_HAIKU_LATEST
+        val model = Model.CLAUDE_HAIKU_4_5
 
         val params = MessageCreateParams.builder()
             .maxTokens(1000L)
@@ -352,7 +350,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
             trace.attributes[AttributeKey.stringKey("gen_ai.api_base")]
         )
 
-        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.commonPrefixWith(model.asString()) == "claude-3-5-haiku-")
+        assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.commonPrefixWith(model.asString()) == "claude-haiku-4-5")
 
         val type = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.type")]
         assertNotNull(type)
@@ -454,7 +452,6 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
     fun `test Anthropic additional attributes`() = runTest {
         val client = createAnthropicClient().apply { instrument(this) }
 
-        val model = Model.CLAUDE_3_5_HAIKU_LATEST
         val paramsBuilder = MessageCreateParams.builder()
             .addUserMessage("Say hi to the user.")
             .maxTokens(1000L)

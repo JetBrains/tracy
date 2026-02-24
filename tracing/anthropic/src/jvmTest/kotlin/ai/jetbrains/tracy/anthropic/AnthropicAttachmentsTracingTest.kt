@@ -26,7 +26,7 @@ import kotlin.time.Duration.Companion.minutes
 
 @Tag("anthropic")
 class AnthropicAttachmentsTracingTest : BaseAnthropicTracingTest() {
-    private val model = Model.CLAUDE_3_7_SONNET_20250219
+    private val model = Model.CLAUDE_SONNET_4_5
 
     @ParameterizedTest
     @MethodSource("provideImagesForUpload")
