@@ -15,7 +15,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class ParsingTest {
+class DataUrlTest {
     @Test
     fun `parseDataUrl should handle various valid data URLs`() {
         val testCases = listOf(
@@ -394,6 +394,73 @@ class ParsingTest {
             val reconstructed = Resource.InlineDataUrl(parsed.asString())
             val reparsed = reconstructed.parseInlineDataUrl()
             assertEquals(parsed, reparsed, "Round-trip failed for: $url")
+        }
+    }
+
+    @Test
+    fun `parseDataUrl should handle RFC 2045 case sensitivity rules`() {
+        val testCases = listOf(
+            // Test 1: Case-insensitive attribute names
+            // Per RFC 2045: "parameter names (keys) as defined are case-insensitive"
+            TestCase(
+                input = Resource.InlineDataUrl("data:text/plain;Charset=UTF-8,Hello"),
+                expected = DataUrl(
+                    "text/plain",
+                    mapOf("charset" to "UTF-8").toParameters(),
+                    false,
+                    "Hello"
+                )
+            ),
+            TestCase(
+                input = Resource.InlineDataUrl("data:text/plain;CHARSET=UTF-8,Hello"),
+                expected = DataUrl(
+                    "text/plain",
+                    mapOf("charset" to "UTF-8").toParameters(),
+                    false,
+                    "Hello"
+                )
+            ),
+
+            // Test 2: Case-sensitive attribute values
+            // Per RFC 2045: "parameter values are normally case-sensitive"
+            TestCase(
+                input = Resource.InlineDataUrl("data:text/plain;charset=UTF-8,Hello"),
+                expected = DataUrl(
+                    "text/plain",
+                    mapOf("charset" to "UTF-8").toParameters(),
+                    false,
+                    "Hello"
+                )
+            ),
+            TestCase(
+                input = Resource.InlineDataUrl("data:text/plain;foo=MixedCaseValue,Hello"),
+                expected = DataUrl(
+                    "text/plain",
+                    mapOf("charset" to "US-ASCII", "foo" to "MixedCaseValue").toParameters(),
+                    false,
+                    "Hello"
+                )
+            ),
+
+            // Test 3: Duplicate attribute names with different cases merge into same key
+            // Per RFC 2045: Different cases of same parameter name should be treated as same parameter
+            TestCase(
+                input = Resource.InlineDataUrl("data:text/plain;foo=value1;FOO=value2;Foo=value3,Hello"),
+                expected = DataUrl(
+                    "text/plain",
+                    mapOf(
+                        "charset" to listOf("US-ASCII"),
+                        "foo" to listOf("value1", "value2", "value3")
+                    ),
+                    false,
+                    "Hello"
+                )
+            ),
+        )
+
+        testCases.forEach { testCase ->
+            val result = testCase.input.parseInlineDataUrl()
+            assertEquals(testCase.expected, result, "Failed for input: ${testCase.input}")
         }
     }
 

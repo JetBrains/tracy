@@ -143,27 +143,34 @@ data class DataUrl(
             }
 
             val parameters = buildMap<String, MutableList<String>> {
-                // If the media type is text/* (or defaulted to text/*),
-                // the charset defaults to `charset=US-ASCII`.
-                // See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/MIME_types#structure_of_a_mime_type
-                if (mediaType.startsWith("text/") && !attributesRaw.contains("charset=")) {
-                    put("charset", mutableListOf(StandardCharsets.US_ASCII.name()))
-                }
-
+                /**
+                 * See: https://www.rfc-editor.org/rfc/rfc2045
+                 *
+                 * Excerpt: "All media type values, subtype values, and parameter names as defined are case-insensitive.
+                 *           However, parameter values are case-sensitive unless otherwise specified
+                 *           for the specific parameter."
+                 */
                 // insert other attributes
                 if (attributesRaw.isNotEmpty()) {
                     // parse attributes (e.g., `;charset=UTF-8;foo=bar`)
                     val matches = MEDIA_TYPE_ATTRIBUTE_REGEX.findAll(attributesRaw)
                     for (match in matches) {
-                        val key = match.groupValues[1].trim()
+                        val keyLowered = match.groupValues[1].trim().lowercase()
                         val value = match.groupValues[2].trim()
 
-                        if (!this.contains(key)) {
-                            put(key, mutableListOf(value))
+                        if (!this.contains(keyLowered)) {
+                            put(keyLowered, mutableListOf(value))
                         } else {
-                            this[key]?.add(value)
+                            this[keyLowered]?.add(value)
                         }
                     }
+                }
+
+                // If the charset is encountered in params, and the media type is `text/*` (or defaulted to `text/*`),
+                // then the charset defaults to `charset=US-ASCII`:
+                // See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/MIME_types#structure_of_a_mime_type
+                if (!this.contains("charset") && mediaType.startsWith("text/")) {
+                    put("charset", mutableListOf(StandardCharsets.US_ASCII.name()))
                 }
             }
 
