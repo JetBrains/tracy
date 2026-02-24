@@ -41,10 +41,11 @@ interface TracyHttpResponse {
 @InternalTracyApi
 sealed class TracyHttpResponseBody {
     data class Json(val json: JsonElement) : TracyHttpResponseBody()
+}
 
-    fun asJson(): JsonElement? {
-        return when (this) {
-            is Json -> this.json
-        }
+@InternalTracyApi
+fun TracyHttpResponseBody.asJson(): JsonElement? {
+    return when (this) {
+        is TracyHttpResponseBody.Json -> this.json
     }
 }
