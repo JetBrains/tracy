@@ -126,30 +126,6 @@ data class FormPart(
 
         return "FormPart(name=$name, filename=$filename, contentType=${contentType?.asString()}, headers=$headers, content=`$contentStr`)"
     }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as FormPart
-
-        if (name != other.name) return false
-        if (filename != other.filename) return false
-        if (contentType != other.contentType) return false
-        if (headers != other.headers) return false
-        if (!content.contentEquals(other.content)) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = name?.hashCode() ?: 0
-        result = 31 * result + (filename?.hashCode() ?: 0)
-        result = 31 * result + (contentType?.hashCode() ?: 0)
-        result = 31 * result + headers.hashCode()
-        result = 31 * result + content.contentHashCode()
-        return result
-    }
 }
 
 /**
