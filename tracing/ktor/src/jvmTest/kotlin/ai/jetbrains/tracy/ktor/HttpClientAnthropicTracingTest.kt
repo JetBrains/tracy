@@ -43,7 +43,7 @@ class HttpClientAnthropicAITracingTest : BaseAITracingTest() {
             ),
             adapter,
         )
-        val model = Model.CLAUDE_3_7_SONNET_LATEST
+        val model = Model.CLAUDE_SONNET_4_5
         val promptMessage = "Say: 'Hello, world!'"
 
         client.post("$llmProviderUrl/v1/messages") {
@@ -79,7 +79,7 @@ class HttpClientAnthropicAITracingTest : BaseAITracingTest() {
     fun `test Ktor HttpClient auto tracing for Anthropic`() = runTest {
         val client: HttpClient = instrument(HttpClient(), AnthropicLLMTracingAdapter())
 
-        val model = Model.CLAUDE_3_7_SONNET_20250219
+        val model = Model.CLAUDE_SONNET_4_5
         val promptMessage = "Hello, world!"
 
         val response = client.post("$llmProviderUrl/v1/messages") {
