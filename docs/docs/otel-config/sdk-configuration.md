@@ -79,3 +79,24 @@ val sdk = configureOpenTelemetrySdk(
 )
 ```
 <!--- KNIT example-otel-exporters-02.kt -->
+
+## Using an Existing OpenTelemetry SDK
+
+If your project already has an `OpenTelemetrySdk` configured, you can pass it directly to Tracy via
+[`TracingManager.setSdk()`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core/-tracing-manager/index.html)
+without calling `configureOpenTelemetrySdk()`:
+
+```kotlin
+val sdk: OpenTelemetrySdk = initializeOpenTelemetry() // your existing setup
+TracingManager.setSdk(sdk)
+```
+
+Tracy respects the active OTel context, so any spans you create using your own tracer will automatically become
+parents of Tracy spans as long as the context is active when Tracy-instrumented code runs.
+
+!!! note
+    When passing a custom SDK, you are responsible for its lifecycle — flushing, shutdown, and span processor
+    configuration.
+
+See the [OpenTelemetry Integration Example](https://github.com/JetBrains/tracy/tree/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/OpentelemetryIntegrationExample.kt)
+for a complete, runnable demonstration.
