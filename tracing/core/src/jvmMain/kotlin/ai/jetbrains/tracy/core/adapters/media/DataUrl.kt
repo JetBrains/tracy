@@ -166,7 +166,7 @@ data class DataUrl(
                     }
                 }
 
-                // If the charset is encountered in params, and the media type is `text/*` (or defaulted to `text/*`),
+                // If the charset is NOT present in params, and the media type is `text/*` (or defaulted to `text/*`),
                 // then the charset defaults to `charset=US-ASCII`:
                 // See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/MIME_types#structure_of_a_mime_type
                 if (!this.contains("charset") && mediaType.startsWith("text/")) {
