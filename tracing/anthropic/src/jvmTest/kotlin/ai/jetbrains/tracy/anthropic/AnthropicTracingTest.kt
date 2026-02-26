@@ -304,11 +304,15 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
 
         flushTracesAndAssumeToolCalled(firstAssistant, greetToolName, Message::containsToolCall)
 
+        // Model may return both tool calls in the first message or one at a time - handle both cases
         val secondAssistant = client.messages().create(paramsBuilder.build())
         paramsBuilder.addMessage(secondAssistant)
         addToolResults(secondAssistant)
 
-        flushTracesAndAssumeToolCalled(secondAssistant, goodbyeToolName, Message::containsToolCall)
+        val bothToolsInFirstMessage = firstAssistant.containsToolCall(goodbyeToolName)
+        if (!bothToolsInFirstMessage) {
+            flushTracesAndAssumeToolCalled(secondAssistant, goodbyeToolName, Message::containsToolCall)
+        }
 
         client.messages().create(paramsBuilder.build())
 
