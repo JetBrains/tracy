@@ -18,7 +18,7 @@ The Kotlin ecosystem includes several well-known compiler [plugins](https://gith
 - **`kotlin-serialization`**: Generates efficient serializers and deserializers for data classes
 - **`power-assert`**: Provides detailed assertion failure messages
 
-Tracy's compiler plugin automatically wraps functions annotated with [`@Trace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation/-trace/index.html) with tracing logic — no boilerplate required.
+Tracy's compiler plugin automatically wraps functions annotated with [`@Trace`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.instrumentation/-trace/index.html) with tracing logic — no boilerplate required.
 
 ## Compiler Plugins vs Annotation Processors
 
@@ -57,7 +57,7 @@ flowchart TB
 
 ### Gradle Plugin
 
-The Gradle plugin integrates with your build system and configures the compiler plugin. Tracy's Gradle plugin (`ai.jetbrains.tracy`) handles version compatibility automatically — since Kotlin compiler plugins must match the Kotlin compiler version, Tracy provides multiple plugin builds (for Kotlin 1.9.x, 2.0.x, 2.1.x, 2.2.x). The Gradle plugin detects your Kotlin version and selects the appropriate compiler plugin artifact.
+The Gradle plugin integrates with your build system and configures the compiler plugin. Tracy's Gradle plugin (`org.jetbrains.ai.tracy`) handles version compatibility automatically — since Kotlin compiler plugins must match the Kotlin compiler version, Tracy provides multiple plugin builds (for Kotlin 1.9.x, 2.0.x, 2.1.x, 2.2.x). The Gradle plugin detects your Kotlin version and selects the appropriate compiler plugin artifact.
 
 ### Component Registrar
 

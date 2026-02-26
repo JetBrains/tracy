@@ -8,7 +8,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
 plugins {
     kotlin("multiplatform")
     alias(libs.plugins.kotlin.serialization)
-    id("ai.jetbrains.tracy.published-artifact")
+    id("org.jetbrains.ai.tracy.published-artifact")
     id("ai.kotlin.dokka")
 }
 
@@ -53,7 +53,7 @@ kotlin {
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     compilerOptions {
-        freeCompilerArgs.add("-Xopt-in=ai.jetbrains.tracy.core.InternalTracyApi")
+        freeCompilerArgs.add("-Xopt-in=org.jetbrains.ai.tracy.core.InternalTracyApi")
     }
 }
 

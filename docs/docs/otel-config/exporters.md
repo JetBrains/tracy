@@ -16,10 +16,10 @@ and prompt management.
 ### Example
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.exporters.ExporterCommonSettings
-import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig
-import ai.jetbrains.tracy.core.TracingManager
-import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
+import org.jetbrains.ai.tracy.core.exporters.ExporterCommonSettings
+import org.jetbrains.ai.tracy.core.exporters.langfuse.LangfuseExporterConfig
+import org.jetbrains.ai.tracy.core.TracingManager
+import org.jetbrains.ai.tracy.core.configureOpenTelemetrySdk
 
 fun main() {
 -->
@@ -51,7 +51,7 @@ TracingManager.setSdk(sdk)
 <!--- KNIT example-otel-exporters-04.kt -->
 
 See the full
-example: [LangfuseExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/backends/LangfuseExample.kt)
+example: [LangfuseExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/org/jetbrains/ai/tracy/examples/backends/LangfuseExample.kt)
 
 ---
 
@@ -71,10 +71,10 @@ example: [LangfuseExample.kt](https://github.com/JetBrains/tracy/blob/main/examp
 ### Example
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.exporters.ExporterCommonSettings
-import ai.jetbrains.tracy.core.exporters.otlp.WeaveExporterConfig
-import ai.jetbrains.tracy.core.TracingManager
-import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
+import org.jetbrains.ai.tracy.core.exporters.ExporterCommonSettings
+import org.jetbrains.ai.tracy.core.exporters.otlp.WeaveExporterConfig
+import org.jetbrains.ai.tracy.core.TracingManager
+import org.jetbrains.ai.tracy.core.configureOpenTelemetrySdk
 
 fun main() {
 -->
@@ -107,7 +107,7 @@ TracingManager.setSdk(sdk)
 <!--- KNIT example-otel-exporters-05.kt -->
 
 See the full
-example: [WeaveExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/backends/WeaveExample.kt)
+example: [WeaveExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/org/jetbrains/ai/tracy/examples/backends/WeaveExample.kt)
 
 ---
 
@@ -126,10 +126,10 @@ The exporter automatically appends `/v1/traces` to the provided URL.
 ### Example (Jaeger)
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.exporters.ExporterCommonSettings
-import ai.jetbrains.tracy.core.exporters.otlp.OtlpHttpExporterConfig
-import ai.jetbrains.tracy.core.TracingManager
-import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
+import org.jetbrains.ai.tracy.core.exporters.ExporterCommonSettings
+import org.jetbrains.ai.tracy.core.exporters.otlp.OtlpHttpExporterConfig
+import org.jetbrains.ai.tracy.core.TracingManager
+import org.jetbrains.ai.tracy.core.configureOpenTelemetrySdk
 
 fun main() {
 -->
@@ -155,7 +155,7 @@ TracingManager.setSdk(sdk)
 <!--- KNIT example-otel-exporters-06.kt -->
 
 See the full
-example: [JaegerExporterExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/backends/JaegerExporterExample.kt)
+example: [JaegerExporterExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/org/jetbrains/ai/tracy/examples/backends/JaegerExporterExample.kt)
 
 ---
 
@@ -170,7 +170,7 @@ Export traces to the console for local development and debugging.
 
 ### Output Format
 
-The [`OutputFormat`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.exporters/-output-format/index.html) enum
+The [`OutputFormat`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.exporters/-output-format/index.html) enum
 controls the format for Console and File exporters:
 
 | Value                     | Description                                |
@@ -183,10 +183,10 @@ Use JSON if you will analyze your traces programmatically; otherwise, use plain 
 ### Example
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
-import ai.jetbrains.tracy.core.exporters.OutputFormat
-import ai.jetbrains.tracy.core.TracingManager
-import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
+import org.jetbrains.ai.tracy.core.exporters.ConsoleExporterConfig
+import org.jetbrains.ai.tracy.core.exporters.OutputFormat
+import org.jetbrains.ai.tracy.core.TracingManager
+import org.jetbrains.ai.tracy.core.configureOpenTelemetrySdk
 
 fun main() {
 -->
@@ -224,10 +224,10 @@ Export traces to a file for offline analysis or log aggregation.
 ### Example
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.exporters.FileExporterConfig
-import ai.jetbrains.tracy.core.exporters.OutputFormat
-import ai.jetbrains.tracy.core.TracingManager
-import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
+import org.jetbrains.ai.tracy.core.exporters.FileExporterConfig
+import org.jetbrains.ai.tracy.core.exporters.OutputFormat
+import org.jetbrains.ai.tracy.core.TracingManager
+import org.jetbrains.ai.tracy.core.configureOpenTelemetrySdk
 
 fun main() {
 -->
@@ -259,4 +259,4 @@ TracingManager.setSdk(sdk)
 <!--- KNIT example-otel-exporters-08.kt -->
 
 See the full
-example: [FileTracingExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/FileTracingExample.kt)
+example: [FileTracingExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/org/jetbrains/ai/tracy/examples/FileTracingExample.kt)

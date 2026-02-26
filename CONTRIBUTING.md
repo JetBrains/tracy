@@ -105,7 +105,7 @@ To run a specific test class:
 For example:
 
 ```bash
-./gradlew :tracing:core:jvmTest --tests "ai.jetbrains.tracy.core.instrumentation.AnnotationTracingTest"
+./gradlew :tracing:core:jvmTest --tests "org.jetbrains.ai.tracy.core.instrumentation.AnnotationTracingTest"
 ```
 
 ### Skipping tests for specific LLM providers

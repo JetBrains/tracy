@@ -4,7 +4,7 @@ Tracy offers flexible configuration options to control how traces are collected 
 
 ## TracingManager
 
-The [`TracingManager`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core/-tracing-manager/index.html) is the central configuration point for the library.
+The [`TracingManager`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core/-tracing-manager/index.html) is the central configuration point for the library.
 
 | Method/Property | Description |
 |-----------------|-------------|
@@ -65,10 +65,10 @@ TracingManager.traceSensitiveContent()
 Or configure the policy more granularly:
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.TracingManager
-import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
-import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
-import ai.jetbrains.tracy.core.policy.ContentCapturePolicy
+import org.jetbrains.ai.tracy.core.TracingManager
+import org.jetbrains.ai.tracy.core.configureOpenTelemetrySdk
+import org.jetbrains.ai.tracy.core.exporters.ConsoleExporterConfig
+import org.jetbrains.ai.tracy.core.policy.ContentCapturePolicy
 
 fun main() {
 -->
@@ -110,7 +110,7 @@ Tracy automatically flushes traces in two ways:
 
 ### Manual Flushing
 
-For cases where you need manual control (e.g., reading trace files before exit, or when `flushOnShutdown` is disabled), you can use [`flushTraces()`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/flush-traces.html) or [`shutdownTracing()`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.tracing/-tracing-manager/shutdown-tracing.html):
+For cases where you need manual control (e.g., reading trace files before exit, or when `flushOnShutdown` is disabled), you can use [`flushTraces()`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.tracing/-tracing-manager/flush-traces.html) or [`shutdownTracing()`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.tracing/-tracing-manager/shutdown-tracing.html):
 
 ```kotlin
 // Flush pending spans (waits up to 5 seconds by default)

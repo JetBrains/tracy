@@ -34,7 +34,7 @@ initscript {
 }
 
 allprojects {
-    plugins.withId("ai.jetbrains.tracy.published-artifact") {
+    plugins.withId("org.jetbrains.ai.tracy.published-artifact") {
         val isUnderTeamCity = System.getenv("TEAMCITY_VERSION") != null
         val isSigningRequired = System.getenv("IS_SIGNING_REQUIRED")?.toBoolean() ?: false
         plugins.apply("signing")

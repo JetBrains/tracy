@@ -1,0 +1,64 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
+package org.jetbrains.ai.tracy.core
+
+import org.jetbrains.ai.tracy.core.exporters.BaseExporterConfig
+import org.jetbrains.ai.tracy.core.exporters.ConsoleExporterConfig
+import org.jetbrains.ai.tracy.core.exporters.ExporterCommonSettings
+import org.jetbrains.ai.tracy.core.exporters.langfuse.LangfuseExporterConfig
+import org.jetbrains.ai.tracy.core.exporters.otlp.WeaveExporterConfig
+import io.opentelemetry.api.common.AttributeKey
+import io.opentelemetry.api.common.Attributes
+import io.opentelemetry.sdk.OpenTelemetrySdk
+import io.opentelemetry.sdk.resources.Resource
+import io.opentelemetry.sdk.trace.SdkTracerProvider
+import java.util.concurrent.TimeUnit
+
+/**
+ * Initializes the [OpenTelemetrySdk] using a provided [BaseExporterConfig].
+ *
+ * This method sets up a [SdkTracerProvider] with:
+ *  - Span processors for the given configuration.
+ *  - Span limits.
+ *  - A shutdown hook to flush and shut down traces gracefully if [ExporterCommonSettings.flushOnShutdown] is true.
+ *
+ * @param exporterConfig the exporter configuration defining how spans should be exported.
+ *  Examples include:
+ *  - [LangfuseExporterConfig] sends spans to a Langfuse OTLP endpoint.
+ *  - [WeaveExporterConfig] sends spans to a W&B Weave OTLP endpoint.
+ *  - [ConsoleExporterConfig] logs spans to the console only (for local debugging).
+ * @param additionalResource optional extra [Resource] attributes merged with the default
+ *  OpenTelemetry resource. Use this to set values such as "service.name"
+ *
+ * @return the initialized [OpenTelemetrySdk] instance.
+ */
+@JvmOverloads
+fun configureOpenTelemetrySdk(
+    exporterConfig: BaseExporterConfig,
+    additionalResource: Resource = Resource.create(
+        Attributes.of(AttributeKey.stringKey("service.name"), "unknown-service")
+    )
+): OpenTelemetrySdk {
+    val resource = Resource.getDefault().merge(additionalResource)
+
+    val tracerProvider = SdkTracerProvider.builder()
+        .setResource(resource)
+        .setSpanLimits(exporterConfig.createSpanLimits())
+        .apply {
+            exporterConfig.configureSpanProcessors(this)
+        }.build()
+
+    val openTelemetry = OpenTelemetrySdk.builder().setTracerProvider(tracerProvider).build()
+
+    if (exporterConfig.settings.flushOnShutdown) {
+        Runtime.getRuntime().addShutdownHook(Thread {
+            openTelemetry.sdkTracerProvider.forceFlush().join(5, TimeUnit.SECONDS)
+            openTelemetry.sdkTracerProvider.shutdown()
+        })
+    }
+
+    return openTelemetry
+}

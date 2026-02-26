@@ -15,7 +15,7 @@ repositories {
 gradlePlugin {
     plugins {
         create("commonPublishing") {
-            id = "ai.jetbrains.tracy.published-artifact"
+            id = "org.jetbrains.ai.tracy.published-artifact"
             implementationClass = "TracyPublishedArtifactPlugin"
         }
     }

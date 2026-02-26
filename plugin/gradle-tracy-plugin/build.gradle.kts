@@ -4,7 +4,7 @@
  */
 
 plugins {
-    id("ai.jetbrains.tracy.published-artifact")
+    id("org.jetbrains.ai.tracy.published-artifact")
     id("java-gradle-plugin")
     id("org.jetbrains.kotlin.jvm") version "2.1.0"
 }
@@ -18,7 +18,7 @@ gradlePlugin {
     plugins {
         create("TracyPublishingPlugin") {
             id = "org.jetbrains.ai.tracy"
-            implementationClass = "ai.jetbrains.tracy.gradle.plugin.TracyGradlePlugin"
+            implementationClass = "org.jetbrains.ai.tracy.gradle.plugin.TracyGradlePlugin"
         }
     }
 }
