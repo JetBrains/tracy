@@ -27,23 +27,22 @@ kotlin {
 
         jvmMain {
             dependencies {
-                implementation(libs.okhttp)
+                api(libs.opentelemetry.sdk)
+                implementation(libs.apache.mime4j.core)
+                implementation(libs.kotlin.logging)
+                implementation(libs.kotlin.reflect)
+                implementation(libs.kotlinx.coroutines)
                 implementation(libs.ktor.client)
                 implementation(libs.ktor.client.cio)
-                implementation(libs.ktor.serialization.json)
                 implementation(libs.ktor.client.negotiation)
-                implementation(libs.kotlin.reflect)
-                api(libs.opentelemetry.sdk)
-                implementation(libs.opentelemetry.kotlin)
-                implementation(libs.opentelemetry.exporter.otlp)
-                implementation(libs.opentelemetry.exporter.otlp.common)
+                implementation(libs.ktor.serialization.json)
+                implementation(libs.okhttp)
                 implementation(libs.opentelemetry.exporter.logging)
                 implementation(libs.opentelemetry.exporter.logging.otlp)
+                implementation(libs.opentelemetry.exporter.otlp)
+                implementation(libs.opentelemetry.exporter.otlp.common)
+                implementation(libs.opentelemetry.kotlin)
                 implementation(libs.opentelemetry.semconv.incubating)
-                implementation(libs.kotlinx.coroutines)
-                implementation(libs.kotlin.logging)
-                implementation(libs.apache.mime4j.core)
-                implementation(libs.apache.mime4j)
             }
         }
 

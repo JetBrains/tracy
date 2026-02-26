@@ -59,7 +59,6 @@ opentelemetry-sdk-testing = { module = "io.opentelemetry:opentelemetry-sdk-testi
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 dokka-gradle-plugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 apache-mime4j-core = { module = "org.apache.james:apache-mime4j-core", version.ref = "apache-mime4j" }
-apache-mime4j = { module = "org.apache.james:apache-mime4j", version.ref = "apache-mime4j" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
