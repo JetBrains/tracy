@@ -131,7 +131,7 @@ args = arrayOf(name, age, options)
 The actual [`@Trace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation/-trace/index.html) annotation is passed to the wrapper, including:
 
 - `name`: Custom span name (overrides the default method name)
-- `metadataCustomizer`: A [`SpanMetadataCustomizer`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation.handlers/-span-metadata-customizer/index.html) reference for custom serialization. Must be a Kotlin `object`.
+- `metadataCustomizer`: A [`SpanMetadataCustomizer`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation.customizers/-span-metadata-customizer/index.html) reference for custom serialization. Must be a Kotlin `object`.
 
 At runtime, the `metadataCustomizer` controls how span names are resolved, and how inputs/outputs are serialized into span attributes.
 

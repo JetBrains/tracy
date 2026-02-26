@@ -4,14 +4,14 @@ In addition to annotation-based tracing, you can manually create and manage span
 especially useful for:
 
 - **Java projects**: Where [
-  `@Trace`](https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.instrumentation/-trace/index.html) is
+  `@Trace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation/-trace/index.html) is
   not supported.
 - **Granular control**: When you want to trace specific blocks of code within a function.
 - **Custom metadata**: When you want to add specific attributes to a span dynamically.
 
-## Using [`withSpan`](https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.instrumentation.processor/with-span.html)
+## Using [`withSpan`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation.processor/with-span.html)
 
-The [`withSpan`](https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.instrumentation.processor/with-span.html)
+The [`withSpan`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation.processor/with-span.html)
 function is the easiest way to manually trace a block of code. It automatically handles span creation, activation, and
 closing (even in the case of exceptions).
 
@@ -56,7 +56,7 @@ example: [ManualTracingExample.kt](https://github.com/JetBrains/tracy/blob/main/
 
 ## Manual Span Management
 
-If [`withSpan`](https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.instrumentation.processor/with-span.html)
+If [`withSpan`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation.processor/with-span.html)
 doesn't fit your needs, you can use the OpenTelemetry API directly while still benefiting from Tracy's configuration.
 
 ```kotlin
