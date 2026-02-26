@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.openai)
+    implementation(libs.opentelemetry.exporter.logging)
     implementation(libs.opentelemetry.kotlin)
     implementation(project(":eval"))
     implementation(project(":tracing:anthropic"))
