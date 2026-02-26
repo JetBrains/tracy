@@ -7,6 +7,7 @@ package org.jetbrains.ai.tracy.core.http.parsers
 
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
+import org.jetbrains.ai.tracy.core.http.protocol.TracyContentType
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -423,20 +424,9 @@ class MultipartFormDataParserTest {
         Assertions.assertEquals(expectedHeaders, part.headers)
     }
 
-    /*private fun contentType(contentType: String) = assertDoesNotThrow {
-        val contentType = ContentType.parse(contentType)
-        object : org.jetbrains.ai.tracy.core.http.protocol.TracyContentType {
-            override val type = contentType.contentType
-            override val subtype = contentType.contentSubtype
-            override fun asString() = contentType.toString()
-            override fun parameter(name: String) = contentType.parameter(name)
-            override fun charset() = contentType.charset()
-        }
-    }*/
-
     private fun contentType(contentType: String) = assertDoesNotThrow {
         val mediaType = contentType.toMediaType()
-        object : ai.jetbrains.tracy.core.http.protocol.ContentType {
+        object : TracyContentType {
             override val type = mediaType.type
             override val subtype = mediaType.subtype
             override fun asString() = mediaType.toString()
