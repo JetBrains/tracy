@@ -44,17 +44,17 @@ Select the build system that matches your setup:
 1. Add dependencies to the `build.gradle.kts` file:
     ```kotlin
     plugins {
-        id("org.jetbrains.ai.tracy") version "0.0.27"
+        id("org.jetbrains.ai.tracy") version "0.0.28"
     }
     
     dependencies {
         // Core Module with Shared Functionalities
-        implementation("org.jetbrains.ai.tracy:tracy-core:0.0.27")
+        implementation("org.jetbrains.ai.tracy:tracy-core:0.0.28")
         // Client-specific Auto Tracing (select the one you need)
-        implementation("org.jetbrains.ai.tracy:tracy-anthropic:0.0.27")
-        implementation("org.jetbrains.ai.tracy:tracy-gemini:0.0.27")
-        implementation("org.jetbrains.ai.tracy:tracy-ktor:0.0.27")
-        implementation("org.jetbrains.ai.tracy:tracy-openai:0.0.27")
+        implementation("org.jetbrains.ai.tracy:tracy-anthropic:0.0.28")
+        implementation("org.jetbrains.ai.tracy:tracy-gemini:0.0.28")
+        implementation("org.jetbrains.ai.tracy:tracy-ktor:0.0.28")
+        implementation("org.jetbrains.ai.tracy:tracy-openai:0.0.28")
     }
     ```
 2. Make sure that you have `mavenCentral()` in
@@ -87,16 +87,16 @@ Select the build system that matches your setup:
 1. Add dependencies to the `build.gradle` file:
     ```groovy
     plugins {
-        id 'org.jetbrains.ai.tracy' version '0.0.27'
+        id 'org.jetbrains.ai.tracy' version '0.0.28'
     }
     
     dependencies {
-        implementation 'org.jetbrains.ai.tracy:tracy-core:0.0.27'
+        implementation 'org.jetbrains.ai.tracy:tracy-core:0.0.28'
         // Client-specific Auto Tracing
-        implementation 'org.jetbrains.ai.tracy:tracy-anthropic:0.0.27'
-        implementation 'org.jetbrains.ai.tracy:tracy-gemini:0.0.27'
-        implementation 'org.jetbrains.ai.tracy:tracy-ktor:0.0.27'
-        implementation 'org.jetbrains.ai.tracy:tracy-openai:0.0.27'
+        implementation 'org.jetbrains.ai.tracy:tracy-anthropic:0.0.28'
+        implementation 'org.jetbrains.ai.tracy:tracy-gemini:0.0.28'
+        implementation 'org.jetbrains.ai.tracy:tracy-ktor:0.0.28'
+        implementation 'org.jetbrains.ai.tracy:tracy-openai:0.0.28'
     }
     ```
 2. Make sure that you have `mavenCentral()` in
@@ -164,7 +164,7 @@ Add dependencies to the `pom.xml` file:
                         - 2.1.23 -> 2.1.20 -->
                         <artifactId>tracy-compiler-plugin-2.1.0-jvm</artifactId>
 
-                        <version>0.0.27</version>
+                        <version>0.0.28</version>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -175,7 +175,7 @@ Add dependencies to the `pom.xml` file:
         <dependency>
             <groupId>org.jetbrains.ai.tracy</groupId>
             <artifactId>tracy-core-jvm</artifactId>
-            <version>0.0.27</version>
+            <version>0.0.28</version>
         </dependency>
 
         <!-- Client-specific Auto Tracing -->
@@ -183,25 +183,25 @@ Add dependencies to the `pom.xml` file:
         <dependency>
             <groupId>org.jetbrains.ai.tracy</groupId>
             <artifactId>tracy-anthropic-jvm</artifactId>
-            <version>0.0.27</version>
+            <version>0.0.28</version>
         </dependency>
 
         <dependency>
             <groupId>org.jetbrains.ai.tracy</groupId>
             <artifactId>tracy-gemini-jvm</artifactId>
-            <version>0.0.27</version>
+            <version>0.0.28</version>
         </dependency>
 
         <dependency>
             <groupId>org.jetbrains.ai.tracy</groupId>
             <artifactId>tracy-ktor-jvm</artifactId>
-            <version>0.0.27</version>
+            <version>0.0.28</version>
         </dependency>
 
         <dependency>
             <groupId>org.jetbrains.ai.tracy</groupId>
             <artifactId>tracy-openai-jvm</artifactId>
-            <version>0.0.27</version>
+            <version>0.0.28</version>
         </dependency>
     </dependencies>
 
