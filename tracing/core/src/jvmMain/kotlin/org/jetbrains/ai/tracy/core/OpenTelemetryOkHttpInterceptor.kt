@@ -358,7 +358,7 @@ class OpenTelemetryOkHttpInterceptor(
         return object : TracyHttpResponse {
             override val contentType = mediaType?.toContentType()
             override val code = response.code
-            override val body = TracyHttpResponse.TracyHttpResponseBody.Json(body)
+            override val body = TracyHttpResponseBody.Json(body)
             override val url = response.request.url.toProtocolUrl()
 
             override fun isError() = response.isSuccessful.not()
