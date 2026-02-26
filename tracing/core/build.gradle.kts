@@ -44,7 +44,6 @@ kotlin {
                 implementation(libs.opentelemetry.exporter.logging)
                 implementation(libs.opentelemetry.exporter.logging.otlp)
                 implementation(libs.opentelemetry.semconv.incubating)
-                // implementation(libs.apache.mime4j)
             }
         }
 
