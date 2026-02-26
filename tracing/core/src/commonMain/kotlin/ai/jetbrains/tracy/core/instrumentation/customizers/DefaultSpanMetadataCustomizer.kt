@@ -3,7 +3,7 @@
  * Use of this source code is governed by the Apache 2.0 license.
  */
 
-package ai.jetbrains.tracy.core.fluent.customizers
+package ai.jetbrains.tracy.core.instrumentation.customizers
 
 /**
  * Default implementation of [SpanMetadataCustomizer].

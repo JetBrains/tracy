@@ -3,9 +3,9 @@
  * Use of this source code is governed by the Apache 2.0 license.
  */
 
-package ai.jetbrains.tracy.core.fluent.customizers
+package ai.jetbrains.tracy.core.instrumentation.customizers
 
-import ai.jetbrains.tracy.core.fluent.FluentSpanAttributes
+import ai.jetbrains.tracy.core.instrumentation.TracySpanAttributes
 
 /**
  * Customizes span names and attributes
@@ -53,7 +53,7 @@ interface SpanMetadataCustomizer {
      * @return a formatted representation of the method arguments to be attached
      *         to the span input attributes.
      *
-     * @see FluentSpanAttributes.SPAN_INPUTS
+     * @see TracySpanAttributes.SPAN_INPUTS
      * @see DefaultSpanMetadataCustomizer.formatInputAttributes
      */
     fun formatInputAttributes(method: PlatformMethod, args: Array<Any?>): String =
@@ -67,7 +67,7 @@ interface SpanMetadataCustomizer {
      * @return a formatted representation of the method result to be attached
      *         to the span output attribute.
      *
-     * @see FluentSpanAttributes.SPAN_OUTPUTS
+     * @see TracySpanAttributes.SPAN_OUTPUTS
      */
     fun formatOutputAttribute(result: Any?): String = result.toString()
 }

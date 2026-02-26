@@ -8,9 +8,9 @@ package ai.jetbrains.tracy.examples
 import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
-import ai.jetbrains.tracy.core.fluent.Trace
-import ai.jetbrains.tracy.core.fluent.customizers.PlatformMethod
-import ai.jetbrains.tracy.core.fluent.customizers.SpanMetadataCustomizer
+import ai.jetbrains.tracy.core.instrumentation.Trace
+import ai.jetbrains.tracy.core.instrumentation.customizers.PlatformMethod
+import ai.jetbrains.tracy.core.instrumentation.customizers.SpanMetadataCustomizer
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 

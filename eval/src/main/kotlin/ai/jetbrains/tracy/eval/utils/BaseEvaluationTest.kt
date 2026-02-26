@@ -6,9 +6,9 @@
 package ai.jetbrains.tracy.eval.utils
 
 import ai.jetbrains.tracy.core.TracingManager
-import ai.jetbrains.tracy.core.fluent.FluentSpanAttributes
-import ai.jetbrains.tracy.core.fluent.TracingSessionProvider.currentSessionId
-import ai.jetbrains.tracy.core.fluent.withSessionIdBlocking
+import ai.jetbrains.tracy.core.instrumentation.TracySpanAttributes
+import ai.jetbrains.tracy.core.instrumentation.TracingSessionProvider.currentSessionId
+import ai.jetbrains.tracy.core.instrumentation.withSessionIdBlocking
 import ai.jetbrains.tracy.eval.providers.langfuse.LangfuseEvaluationClient
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
@@ -139,7 +139,7 @@ abstract class BaseEvaluationTest<
         val tracedRunName = testCase.name.ifBlank { "Data Point ${dataPointIndex + 1}" }
         val dataPointSpan = tracer.spanBuilder(tracedRunName).setNoParent().let {
             it.setAttribute(
-                FluentSpanAttributes.SPAN_INPUTS.key, testCase.input.toString()
+                TracySpanAttributes.SPAN_INPUTS.key, testCase.input.toString()
             )
             it.startSpan()
         }

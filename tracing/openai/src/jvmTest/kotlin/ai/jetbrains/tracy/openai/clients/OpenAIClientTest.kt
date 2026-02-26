@@ -6,7 +6,7 @@
 package ai.jetbrains.tracy.openai.clients
 
 import ai.jetbrains.tracy.core.TracingManager
-import ai.jetbrains.tracy.core.fluent.processor.withSpan
+import ai.jetbrains.tracy.core.instrumentation.processor.withSpan
 import ai.jetbrains.tracy.test.utils.BaseOpenTelemetryTracingTest
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient

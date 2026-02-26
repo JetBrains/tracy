@@ -174,7 +174,7 @@ Here's a minimal example to verify your setup:
 import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
-import ai.jetbrains.tracy.core.fluent.Trace
+import ai.jetbrains.tracy.core.instrumentation.Trace
 -->
 
 ```kotlin
@@ -205,7 +205,7 @@ fun main() {
 This example uses:
 
 - [`@Trace`]({{ api_docs_url
-  }}/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html): [Annotation](tracing/annotations.md) that enables
+  }}/tracing/core/ai.jetbrains.tracy.core.instrumentation/-trace/index.html): [Annotation](tracing/annotations.md) that enables
   automatic tracing for the function
 - [`configureOpenTelemetrySdk`]({{ api_docs_url
   }}/tracing/core/ai.jetbrains.tracy.core.tracing/configure-open-telemetry-sdk.html): Creates
@@ -246,7 +246,7 @@ val instrumentedClient: OpenAIClient = OpenAIOkHttpClient.builder()
 
 ### Annotation-Based Tracing
 
-Use the [`@Trace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html) annotation to trace
+Use the [`@Trace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation/-trace/index.html) annotation to trace
 any Kotlin function, capturing its inputs, outputs, and duration:
 
 ```kotlin
@@ -261,7 +261,7 @@ fun processOrder(orderId: String): OrderResult {
 ### Manual Tracing
 
 For fine-grained control or Java interoperability, use the [`withSpan`]({{ api_docs_url
-}}/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-span.html) function:
+}}/tracing/core/ai.jetbrains.tracy.core.instrumentation.processor/with-span.html) function:
 
 ```kotlin
 withSpan("custom-operation") { span ->

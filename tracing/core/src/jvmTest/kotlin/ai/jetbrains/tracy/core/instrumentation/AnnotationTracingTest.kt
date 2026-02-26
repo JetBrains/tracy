@@ -3,7 +3,7 @@
  * Use of this source code is governed by the Apache 2.0 license.
  */
 
-package ai.jetbrains.tracy.core.fluent
+package ai.jetbrains.tracy.core.instrumentation
 
 import ai.jetbrains.tracy.core.exporters.langfuse.addLangfuseTagsToCurrentTrace
 import ai.jetbrains.tracy.test.utils.BaseOpenTelemetryTracingTest
@@ -104,7 +104,7 @@ fun <T> topLevelReturnGenericParam(paramName: T): T {
     return paramName
 }
 
-class FluentTracingTest : BaseOpenTelemetryTracingTest() {
+class AnnotationTracingTest : BaseOpenTelemetryTracingTest() {
     @Test
     fun `test trace creation`() = runTest {
         MyTestClass().testFunction(1)
@@ -129,11 +129,11 @@ class FluentTracingTest : BaseOpenTelemetryTracingTest() {
 
         assertEquals(
             "{\"name\":\"name\",\"block\":\"null\"}",
-            trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS)
+            trace.getAttribute(TracySpanAttributes.SPAN_INPUTS)
         )
         assertEquals(
             "(name, ${input.reversed()})",
-            trace.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS)
+            trace.getAttribute(TracySpanAttributes.SPAN_OUTPUTS)
         )
     }
 
@@ -151,11 +151,11 @@ class FluentTracingTest : BaseOpenTelemetryTracingTest() {
 
         assertEquals(
             "{\"block\":\"null\",\"name\":\"name\"}",
-            trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS),
+            trace.getAttribute(TracySpanAttributes.SPAN_INPUTS),
         )
         assertEquals(
             "(name, ${input.reversed()})",
-            trace.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS)
+            trace.getAttribute(TracySpanAttributes.SPAN_OUTPUTS)
         )
     }
 
@@ -171,11 +171,11 @@ class FluentTracingTest : BaseOpenTelemetryTracingTest() {
         val trace = traces.firstOrNull()
         assertNotNull(trace)
 
-        val inputs = trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS)
-        val outputs = trace.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS)
+        val inputs = trace.getAttribute(TracySpanAttributes.SPAN_INPUTS)
+        val outputs = trace.getAttribute(TracySpanAttributes.SPAN_OUTPUTS)
 
         assertTrue(inputs!!.contains("\"name\":\"name\""))
-        assertTrue(inputs.contains("\"block\":\"ai.jetbrains.tracy.core.fluent.FluentTracingTest"))
+        assertTrue(inputs.contains("\"block\":\"ai.jetbrains.tracy.core.instrumentation.AnnotationTracingTest"))
 
         assertEquals(
             "(name, ${input.reversed()})",
@@ -258,14 +258,14 @@ class FluentTracingTest : BaseOpenTelemetryTracingTest() {
 
         assertEquals(StatusData.ok(), trace.status)
         assertTrue(
-            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)?.endsWith("MyTestClass.testFunction") ?: false
+            trace.getAttribute(TracySpanAttributes.CODE_FUNCTION_NAME)?.endsWith("MyTestClass.testFunction") ?: false
         )
         assertEquals(
-            trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS),
+            trace.getAttribute(TracySpanAttributes.SPAN_INPUTS),
             "{\"paramName\":3}"
         )
         assertEquals(
-            trace.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS),
+            trace.getAttribute(TracySpanAttributes.SPAN_OUTPUTS),
             result.toString()
         )
     }
@@ -282,15 +282,15 @@ class FluentTracingTest : BaseOpenTelemetryTracingTest() {
 
         assertEquals(StatusData.ok(), trace.status)
         assertTrue(
-            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)
+            trace.getAttribute(TracySpanAttributes.CODE_FUNCTION_NAME)
                 ?.endsWith("MyTestClass.testFunctionWithDefaultValue") ?: false
         )
         assertEquals(
-            trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS),
+            trace.getAttribute(TracySpanAttributes.SPAN_INPUTS),
             "{\"paramName\":10}"
         )
         assertEquals(
-            trace.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS),
+            trace.getAttribute(TracySpanAttributes.SPAN_OUTPUTS),
             result.toString()
         )
     }
@@ -322,7 +322,7 @@ class FluentTracingTest : BaseOpenTelemetryTracingTest() {
         val trace = traces.firstOrNull()
         assertNotNull(trace)
         assertEquals(
-            traces.first().getAttribute(FluentSpanAttributes.LANGFUSE_TRACE_TAGS),
+            traces.first().getAttribute(TracySpanAttributes.LANGFUSE_TRACE_TAGS),
             "[Tag1, Tag2]"
         )
     }

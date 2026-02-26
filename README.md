@@ -349,7 +349,7 @@ example: [OpenAI Client Auto Tracing Example](examples/src/main/kotlin/ai/jetbra
 ### Annotation-Based Tracing
 
 You can trace regular functions (not only client calls)
-using the [`@Trace`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/fluent/Trace.kt)
+using the [`@Trace`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/instrumentation/Trace.kt)
 annotation.
 
 **Make sure to apply the `ai.jetbrains.tracy` plugin in your build.**
@@ -395,7 +395,7 @@ demonstration of hierarchical tracing.
 
 Tracing annotation is automatically propagated through interfaces and class hierarchies.  
 If a method in an interface or superclass is annotated with [
-`@Trace`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/fluent/Trace.kt), all
+`@Trace`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/instrumentation/Trace.kt), all
 overriding or implementing methods
 inherit tracing behavior automatically, even if the annotation is not explicitly declared again.  
 This approach ensures consistent and reusable tracing across an entire inheritance chain without code duplication.
@@ -407,9 +407,9 @@ complete example.
 #### Customizing Tracing Behavior
 
 The tracing system offers flexible customization through the [
-`SpanMetadataCustomizer`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/fluent/customizers/SpanMetadataCustomizer.kt)
+`SpanMetadataCustomizer`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/instrumentation/customizers/SpanMetadataCustomizer.kt)
 interface. Implement it as a Kotlin `object` (classes are not supported) and reference it in the [
-`@Trace`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/fluent/Trace.kt) annotation.
+`@Trace`](tracing/core/src/commonMain/kotlin/ai/jetbrains/tracy/core/instrumentation/Trace.kt) annotation.
 With a custom `SpanMetadataCustomizer`, you can define:
 
 - How input parameters are serialized.
@@ -528,7 +528,7 @@ Spans can be exported to any OTLP-compatible HTTP or gRPC collector (for example
 
 ## Project Structure
 
-- **[`plugin`](plugin)** — contains the Kotlin compiler plugins for annotation-based fluent tracing.  
+- **[`plugin`](plugin)** — contains the Kotlin compiler plugins for annotation-based tracing.  
   It includes multiple Kotlin Compiler Plugin (KCP) implementations for different Kotlin versions.  
   The [`gradle-tracy-plugin`](plugin/gradle-tracy-plugin) module automatically selects the appropriate KCP version
   for your Kotlin compiler and applies it to your Gradle project.

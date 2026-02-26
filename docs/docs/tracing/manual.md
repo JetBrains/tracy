@@ -4,21 +4,21 @@ In addition to annotation-based tracing, you can manually create and manage span
 especially useful for:
 
 - **Java projects**: Where [
-  `@Trace`](https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html) is
+  `@Trace`](https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.instrumentation/-trace/index.html) is
   not supported.
 - **Granular control**: When you want to trace specific blocks of code within a function.
 - **Custom metadata**: When you want to add specific attributes to a span dynamically.
 
-## Using [`withSpan`](https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-span.html)
+## Using [`withSpan`](https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.instrumentation.processor/with-span.html)
 
-The [`withSpan`](https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-span.html)
+The [`withSpan`](https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.instrumentation.processor/with-span.html)
 function is the easiest way to manually trace a block of code. It automatically handles span creation, activation, and
 closing (even in the case of exceptions).
 
 ### Kotlin Example
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.fluent.processor.withSpan
+import ai.jetbrains.tracy.core.instrumentation.processor.withSpan
 -->
 
 ```kotlin
@@ -36,8 +36,9 @@ val result = withSpan("myOperation", mapOf("inputParam" to "someValue")) { span 
 Tracy provides a Java-friendly API for manual tracing.
 
 ```java
-import ai.jetbrains.tracy.core.fluent.processor.withSpan;
+import ai.jetbrains.tracy.core.instrumentation.processor.withSpan;
 import io.opentelemetry.api.trace.Span;
+
 import java.util.Collections;
 
 public class ManualTracingJava {
@@ -55,7 +56,7 @@ example: [ManualTracingExample.kt](https://github.com/JetBrains/tracy/blob/main/
 
 ## Manual Span Management
 
-If [`withSpan`](https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-span.html)
+If [`withSpan`](https://api-tracy.labs.jb.gg/tracing/core/ai.jetbrains.tracy.core.instrumentation.processor/with-span.html)
 doesn't fit your needs, you can use the OpenTelemetry API directly while still benefiting from Tracy's configuration.
 
 ```kotlin

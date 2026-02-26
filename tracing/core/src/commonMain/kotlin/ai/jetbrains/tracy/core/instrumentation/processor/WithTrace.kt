@@ -3,9 +3,9 @@
  * Use of this source code is governed by the Apache 2.0 license.
  */
 
-package ai.jetbrains.tracy.core.fluent.processor
+package ai.jetbrains.tracy.core.instrumentation.processor
 
-import ai.jetbrains.tracy.core.fluent.Trace
+import ai.jetbrains.tracy.core.instrumentation.Trace
 import kotlin.reflect.KFunction
 
 /**

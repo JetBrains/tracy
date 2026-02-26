@@ -9,7 +9,7 @@ import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 import ai.jetbrains.tracy.core.exporters.otlp.OtlpGrpcExporterConfig
 import ai.jetbrains.tracy.core.exporters.otlp.OtlpHttpExporterConfig
-import ai.jetbrains.tracy.core.fluent.Trace
+import ai.jetbrains.tracy.core.instrumentation.Trace
 
 /**
  * Demonstrates how to use [OtlpHttpExporterConfig] with [Trace] to export traces to Jaeger.

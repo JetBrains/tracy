@@ -3,7 +3,7 @@
  * Use of this source code is governed by the Apache 2.0 license.
  */
 
-package ai.jetbrains.tracy.core.fluent
+package ai.jetbrains.tracy.core.instrumentation
 
 import ai.jetbrains.tracy.test.utils.BaseOpenTelemetryTracingTest
 import io.opentelemetry.sdk.trace.data.StatusData
@@ -32,16 +32,16 @@ class TraceInheritanceTest : BaseOpenTelemetryTracingTest() {
         assertEquals(1, traces.size)
         val trace = traces.first()
         assertTrue(
-            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)
+            trace.getAttribute(TracySpanAttributes.CODE_FUNCTION_NAME)
                 ?.endsWith("TestClassPropagationImpl.withPropagation") ?: false
         )
         assertEquals(StatusData.ok(), trace.status)
         assertEquals(
-            trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS),
+            trace.getAttribute(TracySpanAttributes.SPAN_INPUTS),
             "{\"param\":1}"
         )
         assertEquals(
-            trace.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS),
+            trace.getAttribute(TracySpanAttributes.SPAN_OUTPUTS),
             result.toString()
         )
     }
@@ -64,15 +64,15 @@ class TraceInheritanceTest : BaseOpenTelemetryTracingTest() {
         val trace = traces.first()
 
         assertTrue(
-            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)
+            trace.getAttribute(TracySpanAttributes.CODE_FUNCTION_NAME)
                 ?.endsWith("TestClassPropagationInterfaceImpl.fromInterface") ?: false
         )
         assertEquals(
-            trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS),
+            trace.getAttribute(TracySpanAttributes.SPAN_INPUTS),
             "{\"param\":1}"
         )
         assertEquals(
-            trace.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS),
+            trace.getAttribute(TracySpanAttributes.SPAN_OUTPUTS),
             result.toString()
         )
     }
@@ -90,15 +90,15 @@ class TraceInheritanceTest : BaseOpenTelemetryTracingTest() {
         assertEquals(1, traces.size)
         val trace = traces.first()
         assertTrue(
-            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)
+            trace.getAttribute(TracySpanAttributes.CODE_FUNCTION_NAME)
                 ?.endsWith("TestClassDirectlyAnnotated.directlyAnnotated") ?: false
         )
         assertEquals(
-            trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS),
+            trace.getAttribute(TracySpanAttributes.SPAN_INPUTS),
             "{\"param\":1}"
         )
         assertEquals(
-            trace.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS),
+            trace.getAttribute(TracySpanAttributes.SPAN_OUTPUTS),
             result.toString()
         )
     }
@@ -137,15 +137,15 @@ class TraceInheritanceTest : BaseOpenTelemetryTracingTest() {
             "Final implementation should still be traced due to interface propagation"
         )
         assertTrue(
-            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)?.endsWith("TestClassDeepImpl.deepMethod")
+            trace.getAttribute(TracySpanAttributes.CODE_FUNCTION_NAME)?.endsWith("TestClassDeepImpl.deepMethod")
                 ?: false
         )
         assertEquals(
-            trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS),
+            trace.getAttribute(TracySpanAttributes.SPAN_INPUTS),
             "{\"param\":1}"
         )
         assertEquals(
-            trace.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS),
+            trace.getAttribute(TracySpanAttributes.SPAN_OUTPUTS),
             result.toString()
         )
     }
@@ -166,15 +166,15 @@ class TraceInheritanceTest : BaseOpenTelemetryTracingTest() {
             "Final implementation should still be traced due to interface propagation"
         )
         assertTrue(
-            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)?.endsWith("TestClassDeeperDeepImpl.deepMethod")
+            trace.getAttribute(TracySpanAttributes.CODE_FUNCTION_NAME)?.endsWith("TestClassDeeperDeepImpl.deepMethod")
                 ?: false
         )
         assertEquals(
-            trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS),
+            trace.getAttribute(TracySpanAttributes.SPAN_INPUTS),
             "{\"param\":1}"
         )
         assertEquals(
-            trace.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS),
+            trace.getAttribute(TracySpanAttributes.SPAN_OUTPUTS),
             result.toString()
         )
     }

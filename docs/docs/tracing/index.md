@@ -24,9 +24,9 @@ The Tracing API is divided into three main categories:
   LLM clients, e.g., see [`instrument`]({{ api_docs_url
   }}/tracing/openai/ai.jetbrains.tracy.openai.clients/instrument.html) for
   the [`OpenAIClient`](https://javadoc.io/doc/com.openai/openai-java/4.5.0/com/openai/client/OpenAIClient.html)_).
-- [**`@Trace`**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html): An
+- [**`@Trace`**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation/-trace/index.html): An
   annotation for automatic instrumentation of Kotlin functions.
-- [**`withSpan`**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent.processor/with-span.html): A
+- [**`withSpan`**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation.processor/with-span.html): A
   block-based API for manual span management.
 
 See the following sections for more details:

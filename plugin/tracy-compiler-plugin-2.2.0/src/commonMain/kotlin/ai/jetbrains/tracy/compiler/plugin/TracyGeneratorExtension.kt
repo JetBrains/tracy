@@ -32,15 +32,15 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 class TracyGeneratorExtension : IrGenerationExtension {
-    private val traceAnnotationFqName = FqName("ai.jetbrains.tracy.core.fluent.Trace")
+    private val traceAnnotationFqName = FqName("ai.jetbrains.tracy.core.instrumentation.Trace")
 
     @OptIn(UnsafeDuringIrConstructionAPI::class)
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val withTraceSymbol = pluginContext.referenceFunctions(
-            CallableId(FqName("ai.jetbrains.tracy.core.fluent.processor"), Name.identifier("withTrace"))
+            CallableId(FqName("ai.jetbrains.tracy.core.instrumentation.processor"), Name.identifier("withTrace"))
         ).findMultiplatformSymbol()
         val withTraceSuspendedSymbol = pluginContext.referenceFunctions(
-            CallableId(FqName("ai.jetbrains.tracy.core.fluent.processor"), Name.identifier("withTraceSuspended"))
+            CallableId(FqName("ai.jetbrains.tracy.core.instrumentation.processor"), Name.identifier("withTraceSuspended"))
         ).findMultiplatformSymbol()
         moduleFragment.accept(object : IrElementTransformerVoid() {
             override fun visitSimpleFunction(declaration: IrSimpleFunction): IrStatement {

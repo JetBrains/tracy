@@ -3,15 +3,15 @@
  * Use of this source code is governed by the Apache 2.0 license.
  */
 
-package ai.jetbrains.tracy.core.fluent.processor
+package ai.jetbrains.tracy.core.instrumentation.processor
 
 import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.currentSpanContext
-import ai.jetbrains.tracy.core.fluent.FluentSpanAttributes
-import ai.jetbrains.tracy.core.fluent.Trace
-import ai.jetbrains.tracy.core.fluent.TracingSessionProvider
-import ai.jetbrains.tracy.core.fluent.customizers.PlatformMethod
-import ai.jetbrains.tracy.core.fluent.customizers.SpanMetadataCustomizer
+import ai.jetbrains.tracy.core.instrumentation.TracySpanAttributes
+import ai.jetbrains.tracy.core.instrumentation.Trace
+import ai.jetbrains.tracy.core.instrumentation.TracingSessionProvider
+import ai.jetbrains.tracy.core.instrumentation.customizers.PlatformMethod
+import ai.jetbrains.tracy.core.instrumentation.customizers.SpanMetadataCustomizer
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.SpanBuilder
 import io.opentelemetry.api.trace.StatusCode
@@ -119,7 +119,7 @@ internal fun createSpan(
         ?: traceAnnotation.name.ifBlank { method.name }
     val spanBuilder = tracer.spanBuilder(spanName)
     TracingSessionProvider.currentSessionId?.let {
-        spanBuilder.setAttribute(FluentSpanAttributes.SESSION_ID.key, it)
+        spanBuilder.setAttribute(TracySpanAttributes.SESSION_ID.key, it)
     }
     configureTracingMetadata(spanBuilder, spanMetadataCustomizer, method, args)
     val parentSpan = Span.fromContext(context)
@@ -144,7 +144,7 @@ internal fun addOutputAttributesToTracing(
     result: Any?
 ) {
     span.setAttribute(
-        FluentSpanAttributes.SPAN_OUTPUTS.key, spanMetadataCustomizer.formatOutputAttribute(result)
+        TracySpanAttributes.SPAN_OUTPUTS.key, spanMetadataCustomizer.formatOutputAttribute(result)
     )
 }
 
@@ -169,11 +169,11 @@ internal fun configureTracingMetadata(
 ) {
     with(spanBuilder) {
         setAttribute(
-            FluentSpanAttributes.SPAN_INPUTS.key,
+            TracySpanAttributes.SPAN_INPUTS.key,
             spanMetadataCustomizer.formatInputAttributes(method, args)
         )
         setAttribute(
-            FluentSpanAttributes.CODE_FUNCTION_NAME.key, "${method.declaringClass.name}.${method.name}"
+            TracySpanAttributes.CODE_FUNCTION_NAME.key, "${method.declaringClass.name}.${method.name}"
         )
     }
 }

@@ -18,7 +18,7 @@ The Kotlin ecosystem includes several well-known compiler [plugins](https://gith
 - **`kotlin-serialization`**: Generates efficient serializers and deserializers for data classes
 - **`power-assert`**: Provides detailed assertion failure messages
 
-Tracy's compiler plugin automatically wraps functions annotated with [`@Trace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent/-trace/index.html) with tracing logic — no boilerplate required.
+Tracy's compiler plugin automatically wraps functions annotated with [`@Trace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation/-trace/index.html) with tracing logic — no boilerplate required.
 
 ## Compiler Plugins vs Annotation Processors
 

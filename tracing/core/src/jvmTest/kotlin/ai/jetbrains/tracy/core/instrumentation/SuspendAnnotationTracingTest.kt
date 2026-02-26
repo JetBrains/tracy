@@ -3,7 +3,7 @@
  * Use of this source code is governed by the Apache 2.0 license.
  */
 
-package ai.jetbrains.tracy.core.fluent
+package ai.jetbrains.tracy.core.instrumentation
 
 import ai.jetbrains.tracy.core.exporters.langfuse.addLangfuseTagsToCurrentTrace
 import ai.jetbrains.tracy.test.utils.BaseOpenTelemetryTracingTest
@@ -139,7 +139,7 @@ internal class MyTestClassWithSuspendHard() {
     }
 }
 
-class SuspendFluentTracingTest() : BaseOpenTelemetryTracingTest() {
+class SuspendAnnotationTracingTest : BaseOpenTelemetryTracingTest() {
     @Test
     fun `test trace creation`() = runTest {
         MyTestClassWithSuspend().testFunction(1)
@@ -160,7 +160,7 @@ class SuspendFluentTracingTest() : BaseOpenTelemetryTracingTest() {
         val trace = traces.firstOrNull()
         assertNotNull(trace)
         assertEquals(
-            traces.first().getAttribute(FluentSpanAttributes.LANGFUSE_TRACE_TAGS),
+            traces.first().getAttribute(TracySpanAttributes.LANGFUSE_TRACE_TAGS),
             "[Tag1, Tag2]"
         )
     }
@@ -177,15 +177,15 @@ class SuspendFluentTracingTest() : BaseOpenTelemetryTracingTest() {
         val trace = assertNotNull(traces.firstOrNull())
         assertEquals(StatusData.ok(), trace.status)
         assertTrue(
-            trace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)?.endsWith("MyTestClassWithSuspend.testFunction")
+            trace.getAttribute(TracySpanAttributes.CODE_FUNCTION_NAME)?.endsWith("MyTestClassWithSuspend.testFunction")
                 ?: false
         )
         assertEquals(
-            trace.getAttribute(FluentSpanAttributes.SPAN_INPUTS),
+            trace.getAttribute(TracySpanAttributes.SPAN_INPUTS),
             "{\"paramName\":3}"
         )
         assertEquals(
-            trace.getAttribute(FluentSpanAttributes.SPAN_OUTPUTS),
+            trace.getAttribute(TracySpanAttributes.SPAN_OUTPUTS),
             result.toString()
         )
     }
@@ -314,8 +314,8 @@ class SuspendFluentTracingTest() : BaseOpenTelemetryTracingTest() {
             childTrace.traceId
         )
         assertEquals(
-            parentTrace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME),
-            childTrace.getAttribute(FluentSpanAttributes.CODE_FUNCTION_NAME)
+            parentTrace.getAttribute(TracySpanAttributes.CODE_FUNCTION_NAME),
+            childTrace.getAttribute(TracySpanAttributes.CODE_FUNCTION_NAME)
         )
     }
 

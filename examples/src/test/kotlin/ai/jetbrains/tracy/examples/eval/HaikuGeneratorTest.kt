@@ -6,7 +6,7 @@
 package ai.jetbrains.tracy.examples.eval
 
 import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig
-import ai.jetbrains.tracy.core.fluent.Trace
+import ai.jetbrains.tracy.core.instrumentation.Trace
 import ai.jetbrains.tracy.eval.providers.langfuse.LangfuseEvaluationTest
 import ai.jetbrains.tracy.eval.utils.*
 import com.openai.client.okhttp.OpenAIOkHttpClient

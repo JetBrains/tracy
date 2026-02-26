@@ -8,15 +8,15 @@ package ai.jetbrains.tracy.examples
 import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 import ai.jetbrains.tracy.core.exporters.ConsoleExporterConfig
-import ai.jetbrains.tracy.core.fluent.FluentSpanAttributes
-import ai.jetbrains.tracy.core.fluent.processor.withSpan
+import ai.jetbrains.tracy.core.instrumentation.TracySpanAttributes
+import ai.jetbrains.tracy.core.instrumentation.processor.withSpan
 
 fun handleUserLogin(username: String, password: String) =
     withSpan("HandleUserLogin", mapOf("username" to username)) { span ->
         println("Authenticating user: $username")
         val result = if (password == "secret123") "Login successful" else "Invalid credentials"
-        span.setAttribute(FluentSpanAttributes.SPAN_INPUTS.key, "username=$username")
-        span.setAttribute(FluentSpanAttributes.SPAN_OUTPUTS.key, result)
+        span.setAttribute(TracySpanAttributes.SPAN_INPUTS.key, "username=$username")
+        span.setAttribute(TracySpanAttributes.SPAN_OUTPUTS.key, result)
         println("Result: $result")
         return@withSpan result
     }
@@ -26,7 +26,7 @@ fun handleUserLogin(username: String, password: String) =
  *
  * This example demonstrates how to:
  * - Create custom tracing spans manually using [withSpan].
- * - Add input and output attributes to spans with [FluentSpanAttributes].
+ * - Add input and output attributes to spans with [TracySpanAttributes].
  *
  * When you run this example, you will see three spans created:
  * - One parent span named **LoginAttempt**, representing the overall login process.

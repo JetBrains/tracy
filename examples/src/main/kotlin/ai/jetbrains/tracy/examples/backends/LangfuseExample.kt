@@ -8,7 +8,7 @@ package ai.jetbrains.tracy.examples.backends
 import ai.jetbrains.tracy.core.TracingManager
 import ai.jetbrains.tracy.core.configureOpenTelemetrySdk
 import ai.jetbrains.tracy.core.exporters.langfuse.LangfuseExporterConfig
-import ai.jetbrains.tracy.core.fluent.Trace
+import ai.jetbrains.tracy.core.instrumentation.Trace
 
 @Trace(name = "SimpleExample")
 fun printName(name: String): String {

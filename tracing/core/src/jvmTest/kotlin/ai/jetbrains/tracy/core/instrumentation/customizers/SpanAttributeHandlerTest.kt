@@ -3,9 +3,9 @@
  * Use of this source code is governed by the Apache 2.0 license.
  */
 
-package ai.jetbrains.tracy.core.fluent.customizers
+package ai.jetbrains.tracy.core.instrumentation.customizers
 
-import ai.jetbrains.tracy.core.fluent.Trace
+import ai.jetbrains.tracy.core.instrumentation.Trace
 import ai.jetbrains.tracy.test.utils.BaseOpenTelemetryTracingTest
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test

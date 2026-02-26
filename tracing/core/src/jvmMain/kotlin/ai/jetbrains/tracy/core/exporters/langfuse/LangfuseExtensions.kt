@@ -6,7 +6,7 @@
 package ai.jetbrains.tracy.core.exporters.langfuse
 
 import ai.jetbrains.tracy.core.currentSpanContext
-import ai.jetbrains.tracy.core.fluent.FluentSpanAttributes
+import ai.jetbrains.tracy.core.instrumentation.TracySpanAttributes
 import io.opentelemetry.api.trace.Span
 import kotlin.coroutines.CoroutineContext
 
@@ -19,5 +19,5 @@ import kotlin.coroutines.CoroutineContext
  */
 fun addLangfuseTagsToCurrentTrace(tags: List<String>, coroutineContext: CoroutineContext? = null) {
     val otelContext = currentSpanContext(coroutineContext)
-    Span.fromContext(otelContext).setAttribute(FluentSpanAttributes.LANGFUSE_TRACE_TAGS.key, tags.toString())
+    Span.fromContext(otelContext).setAttribute(TracySpanAttributes.LANGFUSE_TRACE_TAGS.key, tags.toString())
 }

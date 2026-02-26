@@ -5,7 +5,7 @@
 
 package ai.jetbrains.tracy.core.adapters.media
 
-import ai.jetbrains.tracy.core.fluent.processor.addExceptionAttributes
+import ai.jetbrains.tracy.core.instrumentation.processor.addExceptionAttributes
 import io.opentelemetry.api.trace.Span
 import java.net.URL
 

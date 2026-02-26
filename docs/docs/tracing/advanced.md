@@ -17,7 +17,7 @@ See the full examples: [ContextPropagationExample.kt](https://github.com/JetBrai
 Use [`currentSpanContextElement`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core/current-span-context-element.html) to ensure child spans are linked to their parent when using [`runBlocking`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html) inside a suspend function.
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.fluent.Trace
+import ai.jetbrains.tracy.core.instrumentation.Trace
 import ai.jetbrains.tracy.core.currentSpanContextElement
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.runBlocking

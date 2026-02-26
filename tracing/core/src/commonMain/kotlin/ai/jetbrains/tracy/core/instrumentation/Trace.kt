@@ -3,10 +3,10 @@
  * Use of this source code is governed by the Apache 2.0 license.
  */
 
-package ai.jetbrains.tracy.core.fluent
+package ai.jetbrains.tracy.core.instrumentation
 
-import ai.jetbrains.tracy.core.fluent.customizers.DefaultSpanMetadataCustomizer
-import ai.jetbrains.tracy.core.fluent.customizers.SpanMetadataCustomizer
+import ai.jetbrains.tracy.core.instrumentation.customizers.DefaultSpanMetadataCustomizer
+import ai.jetbrains.tracy.core.instrumentation.customizers.SpanMetadataCustomizer
 import kotlin.reflect.KClass
 
 /**

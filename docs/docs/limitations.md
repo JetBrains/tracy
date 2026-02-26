@@ -12,11 +12,11 @@ For complete examples, see [ContextPropagationExample.kt](https://github.com/Jet
 
 Using `runBlocking` inside a suspend function creates a new execution boundary. Without manual propagation, child spans become detached and appear as separate traces.
 
-**Workaround**: Use [`currentSpanContextElement`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.fluent.processor/current-span-context-element.html) to propagate context:
+**Workaround**: Use [`currentSpanContextElement`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation.processor/current-span-context-element.html) to propagate context:
 
 <!--- INCLUDE
 import ai.jetbrains.tracy.core.currentSpanContextElement
-import ai.jetbrains.tracy.core.fluent.Trace
+import ai.jetbrains.tracy.core.instrumentation.Trace
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.runBlocking
 
@@ -91,7 +91,7 @@ The Tracy compiler plugin only transforms Kotlin code. Java methods cannot be an
 **Workaround**: Use [Manual Tracing](tracing/manual.md) for Java code:
 
 ```java
-import ai.jetbrains.tracy.core.fluent.processor.TracingUtilsKt;
+import ai.jetbrains.tracy.core.instrumentation.processor.TracingUtilsKt;
 
 public class MyService {
     public String process(String input) {

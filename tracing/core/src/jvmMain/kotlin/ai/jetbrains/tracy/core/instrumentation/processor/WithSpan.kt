@@ -3,10 +3,10 @@
  * Use of this source code is governed by the Apache 2.0 license.
  */
 
-package ai.jetbrains.tracy.core.fluent.processor
+package ai.jetbrains.tracy.core.instrumentation.processor
 
 import ai.jetbrains.tracy.core.TracingManager
-import ai.jetbrains.tracy.core.fluent.FluentSpanAttributes
+import ai.jetbrains.tracy.core.instrumentation.TracySpanAttributes
 import io.opentelemetry.api.trace.Span
 
 /**
@@ -42,7 +42,7 @@ inline fun <T> withSpan(
 
     try {
         val result = block(span)
-        span.setAttribute(FluentSpanAttributes.SPAN_OUTPUTS.key, result.toString())
+        span.setAttribute(TracySpanAttributes.SPAN_OUTPUTS.key, result.toString())
 
         return result
     } catch (e: Exception) {

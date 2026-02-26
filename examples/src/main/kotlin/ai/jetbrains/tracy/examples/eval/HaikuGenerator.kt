@@ -5,7 +5,7 @@
 
 package ai.jetbrains.tracy.examples.eval
 
-import ai.jetbrains.tracy.core.fluent.Trace
+import ai.jetbrains.tracy.core.instrumentation.Trace
 import ai.jetbrains.tracy.eval.utils.AIInput
 import ai.jetbrains.tracy.eval.utils.AIOutput
 import ai.jetbrains.tracy.eval.utils.Generator
