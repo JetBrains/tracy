@@ -10,15 +10,15 @@ Tracy handles context propagation automatically when using structured coroutines
 
 Context propagation works automatically with [`withContext`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-context.html), [`launch`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/launch.html), and [`async`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html). But some models like [`runBlocking`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html) or raw threads create boundaries that require manual propagation.
 
-See the full examples: [ContextPropagationExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/ContextPropagationExample.kt)
+See the full examples: [ContextPropagationExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/org/jetbrains/ai/tracy/examples/ContextPropagationExample.kt)
 
 #### [`runBlocking`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html)
 
-Use [`currentSpanContextElement`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core/current-span-context-element.html) to ensure child spans are linked to their parent when using [`runBlocking`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html) inside a suspend function.
+Use [`currentSpanContextElement`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core/current-span-context-element.html) to ensure child spans are linked to their parent when using [`runBlocking`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html) inside a suspend function.
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.instrumentation.Trace
-import ai.jetbrains.tracy.core.currentSpanContextElement
+import org.jetbrains.ai.tracy.core.instrumentation.Trace
+import org.jetbrains.ai.tracy.core.currentSpanContextElement
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.runBlocking
 
@@ -40,7 +40,7 @@ suspend fun processRequest() {
 Standard threads do **NOT** inherit the OpenTelemetry context. You must capture and propagate it manually:
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.currentSpanContext
+import org.jetbrains.ai.tracy.core.currentSpanContext
 import kotlinx.coroutines.currentCoroutineContext
 import kotlin.concurrent.thread
 
@@ -67,10 +67,10 @@ You can enrich your traces with business-specific metadata using custom tags. Th
 
 ### Adding Langfuse Tags
 
-Use [`addLangfuseTagsToCurrentTrace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.exporters.langfuse/add-langfuse-tags-to-current-trace.html) to attach tags dynamically within any traced function.
+Use [`addLangfuseTagsToCurrentTrace`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.exporters.langfuse/add-langfuse-tags-to-current-trace.html) to attach tags dynamically within any traced function.
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.exporters.langfuse.addLangfuseTagsToCurrentTrace
+import org.jetbrains.ai.tracy.core.exporters.langfuse.addLangfuseTagsToCurrentTrace
 
 -->
 
@@ -83,7 +83,7 @@ fun myBusinessLogic() {
 
 <!--- KNIT example-advanced-03.kt -->
 
-See the full example: [LangfuseTagExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/LangfuseTagExample.kt)
+See the full example: [LangfuseTagExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/org/jetbrains/ai/tracy/examples/LangfuseTagExample.kt)
 
 ## Best Practices
 

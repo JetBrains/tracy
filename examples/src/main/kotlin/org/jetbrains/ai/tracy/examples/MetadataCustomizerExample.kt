@@ -1,0 +1,68 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
+package org.jetbrains.ai.tracy.examples
+
+import org.jetbrains.ai.tracy.core.TracingManager
+import org.jetbrains.ai.tracy.core.configureOpenTelemetrySdk
+import org.jetbrains.ai.tracy.core.exporters.ConsoleExporterConfig
+import org.jetbrains.ai.tracy.core.instrumentation.Trace
+import org.jetbrains.ai.tracy.core.instrumentation.customizers.PlatformMethod
+import org.jetbrains.ai.tracy.core.instrumentation.customizers.SpanMetadataCustomizer
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+
+class Greeter {
+    @Trace(metadataCustomizer = ExampleWithMetadataCustomizer::class)
+    fun greetUser(name: String): String {
+        println("Hello, $name!")
+        return "Greeting sent to $name"
+    }
+}
+
+object ExampleWithMetadataCustomizer : SpanMetadataCustomizer {
+    override fun resolveSpanName(method: PlatformMethod, args: Array<Any?>): String {
+        val name = args.getOrNull(0)?.toString()?.replaceFirstChar { it.uppercase() } ?: "User"
+        return "${method.declaringClass.simpleName}Span::$name"
+    }
+
+    override fun formatInputAttributes(method: PlatformMethod, args: Array<Any?>): String =
+        buildJsonObject {
+            put("input_name", args.getOrNull(0)?.toString() ?: "unknown")
+            put("method_name", method.name)
+        }.toString()
+
+    override fun formatOutputAttribute(result: Any?): String =
+        buildJsonObject {
+            put("output_message", result?.toString() ?: "null")
+            put("status", "success")
+        }.toString()
+}
+
+/**
+ * Demonstrates how to use a custom [SpanMetadataCustomizer] with [Trace]
+ * to enrich spans with additional metadata.
+ *
+ * Note: [SpanMetadataCustomizer] must be a Kotlin `object`, not a class.
+ *
+ * This example shows how:
+ * - You can provide a custom [SpanMetadataCustomizer] `object` to control span names and attributes.
+ * - Input and output data can be formatted into structured JSON metadata for each traced function.
+ * - The tracing plugin automatically invokes the metadata customizer at runtime for annotated methods.
+ *
+ * When you run this example, you will see a span named "GreeterSpan::Alice" created for the `greetUser` function.
+ * The span metadata includes custom JSON attributes such as
+ * - `"input_name"` and `"method_name"` for the function parameters.
+ * - `"output_message"` and `"status"` describing the function result.
+ *
+ */
+fun main() {
+    TracingManager.isTracingEnabled = true
+    TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
+    Greeter().greetUser("Alice")
+    println("See trace details in the console.")
+    // Manual flush - alternatively, configure automatic flushing via ExporterCommonSettings
+    TracingManager.flushTraces()
+}

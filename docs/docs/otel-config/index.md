@@ -7,7 +7,7 @@ OpenTelemetry configuration in Tracy involves two main parts:
 
 1. **[SDK Configuration](sdk-configuration.md)**: Initialize the OpenTelemetry SDK using [
    `configureOpenTelemetrySdk()`]({{ api_docs_url
-   }}/tracing/core/ai.jetbrains.tracy.core/configure-open-telemetry-sdk.html), which sets up the trace pipeline with
+   }}/tracing/core/org.jetbrains.ai.tracy.core/configure-open-telemetry-sdk.html), which sets up the trace pipeline with
    batching, resource attributes, and export settings.
 
 2. **[Exporters](exporters.md)**: Choose where traces are sent — LLM-focused platforms (Langfuse, Weave), generic OTLP

@@ -4,7 +4,7 @@ This page explains how Tracy's compiler plugin transforms your annotated functio
 
 ## The Transformation at a Glance
 
-When you annotate a function with [`@Trace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation/-trace/index.html), Tracy's compiler plugin wraps your function body with tracing logic.
+When you annotate a function with [`@Trace`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.instrumentation/-trace/index.html), Tracy's compiler plugin wraps your function body with tracing logic.
 
 ### Before Compilation
 
@@ -32,7 +32,7 @@ fun greetUser(name: String): String {
 }
 ```
 
-The [`withTrace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation.processor/with-trace.html) function handles:
+The [`withTrace`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.instrumentation.processor/with-trace.html) function handles:
 
 - Creating an OpenTelemetry span
 - Recording function inputs and outputs
@@ -48,7 +48,7 @@ Tracy's transformation logic lives in `TracyGeneratorExtension`, which implement
 
 For each annotated function, Tracy:
 
-1. **Finds the annotation**: Checks if the function (or any overridden function) has [`@Trace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation/-trace/index.html)
+1. **Finds the annotation**: Checks if the function (or any overridden function) has [`@Trace`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.instrumentation/-trace/index.html)
 
 2. **Creates a function reference**: Builds an IR reference to the original function for metadata extraction
 
@@ -56,11 +56,11 @@ For each annotated function, Tracy:
 
 4. **Wraps the body in a lambda**: Moves the original function body into a lambda expression
 
-5. **Generates the wrapper call**: Replaces the function body with a call to [`withTrace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation.processor/with-trace.html) or [`withTraceSuspended`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation.processor/with-trace-suspended.html)
+5. **Generates the wrapper call**: Replaces the function body with a call to [`withTrace`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.instrumentation.processor/with-trace.html) or [`withTraceSuspended`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.instrumentation.processor/with-trace-suspended.html)
 
 ## Suspend Function Support
 
-Tracy handles suspend functions differently from regular functions. Regular functions are wrapped with [`withTrace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation.processor/with-trace.html), while suspend functions use [`withTraceSuspended`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation.processor/with-trace-suspended.html).
+Tracy handles suspend functions differently from regular functions. Regular functions are wrapped with [`withTrace`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.instrumentation.processor/with-trace.html), while suspend functions use [`withTraceSuspended`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.instrumentation.processor/with-trace-suspended.html).
 
 The suspend variant ensures proper coroutine context propagation and allows the traced function to suspend without blocking.
 
@@ -70,7 +70,7 @@ One of Tracy's powerful features is **automatic annotation propagation** through
 
 ### How It Works
 
-When checking for [`@Trace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation/-trace/index.html), Tracy doesn't just look at the current function — it traverses all overridden functions in the hierarchy:
+When checking for [`@Trace`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.instrumentation/-trace/index.html), Tracy doesn't just look at the current function — it traverses all overridden functions in the hierarchy:
 
 ```kotlin
 interface Service {
@@ -90,7 +90,7 @@ The `ServiceImpl.process()` function will be traced because it overrides an anno
 
 ### Implementation Detail
 
-Tracy uses `allOverridden(true)` to traverse the entire override chain and find the first [`@Trace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation/-trace/index.html) annotation:
+Tracy uses `allOverridden(true)` to traverse the entire override chain and find the first [`@Trace`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.instrumentation/-trace/index.html) annotation:
 
 ```kotlin
 private fun IrSimpleFunction.findOverriddenAnnotationWithPropagation(): IrConstructorCall? =
@@ -128,10 +128,10 @@ args = arrayOf(name, age, options)
 
 ### Annotation Instance
 
-The actual [`@Trace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation/-trace/index.html) annotation is passed to the wrapper, including:
+The actual [`@Trace`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.instrumentation/-trace/index.html) annotation is passed to the wrapper, including:
 
 - `name`: Custom span name (overrides the default method name)
-- `metadataCustomizer`: A [`SpanMetadataCustomizer`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation.customizers/-span-metadata-customizer/index.html) reference for custom serialization. Must be a Kotlin `object`.
+- `metadataCustomizer`: A [`SpanMetadataCustomizer`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.instrumentation.customizers/-span-metadata-customizer/index.html) reference for custom serialization. Must be a Kotlin `object`.
 
 At runtime, the `metadataCustomizer` controls how span names are resolved, and how inputs/outputs are serialized into span attributes.
 
@@ -139,7 +139,7 @@ At runtime, the `metadataCustomizer` controls how span names are resolved, and h
 
 Tracy's compiler plugin supports Kotlin Multiplatform by:
 
-1. **Finding the correct symbol**: The plugin looks for the non-`expect` declaration of [`withTrace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation.processor/with-trace.html):
+1. **Finding the correct symbol**: The plugin looks for the non-`expect` declaration of [`withTrace`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.instrumentation.processor/with-trace.html):
 
     ```kotlin
     private fun Collection<IrSimpleFunctionSymbol>.findMultiplatformSymbol(): IrSimpleFunctionSymbol {

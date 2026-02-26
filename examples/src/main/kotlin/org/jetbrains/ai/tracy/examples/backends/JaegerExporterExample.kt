@@ -1,0 +1,51 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
+package org.jetbrains.ai.tracy.examples.backends
+
+import org.jetbrains.ai.tracy.core.TracingManager
+import org.jetbrains.ai.tracy.core.configureOpenTelemetrySdk
+import org.jetbrains.ai.tracy.core.exporters.otlp.OtlpGrpcExporterConfig
+import org.jetbrains.ai.tracy.core.exporters.otlp.OtlpHttpExporterConfig
+import org.jetbrains.ai.tracy.core.instrumentation.Trace
+
+/**
+ * Demonstrates how to use [OtlpHttpExporterConfig] with [Trace] to export traces to Jaeger.
+ *
+ * To run this example:
+ * - For Jaeger, run a local Jaeger instance, for example, using Docker:
+ *   ```
+ *   docker run --rm -d --name jaeger \
+ *     -p 16686:16686 \
+ *     -p 4317:4317 \
+ *     -p 4318:4318 \
+ *     jaegertracing/all-in-one:2.13.0
+ *   ```
+ *   See the full quickstart here: [Jaeger Getting Started](https://www.jaegertracing.io/docs/2.13/getting-started/)
+ *
+ * By default, this example uses OTLP over HTTP.
+ * If you prefer OTLP over gRPC, use [OtlpGrpcExporterConfig] instead, for example:
+ *
+ * ```
+ * configureOpenTelemetrySdk(
+ *     OtlpGrpcExporterConfig(url = "http://localhost:4317")
+ * )
+ * ```
+ *
+ * Run the example. Spans will be exported to Jaeger.
+ *
+ * @see OtlpHttpExporterConfig
+ * @see OtlpGrpcExporterConfig
+ */
+fun main() {
+    TracingManager.isTracingEnabled = true
+    TracingManager.setSdk(
+        configureOpenTelemetrySdk(OtlpHttpExporterConfig(url = "http://localhost:4318"))
+    )
+    printName("Bob")
+    println("See trace details in Jaeger.")
+    // Manual flush - alternatively, configure automatic flushing via ExporterCommonSettings
+    TracingManager.flushTraces()
+}

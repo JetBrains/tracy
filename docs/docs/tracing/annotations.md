@@ -1,6 +1,6 @@
 # Function Tracing with Annotations
 
-For Kotlin projects, Tracy provides the [`@Trace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation/-trace/index.html) annotation, which allows you to
+For Kotlin projects, Tracy provides the [`@Trace`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.instrumentation/-trace/index.html) annotation, which allows you to
 automatically trace any function. The Kotlin compiler plugin instruments annotated functions to capture execution details
 such as start and end time, duration, inputs, and outputs.
 
@@ -11,8 +11,8 @@ such as start and end time, duration, inputs, and outputs.
 
 To use annotation-based tracing, you must:
 
-1. Apply the `ai.jetbrains.tracy` plugin in your `build.gradle.kts`.
-2. Annotate your functions with [`@Trace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation/-trace/index.html).
+1. Apply the `org.jetbrains.ai.tracy` plugin in your `build.gradle.kts`.
+2. Annotate your functions with [`@Trace`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.instrumentation/-trace/index.html).
 
 ### Preserving Parameter Names
 
@@ -29,7 +29,7 @@ tasks.withType<KotlinCompile> {
 ### Basic Example
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.instrumentation.Trace
+import org.jetbrains.ai.tracy.core.instrumentation.Trace
 -->
 
 ```kotlin
@@ -47,7 +47,7 @@ fun greetUser(name: String): String {
 When one traced function calls another, Tracy automatically creates a hierarchical trace structure. The outer call is recorded as a parent span, and the inner call as its child span.
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.instrumentation.Trace
+import org.jetbrains.ai.tracy.core.instrumentation.Trace
 
 @Trace
 fun outerFunction() {
@@ -68,18 +68,18 @@ fun main() {
 
 <!--- KNIT example-annotations-02.kt -->
 
-See the full example: [NestedSpansExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/NestedSpansExample.kt)
+See the full example: [NestedSpansExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/org/jetbrains/ai/tracy/examples/NestedSpansExample.kt)
 
 ## Advanced Usage
 
 ### Inheritance and Propagation
 
-The [`@Trace`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation/-trace/index.html) annotation
+The [`@Trace`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.instrumentation/-trace/index.html) annotation
 is automatically propagated through interfaces and class hierarchies. If you annotate a method in an interface, all
 implementations of that method will be traced automatically.
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.instrumentation.Trace
+import org.jetbrains.ai.tracy.core.instrumentation.Trace
 
 interface Service {
     @Trace
@@ -104,19 +104,19 @@ service.execute("test") // This will be traced!
 
 <!--- KNIT example-annotations-03.kt -->
 
-See the full example: [TracingPropagationExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/TracingPropagationExample.kt)
+See the full example: [TracingPropagationExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/org/jetbrains/ai/tracy/examples/TracingPropagationExample.kt)
 
 ### Customizing Span Metadata
 
-You can customize how spans are named and how inputs/outputs are serialized by providing an implementation of the [**`SpanMetadataCustomizer`**]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation.customizers/-span-metadata-customizer/index.html) interface.
+You can customize how spans are named and how inputs/outputs are serialized by providing an implementation of the [**`SpanMetadataCustomizer`**]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.instrumentation.customizers/-span-metadata-customizer/index.html) interface.
 
 !!! warning "Must be a Kotlin `object`"
     `SpanMetadataCustomizer` implementations must be declared as Kotlin `object`s. Passing a class will throw a runtime error.
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.instrumentation.Trace
-import ai.jetbrains.tracy.core.instrumentation.customizers.PlatformMethod
-import ai.jetbrains.tracy.core.instrumentation.customizers.SpanMetadataCustomizer
+import org.jetbrains.ai.tracy.core.instrumentation.Trace
+import org.jetbrains.ai.tracy.core.instrumentation.customizers.PlatformMethod
+import org.jetbrains.ai.tracy.core.instrumentation.customizers.SpanMetadataCustomizer
 
 -->
 
@@ -138,7 +138,7 @@ fun myCustomFunction(input: String) {
 
 <!--- KNIT example-annotations-04.kt -->
 
-See the full example: [MetadataCustomizerExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/MetadataCustomizerExample.kt)
+See the full example: [MetadataCustomizerExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/org/jetbrains/ai/tracy/examples/MetadataCustomizerExample.kt)
 
 !!! note "Limitations"
     Annotation-based tracing has some limitations (local functions, Java interoperability). See the [Limitations](../limitations.md) page for details.

@@ -6,7 +6,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
 
 plugins {
-    id("ai.jetbrains.tracy.published-artifact")
+    id("org.jetbrains.ai.tracy.published-artifact")
     id("org.jetbrains.kotlin.multiplatform") version "2.2.0"
 }
 

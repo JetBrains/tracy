@@ -6,17 +6,17 @@ This page documents known limitations of Tracy and recommended workarounds.
 
 OpenTelemetry context propagation works automatically in structured coroutines (e.g., `withContext`, `launch`, `async`). However, certain concurrency patterns create execution boundaries that require manual context propagation.
 
-For complete examples, see [ContextPropagationExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/ContextPropagationExample.kt).
+For complete examples, see [ContextPropagationExample.kt](https://github.com/JetBrains/tracy/blob/main/examples/src/main/kotlin/org/jetbrains/ai/tracy/examples/ContextPropagationExample.kt).
 
 ### Kotlin Coroutines with `runBlocking`
 
 Using `runBlocking` inside a suspend function creates a new execution boundary. Without manual propagation, child spans become detached and appear as separate traces.
 
-**Workaround**: Use [`currentSpanContextElement`]({{ api_docs_url }}/tracing/core/ai.jetbrains.tracy.core.instrumentation.processor/current-span-context-element.html) to propagate context:
+**Workaround**: Use [`currentSpanContextElement`]({{ api_docs_url }}/tracing/core/org.jetbrains.ai.tracy.core.instrumentation.processor/current-span-context-element.html) to propagate context:
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.currentSpanContextElement
-import ai.jetbrains.tracy.core.instrumentation.Trace
+import org.jetbrains.ai.tracy.core.currentSpanContextElement
+import org.jetbrains.ai.tracy.core.instrumentation.Trace
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.runBlocking
 
@@ -44,7 +44,7 @@ Threads created via `thread { ... }` do not inherit the OpenTelemetry context.
 **Workaround**: Capture and propagate the context manually:
 
 <!--- INCLUDE
-import ai.jetbrains.tracy.core.currentSpanContext
+import org.jetbrains.ai.tracy.core.currentSpanContext
 import kotlinx.coroutines.currentCoroutineContext
 import kotlin.concurrent.thread
 
@@ -91,7 +91,7 @@ The Tracy compiler plugin only transforms Kotlin code. Java methods cannot be an
 **Workaround**: Use [Manual Tracing](tracing/manual.md) for Java code:
 
 ```java
-import ai.jetbrains.tracy.core.instrumentation.processor.TracingUtilsKt;
+import org.jetbrains.ai.tracy.core.instrumentation.processor.TracingUtilsKt;
 
 public class MyService {
     public String process(String input) {
