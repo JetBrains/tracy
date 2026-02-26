@@ -98,5 +98,5 @@ parents of Tracy spans as long as the context is active when Tracy-instrumented 
     When passing a custom SDK, you are responsible for its lifecycle — flushing, shutdown, and span processor
     configuration.
 
-See the [OpenTelemetry Integration Example](https://github.com/JetBrains/tracy/tree/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/OpentelemetryIntegrationExample.kt)
+See the [OpenTelemetry Integration Example](https://github.com/JetBrains/tracy/tree/main/examples/src/main/kotlin/ai/jetbrains/tracy/examples/OpenTelemetryIntegrationExample.kt)
 for a complete, runnable demonstration.
