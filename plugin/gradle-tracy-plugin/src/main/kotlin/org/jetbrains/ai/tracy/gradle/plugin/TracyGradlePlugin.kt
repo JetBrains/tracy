@@ -19,7 +19,7 @@ class TracyGradlePlugin : KotlinCompilerPluginSupportPlugin {
          * This value is automatically updated on publishing.
          * Do not rename or remove `VERSION`, or the workflow will fail.
          */
-        const val VERSION = "0.0.28"
+        const val VERSION = "0.0.29"
         const val PATCH_GROUP_BOUNDARY = 20
     }
 
