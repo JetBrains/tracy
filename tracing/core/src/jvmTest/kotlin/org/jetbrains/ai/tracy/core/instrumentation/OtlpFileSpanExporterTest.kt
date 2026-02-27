@@ -11,7 +11,9 @@ import org.jetbrains.ai.tracy.core.exporters.FileExporterConfig
 import org.jetbrains.ai.tracy.core.exporters.OutputFormat
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.*
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.createTempFile
@@ -19,6 +21,13 @@ import kotlin.io.path.readText
 import kotlin.test.assertEquals
 
 
+/**
+ * Requires that the tracing functionality is enabled,
+ * i.e., [TracingManager.isTracingEnabled] should be set to `true`.
+ *
+ * @see OtlpFileSpanExporterTest.setup
+ * @see OtlpFileSpanExporterTest.tearDown
+ */
 class OtlpFileSpanExporterTest {
     @Test
     fun `test tracing into a file successfully writes span into the file`() = runTest {
@@ -69,5 +78,22 @@ class OtlpFileSpanExporterTest {
             span.end()
         }
         TracingManager.flushTraces(10)
+    }
+
+    companion object {
+        private var previousTracingState = TracingManager.isTracingEnabled
+
+        @JvmStatic
+        @AfterAll
+        fun tearDown() {
+            TracingManager.isTracingEnabled = previousTracingState
+        }
+
+        @JvmStatic
+        @BeforeAll
+        fun setup() {
+            previousTracingState = TracingManager.isTracingEnabled
+            TracingManager.isTracingEnabled = true
+        }
     }
 }
