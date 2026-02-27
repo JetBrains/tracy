@@ -173,14 +173,20 @@ internal class LangfuseMediaSpanProcessor(
                 "GET Response for $url doesn't contain body for trace $traceId"))
         }
 
-        return uploadMediaFileToLangfuse(
-            params = LangfuseMediaUploadParams(
-                traceId = traceId,
-                field = field,
-                contentType = contentType,
-                data = data,
-            ), client = client, url = langfuseUrl, auth = langfuseBasicAuth
-        )
+        return try {
+            uploadMediaFileToLangfuse(
+                params = LangfuseMediaUploadParams(
+                    traceId = traceId,
+                    field = field,
+                    contentType = contentType,
+                    data = data,
+                ), client = client, url = langfuseUrl, auth = langfuseBasicAuth
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }
 
