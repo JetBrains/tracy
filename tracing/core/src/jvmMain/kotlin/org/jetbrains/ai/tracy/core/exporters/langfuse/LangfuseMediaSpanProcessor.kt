@@ -220,12 +220,21 @@ internal class LangfuseMediaSpanProcessor(
         }
 
         // request upload URL from Langfuse
+
+        // parsing media type from string to ensure it's valid
+        val mediaType = try {
+            params.contentType.toMediaType()
+        } catch (err: IllegalArgumentException) {
+            return Result.failure(IllegalArgumentException(
+                "Invalid content type '${params.contentType}' for Langfuse media upload",
+                err,
+            ))
+        }
         /**
          * Get upload URL and media ID.
          *
          * See [Langfuse API for `/api/public/media`](https://api.reference.langfuse.com/#tag/media/post/api/public/media).
          */
-        val mediaType = params.contentType.toMediaType()
         val requestBody = LangfuseMediaRequest(
             traceId = params.traceId,
             observationId = params.observationId,
