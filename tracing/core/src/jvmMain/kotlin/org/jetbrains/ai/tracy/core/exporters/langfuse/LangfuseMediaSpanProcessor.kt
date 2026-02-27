@@ -120,11 +120,17 @@ internal class LangfuseMediaSpanProcessor(
     override fun isEndRequired(): Boolean = true
 
     override fun shutdown(): CompletableResultCode {
+        runBlocking {
+            scope.coroutineContext[Job]?.children?.forEach { it.join() }
+        }
         closeClient()
         return CompletableResultCode.ofSuccess()
     }
 
     override fun close() {
+        runBlocking {
+            scope.coroutineContext[Job]?.children?.forEach { it.join() }
+        }
         closeClient()
     }
 
