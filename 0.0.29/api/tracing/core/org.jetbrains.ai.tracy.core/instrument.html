@@ -1,0 +1,120 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>instrument</title>
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js", "js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+      if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      } else {
+        const savedDarkMode = JSON.parse(storage)
+        if (savedDarkMode === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../styles/style.css" rel="Stylesheet">
+<link href="../../../styles/main.css" rel="Stylesheet">
+<link href="../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../scripts/safe-local-storage_blocking.js"></script>
+<script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer></script></head>
+<body>
+<div class="root">
+    <header class="navigation theme-dark" id="navigation-wrapper" role="banner">
+<a class="library-name--link" href="../../../index.html" tabindex="1">
+                    tracy
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">
+        </div>
+        <div class="navigation-controls">
+        <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
+                <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true" data-filter=":tracing:core/jvmMain">jvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox" aria-label="Target filter">
+                    <div class="dropdown--header"><span>Target filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close target filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":tracing:core/jvmMain" data-filter=":tracing:core/jvmMain">
+                                <span class="checkbox--icon"></span>
+                                jvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </ul>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </header>
+    <div id="container">
+        <nav id="leftColumn" class="sidebar" data-item-type="SECTION" data-item-config="{&quot;defaultSize&quot;: 280, &quot;minSize&quot;: 200, &quot;maxSize&quot;: 400}">
+            <a class="toc--skip-link" href="#main">Skip to content</a>
+            <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox" aria-label="Table of contents">
+                    <div class="dropdown--header">
+                            <span>
+                                    tracy
+                            </span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                    <div class="sidebar--inner" id="sideMenu"></div>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </nav>
+        <div id="resizer" class="resizer" data-item-type="BAR"></div>
+        <div id="main" data-item-type="SECTION" role="main">
+<div class="main-content" data-page-type="member" id="content" pageids="core::org.jetbrains.ai.tracy.core//instrument/#okhttp3.OkHttpClient#org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter/PointingToDeclaration//-640728044">
+  <div class="breadcrumbs"><a href="../index.html">core</a><span class="delimiter">/</span><a href="index.html">org.jetbrains.ai.tracy.core</a><span class="delimiter">/</span><span class="current">instrument</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span><span>instrument</span></span></h1>
+  </div>
+  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain" data-active="" data-toggle=":tracing:core/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":tracing:core/jvmMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="instrument.html"><span class="token function">instrument</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">client<span class="token operator">: </span><span data-unresolved-link="okhttp3/OkHttpClient///PointingToDeclaration/">OkHttpClient</span><span class="token punctuation">, </span></span><span class="parameter ">adapter<span class="token operator">: </span><a href="../org.jetbrains.ai.tracy.core.adapters/-l-l-m-tracing-adapter/index.html">LLMTracingAdapter</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/OkHttpClient///PointingToDeclaration/">OkHttpClient</span><span class="source-link-wrapper"><span class="source-link" data-element-type="source-link">(<a href="https://github.com/JetBrains/tracy/tree/main/tracing/core/src/jvmMain/kotlin/org/jetbrains/ai/tracy/core/OpenTelemetryOkHttpInterceptor.kt#L130">source</a>)</span></span></div><p class="paragraph">Instruments an <span data-unresolved-link="okhttp3/OkHttpClient///PointingToDeclaration/">OkHttpClient</span> with OpenTelemetry tracing for LLM provider API calls, returning a cloned and patched instance of the provided <span data-unresolved-link="okhttp3/OkHttpClient///PointingToDeclaration/">OkHttpClient</span>.</p><p class="paragraph">This function adds automatic tracing capabilities to an OkHttp client by injecting an <a href="-open-telemetry-ok-http-interceptor/index.html">OpenTelemetryOkHttpInterceptor</a> configured with the provided <a href="../org.jetbrains.ai.tracy.core.adapters/-l-l-m-tracing-adapter/index.html">LLMTracingAdapter</a>. All HTTP requests made through the instrumented client to LLM provider APIs will be automatically traced, including request/response bodies, token usage, model parameters, tool calls, and errors. Supports both streaming and non-streaming requests.</p><p class="paragraph">This is a lower-level instrumentation function that works with raw OkHttp clients. For provider-specific clients (OpenAI, Anthropic, Gemini), consider using the provider-specific <code class="lang-kotlin">instrument()</code> functions instead.</p><h2 class="">Use Cases</h2><h3 class="">Basic OpenAI API Request</h3><div class="sample-container"><pre><code class="block lang-kotlin" theme="idea">TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))<br>TracingManager.traceSensitiveContent()<br><br>val apiToken = System.getenv("OPENAI_API_KEY")<br>val requestBodyJson = buildJsonObject {<br>    put("model", JsonPrimitive("gpt-4o-mini"))<br>    put("messages", buildJsonArray {<br>        add(buildJsonObject {<br>            put("role", JsonPrimitive("user"))<br>            put("content", JsonPrimitive("Generate polite greeting and introduce yourself"))<br>        })<br>    })<br>    put("temperature", JsonPrimitive(1.0))<br>}<br><br>val client = OkHttpClient()<br>val instrumentedClient = instrument(client, OpenAILLMTracingAdapter())<br><br>val requestBody = Json { prettyPrint = true }<br>    .encodeToString(requestBodyJson)<br>    .toRequestBody("application/json".toMediaType())<br><br>val request = Request.Builder()<br>    .url("https://api.openai.com/v1/chat/completions")<br>    .addHeader("Authorization", "Bearer $apiToken")<br>    .addHeader("Content-Type", "application/json")<br>    .post(requestBody)<br>    .build()<br><br>instrumentedClient.newCall(request).execute().use { response -&gt;<br>    println("Result: ${response.body?.string()}")<br>}<br><br>TracingManager.flushTraces()</code></pre><span class="copy-tooltip"><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div><span class="copy-icon"></span></span></div><h3 class="">Using with Different Providers</h3><div class="sample-container"><pre><code class="block lang-kotlin" theme="idea">// OpenAI<br>val openAiClient = instrument(OkHttpClient(), OpenAILLMTracingAdapter())<br><br>// Anthropic<br>val anthropicClient = instrument(OkHttpClient(), AnthropicLLMTracingAdapter())<br><br>// Gemini<br>val geminiClient = instrument(OkHttpClient(), GeminiLLMTracingAdapter())</code></pre><span class="copy-tooltip"><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div><span class="copy-icon"></span></span></div><h3 class="">Streaming Requests</h3><div class="sample-container"><pre><code class="block lang-kotlin" theme="idea">val client = instrument(OkHttpClient(), OpenAILLMTracingAdapter())<br>val request = Request.Builder()<br>    .url("https://api.openai.com/v1/chat/completions")<br>    .addHeader("Authorization", "Bearer $apiToken")<br>    .post(streamingRequestBody)<br>    .build()<br><br>client.newCall(request).execute().use { response -&gt;<br>    response.body?.source()?.let { source -&gt;<br>        // Read streaming response<br>        while (!source.exhausted()) {<br>            val line = source.readUtf8Line()<br>            // Process streaming data<br>        }<br>    }<br>}<br>// Streaming data is automatically captured and traced</code></pre><span class="copy-tooltip"><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div><span class="copy-icon"></span></span></div><h2 class="">Notes</h2><ul><li><p class="paragraph">This function is <strong>idempotent</strong>: calling <code class="lang-kotlin">instrument()</code> multiple times on the same client will not result in duplicate interceptors.</p></li><li><p class="paragraph">Tracing can be controlled globally via <code class="lang-kotlin">TracingManager.isTracingEnabled</code>.</p></li><li><p class="paragraph"><strong>The original client is not modified; a new client instance with instrumentation is returned</strong>.</p></li><li><p class="paragraph">Content capture policies <a href="-tracing-manager/content-capture-policy.html">TracingManager.contentCapturePolicy</a> can be configured to redact sensitive data.</p></li><li><p class="paragraph">Error responses are automatically captured with error status and messages.</p></li></ul><span class="kdoc-tag"><h4 class="">Return</h4><p class="paragraph"><strong>A new </strong><span data-unresolved-link="okhttp3/OkHttpClient///PointingToDeclaration/"><strong>OkHttpClient</strong></span><strong> instance</strong> with OpenTelemetry tracing enabled (i.e., the initial <a href="instrument.html">client</a> remains <strong>unmodified</strong>)</p></span><h4 class="tableheader">Parameters</h4><div class="table"><div class="table-row table-row_content" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>client</span></span></u></div></span></div><div><div class="title"><p class="paragraph">The OkHttp client to instrument</p></div></div></div></div><div class="table-row table-row_content" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>adapter</span></span></u></div></span></div><div><div class="title"><p class="paragraph">The <a href="../org.jetbrains.ai.tracy.core.adapters/-l-l-m-tracing-adapter/index.html">LLMTracingAdapter</a> specifying which LLM provider adapter to use for tracing</p></div></div></div></div></div><h4 class="tableheader">See also</h4><div class="table"><div class="table-row table-row_content" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="-tracing-manager/index.html"><span>Tracing</span><wbr><span><span>Manager</span></span></a></div></span></div><div></div></div></div><div class="table-row table-row_content" data-filterable-current=":tracing:core/jvmMain" data-filterable-set=":tracing:core/jvmMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="-tracing-manager/trace-sensitive-content.html"><span>Tracing</span><wbr><span>Manager.</span><wbr><span>trace</span><wbr><span>Sensitive</span><wbr><span><span>Content</span></span></a></div></span></div><div></div></div></div></div></div>  </div>
+</div>
+    <div class="footer">
+        <div class="footer--container">
+            <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+            <div class="footer--content">
+                <div>
+                    <span>Generated by </span>
+                    <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                        Dokka
+                    </a>
+                    <div>Copyright © 2026 JetBrains s.r.o.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
