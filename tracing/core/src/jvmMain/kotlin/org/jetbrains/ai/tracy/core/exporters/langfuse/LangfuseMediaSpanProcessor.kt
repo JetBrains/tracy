@@ -147,6 +147,11 @@ internal class LangfuseMediaSpanProcessor(
                 .build()
 
             val (contentType, data) = client.newCall(request).await().use { response ->
+                if (!response.isSuccessful) {
+                    return Result.failure(IllegalStateException(
+                        "Failed to GET media file from $url for trace $traceId, response code ${response.code}"))
+                }
+
                 val contentType = response.header("Content-Type")
                 val data = response.body?.bytes()?.let {
                     Base64.getEncoder().encodeToString(it)
