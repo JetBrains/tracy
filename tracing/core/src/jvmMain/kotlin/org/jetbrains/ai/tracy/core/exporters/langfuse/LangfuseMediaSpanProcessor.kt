@@ -89,9 +89,15 @@ internal class LangfuseMediaSpanProcessor(
 
             when (type) {
                 SupportedMediaContentTypes.URL.type -> {
-                    val url =
-                        span.attributes.get(keys.url) ?: error("URL attribute not found for media item at index $index")
-                    scope.launch { uploadMediaFromUrl(traceId, field, url) }
+                    val url = span.attributes.get(keys.url)
+                        ?: error("URL attribute not found for media item at index $index")
+                    scope.launch {
+                        val result = uploadMediaFromUrl(traceId, field, url)
+                        if (result.isFailure) {
+                            logger.error(result.exceptionOrNull()) {
+                                "Failed to upload media file from $url for trace $traceId" }
+                        }
+                    }
                 }
 
                 SupportedMediaContentTypes.BASE64.type -> {
@@ -110,7 +116,8 @@ internal class LangfuseMediaSpanProcessor(
                             ), client = client, url = langfuseUrl, auth = langfuseBasicAuth
                         )
                         if (result.isFailure) {
-                            logger.error(result.exceptionOrNull()) { "Failed to upload media file to $langfuseUrl for trace $traceId" }
+                            logger.error(result.exceptionOrNull()) {
+                                "Failed to upload media file to $langfuseUrl for trace $traceId" }
                         }
                     }
                 }
@@ -144,29 +151,29 @@ internal class LangfuseMediaSpanProcessor(
         traceId: String,
         field: String,
         url: String,
-    ) {
+    ): Result<LangfuseMediaUploadResponse> {
         val request = Request.Builder()
             .url(url)
             .get()
             .build()
 
         val (contentType, data) = client.newCall(request).await().use { response ->
-            val ct = response.header("Content-Type")
-            val d = response.body?.bytes()?.let {
+            val contentType = response.header("Content-Type")
+            val data = response.body?.bytes()?.let {
                 Base64.getEncoder().encodeToString(it)
             }
-            ct to d
+            contentType to data
         }
 
         if (contentType == null) {
-            logger.warn { "Missing content type of media file at $url for trace $traceId" }
-            return
+            return Result.failure(IllegalStateException(
+                "Missing content type of media file at $url for trace $traceId"))
         } else if (data == null) {
-            logger.warn { "GET Response for $url doesn't contain body for trace $traceId" }
-            return
+            return Result.failure(IllegalStateException(
+                "GET Response for $url doesn't contain body for trace $traceId"))
         }
 
-        val result = uploadMediaFileToLangfuse(
+        return uploadMediaFileToLangfuse(
             params = LangfuseMediaUploadParams(
                 traceId = traceId,
                 field = field,
@@ -174,9 +181,6 @@ internal class LangfuseMediaSpanProcessor(
                 data = data,
             ), client = client, url = langfuseUrl, auth = langfuseBasicAuth
         )
-        if (result.isFailure) {
-            logger.error(result.exceptionOrNull()) { "Failed to upload media file from $url for trace $traceId" }
-        }
     }
 }
 
