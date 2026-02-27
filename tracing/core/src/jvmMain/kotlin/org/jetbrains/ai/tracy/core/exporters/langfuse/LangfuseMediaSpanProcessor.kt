@@ -68,10 +68,6 @@ internal class LangfuseMediaSpanProcessor(
     // whether the client was closed
     private val isClosed = AtomicBoolean(false)
 
-    companion object {
-        private val logger = KotlinLogging.logger {}
-    }
-
     override fun onStart(parentContext: Context, span: ReadWriteSpan) {}
 
     override fun isStartRequired(): Boolean = false
@@ -198,133 +194,136 @@ internal class LangfuseMediaSpanProcessor(
             Result.failure(err)
         }
     }
-}
 
-/**
- * Uploads media content to Langfuse and links it to the given trace
- *
- * @see LangfuseMediaUploadParams
- */
-private suspend fun uploadMediaFileToLangfuse(
-    params: LangfuseMediaUploadParams,
-    client: OkHttpClient,
-    url: String,
-    auth: String,
-): Result<LangfuseMediaUploadResponse> {
-    val json = Json { ignoreUnknownKeys = true }
-
-    // ensure that the media type is valid and compute hash (CPU-bound operations)
-    val (decodedBytes, sha256Hash) = withContext(Dispatchers.Default) {
-        val bytes = Base64.getDecoder().decode(params.data)
-        val hash = Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(bytes))
-        bytes to hash
-    }
-
-    // request upload URL from Langfuse
     /**
-     * Get upload URL and media ID.
+     * Uploads media content to Langfuse and links it to the given trace
      *
-     * See [Langfuse API for `/api/public/media`](https://api.reference.langfuse.com/#tag/media/post/api/public/media).
+     * @see LangfuseMediaUploadParams
      */
-    val mediaType = params.contentType.toMediaType()
-    val requestBody = LangfuseMediaRequest(
-        traceId = params.traceId,
-        observationId = params.observationId,
-        contentType = mediaType.toString(),
-        contentLength = decodedBytes.size,
-        sha256Hash = sha256Hash,
-        field = params.field,
-    )
-
-    val request = Request.Builder()
-        .url("$url/api/public/media")
-        .post(json.encodeToString(requestBody).toRequestBody("application/json".toMediaType()))
-        .addHeader("Authorization", "Basic $auth")
-        .build()
-
-    val uploadResource = client.newCall(request).await().use { response ->
-        if (!response.isSuccessful) {
-            return Result.failure(
-                RequestFailedException(
-                    "Failed to request an upload url and media id from the endpoint $url/api/public/media, response code ${response.code}"
-                )
-            )
+    private suspend fun uploadMediaFileToLangfuse(
+        params: LangfuseMediaUploadParams,
+        client: OkHttpClient,
+        url: String,
+        auth: String,
+    ): Result<LangfuseMediaUploadResponse> {
+        // ensure that the media type is valid and compute hash (CPU-bound operations)
+        val (decodedBytes, sha256Hash) = withContext(Dispatchers.Default) {
+            val bytes = Base64.getDecoder().decode(params.data)
+            val hash = Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(bytes))
+            bytes to hash
         }
 
-        response.body?.string()?.let {
-            json.decodeFromString<LangfusePresignedUploadURL>(it)
-        } ?: return Result.failure(
-            IllegalStateException("Failed to parse upload resource from response")
+        // request upload URL from Langfuse
+        /**
+         * Get upload URL and media ID.
+         *
+         * See [Langfuse API for `/api/public/media`](https://api.reference.langfuse.com/#tag/media/post/api/public/media).
+         */
+        val mediaType = params.contentType.toMediaType()
+        val requestBody = LangfuseMediaRequest(
+            traceId = params.traceId,
+            observationId = params.observationId,
+            contentType = mediaType.toString(),
+            contentLength = decodedBytes.size,
+            sha256Hash = sha256Hash,
+            field = params.field,
         )
-    }
 
-    // put the image to the upload URL
-    if (uploadResource.uploadUrl != null) {
-        // If there is no uploadUrl, the file was already uploaded
-        val uploadRequest = Request.Builder()
-            .url(uploadResource.uploadUrl)
-            .put(decodedBytes.toRequestBody(mediaType))
+        val request = Request.Builder()
+            .url("$url/api/public/media")
+            .post(json.encodeToString(requestBody).toRequestBody("application/json".toMediaType()))
+            .addHeader("Authorization", "Basic $auth")
             .build()
 
-        client.newCall(uploadRequest).await().use { uploadResponse ->
-            if (!uploadResponse.isSuccessful) {
+        val uploadResource = client.newCall(request).await().use { response ->
+            if (!response.isSuccessful) {
                 return Result.failure(
                     RequestFailedException(
-                        "Failed to upload a media file, response code ${uploadResponse.code}"
+                        "Failed to request an upload url and media id from the endpoint $url/api/public/media, response code ${response.code}"
                     )
                 )
             }
 
-            // update upload status
-            val patchRequestBody = LangfuseMediaUploadDetailsRequest(
-                uploadedAt = ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                uploadHttpStatus = uploadResponse.code,
-                uploadHttpError = if (!uploadResponse.isSuccessful) uploadResponse.message else null,
+            response.body?.string()?.let {
+                json.decodeFromString<LangfusePresignedUploadURL>(it)
+            } ?: return Result.failure(
+                IllegalStateException("Failed to parse upload resource from response")
             )
+        }
 
-            val patchRequest = Request.Builder()
-                .url("$url/api/public/media/${uploadResource.mediaId}")
-                .patch(json.encodeToString(patchRequestBody).toRequestBody("application/json".toMediaType()))
-                .addHeader("Authorization", "Basic $auth")
+        // put the image to the upload URL
+        if (uploadResource.uploadUrl != null) {
+            // If there is no uploadUrl, the file was already uploaded
+            val uploadRequest = Request.Builder()
+                .url(uploadResource.uploadUrl)
+                .put(decodedBytes.toRequestBody(mediaType))
                 .build()
 
-            client.newCall(patchRequest).await().use { patchResponse ->
-                if (!patchResponse.isSuccessful) {
+            client.newCall(uploadRequest).await().use { uploadResponse ->
+                if (!uploadResponse.isSuccessful) {
                     return Result.failure(
                         RequestFailedException(
-                            "Failed to patch a media file with id ${uploadResource.mediaId}, response code ${patchResponse.code}"
+                            "Failed to upload a media file, response code ${uploadResponse.code}"
                         )
                     )
                 }
+
+                // update upload status
+                val patchRequestBody = LangfuseMediaUploadDetailsRequest(
+                    uploadedAt = ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                    uploadHttpStatus = uploadResponse.code,
+                    uploadHttpError = if (!uploadResponse.isSuccessful) uploadResponse.message else null,
+                )
+
+                val patchRequest = Request.Builder()
+                    .url("$url/api/public/media/${uploadResource.mediaId}")
+                    .patch(json.encodeToString(patchRequestBody).toRequestBody("application/json".toMediaType()))
+                    .addHeader("Authorization", "Basic $auth")
+                    .build()
+
+                client.newCall(patchRequest).await().use { patchResponse ->
+                    if (!patchResponse.isSuccessful) {
+                        return Result.failure(
+                            RequestFailedException(
+                                "Failed to patch a media file with id ${uploadResource.mediaId}, response code ${patchResponse.code}"
+                            )
+                        )
+                    }
+                }
             }
         }
-    }
 
-    // retrieving the media data from Langfuse,
-    // see details here: https://api.reference.langfuse.com/#tag/media/get/api/public/media/{mediaId}
-    val mediaDataRequest = Request.Builder()
-        .url("$url/api/public/media/${uploadResource.mediaId}")
-        .get()
-        .addHeader("Authorization", "Basic $auth")
-        .build()
+        // retrieving the media data from Langfuse,
+        // see details here: https://api.reference.langfuse.com/#tag/media/get/api/public/media/{mediaId}
+        val mediaDataRequest = Request.Builder()
+            .url("$url/api/public/media/${uploadResource.mediaId}")
+            .get()
+            .addHeader("Authorization", "Basic $auth")
+            .build()
 
-    val result = client.newCall(mediaDataRequest).await().use { mediaDataResponse ->
-        if (!mediaDataResponse.isSuccessful) {
-            return Result.failure(
-                RequestFailedException(
-                    "Failed to retrieve a media file with id ${uploadResource.mediaId}, response code ${mediaDataResponse.code}"
+        val result = client.newCall(mediaDataRequest).await().use { mediaDataResponse ->
+            if (!mediaDataResponse.isSuccessful) {
+                return Result.failure(
+                    RequestFailedException(
+                        "Failed to retrieve a media file with id ${uploadResource.mediaId}, response code ${mediaDataResponse.code}"
+                    )
                 )
+            }
+
+            mediaDataResponse.body?.string()?.let {
+                json.decodeFromString<LangfuseMediaUploadResponse>(it)
+            } ?: return Result.failure(
+                IllegalStateException("Failed to parse media data from response")
             )
         }
 
-        mediaDataResponse.body?.string()?.let {
-            json.decodeFromString<LangfuseMediaUploadResponse>(it)
-        } ?: return Result.failure(
-            IllegalStateException("Failed to parse media data from response")
-        )
+        return Result.success(result)
     }
 
-    return Result.success(result)
+    companion object {
+        private val logger = KotlinLogging.logger {}
+        private val json = Json { ignoreUnknownKeys = true }
+    }
 }
 
 private class RequestFailedException(message: String) : RuntimeException(message)
