@@ -345,8 +345,8 @@ gradle.rootProject {
                     isUserManaged = isUserManaged,
                     userName = userName,
                     accessToken = token,
-                    maxTimeout = 60.minutes,
-                    minTimeBetweenAttempts = 5.seconds
+                    maxTimeout = 120.minutes,
+                    minTimeBetweenAttempts = 90.seconds
                 )
             }
         }
