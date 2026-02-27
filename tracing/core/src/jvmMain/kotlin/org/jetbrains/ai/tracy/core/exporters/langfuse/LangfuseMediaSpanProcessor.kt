@@ -260,42 +260,19 @@ internal class LangfuseMediaSpanProcessor(
         // put the image to the upload URL
         if (uploadResource.uploadUrl != null) {
             // If there is no uploadUrl, the file was already uploaded
-            val uploadRequest = Request.Builder()
-                .url(uploadResource.uploadUrl)
-                .put(decodedBytes.toRequestBody(mediaType))
-                .build()
-
-            client.newCall(uploadRequest).await().use { uploadResponse ->
-                if (!uploadResponse.isSuccessful) {
-                    return Result.failure(
-                        RequestFailedException(
-                            "Failed to upload a media file, response code ${uploadResponse.code}"
-                        )
-                    )
+            val result = uploadBytesByUploadUrl(
+                url = url,
+                auth = auth,
+                bytes = decodedBytes,
+                mediaType = mediaType,
+                uploadResource = uploadResource,
+            )
+            if (result.isFailure) {
+                logger.error(result.exceptionOrNull()) {
+                    "Encountered error(s) during upload of a media file to Langfuse"
                 }
-
-                // update upload status
-                val patchRequestBody = LangfuseMediaUploadDetailsRequest(
-                    uploadedAt = ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                    uploadHttpStatus = uploadResponse.code,
-                    uploadHttpError = if (!uploadResponse.isSuccessful) uploadResponse.message else null,
-                )
-
-                val patchRequest = Request.Builder()
-                    .url("$url/api/public/media/${uploadResource.mediaId}")
-                    .patch(json.encodeToString(patchRequestBody).toRequestBody("application/json".toMediaType()))
-                    .addHeader("Authorization", "Basic $auth")
-                    .build()
-
-                client.newCall(patchRequest).await().use { patchResponse ->
-                    if (!patchResponse.isSuccessful) {
-                        return Result.failure(
-                            RequestFailedException(
-                                "Failed to patch a media file with id ${uploadResource.mediaId}, response code ${patchResponse.code}"
-                            )
-                        )
-                    }
-                }
+            } else if (result.isSuccess) {
+                logger.info { "Successfully uploaded media file to Langfuse" }
             }
         }
 
@@ -324,6 +301,65 @@ internal class LangfuseMediaSpanProcessor(
         }
 
         return Result.success(result)
+    }
+
+    private suspend fun uploadBytesByUploadUrl(
+        url: String,
+        auth: String,
+        bytes: ByteArray,
+        mediaType: MediaType,
+        uploadResource: LangfusePresignedUploadURL,
+    ): Result<Unit> {
+        // if there is no uploadUrl, the file was already uploaded before
+        if (uploadResource.uploadUrl == null) {
+            return Result.success(Unit)
+        }
+
+        val uploadRequest = Request.Builder()
+            .url(uploadResource.uploadUrl)
+            .put(bytes.toRequestBody(mediaType))
+            .build()
+
+        val errorMessages = mutableListOf<String>()
+
+        client.newCall(uploadRequest).await().use { uploadResponse ->
+            if (!uploadResponse.isSuccessful) {
+                errorMessages.add(
+                    "Failed to upload a media file, response code ${uploadResponse.code}: ${uploadResponse.message}")
+            }
+
+            // update upload status
+            val patchRequestBody = LangfuseMediaUploadDetailsRequest(
+                uploadedAt = ZonedDateTime.now(ZoneOffset.UTC)
+                    .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                uploadHttpStatus = uploadResponse.code,
+                uploadHttpError = if (!uploadResponse.isSuccessful) uploadResponse.message else null,
+            )
+
+            val patchRequest = Request.Builder()
+                .url("$url/api/public/media/${uploadResource.mediaId}")
+                .patch(
+                    json.encodeToString(patchRequestBody)
+                        .toRequestBody("application/json".toMediaType())
+                )
+                .addHeader("Authorization", "Basic $auth")
+                .build()
+
+            client.newCall(patchRequest).await().use { patchResponse ->
+                if (!patchResponse.isSuccessful) {
+                    errorMessages.add(
+                        "Failed to patch a media file with id ${uploadResource.mediaId}, response code ${patchResponse.code}: ${patchResponse.message}")
+                }
+            }
+        }
+
+        return if (errorMessages.isEmpty()) {
+            Result.success(Unit)
+        } else {
+            Result.failure(RequestFailedException(
+                errorMessages.joinToString("\n")
+            ))
+        }
     }
 
     companion object {
