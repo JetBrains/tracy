@@ -207,10 +207,16 @@ internal class LangfuseMediaSpanProcessor(
         auth: String,
     ): Result<LangfuseMediaUploadResponse> {
         // ensure that the media type is valid and compute hash (CPU-bound operations)
-        val (decodedBytes, sha256Hash) = withContext(Dispatchers.Default) {
-            val bytes = Base64.getDecoder().decode(params.data)
-            val hash = Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(bytes))
-            bytes to hash
+        val (decodedBytes, sha256Hash) = try {
+            withContext(Dispatchers.Default) {
+                val bytes = Base64.getDecoder().decode(params.data)
+                val hash = Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(bytes))
+                bytes to hash
+            }
+        } catch (err: IllegalArgumentException) {
+            return Result.failure(IllegalArgumentException(
+                "Failed to decode Base64 media data for upload to Langfuse. Data may contain invalid Base64 characters", err)
+            )
         }
 
         // request upload URL from Langfuse
