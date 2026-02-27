@@ -65,8 +65,8 @@ internal class LangfuseMediaSpanProcessor(
     private val langfuseUrl: String,
     private val langfuseBasicAuth: String,
 ) : SpanProcessor {
-    // whether the client was closed
-    private val isClosed = AtomicBoolean(false)
+    // flag indicating whether the client has been closed
+    private val isClientClosed = AtomicBoolean(false)
 
     override fun onStart(parentContext: Context, span: ReadWriteSpan) {}
 
@@ -129,7 +129,7 @@ internal class LangfuseMediaSpanProcessor(
     }
 
     private fun closeClient() {
-        if (isClosed.compareAndSet(false, true)) {
+        if (isClientClosed.compareAndSet(false, true)) {
             client.dispatcher.executorService.shutdown()
             client.connectionPool.evictAll()
         }
