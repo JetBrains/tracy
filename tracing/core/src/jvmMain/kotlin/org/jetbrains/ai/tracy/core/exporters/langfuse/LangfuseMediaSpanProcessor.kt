@@ -318,8 +318,8 @@ internal class LangfuseMediaSpanProcessor(
 
             mediaDataResponse.body?.string()?.let {
                 json.decodeFromString<LangfuseMediaUploadResponse>(it)
-            } ?: return Result.failure(
-                IllegalStateException("Failed to parse media data from response")
+            } ?: return Result.failure(IllegalStateException(
+                    "Failed to parse media data from response or the response body is null")
             )
         }
 
