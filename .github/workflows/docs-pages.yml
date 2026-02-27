@@ -2,13 +2,12 @@ name: Publish Docs to GitHub Pages
 
 on:
   push:
-    branches:
-      - amaltseva/TRACY-71-public-documentation-hosting
     tags:
       - '*'
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: docs-${{ github.ref_type }}
@@ -83,15 +82,14 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            VERSION="${GITHUB_REF_NAME}"
-            # Strip leading "v" from tag for cleaner version labels (e.g. v1.2.3 -> 1.2.3)
-            if [[ "$VERSION" == v* ]]; then
-              VERSION="${VERSION#v}"
-            fi
-            uv run mike deploy --branch gh-pages --push --update-aliases "$VERSION" latest
-            uv run mike set-default --branch gh-pages --push latest
-          else
-            # Publish main separately; keep "latest" pointing to the most recent tag.
-            uv run mike deploy --branch gh-pages --push main
+          VERSION="${GITHUB_REF_NAME}"
+          # Strip leading "v" from tag for cleaner version labels (e.g. v1.2.3 -> 1.2.3)
+          if [[ "$VERSION" == v* ]]; then
+            VERSION="${VERSION#v}"
           fi
+          TEMP_BRANCH="docs/gh-pages-${VERSION}"
+          git fetch origin gh-pages
+          # Base temp branch on gh-pages without checking it out, so mkdocs.yml stays available.
+          git update-ref "refs/heads/$TEMP_BRANCH" "refs/remotes/origin/gh-pages"
+          uv run mike deploy --branch "$TEMP_BRANCH" --push --update-aliases "$VERSION" latest
+          uv run mike set-default --branch "$TEMP_BRANCH" --push latest
