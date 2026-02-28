@@ -40,11 +40,17 @@ private suspend fun Call.await(): Response {
         }
         enqueue(object : Callback {
             override fun onResponse(call: Call, response: Response) {
-                continuation.resume(response)
+                if (continuation.isActive) {
+                    continuation.resume(response)
+                } else {
+                    response.close()
+                }
             }
 
             override fun onFailure(call: Call, e: IOException) {
-                continuation.resumeWithException(e)
+                if (continuation.isActive) {
+                    continuation.resumeWithException(e)
+                }
             }
         })
     }
