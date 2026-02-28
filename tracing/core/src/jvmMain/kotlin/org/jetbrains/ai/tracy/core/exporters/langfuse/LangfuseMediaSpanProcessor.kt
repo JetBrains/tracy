@@ -67,12 +67,29 @@ private suspend fun Call.await(): Response {
  */
 internal class LangfuseMediaSpanProcessor(
     private val scope: CoroutineScope,
-    private val client: OkHttpClient = OkHttpClient(),
+    /**
+     * OkHttpClient to use for HTTP requests.
+     * When `null`, a new client is created and owned by this processor (i.e., it will be shut
+     * down on [shutdown]/[close]). When a client is provided by the caller, this processor does
+     * not take ownership and will NOT shut it down, since it may be shared with other components.
+     */
+    httpClient: OkHttpClient? = null,
     private val langfuseUrl: String,
     private val langfuseBasicAuth: String,
 ) : SpanProcessor {
-    // flag indicating whether the client has been closed
+    // OkHttpClient owned by this processor; null if the client was provided externally.
+    private val ownedClient: OkHttpClient? = if (httpClient == null) OkHttpClient() else null
+    private val client: OkHttpClient = httpClient ?: ownedClient!!
+
+    // flag indicating whether the owned client has been closed
     private val isClientClosed = AtomicBoolean(false)
+
+    // tracks in-flight upload jobs to allow graceful shutdown
+    private val activeJobs: MutableList<Job> = Collections.synchronizedList(mutableListOf())
+
+    // dedicated scope for the shutdown coroutine, separate from `scope` so that external
+    // cancellation of `scope` does not prevent graceful shutdown from completing
+    private val shutdownScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override fun onStart(parentContext: Context, span: ReadWriteSpan) {}
 
@@ -93,13 +110,13 @@ internal class LangfuseMediaSpanProcessor(
                 SupportedMediaContentTypes.URL.type -> {
                     val url = span.attributes.get(keys.url)
                         ?: error("URL attribute not found for media item at index $index")
-                    scope.launch {
+                    trackJob(scope.launch {
                         val result = uploadMediaFromUrl(traceId, field, url)
                         if (result.isFailure) {
                             logger.error(result.exceptionOrNull()) {
                                 "Failed to upload media file from $url for trace $traceId" }
                         }
-                    }
+                    })
                 }
 
                 SupportedMediaContentTypes.BASE64.type -> {
@@ -107,13 +124,13 @@ internal class LangfuseMediaSpanProcessor(
                         ?: error("Content type attribute not found for media item at index $index")
                     val data = span.attributes.get(keys.data)
                         ?: error("Data attribute not found for media item at index $index")
-                    scope.launch {
+                    trackJob(scope.launch {
                         val result = uploadMediaFromBase64(traceId, field, contentType, data)
                         if (result.isFailure) {
                             logger.error(result.exceptionOrNull()) {
                                 "Failed to upload media file to $langfuseUrl for trace $traceId" }
                         }
-                    }
+                    })
                 }
 
                 else -> error("Unsupported media content type '$type'")
@@ -126,18 +143,45 @@ internal class LangfuseMediaSpanProcessor(
     override fun isEndRequired(): Boolean = true
 
     override fun shutdown(): CompletableResultCode {
-        closeClient()
-        return CompletableResultCode.ofSuccess()
+        val result = CompletableResultCode()
+        shutdownScope.launch {
+            try {
+                awaitActiveJobs()
+                closeOwnedClient()
+                result.succeed()
+            } finally {
+                shutdownScope.cancel()
+            }
+        }
+        return result
     }
 
     override fun close() {
-        closeClient()
+        runBlocking { awaitActiveJobs() }
+        closeOwnedClient()
     }
 
-    private fun closeClient() {
-        if (isClientClosed.compareAndSet(false, true)) {
-            client.dispatcher.executorService.shutdown()
-            client.connectionPool.evictAll()
+    private fun trackJob(job: Job) {
+        activeJobs.add(job)
+        job.invokeOnCompletion { activeJobs.remove(job) }
+    }
+
+    private suspend fun awaitActiveJobs() {
+        // snapshot the list to avoid concurrent modification while iterating
+        activeJobs.toList().forEach { job ->
+            try {
+                job.join()
+            } catch (_: CancellationException) {
+                // The upload job was cancelled (e.g. the outer scope was cancelled before
+                // shutdown). There is nothing left to await for this job.
+            }
+        }
+    }
+
+    private fun closeOwnedClient() {
+        if (ownedClient != null && isClientClosed.compareAndSet(false, true)) {
+            ownedClient.dispatcher.executorService.shutdown()
+            ownedClient.connectionPool.evictAll()
         }
     }
 
