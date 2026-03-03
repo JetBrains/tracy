@@ -309,7 +309,7 @@ internal class LangfuseMediaSpanProcessor(
                     "Encountered error(s) during upload of a media file to Langfuse"
                 }
             } else if (result.isSuccess) {
-                logger.info { "Successfully uploaded media file to Langfuse" }
+                logger.debug { "Successfully uploaded media file to Langfuse" }
             }
         }
 
