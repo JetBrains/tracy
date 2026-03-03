@@ -14,47 +14,21 @@ import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
-import okhttp3.*
+import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.coroutines.executeAsync
 import org.jetbrains.ai.tracy.core.adapters.media.SupportedMediaContentTypes
 import org.jetbrains.ai.tracy.core.adapters.media.UploadableMediaContentAttributeKeys
-import java.io.IOException
 import java.security.MessageDigest
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
-/**
- * Extension function to convert OkHttp's callback-based async API to Kotlin suspend functions.
- * Provides proper coroutine cancellation support and non-blocking HTTP operations.
- */
-private suspend fun Call.await(): Response {
-    return suspendCancellableCoroutine { continuation ->
-        continuation.invokeOnCancellation {
-            cancel()
-        }
-        enqueue(object : Callback {
-            override fun onResponse(call: Call, response: Response) {
-                if (continuation.isActive) {
-                    continuation.resume(response)
-                } else {
-                    response.close()
-                }
-            }
-
-            override fun onFailure(call: Call, e: IOException) {
-                if (continuation.isActive) {
-                    continuation.resumeWithException(e)
-                }
-            }
-        })
-    }
-}
 
 /**
  * Extracts attributes of media content attached to the span
@@ -199,7 +173,7 @@ internal class LangfuseMediaSpanProcessor(
                 .get()
                 .build()
 
-            val (contentType, data) = client.newCall(request).await().use { response ->
+            val (contentType, data) = client.newCall(request).executeAsync().use { response ->
                 if (!response.isSuccessful) {
                     return Result.failure(IllegalStateException(
                         "Failed to GET media file from $url for trace $traceId, response code ${response.code}"))
@@ -308,7 +282,7 @@ internal class LangfuseMediaSpanProcessor(
             .addHeader("Authorization", "Basic $auth")
             .build()
 
-        val uploadResource = client.newCall(request).await().use { response ->
+        val uploadResource = client.newCall(request).executeAsync().use { response ->
             if (!response.isSuccessful) {
                 return Result.failure(
                     RequestFailedException(
@@ -351,7 +325,7 @@ internal class LangfuseMediaSpanProcessor(
             .addHeader("Authorization", "Basic $auth")
             .build()
 
-        val result = client.newCall(mediaDataRequest).await().use { mediaDataResponse ->
+        val result = client.newCall(mediaDataRequest).executeAsync().use { mediaDataResponse ->
             if (!mediaDataResponse.isSuccessful) {
                 return Result.failure(
                     RequestFailedException(
@@ -389,7 +363,7 @@ internal class LangfuseMediaSpanProcessor(
 
         val errorMessages = mutableListOf<String>()
 
-        client.newCall(uploadRequest).await().use { uploadResponse ->
+        client.newCall(uploadRequest).executeAsync().use { uploadResponse ->
             if (!uploadResponse.isSuccessful) {
                 errorMessages.add(
                     "Failed to upload a media file, response code ${uploadResponse.code}: ${uploadResponse.message}")
@@ -412,7 +386,7 @@ internal class LangfuseMediaSpanProcessor(
                 .addHeader("Authorization", "Basic $auth")
                 .build()
 
-            client.newCall(patchRequest).await().use { patchResponse ->
+            client.newCall(patchRequest).executeAsync().use { patchResponse ->
                 if (!patchResponse.isSuccessful) {
                     errorMessages.add(
                         "Failed to patch a media file with id ${uploadResource.mediaId}, response code ${patchResponse.code}: ${patchResponse.message}")
