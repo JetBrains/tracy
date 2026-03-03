@@ -181,7 +181,7 @@ internal class LangfuseMediaSpanProcessor(
                 }
 
                 val contentType = response.header("Content-Type")
-                val data = response.body?.bytes()?.let {
+                val data = response.body.bytes().let {
                     Base64.getEncoder().encodeToString(it)
                 }
                 contentType to data
@@ -292,11 +292,9 @@ internal class LangfuseMediaSpanProcessor(
                 )
             }
 
-            response.body?.string()?.let {
+            response.body.string().let {
                 json.decodeFromString<LangfusePresignedUploadURL>(it)
-            } ?: return Result.failure(
-                IllegalStateException("Failed to parse upload resource from response")
-            )
+            }
         }
 
         // put the image to the upload URL
@@ -335,11 +333,9 @@ internal class LangfuseMediaSpanProcessor(
                 )
             }
 
-            mediaDataResponse.body?.string()?.let {
+            mediaDataResponse.body.string().let {
                 json.decodeFromString<LangfuseMediaUploadResponse>(it)
-            } ?: return Result.failure(IllegalStateException(
-                    "Failed to parse media data from response or the response body is null")
-            )
+            }
         }
 
         return Result.success(result)
