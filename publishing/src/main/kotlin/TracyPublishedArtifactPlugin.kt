@@ -18,7 +18,7 @@ class TracyPublishedArtifactPlugin : Plugin<Project> {
          * This value is automatically updated by the TeamCity build.
          * Do not rename or remove `VERSION`, or the workflow will fail.
          */
-        private const val VERSION = "0.0.29"
+        private const val VERSION = "0.1.0"
     }
 
     override fun apply(project: Project) {
