@@ -190,9 +190,6 @@ internal class LangfuseMediaSpanProcessor(
             if (contentType == null) {
                 return Result.failure(IllegalStateException(
                     "Missing content type of media file at $url for trace $traceId"))
-            } else if (data == null) {
-                return Result.failure(IllegalStateException(
-                    "GET Response for $url doesn't contain body for trace $traceId"))
             }
 
             return uploadMediaFileToLangfuse(
