@@ -144,8 +144,9 @@ internal class LangfuseMediaSpanProcessor(
     }
 
     private suspend fun awaitActiveJobs() {
-        // snapshot the list to avoid concurrent modification while iterating
-        activeJobs.toList().forEach { job ->
+        // Snapshot the list under synchronization to avoid concurrent modification
+        val jobsSnapshot = synchronized(activeJobs) { activeJobs.toList() }
+        for (job in jobsSnapshot) {
             try {
                 job.join()
             } catch (_: CancellationException) {
