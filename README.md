@@ -5,8 +5,8 @@
 [![Kotlin](https://img.shields.io/badge/kotlin-2.1-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![GitHub license](https://img.shields.io/github/license/JetBrains/tracy)](LICENSE)
 [![YouTrack Issues](https://img.shields.io/badge/Issue%20Tracker-YouTrack-blue)](https://youtrack.jetbrains.com/issues/TRACY)
-[![Documentation](https://img.shields.io/badge/documentation-blue)](https://tracy.labs.jb.gg/)
-[![API Docs](https://img.shields.io/badge/API-Docs-blue)](https://api-tracy.labs.jb.gg/)
+[![Documentation](https://img.shields.io/badge/documentation-blue)](https://jetbrains.github.io/tracy/latest)
+[![API Docs](https://img.shields.io/badge/API-Docs-blue)](https://jetbrains.github.io/tracy/latest/api)
 
 **Tracy** helps you **trace, monitor, and evaluate AI-powered features** directly from your Kotlin or Java projects.
 
