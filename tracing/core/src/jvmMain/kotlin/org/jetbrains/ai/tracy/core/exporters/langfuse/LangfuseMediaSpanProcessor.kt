@@ -149,6 +149,9 @@ internal class LangfuseMediaSpanProcessor(
                 awaitActiveJobs()
                 closeOwnedClient()
                 result.succeed()
+            } catch (err: Throwable) {
+                logger.error(err) { "Failed to shutdown Langfuse media span processor" }
+                result.failExceptionally(err)
             } finally {
                 shutdownScope.cancel()
             }
@@ -323,7 +326,7 @@ internal class LangfuseMediaSpanProcessor(
 
         // put the image to the upload URL
         if (uploadResource.uploadUrl != null) {
-            // If there is no uploadUrl, the file was already uploaded
+            // If uploadUrl is present, we need to upload the file (otherwise it was already uploaded)
             val result = uploadBytesByUploadUrl(
                 url = url,
                 auth = auth,
