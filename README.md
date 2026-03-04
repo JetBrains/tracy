@@ -15,7 +15,7 @@ platforms like **Langfuse** and **Weights & Biases (W&B)**.
 
 > [!Note]
 > This project uses [Tracy Official YouTrack Project](https://youtrack.jetbrains.com/issues/TRACY) for issue tracking.
-> Please file bug reports and feature requests there. Issue templates and additional details are available in
+> Please file bug reports and feature requests there. Additional details are available in
 > the [Contributing Guidelines](CONTRIBUTING.md).
 
 **Standards:**  
