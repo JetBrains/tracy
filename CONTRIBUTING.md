@@ -7,6 +7,13 @@ One can contribute to the project by reporting issues or submitting changes via 
 Please use the [Tracy YouTrack project](https://youtrack.jetbrains.com/issues/TRACY)
 for creating feature requests and reporting bugs.
 
+## Branching Strategy
+
+This project uses a two-branch model:
+
+- **`main`** — the primary development branch. All pull requests should target `main`.
+- **`release`** — the release branch. Maintainers rebase this branch from `main` when preparing a release.
+
 ## Submitting Changes
 
 Submit pull requests [here](https://github.com/JetBrains/tracy/pulls).  
