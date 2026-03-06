@@ -6,6 +6,7 @@
 package org.jetbrains.ai.tracy.openai.adapters.handlers.videos.routes
 
 import io.opentelemetry.api.trace.Span
+import mu.KotlinLogging
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.openai.adapters.handlers.videos.VideosOpenAIApiEndpointHandler
@@ -17,13 +18,12 @@ internal class GetVideoContentHandler : VideoRouteHandler {
     /**
      * Request: Path parameter video_id, query parameter variant
      */
-    override fun handleRequest(
-        span: Span,
-        request: TracyHttpRequest
-    ) {
+    override fun handleRequest(span: Span, request: TracyHttpRequest) {
         val videoId = extractVideoIdFromPath(request.url)
         if (videoId != null) {
             span.setAttribute("gen_ai.request.video.requested_id", videoId)
+        } else {
+            logger.warn { "Failed to extract video ID from URL: ${request.url}" }
         }
 
         request.url.parameters.queryParameter("variant")?.let {
@@ -34,12 +34,13 @@ internal class GetVideoContentHandler : VideoRouteHandler {
     /**
      * Response: Binary video stream (trace metadata only)
      */
-    override fun handleResponse(
-        span: Span,
-        response: TracyHttpResponse
-    ) {
+    override fun handleResponse(span: Span, response: TracyHttpResponse) {
         // Binary stream response - trace metadata only
-        span.setAttribute("gen_ai.response.content_type", "video/mp4")
+        span.setAttribute("gen_ai.response.content_type", response.contentType?.asString())
         span.setAttribute("gen_ai.response.is_binary_stream", true)
+    }
+
+    companion object {
+        private val logger = KotlinLogging.logger {}
     }
 }

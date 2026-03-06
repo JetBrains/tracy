@@ -10,6 +10,7 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESP
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import mu.KotlinLogging
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.core.http.protocol.asJson
@@ -22,33 +23,25 @@ internal class DeleteVideoHandler : VideoRouteHandler {
     /**
      * Request: Path parameter video_id
      */
-    override fun handleRequest(
-        span: Span,
-        request: TracyHttpRequest
-    ) {
+    override fun handleRequest(span: Span, request: TracyHttpRequest) {
         val videoId = extractVideoIdFromPath(request.url)
         if (videoId != null) {
             span.setAttribute("gen_ai.request.video.requested_id", videoId)
+        } else {
+            logger.warn { "Failed to extract video ID from URL: ${request.url}" }
         }
     }
 
     /**
      * Response: { id, deleted, object }
      */
-    override fun handleResponse(
-        span: Span,
-        response: TracyHttpResponse
-    ) {
+    override fun handleResponse(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
+        body["id"]?.let { span.setAttribute("gen_ai.response.video.id", it.jsonPrimitive.content) }
+        body["deleted"]?.let { span.setAttribute("gen_ai.response.deleted", it.jsonPrimitive.boolean) }
+    }
 
-        body["id"]?.let {
-            span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content)
-        }
-        body["deleted"]?.let {
-            span.setAttribute("gen_ai.response.deleted", it.jsonPrimitive.boolean)
-        }
-        body["object"]?.let {
-            span.setAttribute("gen_ai.response.object", it.jsonPrimitive.content)
-        }
+    companion object {
+        private val logger = KotlinLogging.logger {}
     }
 }
