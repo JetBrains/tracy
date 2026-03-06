@@ -5,21 +5,26 @@
 
 package org.jetbrains.ai.tracy.openai.adapters.handlers.videos
 
+import com.openai.core.MultipartField
+import com.openai.errors.NotFoundException
+import com.openai.models.videos.*
+import io.opentelemetry.api.common.AttributeKey
+import io.opentelemetry.api.trace.StatusCode
+import kotlinx.coroutines.test.runTest
 import org.jetbrains.ai.tracy.core.TracingManager
 import org.jetbrains.ai.tracy.core.policy.ContentCapturePolicy
 import org.jetbrains.ai.tracy.openai.adapters.BaseOpenAITracingTest
 import org.jetbrains.ai.tracy.openai.clients.instrument
 import org.jetbrains.ai.tracy.test.utils.MediaSource
+import org.jetbrains.ai.tracy.test.utils.loadFile
 import org.jetbrains.ai.tracy.test.utils.toMediaContentAttributeValues
-import com.openai.models.videos.*
-import io.opentelemetry.api.common.AttributeKey
-import io.opentelemetry.api.trace.StatusCode
-import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import java.io.InputStream
 import java.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
@@ -42,10 +47,10 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         println("trace:\n${trace.attributes}")
     }
 
-    // ============ POST /videos (CREATE) ============
+    // ============ CREATE: POST /videos ============
 
     @Test
-    fun `test POST videos - basic video creation tracing`() = runTest(timeout = 3.minutes) {
+    fun `test CREATE video endpoint gets traced`() = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
         val client = createOpenAIClient(
@@ -61,20 +66,20 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             .model(model)
             .build()
 
-        val response = client.videos().create(params)
+        val video = client.videos().create(params)
 
         validateBasicVideoTracing(prompt, model)
         val trace = analyzeSpans().first()
 
         // Verify a Video model is traced
         assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.video.id")])
-        assertEquals(response.id(), trace.attributes[AttributeKey.stringKey("gen_ai.video.id")])
+        assertEquals(video.id(), trace.attributes[AttributeKey.stringKey("gen_ai.video.id")])
         assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.video.status")])
         assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.video.created_at")])
     }
 
     @Test
-    fun `test POST videos - with input reference file`() = runTest(timeout = 3.minutes) {
+    fun `test CREATE video endpoint with input reference gets traced`() = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
         val client = createOpenAIClient(
@@ -84,34 +89,55 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
         val prompt = "Animate this image with realistic motion"
         val model = VideoModel.SORA_2
-        val referenceFile = MediaSource.File("cat-n-dog-1.png", "image/png")
+        val size = VideoSize._1280X720
+        // Inpaint image must match the requested width and height,
+        // i.e., dimensions of the image must match the `size` property
+        val referenceFile = MediaSource.File("aloha-1280x720.png", "image/png")
+        val file = loadFile(referenceFile.filepath)
 
-        /*
         val params = VideoCreateParams.builder()
             .prompt(prompt)
             .model(model)
-            .inputReference(referenceFile.filepath)
+            .size(size)
+            .inputReference(
+                MultipartField.builder<InputStream>()
+                    .value(file.inputStream())
+                    .contentType(referenceFile.contentType)
+                    .filename(referenceFile.filepath)
+                    .build()
+            )
             .build()
 
-        client.videos().create(params)
+        val video = client.videos().create(params)
 
         validateBasicVideoTracing(prompt, model)
         val trace = analyzeSpans().first()
 
-        // Verify input reference is traced
+        assertEquals(video.id(), trace.attributes[AttributeKey.stringKey("gen_ai.response.video.id")])
+        assertEquals(
+            size.asString(),
+            trace.attributes[AttributeKey.stringKey("gen_ai.request.size")]
+        )
+        // verify input reference is traced
         assertEquals("true", trace.attributes[AttributeKey.stringKey("gen_ai.request.input_reference.has_data")])
-        assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.request.input_reference.contentType")])
+        assertEquals(
+            referenceFile.contentType,
+            trace.attributes[AttributeKey.stringKey("gen_ai.request.input_reference.contentType")]
+        )
+        assertEquals(
+            referenceFile.filepath,
+            trace.attributes[AttributeKey.stringKey("gen_ai.request.input_reference.filename")]
+        )
 
         verifyMediaContentUploadAttributes(
             trace, expected = listOf(
                 referenceFile.toMediaContentAttributeValues(field = "input")
             )
         )
-        */
     }
 
     @Test
-    fun `test POST videos - with duration and size parameters`() = runTest(timeout = 3.minutes) {
+    fun `test CREATE video endpoint with duration and size parameters gets traced`() = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
         val client = createOpenAIClient(
@@ -131,17 +157,18 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             .size(size)
             .build()
 
-        client.videos().create(params)
+        val video = client.videos().create(params)
 
         validateBasicVideoTracing(prompt, model)
         val trace = analyzeSpans().first()
 
+        assertEquals(video.id(), trace.attributes[AttributeKey.stringKey("gen_ai.response.video.id")])
         assertEquals(seconds.asString(), trace.attributes[AttributeKey.stringKey("gen_ai.request.seconds")])
         assertEquals(size.asString(), trace.attributes[AttributeKey.stringKey("gen_ai.request.size")])
     }
 
     @Test
-    fun `test POST videos - error handling with invalid parameters`() = runTest {
+    fun `test CREATE video endpoint failure with invalid parameters gets traced`() = runTest {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
         val client = createOpenAIClient(
@@ -172,7 +199,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @ParameterizedTest
     @MethodSource("provideContentCapturePolicies")
-    fun `test POST videos - capture policy hides sensitive data`(policy: ContentCapturePolicy) =
+    fun `test capture policy hides sensitive data for CREATE video endpoint`(policy: ContentCapturePolicy) =
         runTest(timeout = 3.minutes) {
             TracingManager.withCapturingPolicy(policy)
 
@@ -214,10 +241,10 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             }
         }
 
-    // ============ GET /videos/{video_id} (GET STATUS) ============
+    // ============ GET_VIDEO: GET /videos/{video_id} ============
 
     @Test
-    fun `test GET videos by id - retrieve video status`() = runTest(timeout = 3.minutes) {
+    fun `test video status from GET_VIDEO endpoint gets traced`() = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
         val client = createOpenAIClient(
@@ -225,34 +252,37 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             timeout = Duration.ofMinutes(3)
         ).apply { instrument(this) }
 
-        // First create a video
+        // first, create a video
         val createParams = VideoCreateParams.builder()
             .prompt("A dog running")
             .model(VideoModel.SORA_2)
             .build()
-        val createdVideo = client.videos().create(createParams)
-        val videoId = createdVideo.id()
-
-        resetExporter()
+        val createdVideoId = client.videos().create(createParams).id()
 
         // Now retrieve it
-        val retrievedVideo = client.videos().retrieve(videoId)
+        val retrievedVideo = client.videos().retrieve(createdVideoId)
 
         val traces = analyzeSpans()
-        assertTracesCount(1, traces)
-        val trace = traces.first()
+        assertTracesCount(2, traces)
+        val trace = traces.last()
 
-        // Verify requested_id is traced
-        assertEquals(videoId, trace.attributes[AttributeKey.stringKey("gen_ai.video.requested_id")])
+        // verify requested_id is traced
+        assertEquals(createdVideoId, trace.attributes[AttributeKey.stringKey("gen_ai.request.video.requested_id")])
 
-        // Verify a Video model is traced
-        assertEquals(videoId, trace.attributes[AttributeKey.stringKey("gen_ai.video.id")])
-        assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.video.status")])
-        assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.video.model")])
+        // verify a Video model is traced
+        assertEquals(createdVideoId, trace.attributes[AttributeKey.stringKey("gen_ai.response.video.id")])
+        assertEquals(
+            retrievedVideo.status().asString(),
+            trace.attributes[AttributeKey.stringKey("gen_ai.response.video.status")],
+        )
+        assertEquals(
+            retrievedVideo.model().asString(),
+            trace.attributes[AttributeKey.stringKey("gen_ai.response.video.model")],
+        )
     }
 
     @Test
-    fun `test GET videos by id - traces progress and timestamps`() = runTest(timeout = 3.minutes) {
+    fun `test progress and timestamps from GET_VIDEO endpoint get traced`() = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
         val client = createOpenAIClient(
@@ -266,25 +296,22 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             .build()
         val video = client.videos().create(createParams)
 
-        resetExporter()
         client.videos().retrieve(video.id())
 
-        val trace = analyzeSpans().first()
+        val traces = analyzeSpans()
+        assertTracesCount(2, traces)
+        val trace = traces.last()
 
         // Progress might be present
-        val progress = trace.attributes[AttributeKey.stringKey("gen_ai.video.progress")]
-        if (progress != null) {
-            assertNotNull(progress)
-        }
-
+        assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.video.progress")])
         // created_at should always be present
-        assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.video.created_at")])
+        assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.video.created_at")])
     }
 
     // ============ GET /videos (LIST) ============
 
     @Test
-    fun `test GET videos - list all videos`() = runTest(timeout = 3.minutes) {
+    fun `test videos metadata from LIST endpoint gets traced`() = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
         val client = createOpenAIClient(
@@ -299,21 +326,26 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         assertTracesCount(1, traces)
         val trace = traces.first()
 
+        println("trace.attributes:")
+        println(trace.attributes)
+
         // Verify list response attributes
-        assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.videos_count")])
-        assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.has_more")])
-        assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.object")])
+        val videosCount = trace.attributes[AttributeKey.longKey("gen_ai.response.videos_count")]
+
+        assertEquals(videoList.data().size.toLong(), videosCount)
+        assertNotNull(trace.attributes[AttributeKey.booleanKey("gen_ai.response.has_more")])
+        assertEquals("list", trace.attributes[AttributeKey.stringKey("gen_ai.operation.name")])
 
         // Verify individual videos are traced
-        val videosCount = trace.attributes[AttributeKey.longKey("gen_ai.response.videos_count")]
         if (videosCount != null && videosCount > 0) {
+            // if at least one video is present, verify its traced properties
             assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.videos.0.id")])
             assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.videos.0.status")])
         }
     }
 
     @Test
-    fun `test GET videos - list with pagination parameters`() = runTest(timeout = 3.minutes) {
+    fun `test query parameters from LIST endpoint get traced`() = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
         val client = createOpenAIClient(
@@ -333,13 +365,13 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
         val trace = analyzeSpans().first()
 
-        // Verify query parameters are traced
+        // verify query parameters are traced
         assertEquals(limit.toString(), trace.attributes[AttributeKey.stringKey("gen_ai.request.limit")])
         assertEquals(order, trace.attributes[AttributeKey.stringKey("gen_ai.request.order")])
     }
 
     @Test
-    fun `test GET videos - list with after cursor`() = runTest(timeout = 3.minutes) {
+    fun `list with after cursor from LIST endpoint gets traced`() = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
         val client = createOpenAIClient(
@@ -347,23 +379,30 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             timeout = Duration.ofMinutes(3)
         ).apply { instrument(this) }
 
+        // NOTE: This ID doesn't exist on the backend, so the request fails
         val after = "video_abc123"
 
         val listParams = VideoListParams.builder()
             .after(after)
             .build()
 
-        client.videos().list(listParams)
+        try {
+            client.videos().list(listParams)
+        } catch (_: NotFoundException) {
+            // no-op, expected to fail
+        }
 
-        val trace = analyzeSpans().first()
-
+        val traces = analyzeSpans()
+        assertTracesCount(1, traces)
+        val trace = traces.first()
         assertEquals(after, trace.attributes[AttributeKey.stringKey("gen_ai.request.after")])
     }
 
-    // ============ DELETE /videos/{video_id} (DELETE) ============
+    // ============ DELETE: DELETE /videos/{video_id} ============
 
     @Test
-    fun `test DELETE videos by id - delete video`() = runTest(timeout = 3.minutes) {
+    fun `test delete metadata from DELETE endpoint gets traced`() = runTest(timeout = 3.minutes) {
+        // TODO: cannot delete a video when it's being processed
         assumeOpenAIEndpoint(patchedProviderUrl)
 
         val client = createOpenAIClient(
@@ -378,17 +417,15 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             .build()
         val video = client.videos().create(createParams)
 
-        resetExporter()
-
         // Delete it
         val deleteResponse = client.videos().delete(video.id())
 
         val traces = analyzeSpans()
-        assertTracesCount(1, traces)
-        val trace = traces.first()
+        assertTracesCount(2, traces)
+        val trace = traces.last()
 
         // Verify requested_id is traced
-        assertEquals(video.id(), trace.attributes[AttributeKey.stringKey("gen_ai.video.requested_id")])
+        assertEquals(video.id(), trace.attributes[AttributeKey.stringKey("gen_ai.request.video.requested_id")])
 
         // Verify deletion response
         assertEquals(deleteResponse.id(), trace.attributes[AttributeKey.stringKey("gen_ai.response.id")])
@@ -396,10 +433,10 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.object")])
     }
 
-    // ============ GET /videos/{video_id}/content (DOWNLOAD) ============
+    // ============ VIDEO_CONTENT: GET /videos/{video_id}/content ============
 
     @Test
-    fun `test GET videos content - download video binary stream`() = runTest(timeout = 3.minutes) {
+    fun `test downloaded video content from VIDEO_CONTENT endpoint gets traced`() = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
         val client = createOpenAIClient(
@@ -414,26 +451,30 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             .build()
         val video = client.videos().create(createParams)
 
-        resetExporter()
-
         // Download content (may fail if not completed yet)
         try {
             // TODO: trace media span upload attributes (similar to images)
-            client.videos().downloadContent(video.id())
+            val content = client.videos().downloadContent(video.id())
 
-            val trace = analyzeSpans().first()
+            val traces = analyzeSpans()
+            assertTracesCount(2, traces)
+            val trace = traces.last()
 
             // Verify requested_id
-            assertEquals(video.id(), trace.attributes[AttributeKey.stringKey("gen_ai.video.requested_id")])
+            assertEquals(video.id(), trace.attributes[AttributeKey.stringKey("gen_ai.request.video.requested_id")])
 
             // Verify binary stream metadata
             assertEquals("video/mp4", trace.attributes[AttributeKey.stringKey("gen_ai.response.content_type")])
             assertEquals(true, trace.attributes[AttributeKey.booleanKey("gen_ai.response.is_binary_stream")])
         } catch (_: Exception) {
-            // Video might not be ready yet, that's ok for testing tracing logic
+            val succeeded = false
+            assumeTrue(succeeded) {
+                "Video might not be ready yet, that's ok for testing tracing logic"
+            }
         }
     }
 
+    // TODO: verify tests below
     @Test
     fun `test GET videos content - with variant parameter`() = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
@@ -463,7 +504,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
             val trace = analyzeSpans().first()
 
-            assertEquals(video.id(), trace.attributes[AttributeKey.stringKey("gen_ai.video.requested_id")])
+            assertEquals(video.id(), trace.attributes[AttributeKey.stringKey("gen_ai.request.video.requested_id")])
             assertEquals(variant.asString(), trace.attributes[AttributeKey.stringKey("gen_ai.request.variant")])
         } catch (_: Exception) {
             // Expected if video not ready
