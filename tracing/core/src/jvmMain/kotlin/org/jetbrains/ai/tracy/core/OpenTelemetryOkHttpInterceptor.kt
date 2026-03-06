@@ -206,8 +206,6 @@ internal fun setFieldValue(instance: Any, fieldName: String, value: Any?) {
 class OpenTelemetryOkHttpInterceptor(
     private val adapter: LLMTracingAdapter,
 ) : Interceptor {
-    private val logger = KotlinLogging.logger {}
-
     override fun intercept(chain: Interceptor.Chain): OkHttpResponse {
         if (!TracingManager.isTracingEnabled) {
             return chain.proceed(chain.request())
