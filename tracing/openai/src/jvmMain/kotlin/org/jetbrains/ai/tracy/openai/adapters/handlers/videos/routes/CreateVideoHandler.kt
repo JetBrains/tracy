@@ -33,7 +33,6 @@ internal class CreateVideoHandler(private val extractor: MediaContentExtractor) 
      * Request is `multipart/form-data` with: prompt, input_reference (file), model, seconds, size
      */
     override fun handleRequest(span: Span, request: TracyHttpRequest) {
-        println("[handleCreateRequest]: request.body:\n${request.body}")
         val body = request.body.asFormData() ?: return
 
         val mediaContentParts = mutableListOf<MediaContentPart>()
@@ -70,16 +69,22 @@ internal class CreateVideoHandler(private val extractor: MediaContentExtractor) 
                 "size" -> {
                     span.setAttribute("gen_ai.request.size", content.orRedactedInput())
                 }
-                "input_reference" -> if (contentTracingAllowed(ContentKind.INPUT) && contentType != null) {
-                    // TODO: this `has_data` attribute not needed
-                    span.setAttribute("gen_ai.request.input_reference.has_data", "true")
-                    span.setAttribute("gen_ai.request.input_reference.contentType", contentType.asString())
+                "input_reference" -> {
+                    span.setAttribute("gen_ai.request.input_reference.contentType", contentType?.asString())
+                    span.setAttribute("gen_ai.request.input_reference.content", content.orRedactedInput())
                     if (part.filename != null) {
                         span.setAttribute("gen_ai.request.input_reference.filename", part.filename)
                     }
-                    mediaContentParts.add(
-                        MediaContentPart(resource = Resource.Base64(content, contentType.asString()))
-                    )
+
+                    // add as media content part for further upload
+                    if (contentTracingAllowed(ContentKind.INPUT) && contentType != null) {
+                        mediaContentParts.add(
+                            MediaContentPart(resource = Resource.Base64(
+                                base64 = content,
+                                mediaType = contentType.asString(),
+                            ))
+                        )
+                    }
                 }
                 else -> {
                     span.setAttribute("gen_ai.request.${part.name}", content.orRedactedInput())
@@ -96,10 +101,7 @@ internal class CreateVideoHandler(private val extractor: MediaContentExtractor) 
         }
     }
 
-    override fun handleResponse(
-        span: Span,
-        response: TracyHttpResponse
-    ) {
+    override fun handleResponse(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
         span.traceVideoModel(body, "gen_ai.response.video")
     }

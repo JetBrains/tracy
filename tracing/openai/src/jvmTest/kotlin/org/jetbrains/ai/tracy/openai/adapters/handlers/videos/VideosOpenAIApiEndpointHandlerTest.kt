@@ -119,7 +119,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             trace.attributes[AttributeKey.stringKey("gen_ai.request.size")]
         )
         // verify input reference is traced
-        assertEquals("true", trace.attributes[AttributeKey.stringKey("gen_ai.request.input_reference.has_data")])
+        assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.request.input_reference.content")])
         assertEquals(
             referenceFile.contentType,
             trace.attributes[AttributeKey.stringKey("gen_ai.request.input_reference.contentType")]
@@ -400,6 +400,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     // ============ DELETE: DELETE /videos/{video_id} ============
 
+    // TODO: verify tests below
     @Test
     fun `test delete metadata from DELETE endpoint gets traced`() = runTest(timeout = 3.minutes) {
         // TODO: cannot delete a video when it's being processed
@@ -474,7 +475,6 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         }
     }
 
-    // TODO: verify tests below
     @Test
     fun `test GET videos content - with variant parameter`() = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
