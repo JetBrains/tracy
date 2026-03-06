@@ -30,6 +30,10 @@ internal class RemixVideoHandler : VideoRouteHandler {
             logger.warn { "Failed to extract video ID from URL: ${request.url}" }
         }
 
+        // TODO: remove after testing
+        println("remix body")
+        println(request.body)
+
         val body = request.body.asJson()?.jsonObject ?: return
         body["prompt"]?.let {
             span.setAttribute("gen_ai.prompt.0.content", it.jsonPrimitive.content.orRedactedInput())
