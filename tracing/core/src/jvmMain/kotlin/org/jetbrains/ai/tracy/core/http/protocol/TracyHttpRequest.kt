@@ -47,6 +47,7 @@ interface TracyHttpRequest {
 sealed class TracyHttpRequestBody {
     data class Json(val json: JsonElement) : TracyHttpRequestBody()
     data class FormData(val data: org.jetbrains.ai.tracy.core.http.parsers.FormData) : TracyHttpRequestBody()
+    object Empty : TracyHttpRequestBody()
 }
 
 @InternalTracyApi
