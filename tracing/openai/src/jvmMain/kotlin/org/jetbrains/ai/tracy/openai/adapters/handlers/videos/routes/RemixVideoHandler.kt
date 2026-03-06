@@ -33,6 +33,7 @@ internal class RemixVideoHandler : VideoRouteHandler {
         // TODO: remove after testing
         println("remix body")
         println(request.body)
+        // TODO: its `FormData`, not json!
 
         val body = request.body.asJson()?.jsonObject ?: return
         body["prompt"]?.let {
