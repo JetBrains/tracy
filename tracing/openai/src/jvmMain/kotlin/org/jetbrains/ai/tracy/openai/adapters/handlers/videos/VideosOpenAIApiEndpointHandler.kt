@@ -7,6 +7,7 @@ package org.jetbrains.ai.tracy.openai.adapters.handlers.videos
 
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_ID
 import kotlinx.serialization.json.*
 import mu.KotlinLogging
 import org.jetbrains.ai.tracy.core.adapters.handlers.EndpointApiHandler
@@ -25,12 +26,12 @@ import java.util.*
  * Handler for OpenAI Videos API (Sora video generation).
  *
  * The Videos API provides multiple endpoints for video operations:
- * 1. POST /videos - Create video generation job (returns Video with initial status)
- * 2. GET /videos/{video_id} - Get video job status (returns Video)
- * 3. GET /videos - List all videos with pagination (returns array of Videos)
- * 4. DELETE /videos/{video_id} - Delete video (returns deletion confirmation)
- * 5. GET /videos/{video_id}/content - Download video MP4 (returns binary stream)
- * 6. POST /videos/{video_id}/remix - Remix existing video (returns new Video)
+ * 1. `POST /videos` - Create video generation job (returns Video with initial status)
+ * 2. `GET /videos/{video_id}` - Get video job status (returns Video)
+ * 3. `GET /videos` - List all videos with pagination (returns array of Videos)
+ * 4. `DELETE /videos/{video_id}` - Delete video (returns deletion confirmation)
+ * 5. `GET /videos/{video_id}/content` - Download video MP4 (returns binary stream)
+ * 6. `POST /videos/{video_id}/remix` - Remix existing video (returns new Video)
  *
  * This handler detects the specific route and traces accordingly.
  *
@@ -98,6 +99,8 @@ internal class VideosOpenAIApiEndpointHandler(
 
     // ============ REQUEST HANDLERS ============
 
+    // TODO: move these request/response handlers into smaller classes
+
     /**
      * Handles `POST /videos` request.
      * Request is `multipart/form-data` with: prompt, input_reference (file), model, seconds, size
@@ -140,6 +143,7 @@ internal class VideosOpenAIApiEndpointHandler(
                     span.setAttribute("gen_ai.request.size", content.orRedactedInput())
                 }
                 "input_reference" -> if (contentTracingAllowed(ContentKind.INPUT) && contentType != null) {
+                    // TODO: this `has_data` attribute not needed
                     span.setAttribute("gen_ai.request.input_reference.has_data", "true")
                     span.setAttribute("gen_ai.request.input_reference.contentType", contentType.asString())
                     if (part.filename != null) {
@@ -246,7 +250,7 @@ internal class VideosOpenAIApiEndpointHandler(
      */
     private fun handleVideoModelResponse(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
-        traceVideoModel(span, body, "gen_ai.video")
+        traceVideoModel(span, body, "gen_ai.response.video")
     }
 
     /**
@@ -289,7 +293,8 @@ internal class VideosOpenAIApiEndpointHandler(
         val body = response.body.asJson()?.jsonObject ?: return
 
         body["id"]?.let {
-            span.setAttribute("gen_ai.response.id", it.jsonPrimitive.content)
+            // TODO: it's video id! not response id
+            span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content)
         }
         body["deleted"]?.let {
             span.setAttribute("gen_ai.response.deleted", it.jsonPrimitive.boolean)
