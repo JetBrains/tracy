@@ -195,7 +195,11 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                         }
                     }
 
-                    val req = requestBody?.asRequestView(contentType, url = request.url.toProtocolUrl())
+                    val req = requestBody?.asRequestView(
+                        contentType = contentType,
+                        url = request.url.toProtocolUrl(),
+                        method = request.method.value,
+                    )
 
                     request.attributes.put(
                         isStreamingRequestKey,

@@ -24,12 +24,14 @@ private val logger = KotlinLogging.logger {}
  * @property contentType The content type of the request, indicating the type of data included in the body.
  * @property body The body of the request, containing the actual data to be sent.
  *             This can be represented as JSON or form data.
+ * @property method The HTTP method of this request instance.
  */
 @InternalTracyApi
 interface TracyHttpRequest {
     val body: TracyHttpRequestBody
     val contentType: TracyContentType?
     val url: TracyHttpUrl
+    val method: String
 }
 
 /**
@@ -105,11 +107,13 @@ fun ByteArray.asRequestBody(contentType: TracyContentType, charset: Charset): Tr
 fun TracyHttpRequestBody.asRequestView(
     contentType: TracyContentType?,
     url: TracyHttpUrl,
+    method: String,
 ): TracyHttpRequest {
     val requestBody = this
     return object : TracyHttpRequest {
         override val body = requestBody
         override val contentType = contentType
         override val url = url
+        override val method = method.uppercase()
     }
 }
