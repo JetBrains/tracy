@@ -22,7 +22,6 @@ import org.jetbrains.ai.tracy.test.utils.MediaSource
 import org.jetbrains.ai.tracy.test.utils.loadFile
 import org.jetbrains.ai.tracy.test.utils.toMediaContentAttributeValues
 import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
