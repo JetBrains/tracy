@@ -223,27 +223,25 @@ class OpenTelemetryOkHttpInterceptor(
                 // register request
                 val (bodyContent, request) = chain.request().withCopiedBodyContent()
 
-                if (bodyContent != null) {
-                    // building request view
-                    val mediaType = request.body?.contentType()
-                    val req: TracyHttpRequest? = mediaType?.let {
-                        val body = bodyContent.asRequestBody(mediaType = it)
-                        body?.asRequestView(
-                            contentType = mediaType.toContentType(),
-                            url = request.url.toProtocolUrl(),
-                            method = request.method,
-                        )
-                    }
+                // building request view
+                val mediaType = request.body?.contentType()
+                val tracyRequest = run {
+                    // media type and body content are null when a request has no body content
+                    // (e.g., a GET request with query params)
+                    val body = when {
+                        (bodyContent != null) && (mediaType != null) -> bodyContent.asRequestBody(mediaType)
+                        else -> null
+                    } ?: TracyHttpRequestBody.Empty
 
-                    if (req != null) {
-                        isStreamingRequest = adapter.isStreamingRequest(req)
-                        adapter.registerRequest(span, req)
-                    } else {
-                        logger.warn { "Failed to register request, cannot build request from body content with media type of $mediaType" }
-                    }
-                } else {
-                    logger.warn { "Failed to register request, body content is null" }
+                    body.asRequestView(
+                        contentType = mediaType?.toContentType(),
+                        url = request.url.toProtocolUrl(),
+                        method = request.method,
+                    )
                 }
+
+                isStreamingRequest = adapter.isStreamingRequest(tracyRequest)
+                adapter.registerRequest(span, tracyRequest)
 
                 // register response
                 val response = chain.proceed(request)
