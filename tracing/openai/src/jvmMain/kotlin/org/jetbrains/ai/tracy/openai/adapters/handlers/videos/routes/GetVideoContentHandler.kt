@@ -35,10 +35,7 @@ internal class GetVideoContentHandler : VideoRouteHandler {
      * Response: Binary video stream (trace metadata only)
      */
     override fun handleResponse(span: Span, response: TracyHttpResponse) {
-        // Binary stream response - trace metadata only
-        // TODO: remove after testing
-        println("GetVideoContentHandler response: $response")
-
+        // binary stream response -> trace metadata only
         span.setAttribute("gen_ai.response.content_type", "video/mp4")
         span.setAttribute("gen_ai.response.is_binary_stream", true)
     }
