@@ -72,12 +72,13 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
 
             if (mimeType != null) {
                 when {
-                    mimeType == TracyContentType.Application.Json.mimeType -> {
-                        getResponseBodyAttributes(span, response)
-                    }
                     isStreamingRequest && mimeType == TracyContentType.Text.EventStream.mimeType -> {
                         span.setAttribute("gen_ai.response.streaming", true)
                         span.setAttribute("gen_ai.completion.content.type", response.contentType?.asString())
+                    }
+                    mimeType != TracyContentType.Text.EventStream.mimeType -> {
+                        // mime type can be application/json, video/mp4 (for OpenAI Video API), etc.
+                        getResponseBodyAttributes(span, response)
                     }
                     else -> {
                         span.setAttribute("gen_ai.completion.content.type", response.contentType?.asString())
