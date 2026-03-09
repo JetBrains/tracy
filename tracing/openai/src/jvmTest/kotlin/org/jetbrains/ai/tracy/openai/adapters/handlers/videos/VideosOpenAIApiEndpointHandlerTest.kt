@@ -36,23 +36,6 @@ import kotlin.time.Duration.Companion.minutes
  */
 @Tag("openai")
 class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
-    @Test
-    fun testVideos() = runTest {
-        val model = VideoModel.SORA_2
-        val client = createOpenAIClient().apply { instrument(this) }
-
-        val params = VideoCreateParams.builder()
-            .model(model)
-            .prompt("A calico cat playing a piano on stage")
-            .build()
-
-        val video = client.videos().create(params)
-
-        println("video:\n${video}")
-        val trace = analyzeSpans().first()
-        println("trace:\n${trace.attributes}")
-    }
-
     // ============ VIDEO MODEL TRACING ============
 
     @Test
@@ -131,7 +114,6 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         assertEquals(StatusCode.ERROR, trace.status.statusCode)
     }
 
-
     // ============ CREATE: POST /videos ============
 
     @Test
@@ -157,10 +139,11 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val trace = analyzeSpans().first()
 
         // Verify a Video model is traced
-        assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.video.id")])
-        assertEquals(video.id(), trace.attributes[AttributeKey.stringKey("gen_ai.video.id")])
-        assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.video.status")])
-        assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.video.created_at")])
+        assertEquals(video.id(), trace.attributes[AttributeKey.stringKey("gen_ai.response.video.id")])
+        assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.video.status")])
+        assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.video.created_at")])
+        assertEquals(prompt, trace.attributes[AttributeKey.stringKey("gen_ai.response.video.prompt")])
+        assertEquals(model.asString(), trace.attributes[AttributeKey.stringKey("gen_ai.response.video.model")])
     }
 
     @Test
