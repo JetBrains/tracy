@@ -39,7 +39,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     // ============ VIDEO MODEL TRACING ============
 
     @Test
-    fun `test Video model - all fields are traced correctly`() = runTest(timeout = 5.minutes) {
+    fun `test Video model - all fields are traced correctly`() = runTest(timeout = 3.minutes) {
         assumeOpenAIEndpoint(patchedProviderUrl)
 
         val client = createOpenAIClient(
