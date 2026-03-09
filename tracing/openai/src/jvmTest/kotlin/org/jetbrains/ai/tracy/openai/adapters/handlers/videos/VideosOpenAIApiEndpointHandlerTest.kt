@@ -12,6 +12,7 @@ import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.jetbrains.ai.tracy.core.TracingManager
 import org.jetbrains.ai.tracy.core.policy.ContentCapturePolicy
 import org.jetbrains.ai.tracy.openai.adapters.BaseOpenAITracingTest
@@ -26,6 +27,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.io.InputStream
 import java.time.Duration
+import java.time.Instant
 import kotlin.time.Duration.Companion.minutes
 
 /**
@@ -409,9 +411,6 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         assertTracesCount(1, traces)
         val trace = traces.first()
 
-        println("trace.attributes:")
-        println(trace.attributes)
-
         // Verify list response attributes
         val videosCount = trace.attributes[AttributeKey.longKey("gen_ai.response.videos_count")]
 
@@ -487,21 +486,18 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     fun `test delete metadata from DELETE endpoint gets traced`() = runTest {
         withMockServer { server ->
             // Enqueue CREATE response - completed video
-            server.enqueue(MockResponse()
-                .setResponseCode(200)
-                .setHeader("Content-Type", "application/json")
-                .setBody("""
-                    {
-                      "id": "video_abc123",
-                      "object": "video",
-                      "status": "completed",
-                      "created_at": 1710000000,
-                      "model": "sora-2",
-                      "prompt": "Generate a short video of two cats sitting",
-                      "seconds": "4",
-                      "size": "1280x720"
-                    }
-                """.trimIndent())
+            val videoId = "video_abc123"
+            val prompt = "Generate a short video of two cats sitting"
+            val model = VideoModel.SORA_2
+            val seconds = VideoSeconds._4
+            val size = VideoSize._1280X720
+
+            server.enqueueVideoModelResponse(
+                id = videoId,
+                prompt = prompt,
+                model,
+                seconds,
+                size,
             )
 
             // Enqueue DELETE response
@@ -510,7 +506,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
                 .setHeader("Content-Type", "application/json")
                 .setBody("""
                     {
-                      "id": "video_abc123",
+                      "id": "$videoId",
                       "deleted": true,
                       "object": "video.deleted"
                     }
@@ -524,10 +520,10 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
             // Create a video first with minimal params
             val createParams = VideoCreateParams.builder()
-                .prompt("Generate a short video of two cats sitting")
-                .model(VideoModel.SORA_2)
-                .seconds(VideoSeconds._4)
-                .size(VideoSize._1280X720)
+                .prompt(prompt)
+                .model(model)
+                .seconds(seconds)
+                .size(size)
                 .build()
             val video = client.videos().create(createParams)
 
@@ -553,21 +549,17 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     fun `test downloaded video content from VIDEO_CONTENT endpoint gets traced`() = runTest {
         withMockServer { server ->
             // Enqueue CREATE response - completed video
-            server.enqueue(MockResponse()
-                .setResponseCode(200)
-                .setHeader("Content-Type", "application/json")
-                .setBody("""
-                    {
-                      "id": "video_def456",
-                      "object": "video",
-                      "status": "completed",
-                      "created_at": 1710000000,
-                      "model": "sora-2",
-                      "prompt": "Generate a short video of two cats sitting",
-                      "seconds": "4",
-                      "size": "1280x720"
-                    }
-                """.trimIndent())
+            val prompt = "Generate a short video of two cats sitting"
+            val model = VideoModel.SORA_2
+            val seconds = VideoSeconds._4
+            val size = VideoSize._1280X720
+
+            server.enqueueVideoModelResponse(
+                id = "video_def456",
+                prompt = prompt,
+                model,
+                seconds,
+                size,
             )
 
             // Enqueue downloadContent response - binary MP4
@@ -582,12 +574,12 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
                 timeout = Duration.ofMinutes(1)
             ).apply { instrument(this) }
 
-            // Create a video with minimal params
+            // create a video with minimal params
             val createParams = VideoCreateParams.builder()
-                .prompt("Generate a short video of two cats sitting")
-                .model(VideoModel.SORA_2)
-                .seconds(VideoSeconds._4)
-                .size(VideoSize._1280X720)
+                .prompt(prompt)
+                .model(model)
+                .seconds(seconds)
+                .size(size)
                 .build()
             val video = client.videos().create(createParams)
 
@@ -611,21 +603,17 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     fun `test GET videos content - with variant parameter`() = runTest {
         withMockServer { server ->
             // Enqueue CREATE response - completed video
-            server.enqueue(MockResponse()
-                .setResponseCode(200)
-                .setHeader("Content-Type", "application/json")
-                .setBody("""
-                    {
-                      "id": "video_ghi789",
-                      "object": "video",
-                      "status": "completed",
-                      "created_at": 1710000000,
-                      "model": "sora-2",
-                      "prompt": "Generate a short video of two cats sitting",
-                      "seconds": "4",
-                      "size": "1280x720"
-                    }
-                """.trimIndent())
+            val model = VideoModel.SORA_2
+            val seconds = VideoSeconds._4
+            val size = VideoSize._1280X720
+            val prompt = "Generate a short video of two cats sitting"
+
+            server.enqueueVideoModelResponse(
+                id = "video_ghi789",
+                prompt = prompt,
+                model,
+                seconds,
+                size,
             )
 
             // Enqueue downloadContent response with variant - binary MP4
@@ -641,10 +629,10 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             ).apply { instrument(this) }
 
             val createParams = VideoCreateParams.builder()
-                .prompt("Generate a short video of two cats sitting")
-                .model(VideoModel.SORA_2)
-                .seconds(VideoSeconds._4)
-                .size(VideoSize._1280X720)
+                .prompt(prompt)
+                .model(model)
+                .seconds(seconds)
+                .size(size)
                 .build()
             val video = client.videos().create(createParams)
 
@@ -671,22 +659,21 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     fun `test POST videos remix - remix existing video`() = runTest {
         withMockServer { server ->
             // Enqueue CREATE response - completed video
-            server.enqueue(MockResponse()
-                .setResponseCode(200)
-                .setHeader("Content-Type", "application/json")
-                .setBody("""
-                    {
-                      "id": "video_original123",
-                      "object": "video",
-                      "status": "completed",
-                      "created_at": 1710000000,
-                      "model": "sora-2",
-                      "prompt": "Generate a short video of two cats sitting",
-                      "seconds": "4",
-                      "size": "1280x720"
-                    }
-                """.trimIndent())
+            val originalVideoId = "video_original123"
+            val originalPrompt = "Generate a short video of two cats sitting"
+            val model = VideoModel.SORA_2
+            val seconds = VideoSeconds._4
+            val size = VideoSize._1280X720
+
+            server.enqueueVideoModelResponse(
+                id = originalVideoId,
+                prompt = originalPrompt,
+                model,
+                seconds,
+                size,
             )
+
+            val remixPrompt = "Make the colors more vibrant"
 
             // Enqueue REMIX response - new video with remixed_from_video_id
             server.enqueue(MockResponse()
@@ -699,8 +686,8 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
                       "status": "queued",
                       "created_at": 1710000100,
                       "model": "sora-2",
-                      "prompt": "Make the colors more vibrant",
-                      "remixed_from_video_id": "video_original123"
+                      "prompt": "$remixPrompt",
+                      "remixed_from_video_id": "$originalVideoId"
                     }
                 """.trimIndent())
             )
@@ -712,15 +699,14 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
             // Create a video with minimal params
             val createParams = VideoCreateParams.builder()
-                .prompt("Generate a short video of two cats sitting")
-                .model(VideoModel.SORA_2)
-                .seconds(VideoSeconds._4)
-                .size(VideoSize._1280X720)
+                .prompt(originalPrompt)
+                .model(model)
+                .seconds(seconds)
+                .size(size)
                 .build()
             val originalVideo = client.videos().create(createParams)
 
             // Remix it
-            val remixPrompt = "Make the colors more vibrant"
             val remixParams = VideoRemixParams.builder()
                 .prompt(remixPrompt)
                 .build()
@@ -731,8 +717,8 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             assertTracesCount(2, traces)
             val trace = traces.last()
 
-            // Verify source video ID (RemixVideoHandler uses gen_ai.video.source_id in REQUEST)
-            assertEquals(originalVideo.id(), trace.attributes[AttributeKey.stringKey("gen_ai.video.source_id")])
+            // Verify source video ID (RemixVideoHandler uses gen_ai.request.video.requested_id in REQUEST)
+            assertEquals(originalVideo.id(), trace.attributes[AttributeKey.stringKey("gen_ai.request.video.requested_id")])
 
             // Verify remix prompt (RemixVideoHandler uses gen_ai.prompt.0.content in REQUEST)
             assertEquals(remixPrompt, trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])
@@ -750,6 +736,31 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     }
 
     // ============ HELPER METHODS ============
+
+    private fun MockWebServer.enqueueVideoModelResponse(
+        id: String,
+        prompt: String,
+        model: VideoModel = VideoModel.SORA_2,
+        seconds: VideoSeconds = VideoSeconds._4,
+        size: VideoSize = VideoSize._1280X720,
+    ) {
+        this.enqueue(MockResponse()
+            .setResponseCode(200)
+            .setHeader("Content-Type", "application/json")
+            .setBody("""
+                {
+                  "id": "$id",
+                  "object": "video",
+                  "status": "completed",
+                  "created_at": ${Instant.now().epochSecond},
+                  "model": "${model.asString()}",
+                  "seconds": "${seconds.asString()}",
+                  "size": "${size.asString()}",
+                  "prompt": "$prompt"
+                }
+            """.trimIndent())
+        )
+    }
 
     private fun validateBasicVideoTracing(prompt: String, model: VideoModel) {
         val traces = analyzeSpans()
