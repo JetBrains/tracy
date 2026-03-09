@@ -34,7 +34,6 @@ val logger = KotlinLogging.logger {}
 internal class VideosOpenAIApiEndpointHandler(
     private val extractor: MediaContentExtractor
 ) : EndpointApiHandler {
-
     /**
      * Registry of route handlers, initialized lazily to avoid creating handlers until needed.
      */
