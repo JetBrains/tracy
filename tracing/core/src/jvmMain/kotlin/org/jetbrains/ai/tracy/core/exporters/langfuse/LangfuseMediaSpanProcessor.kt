@@ -157,6 +157,11 @@ internal class LangfuseMediaSpanProcessor(
         }
     }
 
+    /**
+     * Executes the following workflow:
+     * 1. Downloads the media file under the given URL (GET request)
+     * 2. Executes [uploadMediaFileToLangfuse] to upload the media file to Langfuse
+     */
     private suspend fun uploadMediaFromUrl(
         traceId: String,
         field: String,
@@ -192,13 +197,18 @@ internal class LangfuseMediaSpanProcessor(
                     field = field,
                     contentType = contentType,
                     data = data,
-                ), client = client, url = langfuseUrl, auth = langfuseBasicAuth
+                ),
+                langfuseUrl = langfuseUrl,
+                langfuseBasicAuth = langfuseBasicAuth,
             )
         } catch (err: Exception) {
             return Result.failure(err)
         }
     }
 
+    /**
+     * Directly executes [uploadMediaFileToLangfuse] to upload the media file to Langfuse.
+     */
     private suspend fun uploadMediaFromBase64(
         traceId: String,
         field: String,
@@ -212,7 +222,9 @@ internal class LangfuseMediaSpanProcessor(
                     field = field,
                     contentType = contentType,
                     data = data,
-                ), client = client, url = langfuseUrl, auth = langfuseBasicAuth
+                ),
+                langfuseUrl = langfuseUrl,
+                langfuseBasicAuth = langfuseBasicAuth,
             )
         } catch (err: Exception) {
             Result.failure(err)
@@ -220,15 +232,23 @@ internal class LangfuseMediaSpanProcessor(
     }
 
     /**
-     * Uploads media content to Langfuse and links it to the given trace
+     * Uploads media content to Langfuse and links it to the given trace.
+     *
+     * **Implementation Details**
+     *
+     * The executed workflow is as follows:
+     * 1. `POST /api/public/media`: Retrieves the upload URL and media id for the media content sending its SHA256-hash
+     *    (receives optional `uploadUrl` and `mediaId`)
+     * 2. If `uploadUrl` isn't null, then the media content hasn't been uploaded on this Langfuse instance before.
+     *    Upload the media content by calling [uploadBytesByUploadUrl].
+     * 3. `GET /api/public/media/{mediaId}`: Retrieve the URL under which Langfuse saved the media content.
      *
      * @see LangfuseMediaUploadParams
      */
     private suspend fun uploadMediaFileToLangfuse(
         params: LangfuseMediaUploadParams,
-        client: OkHttpClient,
-        url: String,
-        auth: String,
+        langfuseUrl: String,
+        langfuseBasicAuth: String,
     ): Result<LangfuseMediaUploadResponse> {
         // ensure that the media type is valid and compute hash (CPU-bound operations)
         val (decodedBytes, sha256Hash) = try {
@@ -269,16 +289,16 @@ internal class LangfuseMediaSpanProcessor(
         )
 
         val request = Request.Builder()
-            .url("$url/api/public/media")
+            .url("$langfuseUrl/api/public/media")
             .post(json.encodeToString(requestBody).toRequestBody("application/json".toMediaType()))
-            .addHeader("Authorization", "Basic $auth")
+            .addHeader("Authorization", "Basic $langfuseBasicAuth")
             .build()
 
         val uploadResource = client.newCall(request).executeAsync().use { response ->
             if (!response.isSuccessful) {
                 return Result.failure(
                     RequestFailedException(
-                        "Failed to request an upload url and media id from the endpoint $url/api/public/media, response code ${response.code}"
+                        "Failed to request an upload url and media id from the endpoint $langfuseUrl/api/public/media, response code ${response.code}"
                     )
                 )
             }
@@ -292,8 +312,8 @@ internal class LangfuseMediaSpanProcessor(
         if (uploadResource.uploadUrl != null) {
             // If uploadUrl is present, we need to upload the file (otherwise it was already uploaded)
             val result = uploadBytesByUploadUrl(
-                url = url,
-                auth = auth,
+                langfuseUrl = langfuseUrl,
+                langfuseBasicAuth = langfuseBasicAuth,
                 bytes = decodedBytes,
                 mediaType = mediaType,
                 uploadResource = uploadResource,
@@ -310,11 +330,13 @@ internal class LangfuseMediaSpanProcessor(
         // retrieving the media data from Langfuse,
         // see details here: https://api.reference.langfuse.com/#tag/media/get/api/public/media/{mediaId}
         val mediaDataRequest = Request.Builder()
-            .url("$url/api/public/media/${uploadResource.mediaId}")
+            .url("$langfuseUrl/api/public/media/${uploadResource.mediaId}")
             .get()
-            .addHeader("Authorization", "Basic $auth")
+            .addHeader("Authorization", "Basic $langfuseBasicAuth")
             .build()
 
+        // even if the media upload above failed, we still
+        // attempt to get the resource by its media id
         val result = client.newCall(mediaDataRequest).executeAsync().use { mediaDataResponse ->
             if (!mediaDataResponse.isSuccessful) {
                 return Result.failure(
@@ -332,9 +354,17 @@ internal class LangfuseMediaSpanProcessor(
         return Result.success(result)
     }
 
+    /**
+     * Uploads the given bytes to the upload URL obtained from Langfuse.
+     *
+     * The executed workflow is as follows:
+     * 1. `PUT {uploadUrl}`: uploads the given bytes to the upload URL obtained from Langfuse.
+     * 2. `PATCH /api/public/media/{mediaId}`: updates the upload status of the media content
+     *     (This patch update indicates to Langfuse whether the previous PUT upload succeeded or failed.
+     */
     private suspend fun uploadBytesByUploadUrl(
-        url: String,
-        auth: String,
+        langfuseUrl: String,
+        langfuseBasicAuth: String,
         bytes: ByteArray,
         mediaType: MediaType,
         uploadResource: LangfusePresignedUploadURL,
@@ -366,12 +396,12 @@ internal class LangfuseMediaSpanProcessor(
             )
 
             val patchRequest = Request.Builder()
-                .url("$url/api/public/media/${uploadResource.mediaId}")
+                .url("$langfuseUrl/api/public/media/${uploadResource.mediaId}")
                 .patch(
                     json.encodeToString(patchRequestBody)
                         .toRequestBody("application/json".toMediaType())
                 )
-                .addHeader("Authorization", "Basic $auth")
+                .addHeader("Authorization", "Basic $langfuseBasicAuth")
                 .build()
 
             client.newCall(patchRequest).executeAsync().use { patchResponse ->
