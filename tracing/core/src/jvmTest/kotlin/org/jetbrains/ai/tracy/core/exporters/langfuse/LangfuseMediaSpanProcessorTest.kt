@@ -328,6 +328,10 @@ class LangfuseMediaSpanProcessorTest {
 
         // Only POST request should be made
         assertEquals(1, langfuseServer.requestCount)
+
+        val postRequest = langfuseServer.takeRequest()
+        assertEquals("/api/public/media", postRequest.path)
+        assertEquals("POST", postRequest.method)
     }
 
     @Test
@@ -356,6 +360,10 @@ class LangfuseMediaSpanProcessorTest {
         Thread.sleep(500)
 
         assertEquals(1, langfuseServer.requestCount)
+
+        val postRequest = langfuseServer.takeRequest()
+        assertEquals("/api/public/media", postRequest.path)
+        assertEquals("POST", postRequest.method)
     }
 
     @Test
@@ -406,6 +414,12 @@ class LangfuseMediaSpanProcessorTest {
         // PATCH should still be called to report the error
         langfuseServer.enqueue(MockResponse().setResponseCode(200).setBody("OK"))
 
+        // GET request still will be called
+        langfuseServer.enqueue(MockResponse()
+            .setResponseCode(404)
+            .setBody("Not Found")
+        )
+
         val span = createTestSpan(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
@@ -422,7 +436,7 @@ class LangfuseMediaSpanProcessorTest {
         processor.onEnd(span.toReadableSpan())
         Thread.sleep(500)
 
-        // POST, PUT, PATCH, and GET should be made (GET continues even after PUT error)
+        // POST, PUT, PATCH, and GET should be made (GET continues even after the PUT error)
         assertEquals(4, langfuseServer.requestCount)
 
         langfuseServer.takeRequest() // POST
@@ -453,6 +467,12 @@ class LangfuseMediaSpanProcessorTest {
 
         langfuseServer.enqueue(MockResponse().setResponseCode(200).setBody("OK"))
 
+        // GET request still will be called
+        langfuseServer.enqueue(MockResponse()
+            .setResponseCode(404)
+            .setBody("Not Found")
+        )
+
         val span = createTestSpan(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
@@ -477,6 +497,7 @@ class LangfuseMediaSpanProcessorTest {
 
         val patchRequest = langfuseServer.takeRequest() // PATCH
         val patchBody = patchRequest.body.readUtf8()
+        // the patch request body should indicate the response code of the PUT request
         assertTrue(patchBody.contains("500"))
     }
 
@@ -503,6 +524,12 @@ class LangfuseMediaSpanProcessorTest {
             MockResponse()
                 .setResponseCode(404)
                 .setBody("Media not found")
+        )
+
+        // GET request still will be called
+        langfuseServer.enqueue(MockResponse()
+            .setResponseCode(404)
+            .setBody("Not Found")
         )
 
         val span = createTestSpan(
@@ -545,6 +572,12 @@ class LangfuseMediaSpanProcessorTest {
             MockResponse()
                 .setResponseCode(500)
                 .setBody("Server error")
+        )
+
+        // GET request still will be called
+        langfuseServer.enqueue(MockResponse()
+            .setResponseCode(404)
+            .setBody("Not Found")
         )
 
         val span = createTestSpan(
@@ -814,82 +847,79 @@ class LangfuseMediaSpanProcessorTest {
         assertEquals(4, langfuseServer.requestCount)
     }
 
-    // ========================================
-    // HELPER FUNCTIONS
-    // ========================================
-
-    private fun createTestSpan(
-        traceId: String,
-        mediaAttributes: List<MediaAttributes>
-    ): SpanData {
-        val attributesBuilder = Attributes.builder()
-
-        mediaAttributes.forEach { media ->
-            val keys = UploadableMediaContentAttributeKeys.forIndex(media.index)
-            attributesBuilder.put(keys.type, media.type)
-            attributesBuilder.put(keys.field, media.field)
-
-            when (media.type) {
-                SupportedMediaContentTypes.URL.type -> {
-                    attributesBuilder.put(keys.url, media.url!!)
-                }
-                SupportedMediaContentTypes.BASE64.type -> {
-                    attributesBuilder.put(keys.contentType, media.contentType!!)
-                    attributesBuilder.put(keys.data, media.data!!)
-                }
-            }
-        }
-
-        return TestSpanData.builder()
-            .setName("test-span")
-            .setKind(SpanKind.INTERNAL)
-            .setSpanContext(
-                SpanContext.create(
-                    traceId,
-                    "0000000000000001",
-                    TraceFlags.getSampled(),
-                    TraceState.getDefault()
-                )
-            )
-            .setStartEpochNanos(System.nanoTime())
-            .setEndEpochNanos(System.nanoTime())
-            .setStatus(StatusData.ok())
-            .setHasEnded(true)
-            .setAttributes(attributesBuilder.build())
-            .setTotalAttributeCount(attributesBuilder.build().size())
-            .setEvents(emptyList())
-            .setLinks(emptyList())
-            .setResource(Resource.getDefault())
-            .setInstrumentationScopeInfo(InstrumentationScopeInfo.empty())
-            .build()
-    }
-
-    private fun SpanData.toReadableSpan(): ReadableSpan = SpanDataAdapter(this)
-
-    private class SpanDataAdapter(private val span: SpanData): ReadableSpan {
-        override fun getSpanContext(): SpanContext = span.spanContext
-        override fun getParentSpanContext(): SpanContext = span.parentSpanContext
-        override fun getName(): String = span.name
-        override fun toSpanData() = span
-        @Deprecated("Deprecated in Java")
-        override fun getInstrumentationLibraryInfo(): InstrumentationLibraryInfo = span.instrumentationLibraryInfo
-        override fun hasEnded() = span.hasEnded()
-        override fun getKind(): SpanKind = span.kind
-        override fun getLatencyNanos(): Long = throw UnsupportedOperationException("Not supported")
-        override fun getAttributes(): Attributes = span.attributes
-        override fun <T> getAttribute(key: AttributeKey<T>) = span.attributes.get(key)
-    }
-
-    private data class MediaAttributes(
-        val index: Int,
-        val type: String,
-        val field: String,
-        val contentType: String? = null,
-        val data: String? = null,
-        val url: String? = null
-    )
-
     companion object {
         private const val TEST_TRACE_ID = "00000000000000000000000000000001"
+
+        // ========================================
+        // HELPER FUNCTIONS
+        // ========================================
+
+        private fun createTestSpan(traceId: String, mediaAttributes: List<MediaAttributes>): SpanData {
+            val attributesBuilder = Attributes.builder()
+
+            mediaAttributes.forEach { media ->
+                val keys = UploadableMediaContentAttributeKeys.forIndex(media.index)
+                attributesBuilder.put(keys.type, media.type)
+                attributesBuilder.put(keys.field, media.field)
+
+                when (media.type) {
+                    SupportedMediaContentTypes.URL.type -> {
+                        attributesBuilder.put(keys.url, media.url!!)
+                    }
+                    SupportedMediaContentTypes.BASE64.type -> {
+                        attributesBuilder.put(keys.contentType, media.contentType!!)
+                        attributesBuilder.put(keys.data, media.data!!)
+                    }
+                }
+            }
+
+            return TestSpanData.builder()
+                .setName("test-span")
+                .setKind(SpanKind.INTERNAL)
+                .setSpanContext(
+                    SpanContext.create(
+                        traceId,
+                        "0000000000000001",
+                        TraceFlags.getSampled(),
+                        TraceState.getDefault()
+                    )
+                )
+                .setStartEpochNanos(System.nanoTime())
+                .setEndEpochNanos(System.nanoTime())
+                .setStatus(StatusData.ok())
+                .setHasEnded(true)
+                .setAttributes(attributesBuilder.build())
+                .setTotalAttributeCount(attributesBuilder.build().size())
+                .setEvents(emptyList())
+                .setLinks(emptyList())
+                .setResource(Resource.getDefault())
+                .setInstrumentationScopeInfo(InstrumentationScopeInfo.empty())
+                .build()
+        }
+
+        private fun SpanData.toReadableSpan(): ReadableSpan = SpanDataAdapter(this)
+
+        private class SpanDataAdapter(private val span: SpanData): ReadableSpan {
+            override fun getSpanContext(): SpanContext = span.spanContext
+            override fun getParentSpanContext(): SpanContext = span.parentSpanContext
+            override fun getName(): String = span.name
+            override fun toSpanData() = span
+            @Deprecated("Deprecated in Java")
+            override fun getInstrumentationLibraryInfo(): InstrumentationLibraryInfo = span.instrumentationLibraryInfo
+            override fun hasEnded() = span.hasEnded()
+            override fun getKind(): SpanKind = span.kind
+            override fun getLatencyNanos(): Long = throw UnsupportedOperationException("Not supported")
+            override fun getAttributes(): Attributes = span.attributes
+            override fun <T> getAttribute(key: AttributeKey<T>) = span.attributes.get(key)
+        }
+
+        private data class MediaAttributes(
+            val index: Int,
+            val type: String,
+            val field: String,
+            val contentType: String? = null,
+            val data: String? = null,
+            val url: String? = null
+        )
     }
 }
