@@ -364,13 +364,12 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
                 }
 
                 // Check video prompt in response (output)
-                val videoPrompt = trace.attributes[AttributeKey.stringKey("gen_ai.video.prompt")]
-                if (videoPrompt != null) {
-                    if (!policy.captureOutputs) {
-                        assertEquals("REDACTED", videoPrompt, "Video prompt should be redacted")
-                    } else {
-                        assertNotEquals("REDACTED", videoPrompt, "Video prompt should NOT be redacted")
-                    }
+                val videoPrompt = trace.attributes[AttributeKey.stringKey("gen_ai.response.video.prompt")]
+                assertNotNull(videoPrompt, "Video prompt should be present in the trace")
+                if (!policy.captureOutputs) {
+                    assertEquals("REDACTED", videoPrompt, "Video prompt should be redacted")
+                } else {
+                    assertNotEquals("REDACTED", videoPrompt, "Video prompt should NOT be redacted")
                 }
             }
         }
