@@ -39,7 +39,7 @@ internal class CreateVideoHandler(private val extractor: MediaContentExtractor) 
 
         for (part in body.parts) {
             val contentType = part.contentType
-
+            // TODO: TRACY-88
             val content = when {
                 contentType == null -> part.content.toString(Charsets.UTF_8)
                 contentType.type == "text" -> part.content.toString(
@@ -50,7 +50,6 @@ internal class CreateVideoHandler(private val extractor: MediaContentExtractor) 
                 }
                 else -> null
             }
-
             if (content == null) {
                 logger.warn { "Form data part '${part.name}' with content type '$contentType' has no content" }
                 continue
