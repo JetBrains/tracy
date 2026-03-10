@@ -144,7 +144,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        Thread.sleep(1000)
+        Thread.sleep(500)
 
         // Verify all 4 requests were made
         assertEquals(4, mockWebServer.requestCount)
@@ -963,6 +963,6 @@ class LangfuseMediaSpanProcessorTest {
     )
 
     companion object {
-        private val TEST_TRACE_ID = "00000000000000000000000000000001"
+        private const val TEST_TRACE_ID = "00000000000000000000000000000001"
     }
 }
