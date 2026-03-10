@@ -18,9 +18,7 @@ import io.opentelemetry.sdk.testing.trace.TestSpanData
 import io.opentelemetry.sdk.trace.ReadableSpan
 import io.opentelemetry.sdk.trace.data.SpanData
 import io.opentelemetry.sdk.trace.data.StatusData
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -152,7 +150,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        Thread.sleep(500)
+        delayOnDefault(500)
 
         // Verify all 4 requests were made
         assertEquals(4, langfuseServer.requestCount)
@@ -218,7 +216,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        Thread.sleep(500)
+        delayOnDefault(500)
 
         // Verify only POST and GET were made (no PUT/PATCH)
         assertEquals(2, langfuseServer.requestCount)
@@ -286,7 +284,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        Thread.sleep(500)
+        delayOnDefault(500)
 
         // Verify external URL was fetched
         assertEquals(1, mediaContentServer.requestCount)
@@ -324,7 +322,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        Thread.sleep(500)
+        delayOnDefault(500)
 
         // Only POST request should be made
         assertEquals(1, langfuseServer.requestCount)
@@ -357,7 +355,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        Thread.sleep(500)
+        delayOnDefault(500)
 
         assertEquals(1, langfuseServer.requestCount)
 
@@ -382,7 +380,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        Thread.sleep(500)
+        delayOnDefault(500)
 
         // Should fail validation before POST
         assertEquals(0, langfuseServer.requestCount)
@@ -434,7 +432,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        Thread.sleep(500)
+        delayOnDefault(500)
 
         // POST, PUT, PATCH, and GET should be made (GET continues even after the PUT error)
         assertEquals(4, langfuseServer.requestCount)
@@ -487,7 +485,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        Thread.sleep(500)
+        delayOnDefault(500)
 
         // POST, PUT, PATCH, and GET should be made (GET continues even after PUT error)
         assertEquals(4, langfuseServer.requestCount)
@@ -546,7 +544,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        Thread.sleep(500)
+        delayOnDefault(500)
 
         // POST, PUT, PATCH, and GET should be made (GET continues even after PATCH error)
         assertEquals(4, langfuseServer.requestCount)
@@ -594,7 +592,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        Thread.sleep(500)
+        delayOnDefault(500)
 
         // POST, PUT, PATCH, and GET should be made (GET continues even after PATCH error)
         assertEquals(4, langfuseServer.requestCount)
@@ -644,7 +642,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        Thread.sleep(500)
+        delayOnDefault(500)
 
         assertEquals(2, langfuseServer.requestCount)
     }
@@ -681,7 +679,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        Thread.sleep(500)
+        delayOnDefault(500)
 
         assertEquals(2, langfuseServer.requestCount)
     }
@@ -713,7 +711,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        Thread.sleep(500)
+        delayOnDefault(500)
 
         // Only external request should be made
         assertEquals(1, mediaContentServer.requestCount)
@@ -744,7 +742,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        Thread.sleep(500)
+        delayOnDefault(500)
 
         assertEquals(1, mediaContentServer.requestCount)
         assertEquals(0, langfuseServer.requestCount)
@@ -770,7 +768,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        Thread.sleep(500)
+        delayOnDefault(500)
 
         // Should fail before making any requests
         assertEquals(0, langfuseServer.requestCount)
@@ -853,6 +851,10 @@ class LangfuseMediaSpanProcessorTest {
         // ========================================
         // HELPER FUNCTIONS
         // ========================================
+
+        private suspend fun delayOnDefault(timeMillis: Long) = withContext(Dispatchers.Default) {
+            delay(timeMillis)
+        }
 
         private fun createTestSpan(traceId: String, mediaAttributes: List<MediaAttributes>): SpanData {
             val attributesBuilder = Attributes.builder()
