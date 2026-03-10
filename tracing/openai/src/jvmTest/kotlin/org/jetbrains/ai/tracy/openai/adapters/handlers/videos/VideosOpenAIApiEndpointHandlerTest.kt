@@ -80,17 +80,9 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             // These might be present depending on status
             val tracedSeconds = trace.attributes[AttributeKey.stringKey("gen_ai.response.video.seconds")]
             val tracedSize = trace.attributes[AttributeKey.stringKey("gen_ai.response.video.size")]
-            val expiresAt = trace.attributes[AttributeKey.stringKey("gen_ai.response.video.expires_at")]
 
-            if (tracedSeconds != null) {
-                assertEquals(seconds.asString(), tracedSeconds)
-            }
-            if (tracedSize != null) {
-                assertEquals(size.asString(), tracedSize)
-            }
-            if (expiresAt != null) {
-                assertNotNull(expiresAt)
-            }
+            assertEquals(seconds.asString(), tracedSeconds)
+            assertEquals(size.asString(), tracedSize)
         }
     }
 
