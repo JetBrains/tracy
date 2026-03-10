@@ -41,20 +41,10 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 internal class LangfuseMediaSpanProcessor(
     private val scope: CoroutineScope,
-    /**
-     * OkHttpClient to use for HTTP requests.
-     * When `null`, a new client is created and owned by this processor (i.e., it will be shut
-     * down on [shutdown]/[close]). When a client is provided by the caller, this processor does
-     * not take ownership and will NOT shut it down, since it may be shared with other components.
-     */
-    httpClient: OkHttpClient? = null,
     private val langfuseUrl: String,
     private val langfuseBasicAuth: String,
 ) : SpanProcessor {
-    // OkHttpClient owned by this processor; null if the client was provided externally.
-    private val ownedClient: OkHttpClient? = if (httpClient == null) OkHttpClient() else null
-    private val client: OkHttpClient = httpClient ?: ownedClient!!
-
+    private val client = OkHttpClient()
     // flag indicating whether the owned client has been closed
     private val isClientClosed = AtomicBoolean(false)
 
@@ -62,7 +52,7 @@ internal class LangfuseMediaSpanProcessor(
     private val activeJobs: MutableList<Job> = Collections.synchronizedList(mutableListOf())
 
     // dedicated scope for the shutdown coroutine, separate from `scope` so that external
-    // cancellation of `scope` does not prevent graceful shutdown from completing
+    // cancellation of `scope` does not prevent a graceful shutdown from completing
     private val shutdownScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override fun onStart(parentContext: Context, span: ReadWriteSpan) {}
@@ -121,7 +111,7 @@ internal class LangfuseMediaSpanProcessor(
         shutdownScope.launch {
             try {
                 awaitActiveJobs()
-                closeOwnedClient()
+                closeClient()
                 result.succeed()
             } catch (err: Throwable) {
                 logger.error(err) { "Failed to shutdown Langfuse media span processor" }
@@ -135,7 +125,7 @@ internal class LangfuseMediaSpanProcessor(
 
     override fun close() {
         runBlocking { awaitActiveJobs() }
-        closeOwnedClient()
+        closeClient()
     }
 
     private fun trackJob(job: Job) {
@@ -156,10 +146,10 @@ internal class LangfuseMediaSpanProcessor(
         }
     }
 
-    private fun closeOwnedClient() {
-        if (ownedClient != null && isClientClosed.compareAndSet(false, true)) {
-            ownedClient.dispatcher.executorService.shutdown()
-            ownedClient.connectionPool.evictAll()
+    private fun closeClient() {
+        if (isClientClosed.compareAndSet(false, true)) {
+            client.dispatcher.executorService.shutdown()
+            client.connectionPool.evictAll()
         }
     }
 
