@@ -14,8 +14,6 @@ import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpUrl
 import org.jetbrains.ai.tracy.openai.adapters.handlers.videos.routes.*
 
-val logger = KotlinLogging.logger {}
-
 /**
  * Handler for OpenAI Videos API (Sora video generation).
  *
@@ -101,5 +99,9 @@ internal class VideosOpenAIApiEndpointHandler(
         LIST,     // GET /videos
         VIDEO_CONTENT,  // GET /videos/{video_id}/content
         REMIX     // POST /videos/{video_id}/remix
+    }
+
+    companion object {
+        private val logger = KotlinLogging.logger {}
     }
 }
