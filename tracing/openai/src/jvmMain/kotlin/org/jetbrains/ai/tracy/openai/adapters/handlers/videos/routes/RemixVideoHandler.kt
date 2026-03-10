@@ -40,8 +40,9 @@ internal class RemixVideoHandler : VideoRouteHandler {
             }
 
             // decode content based on the expected content type
+            // TODO: TRACY-88
             val content = when(contentType.type) {
-                "text" -> part.content.toString(contentType.charset() ?: Charsets.US_ASCII)
+                "text" -> part.content.toString(contentType.charset() ?: Charsets.UTF_8)
                 else -> null
             }
             if (content == null) {
