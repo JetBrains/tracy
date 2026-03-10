@@ -15,6 +15,7 @@ import okhttp3.HttpUrl
  * @property host The host of the URL, indicating the domain or IP address.
  * @property pathSegments The path segments of the URL, representing
  *                        the hierarchical structure of the resource location.
+ * @property parameters The query parameters associated with the URL.
  *
  * @see TracyHttpUrlImpl
  */
