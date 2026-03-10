@@ -74,13 +74,15 @@ internal class LangfuseMediaSpanProcessor(
                 SupportedMediaContentTypes.URL.type -> {
                     val url = span.attributes.get(keys.url)
                         ?: error("URL attribute not found for media item at index $index")
-                    trackJob(scope.launch {
+
+                    val uploadFromUrlJob = scope.launch {
                         val result = uploadMediaFromUrl(traceId, field, url)
                         if (result.isFailure) {
                             logger.error(result.exceptionOrNull()) {
                                 "Failed to upload media file from $url for trace $traceId" }
                         }
-                    })
+                    }
+                    trackJob(uploadFromUrlJob)
                 }
 
                 SupportedMediaContentTypes.BASE64.type -> {
@@ -88,13 +90,15 @@ internal class LangfuseMediaSpanProcessor(
                         ?: error("Content type attribute not found for media item at index $index")
                     val data = span.attributes.get(keys.data)
                         ?: error("Data attribute not found for media item at index $index")
-                    trackJob(scope.launch {
+
+                    val uploadFromBase64Job = scope.launch {
                         val result = uploadMediaFromBase64(traceId, field, contentType, data)
                         if (result.isFailure) {
                             logger.error(result.exceptionOrNull()) {
                                 "Failed to upload media file to $langfuseUrl for trace $traceId" }
                         }
-                    })
+                    }
+                    trackJob(uploadFromBase64Job)
                 }
 
                 else -> error("Unsupported media content type '$type'")
