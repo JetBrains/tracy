@@ -744,7 +744,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             val video = client.videos().create(createParams)
 
             // Download content
-            val content = client.videos().downloadContent(video.id())
+            client.videos().downloadContent(video.id())
 
             val traces = analyzeSpans()
             assertTracesCount(2, traces)
@@ -797,7 +797,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             val video = client.videos().create(createParams)
 
             val variant = VideoDownloadContentParams.Variant.VIDEO
-            val downloadedContent = client.videos().downloadContent(
+            client.videos().downloadContent(
                 VideoDownloadContentParams.builder()
                     .videoId(video.id())
                     .variant(variant)
