@@ -944,6 +944,7 @@ class LangfuseMediaSpanProcessorTest {
         override fun getParentSpanContext(): SpanContext = span.parentSpanContext
         override fun getName(): String = span.name
         override fun toSpanData() = span
+        @Deprecated("Deprecated in Java")
         override fun getInstrumentationLibraryInfo(): InstrumentationLibraryInfo = span.instrumentationLibraryInfo
         override fun hasEnded() = span.hasEnded()
         override fun getKind(): SpanKind = span.kind
