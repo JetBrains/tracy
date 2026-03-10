@@ -21,7 +21,6 @@ import io.opentelemetry.sdk.trace.data.StatusData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -210,7 +209,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        delay(500)
+        Thread.sleep(500)
 
         // Verify only POST and GET were made (no PUT/PATCH)
         assertEquals(2, mockWebServer.requestCount)
@@ -220,7 +219,7 @@ class LangfuseMediaSpanProcessorTest {
         assertEquals("POST", postRequest.method)
 
         val getRequest = mockWebServer.takeRequest()
-        assertTrue(getRequest.path!!.startsWith("/api/public/media/"))
+        assertEquals("/api/public/media/${mediaId}", getRequest.path)
         assertEquals("GET", getRequest.method)
     }
 
@@ -278,7 +277,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        delay(500)
+        Thread.sleep(500)
 
         // Verify external URL was fetched
         assertEquals(1, mockExternalServer.requestCount)
@@ -368,7 +367,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        delay(1000)
+        Thread.sleep(1000)
 
         // Should have 8 requests total (4 per media item)
         assertEquals(8, mockWebServer.requestCount)
@@ -400,7 +399,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        delay(500)
+        Thread.sleep(500)
 
         // Only POST request should be made
         assertEquals(1, mockWebServer.requestCount)
@@ -429,7 +428,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        delay(500)
+        Thread.sleep(500)
 
         assertEquals(1, mockWebServer.requestCount)
     }
@@ -450,7 +449,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        delay(500)
+        Thread.sleep(500)
 
         // Should fail validation before POST
         assertEquals(0, mockWebServer.requestCount)
@@ -496,7 +495,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        delay(500)
+        Thread.sleep(500)
 
         // POST, PUT, and PATCH should be made
         assertEquals(3, mockWebServer.requestCount)
@@ -543,7 +542,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        delay(500)
+        Thread.sleep(500)
 
         assertEquals(3, mockWebServer.requestCount)
 
@@ -594,7 +593,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        delay(500)
+        Thread.sleep(500)
 
         assertEquals(3, mockWebServer.requestCount)
     }
@@ -635,7 +634,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        delay(500)
+        Thread.sleep(500)
 
         assertEquals(3, mockWebServer.requestCount)
 
@@ -684,7 +683,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        delay(500)
+        Thread.sleep(500)
 
         assertEquals(2, mockWebServer.requestCount)
     }
@@ -721,7 +720,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        delay(500)
+        Thread.sleep(500)
 
         assertEquals(2, mockWebServer.requestCount)
     }
@@ -753,7 +752,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        delay(500)
+        Thread.sleep(500)
 
         // Only external request should be made
         assertEquals(1, mockExternalServer.requestCount)
@@ -784,7 +783,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        delay(500)
+        Thread.sleep(500)
 
         assertEquals(1, mockExternalServer.requestCount)
         assertEquals(0, mockWebServer.requestCount)
@@ -810,7 +809,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         processor.onEnd(span.toReadableSpan())
-        delay(500)
+        Thread.sleep(500)
 
         // Should fail before making any requests
         assertEquals(0, mockWebServer.requestCount)
