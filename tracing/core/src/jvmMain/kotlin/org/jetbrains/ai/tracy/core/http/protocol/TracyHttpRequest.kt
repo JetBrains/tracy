@@ -40,8 +40,11 @@ interface TracyHttpRequest {
  * This sealed class is used as part of the [TracyHttpRequest] data structure to encapsulate the various
  * types of data that can be transmitted as the body of an HTTP request.
  *
- * - [Json]: Represents a JSON body containing structured data.
- * - [FormData]: Represents form-data typically used in multipart requests.
+ * **Request body types:**
+ * 1. [Json]: Represents a JSON body containing structured data.
+ * 2. [FormData]: Represents form-data typically used in multipart requests.
+ * 3. [Empty]: Represents an empty body, typically used for requests that do not require a body
+ *            (i.e., a GET request to download a hosted resource).
  */
 @InternalTracyApi
 sealed class TracyHttpRequestBody {
