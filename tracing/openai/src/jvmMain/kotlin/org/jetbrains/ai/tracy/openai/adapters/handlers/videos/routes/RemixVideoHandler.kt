@@ -33,16 +33,14 @@ internal class RemixVideoHandler : VideoRouteHandler {
         val body = request.body.asFormData() ?: return
 
         for (part in body.parts) {
-            val contentType = part.contentType
-            if (contentType == null) {
-                logger.warn { "Missing content type of form data part '${part.name}'" }
-                continue
-            }
-
-            // decode content based on the expected content type
             // TODO: TRACY-88
-            val content = when(contentType.type) {
-                "text" -> part.content.toString(contentType.charset() ?: Charsets.UTF_8)
+            val contentType = part.contentType
+            // decode content based on the expected content type
+            val content = when {
+                contentType == null -> part.content.toString(Charsets.UTF_8)
+                contentType.type == "text" -> part.content.toString(
+                    contentType.charset() ?: Charsets.UTF_8
+                )
                 else -> null
             }
             if (content == null) {
