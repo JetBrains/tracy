@@ -5,20 +5,17 @@
 
 package org.jetbrains.ai.tracy.core.otlp
 
-import org.jetbrains.ai.tracy.core.exporters.otlp.ErrorDiagnosingOtlpHttpSpanExporter
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
-import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter
-import io.opentelemetry.sdk.testing.trace.TestSpanData
-import io.opentelemetry.sdk.trace.data.SpanData
-import io.opentelemetry.sdk.trace.data.StatusData
 import io.opentelemetry.sdk.trace.export.SpanExporter
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import org.jetbrains.ai.tracy.core.exporters.otlp.ErrorDiagnosingOtlpHttpSpanExporter
+import org.jetbrains.ai.tracy.test.utils.createTestSpanData
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -261,19 +258,5 @@ class ErrorDiagnosingOtlpHttpSpanExporterTest {
             exporter = baseExporter,
             endpointUrl = endpoint
         )
-    }
-
-    /**
-     * Helper function to create a test SpanData object
-     */
-    private fun createTestSpanData(): SpanData {
-        return TestSpanData.builder()
-            .setName("test-span")
-            .setKind(SpanKind.INTERNAL)
-            .setStartEpochNanos(System.nanoTime())
-            .setEndEpochNanos(System.nanoTime())
-            .setStatus(StatusData.ok())
-            .setHasEnded(true)
-            .build()
     }
 }

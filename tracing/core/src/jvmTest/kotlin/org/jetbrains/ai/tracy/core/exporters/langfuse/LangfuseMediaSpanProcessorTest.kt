@@ -5,29 +5,19 @@
 
 package org.jetbrains.ai.tracy.core.exporters.langfuse
 
-import io.opentelemetry.api.common.Attributes
-import io.opentelemetry.api.trace.SpanContext
-import io.opentelemetry.api.trace.SpanKind
-import io.opentelemetry.api.trace.TraceFlags
-import io.opentelemetry.api.trace.TraceState
-import io.opentelemetry.sdk.common.InstrumentationScopeInfo
-import io.opentelemetry.sdk.resources.Resource
-import io.opentelemetry.sdk.testing.trace.TestSpanData
-import io.opentelemetry.sdk.trace.data.SpanData
-import io.opentelemetry.sdk.trace.data.StatusData
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import org.jetbrains.ai.tracy.core.adapters.media.UploadableMediaContentAttributeKeys
 import org.jetbrains.ai.tracy.test.utils.MediaContentAttributeValues
+import org.jetbrains.ai.tracy.test.utils.createTestSpanData
 import org.jetbrains.ai.tracy.test.utils.toReadableSpan
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.util.*
+import java.util.Base64
 import java.util.concurrent.TimeUnit
 
 /**
@@ -134,7 +124,7 @@ class LangfuseMediaSpanProcessorTest {
         )
 
         val mediaData = "test-image-data"
-        val span = createTestSpan(
+        val span = createTestSpanData(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
                 MediaContentAttributeValues.Data(
@@ -198,7 +188,7 @@ class LangfuseMediaSpanProcessorTest {
                 .addHeader("Content-Type", "application/json")
         )
 
-        val span = createTestSpan(
+        val span = createTestSpanData(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
                 MediaContentAttributeValues.Data(
@@ -265,7 +255,7 @@ class LangfuseMediaSpanProcessorTest {
                 .addHeader("Content-Type", "application/json")
         )
 
-        val span = createTestSpan(
+        val span = createTestSpanData(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
                 MediaContentAttributeValues.Url(
@@ -300,7 +290,7 @@ class LangfuseMediaSpanProcessorTest {
                 .setBody("Unauthorized")
         )
 
-        val span = createTestSpan(
+        val span = createTestSpanData(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
                 MediaContentAttributeValues.Data(
@@ -331,7 +321,7 @@ class LangfuseMediaSpanProcessorTest {
                 .addHeader("Content-Type", "application/json")
         )
 
-        val span = createTestSpan(
+        val span = createTestSpanData(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
                 MediaContentAttributeValues.Data(
@@ -354,7 +344,7 @@ class LangfuseMediaSpanProcessorTest {
 
     @Test
     fun `test invalid content type format`() = runTest {
-        val span = createTestSpan(
+        val span = createTestSpanData(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
                 MediaContentAttributeValues.Data(
@@ -404,7 +394,7 @@ class LangfuseMediaSpanProcessorTest {
             .setBody("Not Found")
         )
 
-        val span = createTestSpan(
+        val span = createTestSpanData(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
                 MediaContentAttributeValues.Data(
@@ -455,7 +445,7 @@ class LangfuseMediaSpanProcessorTest {
             .setBody("Not Found")
         )
 
-        val span = createTestSpan(
+        val span = createTestSpanData(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
                 MediaContentAttributeValues.Data(
@@ -512,7 +502,7 @@ class LangfuseMediaSpanProcessorTest {
             .setBody("Not Found")
         )
 
-        val span = createTestSpan(
+        val span = createTestSpanData(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
                 MediaContentAttributeValues.Data(
@@ -558,7 +548,7 @@ class LangfuseMediaSpanProcessorTest {
             .setBody("Not Found")
         )
 
-        val span = createTestSpan(
+        val span = createTestSpanData(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
                 MediaContentAttributeValues.Data(
@@ -606,7 +596,7 @@ class LangfuseMediaSpanProcessorTest {
                 .setBody("Media not found")
         )
 
-        val span = createTestSpan(
+        val span = createTestSpanData(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
                 MediaContentAttributeValues.Data(
@@ -641,7 +631,7 @@ class LangfuseMediaSpanProcessorTest {
                 .addHeader("Content-Type", "application/json")
         )
 
-        val span = createTestSpan(
+        val span = createTestSpanData(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
                 MediaContentAttributeValues.Data(
@@ -672,7 +662,7 @@ class LangfuseMediaSpanProcessorTest {
                 .setBody("Not found")
         )
 
-        val span = createTestSpan(
+        val span = createTestSpanData(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
                 MediaContentAttributeValues.Url(
@@ -701,7 +691,7 @@ class LangfuseMediaSpanProcessorTest {
                 // Missing Content-Type header
         )
 
-        val span = createTestSpan(
+        val span = createTestSpanData(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
                 MediaContentAttributeValues.Url(
@@ -724,7 +714,7 @@ class LangfuseMediaSpanProcessorTest {
 
     @Test
     fun `test invalid Base64 data`() = runTest {
-        val span = createTestSpan(
+        val span = createTestSpanData(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
                 MediaContentAttributeValues.Data(
@@ -787,7 +777,7 @@ class LangfuseMediaSpanProcessorTest {
                 .setBodyDelay(100, TimeUnit.MILLISECONDS)
         )
 
-        val span = createTestSpan(
+        val span = createTestSpanData(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
                 MediaContentAttributeValues.Data(
@@ -814,56 +804,8 @@ class LangfuseMediaSpanProcessorTest {
     companion object {
         private const val TEST_TRACE_ID = "00000000000000000000000000000001"
 
-        // ========================================
-        // HELPER FUNCTIONS
-        // ========================================
-
         private suspend fun delayOnDefault(timeMillis: Long) = withContext(Dispatchers.Default) {
             delay(timeMillis)
-        }
-
-        private fun createTestSpan(traceId: String, mediaAttributes: List<MediaContentAttributeValues>): SpanData {
-            val attributesBuilder = Attributes.builder()
-
-            for ((index, media) in mediaAttributes.withIndex()) {
-                val keys = UploadableMediaContentAttributeKeys.forIndex(index)
-                attributesBuilder.put(keys.type, media.type.type)
-
-                when (media) {
-                    is MediaContentAttributeValues.Url -> {
-                        attributesBuilder.put(keys.field, media.field)
-                        attributesBuilder.put(keys.url, media.url!!)
-                    }
-                    is MediaContentAttributeValues.Data -> {
-                        attributesBuilder.put(keys.field, media.field)
-                        attributesBuilder.put(keys.contentType, media.contentType)
-                        attributesBuilder.put(keys.data, media.data!!)
-                    }
-                }
-            }
-
-            return TestSpanData.builder()
-                .setName("test-span")
-                .setKind(SpanKind.INTERNAL)
-                .setSpanContext(
-                    SpanContext.create(
-                        traceId,
-                        "0000000000000001",
-                        TraceFlags.getSampled(),
-                        TraceState.getDefault()
-                    )
-                )
-                .setStartEpochNanos(System.nanoTime())
-                .setEndEpochNanos(System.nanoTime())
-                .setStatus(StatusData.ok())
-                .setHasEnded(true)
-                .setAttributes(attributesBuilder.build())
-                .setTotalAttributeCount(attributesBuilder.build().size())
-                .setEvents(emptyList())
-                .setLinks(emptyList())
-                .setResource(Resource.getDefault())
-                .setInstrumentationScopeInfo(InstrumentationScopeInfo.empty())
-                .build()
         }
     }
 }
