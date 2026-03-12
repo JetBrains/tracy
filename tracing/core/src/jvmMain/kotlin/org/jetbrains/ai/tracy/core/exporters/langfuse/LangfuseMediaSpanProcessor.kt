@@ -128,8 +128,8 @@ internal class LangfuseMediaSpanProcessor(
     }
 
     override fun close() {
-        runBlocking { awaitActiveJobs() }
-        closeClient()
+        // the default implementation calls `shutdown` with a timed join
+        super.close()
     }
 
     private fun trackJob(job: Job) {
