@@ -46,7 +46,11 @@ internal class CreateVideoHandler(private val extractor: MediaContentExtractor) 
                     contentType.charset() ?: Charsets.UTF_8
                 )
                 contentType.type.startsWith("image") || contentType.type.startsWith("video") -> {
-                    Base64.getEncoder().encodeToString(part.content)
+                    if (contentTracingAllowed(ContentKind.INPUT)) {
+                        Base64.getEncoder().encodeToString(part.content)
+                    } else {
+                        "REDACTED"
+                    }
                 }
                 else -> null
             }
