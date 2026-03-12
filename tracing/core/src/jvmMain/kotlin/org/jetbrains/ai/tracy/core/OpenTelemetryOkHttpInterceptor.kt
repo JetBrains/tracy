@@ -250,13 +250,22 @@ class OpenTelemetryOkHttpInterceptor(
 
                     wrapStreamingResponse(response, url, span)
                 } else {
-                    val decodedResponse = try {
-                        Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
-                    } catch (_: Exception) {
-                        JsonObject(emptyMap())
+                    // if the content type is `application/json`, we decode a response body;
+                    // otherwise (e.g., when the body is binary), we pass an empty JSON object as the response body.
+                    val contentType = response.headers("Content-Type").firstOrNull()
+                    val responseBody = when (contentType?.lowercase()) {
+                        "application/json" -> try {
+                            val peekedBody = response.peekBody(Long.MAX_VALUE).string()
+                            Json.decodeFromString<JsonObject>(peekedBody)
+                        } catch (_: Exception) {
+                            JsonObject(emptyMap())
+                        }
+                        else -> {
+                            JsonObject(emptyMap())
+                        }
                     }
 
-                    adapter.registerResponse(span, response = response.asResponseView(decodedResponse))
+                    adapter.registerResponse(span, response = response.asResponseView(responseBody))
                     response
                 }
             } catch (e: Exception) {
