@@ -69,7 +69,9 @@ internal class CreateVideoHandler(private val extractor: MediaContentExtractor) 
                     span.setAttribute("gen_ai.request.size", content.orRedactedInput())
                 }
                 "input_reference" -> {
-                    span.setAttribute("gen_ai.request.input_reference.contentType", contentType?.asString())
+                    if (contentType != null) {
+                        span.setAttribute("gen_ai.request.input_reference.content_type", contentType.asString())
+                    }
                     span.setAttribute("gen_ai.request.input_reference.content", content.orRedactedInput())
                     if (part.filename != null) {
                         span.setAttribute("gen_ai.request.input_reference.filename", part.filename)
