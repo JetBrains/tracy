@@ -220,25 +220,34 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 val span = response.call.request.attributes.getOrNull(httpSpanKey)
                     ?: return@onResponse
                 if (isStreamingRequest) return@onResponse
-                val body = try {
-                    // peek the response body to avoid consuming the underlying channel
-                    val responseString = run {
-                        // NOTE: we must first peek and only then await.
-                        // otherwise there are cases when an empty body gets peeked
-                        val peeked = response.rawContent.readBuffer.peek()
-                        response.rawContent.awaitContent(Int.MAX_VALUE)
-                        peeked.request(Long.MAX_VALUE)
-                        val buffer = Buffer()
-                        buffer.write(peeked, peeked.buffer.size)
-                        buffer.readString()
+
+
+                // when the content type is `application/json`, we decode the response body;
+                // otherwise, (e.g., when the body is binary), we pass an empty JSON object as the response body.
+                val responseBody = when (response.contentType()) {
+                    ContentType.Application.Json -> try {
+                        val body = run {
+                            // peek the response body to avoid consuming the underlying channel
+                            // NOTE: we must first peek and only then await.
+                            // otherwise there are cases when an empty body gets peeked
+                            val peeked = response.rawContent.readBuffer.peek()
+                            response.rawContent.awaitContent(Int.MAX_VALUE)
+                            peeked.request(Long.MAX_VALUE)
+                            val buffer = Buffer()
+                            buffer.write(peeked, peeked.buffer.size)
+                            buffer.readString()
+                        }
+                        Json.parseToJsonElement(body).jsonObject
+                    } catch (err: Exception) {
+                        logger.trace("Error while parsing response body", err)
+                        JsonObject(emptyMap())
                     }
-                    Json.parseToJsonElement(responseString).jsonObject
-                } catch (exception: Exception) {
-                    logger.trace("Error while parsing response body", exception)
-                    JsonObject(emptyMap())
+                    else -> {
+                        JsonObject(emptyMap())
+                    }
                 }
 
-                adapter.registerResponse(span, response = response.asResponseView(body))
+                adapter.registerResponse(span, response = response.asResponseView(responseBody))
                 span.end()
             }
 
