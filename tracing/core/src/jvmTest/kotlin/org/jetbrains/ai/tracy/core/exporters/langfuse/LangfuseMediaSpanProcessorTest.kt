@@ -5,25 +5,23 @@
 
 package org.jetbrains.ai.tracy.core.exporters.langfuse
 
-import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.trace.SpanContext
 import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.api.trace.TraceFlags
 import io.opentelemetry.api.trace.TraceState
-import io.opentelemetry.sdk.common.InstrumentationLibraryInfo
 import io.opentelemetry.sdk.common.InstrumentationScopeInfo
 import io.opentelemetry.sdk.resources.Resource
 import io.opentelemetry.sdk.testing.trace.TestSpanData
-import io.opentelemetry.sdk.trace.ReadableSpan
 import io.opentelemetry.sdk.trace.data.SpanData
 import io.opentelemetry.sdk.trace.data.StatusData
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import org.jetbrains.ai.tracy.core.adapters.media.SupportedMediaContentTypes
 import org.jetbrains.ai.tracy.core.adapters.media.UploadableMediaContentAttributeKeys
+import org.jetbrains.ai.tracy.test.utils.MediaContentAttributeValues
+import org.jetbrains.ai.tracy.test.utils.toReadableSpan
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -139,9 +137,7 @@ class LangfuseMediaSpanProcessorTest {
         val span = createTestSpan(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
-                MediaAttributes(
-                    index = 0,
-                    type = SupportedMediaContentTypes.BASE64.type,
+                MediaContentAttributeValues.Data(
                     field = "output",
                     contentType = "image/png",
                     data = Base64.getEncoder().encodeToString(mediaData.toByteArray())
@@ -205,9 +201,7 @@ class LangfuseMediaSpanProcessorTest {
         val span = createTestSpan(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
-                MediaAttributes(
-                    index = 0,
-                    type = SupportedMediaContentTypes.BASE64.type,
+                MediaContentAttributeValues.Data(
                     field = "input",
                     contentType = "image/jpeg",
                     data = Base64.getEncoder().encodeToString("existing-image-data".toByteArray())
@@ -274,9 +268,7 @@ class LangfuseMediaSpanProcessorTest {
         val span = createTestSpan(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
-                MediaAttributes(
-                    index = 0,
-                    type = SupportedMediaContentTypes.URL.type,
+                MediaContentAttributeValues.Url(
                     field = "input",
                     url = externalUrl
                 )
@@ -311,9 +303,7 @@ class LangfuseMediaSpanProcessorTest {
         val span = createTestSpan(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
-                MediaAttributes(
-                    index = 0,
-                    type = SupportedMediaContentTypes.BASE64.type,
+                MediaContentAttributeValues.Data(
                     field = "output",
                     contentType = "image/png",
                     data = Base64.getEncoder().encodeToString("test".toByteArray())
@@ -344,9 +334,7 @@ class LangfuseMediaSpanProcessorTest {
         val span = createTestSpan(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
-                MediaAttributes(
-                    index = 0,
-                    type = SupportedMediaContentTypes.BASE64.type,
+                MediaContentAttributeValues.Data(
                     field = "output",
                     contentType = "image/png",
                     data = Base64.getEncoder().encodeToString("test".toByteArray())
@@ -369,9 +357,7 @@ class LangfuseMediaSpanProcessorTest {
         val span = createTestSpan(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
-                MediaAttributes(
-                    index = 0,
-                    type = SupportedMediaContentTypes.BASE64.type,
+                MediaContentAttributeValues.Data(
                     field = "output",
                     contentType = "invalid/content/type/format/",
                     data = Base64.getEncoder().encodeToString("test".toByteArray())
@@ -421,9 +407,7 @@ class LangfuseMediaSpanProcessorTest {
         val span = createTestSpan(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
-                MediaAttributes(
-                    index = 0,
-                    type = SupportedMediaContentTypes.BASE64.type,
+                MediaContentAttributeValues.Data(
                     field = "output",
                     contentType = "image/png",
                     data = Base64.getEncoder().encodeToString("test".toByteArray())
@@ -474,9 +458,7 @@ class LangfuseMediaSpanProcessorTest {
         val span = createTestSpan(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
-                MediaAttributes(
-                    index = 0,
-                    type = SupportedMediaContentTypes.BASE64.type,
+                MediaContentAttributeValues.Data(
                     field = "output",
                     contentType = "image/png",
                     data = Base64.getEncoder().encodeToString("test".toByteArray())
@@ -533,9 +515,7 @@ class LangfuseMediaSpanProcessorTest {
         val span = createTestSpan(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
-                MediaAttributes(
-                    index = 0,
-                    type = SupportedMediaContentTypes.BASE64.type,
+                MediaContentAttributeValues.Data(
                     field = "output",
                     contentType = "image/png",
                     data = Base64.getEncoder().encodeToString("test".toByteArray())
@@ -581,9 +561,7 @@ class LangfuseMediaSpanProcessorTest {
         val span = createTestSpan(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
-                MediaAttributes(
-                    index = 0,
-                    type = SupportedMediaContentTypes.BASE64.type,
+                MediaContentAttributeValues.Data(
                     field = "output",
                     contentType = "image/png",
                     data = Base64.getEncoder().encodeToString("test".toByteArray())
@@ -631,9 +609,7 @@ class LangfuseMediaSpanProcessorTest {
         val span = createTestSpan(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
-                MediaAttributes(
-                    index = 0,
-                    type = SupportedMediaContentTypes.BASE64.type,
+                MediaContentAttributeValues.Data(
                     field = "output",
                     contentType = "image/png",
                     data = Base64.getEncoder().encodeToString("test".toByteArray())
@@ -668,9 +644,7 @@ class LangfuseMediaSpanProcessorTest {
         val span = createTestSpan(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
-                MediaAttributes(
-                    index = 0,
-                    type = SupportedMediaContentTypes.BASE64.type,
+                MediaContentAttributeValues.Data(
                     field = "output",
                     contentType = "image/png",
                     data = Base64.getEncoder().encodeToString("test".toByteArray())
@@ -701,9 +675,7 @@ class LangfuseMediaSpanProcessorTest {
         val span = createTestSpan(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
-                MediaAttributes(
-                    index = 0,
-                    type = SupportedMediaContentTypes.URL.type,
+                MediaContentAttributeValues.Url(
                     field = "input",
                     url = externalUrl
                 )
@@ -732,9 +704,7 @@ class LangfuseMediaSpanProcessorTest {
         val span = createTestSpan(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
-                MediaAttributes(
-                    index = 0,
-                    type = SupportedMediaContentTypes.URL.type,
+                MediaContentAttributeValues.Url(
                     field = "input",
                     url = externalUrl
                 )
@@ -757,9 +727,7 @@ class LangfuseMediaSpanProcessorTest {
         val span = createTestSpan(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
-                MediaAttributes(
-                    index = 0,
-                    type = SupportedMediaContentTypes.BASE64.type,
+                MediaContentAttributeValues.Data(
                     field = "output",
                     contentType = "image/png",
                     data = "!!!invalid-base64-data!!!"
@@ -822,9 +790,7 @@ class LangfuseMediaSpanProcessorTest {
         val span = createTestSpan(
             traceId = TEST_TRACE_ID,
             mediaAttributes = listOf(
-                MediaAttributes(
-                    index = 0,
-                    type = SupportedMediaContentTypes.BASE64.type,
+                MediaContentAttributeValues.Data(
                     field = "output",
                     contentType = "image/png",
                     data = Base64.getEncoder().encodeToString("test".toByteArray())
@@ -856,20 +822,21 @@ class LangfuseMediaSpanProcessorTest {
             delay(timeMillis)
         }
 
-        private fun createTestSpan(traceId: String, mediaAttributes: List<MediaAttributes>): SpanData {
+        private fun createTestSpan(traceId: String, mediaAttributes: List<MediaContentAttributeValues>): SpanData {
             val attributesBuilder = Attributes.builder()
 
-            mediaAttributes.forEach { media ->
-                val keys = UploadableMediaContentAttributeKeys.forIndex(media.index)
-                attributesBuilder.put(keys.type, media.type)
-                attributesBuilder.put(keys.field, media.field)
+            for ((index, media) in mediaAttributes.withIndex()) {
+                val keys = UploadableMediaContentAttributeKeys.forIndex(index)
+                attributesBuilder.put(keys.type, media.type.type)
 
-                when (media.type) {
-                    SupportedMediaContentTypes.URL.type -> {
+                when (media) {
+                    is MediaContentAttributeValues.Url -> {
+                        attributesBuilder.put(keys.field, media.field)
                         attributesBuilder.put(keys.url, media.url!!)
                     }
-                    SupportedMediaContentTypes.BASE64.type -> {
-                        attributesBuilder.put(keys.contentType, media.contentType!!)
+                    is MediaContentAttributeValues.Data -> {
+                        attributesBuilder.put(keys.field, media.field)
+                        attributesBuilder.put(keys.contentType, media.contentType)
                         attributesBuilder.put(keys.data, media.data!!)
                     }
                 }
@@ -898,30 +865,5 @@ class LangfuseMediaSpanProcessorTest {
                 .setInstrumentationScopeInfo(InstrumentationScopeInfo.empty())
                 .build()
         }
-
-        private fun SpanData.toReadableSpan(): ReadableSpan = SpanDataAdapter(this)
-
-        private class SpanDataAdapter(private val span: SpanData): ReadableSpan {
-            override fun getSpanContext(): SpanContext = span.spanContext
-            override fun getParentSpanContext(): SpanContext = span.parentSpanContext
-            override fun getName(): String = span.name
-            override fun toSpanData() = span
-            @Deprecated("Deprecated in Java")
-            override fun getInstrumentationLibraryInfo(): InstrumentationLibraryInfo = span.instrumentationLibraryInfo
-            override fun hasEnded() = span.hasEnded()
-            override fun getKind(): SpanKind = span.kind
-            override fun getLatencyNanos(): Long = throw UnsupportedOperationException("Not supported")
-            override fun getAttributes(): Attributes = span.attributes
-            override fun <T> getAttribute(key: AttributeKey<T>) = span.attributes.get(key)
-        }
-
-        private data class MediaAttributes(
-            val index: Int,
-            val type: String,
-            val field: String,
-            val contentType: String? = null,
-            val data: String? = null,
-            val url: String? = null
-        )
     }
 }
