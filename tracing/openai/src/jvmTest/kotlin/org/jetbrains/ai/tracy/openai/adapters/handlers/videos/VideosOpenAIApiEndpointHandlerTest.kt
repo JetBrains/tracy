@@ -217,7 +217,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.request.input_reference.content")])
             assertEquals(
                 referenceFile.contentType,
-                trace.attributes[AttributeKey.stringKey("gen_ai.request.input_reference.contentType")]
+                trace.attributes[AttributeKey.stringKey("gen_ai.request.input_reference.content_type")]
             )
             assertEquals(
                 referenceFile.filepath,
