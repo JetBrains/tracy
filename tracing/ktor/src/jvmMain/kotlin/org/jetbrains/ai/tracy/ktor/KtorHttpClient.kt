@@ -38,6 +38,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.serializer
 import mu.KotlinLogging
+import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequestBody
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
 
@@ -186,29 +187,23 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                         (bodyContent != null) && (contentType != null) -> try {
                             bodyContent.asRequestBody(contentType, charset)
                         } catch(e: Exception) {
-                            logger.warn(e) { "Failed to parse request body for tracing; request body will not be traced" }
+                            logger.warn(e) { "Failed to parse request body for tracing; request body will be empty" }
                             null
                         }
                         else -> {
-                            logger.warn("Either body or content type are null; request body will not be traced")
+                            logger.warn("Either body or content type are null; request body will be empty")
                             null
                         }
-                    }
+                    } ?: TracyHttpRequestBody.Empty
 
-                    val req = requestBody?.asRequestView(
+                    val tracyRequest = requestBody.asRequestView(
                         contentType = contentType,
                         url = request.url.toProtocolUrl(),
                         method = request.method.value,
                     )
 
-                    request.attributes.put(
-                        isStreamingRequestKey,
-                        value = req?.let { adapter.isStreamingRequest(it) } ?: false
-                    )
-
-                    if (req != null) {
-                        adapter.registerRequest(span, req)
-                    }
+                    request.attributes.put(isStreamingRequestKey, value = adapter.isStreamingRequest(tracyRequest))
+                    adapter.registerRequest(span, tracyRequest)
                 }
             }
 
