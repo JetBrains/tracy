@@ -24,12 +24,14 @@ private val logger = KotlinLogging.logger {}
  * @property contentType The content type of the request, indicating the type of data included in the body.
  * @property body The body of the request, containing the actual data to be sent.
  *             This can be represented as JSON or form data.
+ * @property method The HTTP method of this request instance.
  */
 @InternalTracyApi
 interface TracyHttpRequest {
     val body: TracyHttpRequestBody
     val contentType: TracyContentType?
     val url: TracyHttpUrl
+    val method: String
 }
 
 /**
@@ -38,13 +40,17 @@ interface TracyHttpRequest {
  * This sealed class is used as part of the [TracyHttpRequest] data structure to encapsulate the various
  * types of data that can be transmitted as the body of an HTTP request.
  *
- * - [Json]: Represents a JSON body containing structured data.
- * - [FormData]: Represents form-data typically used in multipart requests.
+ * **Request body types:**
+ * 1. [Json]: Represents a JSON body containing structured data.
+ * 2. [FormData]: Represents form-data typically used in multipart requests.
+ * 3. [Empty]: Represents an empty body, typically used for requests that do not require a body
+ *            (i.e., a GET request to download a hosted resource).
  */
 @InternalTracyApi
 sealed class TracyHttpRequestBody {
     data class Json(val json: JsonElement) : TracyHttpRequestBody()
     data class FormData(val data: org.jetbrains.ai.tracy.core.http.parsers.FormData) : TracyHttpRequestBody()
+    object Empty : TracyHttpRequestBody()
 }
 
 @InternalTracyApi
@@ -105,11 +111,13 @@ fun ByteArray.asRequestBody(contentType: TracyContentType, charset: Charset): Tr
 fun TracyHttpRequestBody.asRequestView(
     contentType: TracyContentType?,
     url: TracyHttpUrl,
+    method: String,
 ): TracyHttpRequest {
     val requestBody = this
     return object : TracyHttpRequest {
         override val body = requestBody
         override val contentType = contentType
         override val url = url
+        override val method = method.uppercase()
     }
 }

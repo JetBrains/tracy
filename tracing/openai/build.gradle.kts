@@ -49,6 +49,7 @@ kotlin {
                 implementation(libs.ktor.client.cio)
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.opentelemetry.sdk.testing)
+                implementation(libs.okhttp.mockwebserver)
                 implementation(project.dependencies.testFixtures(project(":tracing:test-utils")))
             }
         }

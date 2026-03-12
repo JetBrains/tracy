@@ -5,14 +5,11 @@
 
 package org.jetbrains.ai.tracy.core
 
-import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
-import org.jetbrains.ai.tracy.core.http.protocol.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import mu.KotlinLogging
 import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
@@ -21,6 +18,8 @@ import okio.Buffer
 import okio.BufferedSource
 import okio.ForwardingSource
 import okio.buffer
+import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
+import org.jetbrains.ai.tracy.core.http.protocol.*
 import okhttp3.Request as OkHttpRequest
 import okhttp3.Response as OkHttpResponse
 import okhttp3.ResponseBody as OkHttpResponseBody
@@ -206,8 +205,6 @@ internal fun setFieldValue(instance: Any, fieldName: String, value: Any?) {
 class OpenTelemetryOkHttpInterceptor(
     private val adapter: LLMTracingAdapter,
 ) : Interceptor {
-    private val logger = KotlinLogging.logger {}
-
     override fun intercept(chain: Interceptor.Chain): OkHttpResponse {
         if (!TracingManager.isTracingEnabled) {
             return chain.proceed(chain.request())
@@ -223,26 +220,25 @@ class OpenTelemetryOkHttpInterceptor(
                 // register request
                 val (bodyContent, request) = chain.request().withCopiedBodyContent()
 
-                if (bodyContent != null) {
-                    // building request view
-                    val mediaType = request.body?.contentType()
-                    val req: TracyHttpRequest? = mediaType?.let {
-                        val body = bodyContent.asRequestBody(mediaType = it)
-                        body?.asRequestView(
-                            contentType = mediaType.toContentType(),
-                            url = request.url.toProtocolUrl(),
-                        )
-                    }
+                // building request view
+                val mediaType = request.body?.contentType()
+                val tracyRequest = run {
+                    // media type and body content are null when a request has no body content
+                    // (e.g., a GET request with query params)
+                    val body = when {
+                        (bodyContent != null) && (mediaType != null) -> bodyContent.asRequestBody(mediaType)
+                        else -> null
+                    } ?: TracyHttpRequestBody.Empty
 
-                    if (req != null) {
-                        isStreamingRequest = adapter.isStreamingRequest(req)
-                        adapter.registerRequest(span, req)
-                    } else {
-                        logger.warn { "Failed to register request, cannot build request from body content with media type of $mediaType" }
-                    }
-                } else {
-                    logger.warn { "Failed to register request, body content is null" }
+                    body.asRequestView(
+                        contentType = mediaType?.toContentType(),
+                        url = request.url.toProtocolUrl(),
+                        method = request.method,
+                    )
                 }
+
+                isStreamingRequest = adapter.isStreamingRequest(tracyRequest)
+                adapter.registerRequest(span, tracyRequest)
 
                 // register response
                 val response = chain.proceed(request)
@@ -254,13 +250,22 @@ class OpenTelemetryOkHttpInterceptor(
 
                     wrapStreamingResponse(response, url, span)
                 } else {
-                    val decodedResponse = try {
-                        Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
-                    } catch (_: Exception) {
-                        JsonObject(emptyMap())
+                    // if the content type is `application/json`, we decode a response body;
+                    // otherwise (e.g., when the body is binary), we pass an empty JSON object as the response body.
+                    val contentType = response.headers("Content-Type").firstOrNull()
+                    val responseBody = when (contentType?.lowercase()) {
+                        "application/json" -> try {
+                            val peekedBody = response.peekBody(Long.MAX_VALUE).string()
+                            Json.decodeFromString<JsonObject>(peekedBody)
+                        } catch (_: Exception) {
+                            JsonObject(emptyMap())
+                        }
+                        else -> {
+                            JsonObject(emptyMap())
+                        }
                     }
 
-                    adapter.registerResponse(span, response = response.asResponseView(decodedResponse))
+                    adapter.registerResponse(span, response = response.asResponseView(responseBody))
                     response
                 }
             } catch (e: Exception) {
@@ -360,6 +365,7 @@ class OpenTelemetryOkHttpInterceptor(
             override val code = response.code
             override val body = TracyHttpResponseBody.Json(body)
             override val url = response.request.url.toProtocolUrl()
+            override val requestMethod = response.request.method.uppercase()
 
             override fun isError() = response.isSuccessful.not()
         }
