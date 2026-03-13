@@ -471,6 +471,40 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
     }
 
     @Test
+    fun `test Gemini streaming`() = runTest {
+        val client = createGeminiClient().apply { instrument(this) }
+
+        val model = "gemini-2.5-flash"
+        val config = GeminiGenerateContentConfig.builder()
+            .temperature(0.0f)
+            .build()
+
+        val accumulatedText = StringBuilder()
+        client.models.generateContentStream(model, "Say hello in one sentence.", config).use { stream ->
+            for (chunk in stream) {
+                chunk.text()?.let { accumulatedText.append(it) }
+            }
+        }
+
+        val traces = analyzeSpans()
+        assertTracesCount(1, traces)
+        val trace = traces.first()
+
+        // Streaming response should have text/event-stream content type
+        val contentType = trace.attributes[AttributeKey.stringKey("gen_ai.completion.content.type")]
+        assertNotNull(contentType)
+        assertTrue(contentType.startsWith("text/event-stream"))
+
+        // Completion content should match the accumulated text
+        val completionContent = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
+        assertNotNull(completionContent, "Streaming response should have completion content")
+        assertEquals(accumulatedText.toString(), completionContent)
+
+        // Response metadata should be present
+        assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.model")])
+    }
+
+    @Test
     fun `test Gemini additional attributes`() = runTest {
         val client = createGeminiClient().apply { instrument(this) }
         val model = "gemini-2.5-flash"

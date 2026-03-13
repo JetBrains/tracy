@@ -27,16 +27,20 @@ import kotlinx.serialization.json.jsonPrimitive
  * ## Usage
  * Extend this class to create a provider-specific adapter:
  * ```kotlin
- * class AnthropicLLMTracingAdapter : LLMTracingAdapter(GenAiSystemIncubatingValues.ANTHROPIC) {
- *     override fun getRequestBodyAttributes(span: Span, request: Request) {
- *         // Parse Anthropic-specific request format
+ * class MyProviderAdapter : LLMTracingAdapter("my-provider") {
+ *     override fun getRequestBodyAttributes(span: Span, request: TracyHttpRequest) {
+ *         // Parse provider-specific request format (model, messages, tools, etc.)
  *     }
- *     override fun getResponseBodyAttributes(span: Span, response: Response) {
- *         // Parse Anthropic-specific response format
+ *     override fun getResponseBodyAttributes(span: Span, response: TracyHttpResponse) {
+ *         // Parse provider-specific response format (completions, usage, etc.)
  *     }
- *     override fun getSpanName(request: Request) = "Anthropic-generation"
- *     override fun isStreamingRequest(request: Request) = false
- *     override fun handleStreaming(span: Span, url: Url, events: String) = Unit
+ *     override fun getSpanName(request: TracyHttpRequest) = "MyProvider-generation"
+ *     override fun isStreamingRequest(request: TracyHttpRequest): Boolean {
+ *         // Check for streaming indicator (e.g., "stream": true in body, or URL-based)
+ *     }
+ *     override fun handleStreaming(span: Span, url: TracyHttpUrl, events: String) {
+ *         // Parse SSE events and set span attributes.
+ *     }
  * }
  * ```
  *
@@ -120,7 +124,15 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
     protected abstract fun getResponseBodyAttributes(span: Span, response: TracyHttpResponse)
 
     abstract fun getSpanName(request: TracyHttpRequest): String
+
+    /**
+     * Returns `true` if the request is a streaming request.
+     */
     abstract fun isStreamingRequest(request: TracyHttpRequest): Boolean
+
+    /**
+     * Extracts span attributes from a streaming response.
+     */
     abstract fun handleStreaming(span: Span, url: TracyHttpUrl, events: String)
 
     companion object {

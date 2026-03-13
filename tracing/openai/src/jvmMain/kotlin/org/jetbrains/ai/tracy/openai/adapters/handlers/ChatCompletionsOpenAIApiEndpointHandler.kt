@@ -23,6 +23,8 @@ import org.jetbrains.ai.tracy.core.policy.orRedactedInput
 import org.jetbrains.ai.tracy.core.policy.orRedactedOutput
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_ID
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_MODEL
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
 import kotlinx.serialization.json.Json
@@ -31,6 +33,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -137,58 +140,34 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
         val body = response.body.asJson()?.jsonObject ?: return
 
         body["choices"]?.let { choices ->
-            for ((index, choice) in choices.jsonArray.withIndex()) {
-                val index = choice.jsonObject["index"]?.jsonPrimitive?.intOrNull ?: index
+            for ((idx, choice) in choices.jsonArray.withIndex()) {
+                val index = choice.jsonObject["index"]?.jsonPrimitive?.intOrNull ?: idx
+                val finishReason = choice.jsonObject["finish_reason"]?.jsonPrimitive?.content
+                val message = choice.jsonObject["message"]?.jsonObject
 
-                span.setAttribute(
-                    "gen_ai.completion.$index.finish_reason",
-                    choice.jsonObject["finish_reason"]?.jsonPrimitive?.content
-                )
+                val role = message?.get("role")?.jsonPrimitive?.content
+                val content = message?.get("content")?.toString()
+                val annotations = message?.get("annotations")?.toString()
 
-                choice.jsonObject["message"]?.jsonObject?.let { message ->
-                    val role = message.jsonObject["role"]?.jsonPrimitive?.content
-                    val content = message.jsonObject["content"]?.toString()
-
-                    span.setAttribute("gen_ai.completion.$index.role", role)
-                    span.setAttribute("gen_ai.completion.$index.content", content?.orRedactedOutput())
-
-                    // See: https://platform.openai.com/docs/api-reference/chat/object
-                    message.jsonObject["tool_calls"]?.let { toolCalls ->
-                        // sometimes, this prop is explicitly set to null, hence, being JsonNull.
-                        // therefore, we check for the required array type
-                        if (toolCalls is JsonArray) {
-                            for ((toolCallIndex, toolCall) in toolCalls.jsonArray.withIndex()) {
-                                span.setAttribute(
-                                    "gen_ai.completion.$index.tool.$toolCallIndex.call.id",
-                                    toolCall.jsonObject["id"]?.jsonPrimitive?.content
-                                )
-                                span.setAttribute(
-                                    "gen_ai.completion.$index.tool.$toolCallIndex.call.type",
-                                    toolCall.jsonObject["type"]?.jsonPrimitive?.content
-                                )
-
-                                toolCall.jsonObject["function"]?.jsonObject?.let {
-                                    val name = it["name"]?.jsonPrimitive?.content
-                                    val arguments = it["arguments"]?.jsonPrimitive?.content
-
-                                    span.setAttribute(
-                                        "gen_ai.completion.$index.tool.$toolCallIndex.name",
-                                        name?.orRedactedOutput()
-                                    )
-                                    span.setAttribute(
-                                        "gen_ai.completion.$index.tool.$toolCallIndex.arguments",
-                                        arguments?.orRedactedOutput()
-                                    )
-                                }
-                            }
+                // Parse tool calls from the response message
+                val toolCalls = buildMap<Int, ToolCallData> {
+                    val toolCallsJson = message?.get("tool_calls")
+                    // sometimes, this prop is explicitly set to null, hence, being JsonNull.
+                    // therefore, we check for the required array type
+                    if (toolCallsJson is JsonArray) {
+                        for ((tcIndex, tc) in toolCallsJson.jsonArray.withIndex()) {
+                            val fn = tc.jsonObject["function"]?.jsonObject
+                            put(tcIndex, ToolCallData(
+                                id = tc.jsonObject["id"]?.jsonPrimitive?.content,
+                                type = tc.jsonObject["type"]?.jsonPrimitive?.content,
+                                name = fn?.get("name")?.jsonPrimitive?.content,
+                                arguments = fn?.get("arguments")?.jsonPrimitive?.content,
+                            ))
                         }
                     }
-
-                    span.setAttribute(
-                        "gen_ai.completion.$index.annotations",
-                        message.jsonObject["annotations"].toString()
-                    )
                 }
+
+                setChoiceAttributes(span, index, role, content, finishReason, toolCalls, annotations)
             }
         }
 
@@ -200,38 +179,120 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
     }
 
     override fun handleStreaming(span: Span, events: String): Unit = runCatching {
-        var role: String? = null
-        val out = buildString {
-            for (line in events.lineSequence()) {
-                if (!line.startsWith("data:")) {
-                    continue
+        data class ToolCallAccumulator(
+            var id: String? = null,
+            var type: String? = null,
+            var name: String? = null,
+            val arguments: StringBuilder = StringBuilder(),
+        )
+
+        data class ChoiceAccumulator(
+            val content: StringBuilder = StringBuilder(),
+            var role: String? = null,
+            var finishReason: String? = null,
+            val toolCalls: MutableMap<Int, ToolCallAccumulator> = mutableMapOf(),
+        )
+
+        val choices = mutableMapOf<Int, ChoiceAccumulator>()
+        var responseId: String? = null
+        var responseModel: String? = null
+
+        for (line in events.lineSequence()) {
+            if (!line.startsWith("data:")) continue
+            val data = line.removePrefix("data:").trim()
+
+            val json = runCatching {
+                Json.parseToJsonElement(data).jsonObject
+            }.getOrNull() ?: continue
+
+            // Response-level attributes (same across all chunks)
+            if (responseId == null) {
+                json["id"]?.jsonPrimitive?.contentOrNull?.let { responseId = it }
+            }
+            if (responseModel == null) {
+                json["model"]?.jsonPrimitive?.contentOrNull?.let { responseModel = it }
+            }
+
+            // Usage chunk (sent when stream_options.include_usage is true):
+            // the final chunk has choices=[] and usage={...}
+            json["usage"]?.jsonObject?.let { usage ->
+                setUsageAttributes(span, usage)
+            }
+
+            val eventChoices = json["choices"]?.jsonArray ?: continue
+            for (choiceElement in eventChoices) {
+                val choice = choiceElement.jsonObject
+                val index = choice["index"]?.jsonPrimitive?.intOrNull ?: 0
+                val acc = choices.getOrPut(index) { ChoiceAccumulator() }
+
+                choice["finish_reason"]?.jsonPrimitive?.contentOrNull?.let {
+                    acc.finishReason = it
                 }
-                val data = line.removePrefix("data:").trim()
 
-                val event = runCatching {
-                    Json.parseToJsonElement(data).jsonObject
-                }.getOrNull() ?: continue
-
-                val choice = event["choices"]?.jsonArray?.firstOrNull()?.jsonObject ?: continue
                 val delta = choice["delta"]?.jsonObject ?: continue
 
-                if (role == null) {
-                    role = delta["role"]?.jsonPrimitive?.content
+                delta["role"]?.jsonPrimitive?.contentOrNull?.let { acc.role = it }
+                delta["content"]?.jsonPrimitive?.contentOrNull?.let { acc.content.append(it) }
+
+                // Tool calls in delta: each tool_call has index, id, type, function.name, function.arguments
+                delta["tool_calls"]?.jsonArray?.forEach { toolCallElement ->
+                    val tc = toolCallElement.jsonObject
+                    val tcIndex = tc["index"]?.jsonPrimitive?.intOrNull ?: return@forEach
+                    val tcAcc = acc.toolCalls.getOrPut(tcIndex) { ToolCallAccumulator() }
+
+                    tc["id"]?.jsonPrimitive?.contentOrNull?.let { tcAcc.id = it }
+                    tc["type"]?.jsonPrimitive?.contentOrNull?.let { tcAcc.type = it }
+                    tc["function"]?.jsonObject?.let { fn ->
+                        fn["name"]?.jsonPrimitive?.contentOrNull?.let { tcAcc.name = it }
+                        fn["arguments"]?.jsonPrimitive?.contentOrNull?.let { tcAcc.arguments.append(it) }
+                    }
                 }
-                delta["content"]?.jsonPrimitive?.content?.let { append(it) }
             }
         }
 
-        if (out.isNotEmpty()) {
-            val kind = kindByRole(role)
-            span.setAttribute("gen_ai.completion.0.content", out.orRedacted(kind))
+        // Set response-level attributes
+        responseId?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it) }
+        responseModel?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it) }
+
+        for ((index, acc) in choices) {
+            val toolCallData = acc.toolCalls.mapValues { (_, tc) ->
+                ToolCallData(id = tc.id, type = tc.type, name = tc.name, arguments = tc.arguments.toString().ifEmpty { null })
+            }
+            setChoiceAttributes(
+                span, index, acc.role, acc.content.toString().ifEmpty { null },
+                acc.finishReason, toolCallData,
+            )
         }
-        role?.let { span.setAttribute("gen_ai.completion.0.role", it) }
 
         return@runCatching
     }.getOrElse { exception ->
         span.setStatus(StatusCode.ERROR)
         span.recordException(exception)
+    }
+
+    private data class ToolCallData(
+        val id: String? = null,
+        val type: String? = null,
+        val name: String? = null,
+        val arguments: String? = null,
+    )
+
+    private fun setChoiceAttributes(
+        span: Span, index: Int, role: String?, content: String?,
+        finishReason: String?, toolCalls: Map<Int, ToolCallData>,
+        annotations: String? = null,
+    ) {
+        val kind = kindByRole(role)
+        role?.let { span.setAttribute("gen_ai.completion.$index.role", it) }
+        finishReason?.let { span.setAttribute("gen_ai.completion.$index.finish_reason", it) }
+        content?.let { span.setAttribute("gen_ai.completion.$index.content", it.orRedacted(kind)) }
+        for ((tcIndex, tc) in toolCalls) {
+            tc.id?.let { span.setAttribute("gen_ai.completion.$index.tool.$tcIndex.call.id", it) }
+            tc.type?.let { span.setAttribute("gen_ai.completion.$index.tool.$tcIndex.call.type", it) }
+            tc.name?.let { span.setAttribute("gen_ai.completion.$index.tool.$tcIndex.name", it.orRedactedOutput()) }
+            tc.arguments?.let { span.setAttribute("gen_ai.completion.$index.tool.$tcIndex.arguments", it.orRedactedOutput()) }
+        }
+        annotations?.let { span.setAttribute("gen_ai.completion.$index.annotations", it) }
     }
 
     /**

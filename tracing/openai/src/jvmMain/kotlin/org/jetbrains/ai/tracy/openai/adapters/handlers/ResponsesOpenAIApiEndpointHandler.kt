@@ -142,76 +142,7 @@ internal class ResponsesOpenAIApiEndpointHandler(
 
         // we manually map `output` and `usage` attributes;
         // the rest of attributes get mapped by `populateUnmappedAttributes` below.
-        body["output"]?.let { outputs ->
-            for ((index, output) in outputs.jsonArray.withIndex()) {
-                when (val type = output.jsonObject["type"]?.jsonPrimitive?.content) {
-                    "message", null -> {
-                        // See schema: https://platform.openai.com/docs/api-reference/responses/object#responses-object-output-output_message
-                        output.jsonObject["role"]?.jsonPrimitive?.content?.let {
-                            span.setAttribute("gen_ai.completion.$index.role", it)
-                        }
-                        output.jsonObject["id"]?.jsonPrimitive?.content?.let {
-                            span.setAttribute("gen_ai.completion.$index.id", it)
-                        }
-                        output.jsonObject["status"]?.jsonPrimitive?.content?.let {
-                            span.setAttribute("gen_ai.completion.$index.finish_reason", it)
-                        }
-
-                        val content = output.jsonObject["content"]
-                        // See schema: https://platform.openai.com/docs/api-reference/responses/object#responses-object-output-output_message-content
-                        if (content is JsonArray) {
-                            // if there is a single message that has a type of `output_text`, then install it as completion content;
-                            // otherwise, set the entire array instead.
-                            if (content.size == 1 && content.first().jsonObject["type"]?.jsonPrimitive?.contentOrNull == "output_text") {
-                                val message = content
-                                    .first { it.jsonObject["type"]?.jsonPrimitive?.contentOrNull == "output_text" }
-                                    .jsonObject
-
-                                message["text"]?.jsonPrimitive?.content?.let {
-                                    span.setAttribute(
-                                        "gen_ai.completion.$index.content",
-                                        it
-                                    )
-                                }
-                                message["annotations"]?.let {
-                                    span.setAttribute(
-                                        "gen_ai.completion.$index.annotations",
-                                        it.toString()
-                                    )
-                                }
-                            } else {
-                                // set the entire array as completion content
-                                span.setAttribute("gen_ai.completion.$index.content", content.toString())
-                            }
-                        } else if (content != null) {
-                            span.setAttribute("gen_ai.completion.$index.content", content.toString())
-                        }
-                    }
-
-                    else -> {
-                        // any other types, including 'function_call' and 'reasoning'
-                        // See output types: https://platform.openai.com/docs/api-reference/responses/object#responses-object-output
-                        for ((k, v) in output.jsonObject.entries) {
-                            val key = when {
-                                // prefix `function_call` with "tool_"
-                                type == "function_call" && k == "type" -> "tool_call_type"
-                                type == "function_call" -> "tool_$k"
-                                // special treatment for content of `reasoning`
-                                type == "reasoning" && k == "content" -> "output_content"
-                                // special treatment of `type` field
-                                k == "type" -> "output_type"
-                                else -> k
-                            }
-                            val value = when {
-                                v is JsonPrimitive -> v.content
-                                else -> v.toString()
-                            }
-                            span.setAttribute("gen_ai.completion.$index.$key", value.orRedactedOutput())
-                        }
-                    }
-                }
-            }
-        }
+        body["output"]?.jsonArray?.let { setOutputAttributes(span, it) }
 
         body["usage"]?.let { usage ->
             setUsageAttributes(span, usage.jsonObject)
@@ -225,21 +156,123 @@ internal class ResponsesOpenAIApiEndpointHandler(
             if (!line.startsWith("data:")) continue
             val data = line.removePrefix("data:").trim()
 
-            val event = runCatching {
+            val json = runCatching {
                 Json.parseToJsonElement(data).jsonObject
             }.getOrNull() ?: continue
 
-            val type = event["type"]?.jsonPrimitive?.content
-            if (type == "response.output_text.done") {
-                event["text"]?.jsonPrimitive?.content?.let {
-                    span.setAttribute("gen_ai.completion.0.content", it.orRedactedOutput())
-                    span.setAttribute("gen_ai.completion.0.finish_reason", "stop")
+            when (json["type"]?.jsonPrimitive?.content) {
+                "response.output_text.done" -> {
+                    // Capture text content early as it streams in.
+                    // response.completed will later set the same attribute via setOutputAttributes,
+                    // but this ensures content is captured even if the stream terminates before completion.
+                    val outputIndex = json["output_index"]?.jsonPrimitive?.intOrNull ?: 0
+                    json["text"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.completion.$outputIndex.content", it.orRedactedOutput())
+                    }
+                }
+
+                "response.completed" -> {
+                    // The response.completed event contains the full response object
+                    // with the same schema as the non-streaming response.
+                    val response = json["response"]?.jsonObject ?: continue
+
+                    response["id"]?.jsonPrimitive?.contentOrNull?.let {
+                        span.setAttribute(GEN_AI_RESPONSE_ID, it)
+                    }
+                    response["model"]?.jsonPrimitive?.contentOrNull?.let {
+                        span.setAttribute(GEN_AI_RESPONSE_MODEL, it)
+                    }
+                    response["usage"]?.jsonObject?.let { usage ->
+                        setUsageAttributes(span, usage)
+                    }
+                    response["output"]?.jsonArray?.let { setOutputAttributes(span, it) }
                 }
             }
         }
+
+        return@runCatching
     }.getOrElse { exception ->
         span.setStatus(StatusCode.ERROR)
         span.recordException(exception)
+    }
+
+    /**
+     * Sets per-output-item span attributes from the response `output` array.
+     *
+     * Used by both the non-streaming [handleResponseAttributes] and the streaming [handleStreaming]
+     * (`response.completed` event contains the full response object with the same schema).
+     *
+     * See [Response Object output](https://platform.openai.com/docs/api-reference/responses/object#responses-object-output)
+     */
+    private fun setOutputAttributes(span: Span, outputs: JsonArray) {
+        for ((index, output) in outputs.withIndex()) {
+            when (val type = output.jsonObject["type"]?.jsonPrimitive?.content) {
+                "message", null -> {
+                    // See schema: https://platform.openai.com/docs/api-reference/responses/object#responses-object-output-output_message
+                    output.jsonObject["role"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.completion.$index.role", it)
+                    }
+                    output.jsonObject["id"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.completion.$index.id", it)
+                    }
+                    output.jsonObject["status"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.completion.$index.finish_reason", it)
+                    }
+
+                    val content = output.jsonObject["content"]
+                    // See schema: https://platform.openai.com/docs/api-reference/responses/object#responses-object-output-output_message-content
+                    if (content is JsonArray) {
+                        // if there is a single message that has a type of `output_text`, then install it as completion content;
+                        // otherwise, set the entire array instead.
+                        if (content.size == 1 && content.first().jsonObject["type"]?.jsonPrimitive?.contentOrNull == "output_text") {
+                            val message = content
+                                .first { it.jsonObject["type"]?.jsonPrimitive?.contentOrNull == "output_text" }
+                                .jsonObject
+
+                            message["text"]?.jsonPrimitive?.content?.let {
+                                span.setAttribute(
+                                    "gen_ai.completion.$index.content",
+                                    it
+                                )
+                            }
+                            message["annotations"]?.let {
+                                span.setAttribute(
+                                    "gen_ai.completion.$index.annotations",
+                                    it.toString()
+                                )
+                            }
+                        } else {
+                            // set the entire array as completion content
+                            span.setAttribute("gen_ai.completion.$index.content", content.toString())
+                        }
+                    } else if (content != null) {
+                        span.setAttribute("gen_ai.completion.$index.content", content.toString())
+                    }
+                }
+
+                else -> {
+                    // any other types, including 'function_call' and 'reasoning'
+                    // See output types: https://platform.openai.com/docs/api-reference/responses/object#responses-object-output
+                    for ((k, v) in output.jsonObject.entries) {
+                        val key = when {
+                            // prefix `function_call` with "tool_"
+                            type == "function_call" && k == "type" -> "tool_call_type"
+                            type == "function_call" -> "tool_$k"
+                            // special treatment for content of `reasoning`
+                            type == "reasoning" && k == "content" -> "output_content"
+                            // special treatment of `type` field
+                            k == "type" -> "output_type"
+                            else -> k
+                        }
+                        val value = when {
+                            v is JsonPrimitive -> v.content
+                            else -> v.toString()
+                        }
+                        span.setAttribute("gen_ai.completion.$index.$key", value.orRedactedOutput())
+                    }
+                }
+            }
+        }
     }
 
     /**

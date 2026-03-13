@@ -218,7 +218,7 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
 
         client.messages().create(paramsBuilder.build())
 
-        // NOTE: the first trace will contain text/event-stream content type, hence it isn't traced fully
+        // NOTE: the first trace uses streaming and its response attributes are extracted from SSE events
         val traces = analyzeSpans()
         assertTracesCount(2, traces)
 
@@ -455,6 +455,46 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
 
         assertEquals(errorMessage, trace.attributes[AttributeKey.stringKey("gen_ai.error.message")])
         assertEquals(529, trace.attributes[AttributeKey.longKey("http.status_code")])
+    }
+
+    @Test
+    fun `test Anthropic streaming`() = runTest {
+        val client = createAnthropicClient().apply { instrument(this) }
+
+        val params = MessageCreateParams.builder()
+            .addUserMessage("Say hello in one sentence.")
+            .maxTokens(1000L)
+            .temperature(0.0)
+            .model(model)
+            .build()
+
+        val messageAccumulator = MessageAccumulator.create()
+        client.messages().createStreaming(params).use {
+            it.stream().forEach(messageAccumulator::accumulate)
+        }
+        val accumulatedMessage = messageAccumulator.message()
+        val expectedText = accumulatedMessage.content()
+            .filter { it.isText() }
+            .joinToString("") { it.asText().text() }
+
+        val traces = analyzeSpans()
+        assertTracesCount(1, traces)
+        val trace = traces.first()
+
+        // Streaming response should have text/event-stream content type
+        val contentType = trace.attributes[AttributeKey.stringKey("gen_ai.completion.content.type")]
+        assertNotNull(contentType)
+        assertTrue(contentType.startsWith("text/event-stream"))
+
+        // Completion content should match the accumulated text
+        val completionContent = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
+        assertNotNull(completionContent, "Streaming response should have completion content")
+        assertEquals(expectedText, completionContent)
+
+        // Response metadata should be present
+        assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.id")])
+        assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.role")])
+        assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.model")])
     }
 
     @Test
