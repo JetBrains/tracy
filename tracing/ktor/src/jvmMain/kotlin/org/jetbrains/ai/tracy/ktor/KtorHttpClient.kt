@@ -191,7 +191,10 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                             null
                         }
                         else -> {
-                            logger.warn("Either body or content type are null; request body will be empty")
+                            if (request.body !is EmptyContent && bodyContent == null) {
+                                // this case means that the body is present but couldn't be parsed correctly
+                                logger.warn("Either body or content type are null; request body will be empty")
+                            }
                             null
                         }
                     } ?: TracyHttpRequestBody.Empty
