@@ -17,6 +17,7 @@ import org.jetbrains.ai.tracy.core.policy.contentTracingAllowed
 import org.jetbrains.ai.tracy.core.policy.orRedactedInput
 import org.jetbrains.ai.tracy.core.policy.orRedactedOutput
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
 import mu.KotlinLogging
@@ -199,9 +200,101 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
 
     override fun getSpanName(request: TracyHttpRequest) = "Anthropic-generation"
 
-    // streaming is not supported
-    override fun isStreamingRequest(request: TracyHttpRequest) = false
-    override fun handleStreaming(span: Span, url: TracyHttpUrl, events: String) = Unit
+    override fun isStreamingRequest(request: TracyHttpRequest): Boolean {
+        val body = request.body.asJson()?.jsonObject ?: return false
+        return body["stream"]?.jsonPrimitive?.booleanOrNull == true
+    }
+
+    override fun handleStreaming(span: Span, url: TracyHttpUrl, events: String): Unit = runCatching {
+        val textBlocks = mutableMapOf<Int, StringBuilder>()
+        val toolCallBlocks = mutableMapOf<Int, ToolCallAccumulator>()
+        var role: String? = null
+        var stopReason: String? = null
+
+        for (line in events.lineSequence()) {
+            if (!line.startsWith("data:")) continue
+            val data = line.removePrefix("data:").trim()
+
+            val event = runCatching {
+                Json.parseToJsonElement(data).jsonObject
+            }.getOrNull() ?: continue
+
+            when (event["type"]?.jsonPrimitive?.content) {
+                "message_start" -> {
+                    val message = event["message"]?.jsonObject ?: continue
+                    role = message["role"]?.jsonPrimitive?.content
+                    message["usage"]?.jsonObject?.get("input_tokens")?.jsonPrimitive?.intOrNull?.let {
+                        span.setAttribute(GEN_AI_USAGE_INPUT_TOKENS, it)
+                    }
+                }
+
+                "content_block_start" -> {
+                    val index = event["index"]?.jsonPrimitive?.intOrNull ?: continue
+                    val block = event["content_block"]?.jsonObject ?: continue
+                    when (block["type"]?.jsonPrimitive?.content) {
+                        "text" -> textBlocks[index] = StringBuilder()
+                        "tool_use" -> toolCallBlocks[index] = ToolCallAccumulator(
+                            id = block["id"]?.jsonPrimitive?.content,
+                            type = block["type"]?.jsonPrimitive?.content,
+                            name = block["name"]?.jsonPrimitive?.content,
+                        )
+                    }
+                }
+
+                "content_block_delta" -> {
+                    val index = event["index"]?.jsonPrimitive?.intOrNull ?: continue
+                    val delta = event["delta"]?.jsonObject ?: continue
+                    when (delta["type"]?.jsonPrimitive?.content) {
+                        "text_delta" -> delta["text"]?.jsonPrimitive?.content?.let {
+                            textBlocks.getOrPut(index) { StringBuilder() }.append(it)
+                        }
+                        "input_json_delta" -> delta["partial_json"]?.jsonPrimitive?.content?.let {
+                            toolCallBlocks[index]?.arguments?.append(it)
+                        }
+                    }
+                }
+
+                "message_delta" -> {
+                    event["delta"]?.jsonObject?.get("stop_reason")?.jsonPrimitive?.contentOrNull?.let {
+                        stopReason = it
+                    }
+                    event["usage"]?.jsonObject?.get("output_tokens")?.jsonPrimitive?.intOrNull?.let {
+                        span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
+                    }
+                }
+            }
+        }
+
+        role?.let { span.setAttribute("gen_ai.response.role", it) }
+        stopReason?.let { span.setAttribute(GEN_AI_RESPONSE_FINISH_REASONS, listOf(it)) }
+
+        // Set content block attributes — the same structure as non-streaming handler
+        for (index in (textBlocks.keys + toolCallBlocks.keys).sorted()) {
+            textBlocks[index]?.let {
+                span.setAttribute("gen_ai.completion.$index.type", "text")
+                span.setAttribute("gen_ai.completion.$index.content", it.toString().orRedactedOutput())
+            }
+            toolCallBlocks[index]?.let { tc ->
+                span.setAttribute("gen_ai.completion.$index.type", "tool_use")
+                tc.id?.let { span.setAttribute("gen_ai.completion.$index.tool.call.id", it) }
+                tc.type?.let { span.setAttribute("gen_ai.completion.$index.tool.call.type", it) }
+                tc.name?.let { span.setAttribute("gen_ai.completion.$index.tool.name", it.orRedactedOutput()) }
+                if (tc.arguments.isNotEmpty()) {
+                    span.setAttribute("gen_ai.completion.$index.tool.arguments", tc.arguments.toString().orRedactedOutput())
+                }
+            }
+        }
+    }.getOrElse { exception ->
+        span.setStatus(StatusCode.ERROR)
+        span.recordException(exception)
+    }
+
+    private class ToolCallAccumulator(
+        val id: String? = null,
+        val type: String? = null,
+        val name: String? = null,
+        val arguments: StringBuilder = StringBuilder(),
+    )
 
     /**
      * Parses content of the `messages` field when its type is
