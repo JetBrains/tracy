@@ -11,7 +11,6 @@ import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import mu.KotlinLogging
 import okhttp3.Interceptor
 import okhttp3.MediaType
@@ -248,9 +247,8 @@ class OpenTelemetryOkHttpInterceptor(
                 val response = chain.proceed(request)
 
                 return if (isStreamingRequest) {
-                    val streamingMarker = JsonObject(mapOf("stream" to JsonPrimitive(true)))
                     val url = request.url.toProtocolUrl()
-                    adapter.registerResponse(span, response = response.asResponseView(streamingMarker))
+                    adapter.registerResponse(span, response = response.asResponseView(JsonObject(emptyMap())), isStreaming = true)
 
                     wrapStreamingResponse(response, url, span)
                 } else {

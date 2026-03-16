@@ -11,7 +11,6 @@ import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.sdk.trace.ReadableSpan
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_SYSTEM
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -64,20 +63,18 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
         span.recordException(exception)
     }
 
-    fun registerResponse(span: Span, response: TracyHttpResponse): Unit =
+    fun registerResponse(span: Span, response: TracyHttpResponse, isStreaming: Boolean = false): Unit =
         runCatching {
-            val body = response.body.asJson()?.jsonObject ?: return
-            val isStreamingRequest = body["stream"]?.jsonPrimitive?.boolean == true
             val mimeType = response.contentType?.mimeType
 
             if (mimeType != null) {
                 when {
-                    mimeType == TracyContentType.Application.Json.mimeType -> {
-                        getResponseBodyAttributes(span, response)
-                    }
-                    isStreamingRequest && mimeType == TracyContentType.Text.EventStream.mimeType -> {
+                    isStreaming -> {
                         span.setAttribute("gen_ai.response.streaming", true)
                         span.setAttribute("gen_ai.completion.content.type", response.contentType?.asString())
+                    }
+                    mimeType == TracyContentType.Application.Json.mimeType -> {
+                        getResponseBodyAttributes(span, response)
                     }
                     else -> {
                         span.setAttribute("gen_ai.completion.content.type", response.contentType?.asString())
