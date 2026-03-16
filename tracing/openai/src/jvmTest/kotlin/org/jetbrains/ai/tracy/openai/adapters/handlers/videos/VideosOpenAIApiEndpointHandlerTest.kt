@@ -75,7 +75,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.response.video.model")]?.startsWith(model.asString()) == true)
             assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.video.status")])
             assertEquals("video", trace.attributes[AttributeKey.stringKey("gen_ai.operation.name")])
-            assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.video.created_at")])
+            assertNotNull(trace.attributes[AttributeKey.longKey("gen_ai.response.video.created_at")])
 
             // These might be present depending on status
             val tracedSeconds = trace.attributes[AttributeKey.stringKey("gen_ai.response.video.seconds")]
@@ -161,7 +161,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             // Verify a Video model is traced
             assertEquals(video.id(), trace.attributes[AttributeKey.stringKey("gen_ai.response.video.id")])
             assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.video.status")])
-            assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.video.created_at")])
+            assertNotNull(trace.attributes[AttributeKey.longKey("gen_ai.response.video.created_at")])
             assertEquals(prompt, trace.attributes[AttributeKey.stringKey("gen_ai.response.video.prompt")])
             assertEquals(model.asString(), trace.attributes[AttributeKey.stringKey("gen_ai.response.video.model")])
         }
@@ -453,7 +453,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
                       "created_at": ${Instant.now().epochSecond},
                       "model": "${model.asString()}",
                       "prompt": "$prompt",
-                      "progress": 0.45
+                      "progress": 45
                     }
                 """.trimIndent())
             )
@@ -471,9 +471,9 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             val trace = traces.last()
 
             // mock server returned progress
-            assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.video.progress")])
+            assertNotNull(trace.attributes[AttributeKey.longKey("gen_ai.response.video.progress")])
             // created_at should always be present
-            assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.video.created_at")])
+            assertNotNull(trace.attributes[AttributeKey.longKey("gen_ai.response.video.created_at")])
         }
     }
 
