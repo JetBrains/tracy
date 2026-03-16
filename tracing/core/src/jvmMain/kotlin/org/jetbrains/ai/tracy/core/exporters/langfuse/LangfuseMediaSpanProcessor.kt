@@ -133,19 +133,32 @@ internal class LangfuseMediaSpanProcessor(
     }
 
     private fun trackJob(job: Job) {
-        activeJobs.add(job)
-        job.invokeOnCompletion { activeJobs.remove(job) }
+        synchronized(activeJobs) {
+            activeJobs.add(job)
+        }
+        job.invokeOnCompletion {
+            synchronized(activeJobs) {
+                activeJobs.remove(job)
+            }
+        }
     }
 
     private suspend fun awaitActiveJobs() {
-        // Snapshot the list under synchronization to avoid concurrent modification
-        val jobsSnapshot = synchronized(activeJobs) { activeJobs.toList() }
-        for (job in jobsSnapshot) {
-            try {
-                job.join()
-            } catch (_: CancellationException) {
-                // The upload job was cancelled (e.g. the outer scope was cancelled before
-                // shutdown). There is nothing left to await for this job.
+        // repeatedly snapshot and await jobs until no active jobs remain
+        while (true) {
+            // snapshot the list under synchronization to avoid concurrent modification
+            val jobsSnapshot = synchronized(activeJobs) { activeJobs.toList() }
+            if (jobsSnapshot.isEmpty()) {
+                break
+            }
+
+            for (job in jobsSnapshot) {
+                try {
+                    job.join()
+                } catch (_: CancellationException) {
+                    // The upload job was canceled (e.g., the outer scope was canceled before shutdown).
+                    // There is nothing left to await for this job.
+                }
             }
         }
     }
