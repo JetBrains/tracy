@@ -45,7 +45,7 @@ internal class ListVideosHandler : VideoRouteHandler {
                 }
             }
         } else {
-            span.setAttribute("gen_ai.response.videos_count", 0)
+            span.setAttribute("gen_ai.response.videos_count", 0L)
         }
     }
 }
