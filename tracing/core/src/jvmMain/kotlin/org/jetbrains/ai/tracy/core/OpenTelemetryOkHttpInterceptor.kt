@@ -252,8 +252,9 @@ class OpenTelemetryOkHttpInterceptor(
                 } else {
                     // if the content type is `application/json`, we decode a response body;
                     // otherwise (e.g., when the body is binary), we pass an empty JSON object as the response body.
-                    val contentType = response.headers("Content-Type").firstOrNull()
-                    val responseBody = when (contentType?.lowercase()) {
+                    val contentType = response.body?.contentType()
+                    val mimeType = if (contentType != null) "${contentType.type}/${contentType.subtype}" else null
+                    val responseBody = when (mimeType?.lowercase()) {
                         "application/json" -> try {
                             val peekedBody = response.peekBody(Long.MAX_VALUE).string()
                             Json.decodeFromString<JsonObject>(peekedBody)

@@ -219,7 +219,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
 
                 // when the content type is `application/json`, we decode the response body;
                 // otherwise, (e.g., when the body is binary), we pass an empty JSON object as the response body.
-                val responseBody = when (response.contentType()) {
+                val responseBody = when (response.contentType()?.withoutParameters()) {
                     ContentType.Application.Json -> try {
                         val body = run {
                             // peek the response body to avoid consuming the underlying channel
