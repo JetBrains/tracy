@@ -91,6 +91,9 @@ internal class CreateVideoHandler(private val extractor: MediaContentExtractor) 
                         )
                     }
                 }
+                null -> {
+                    logger.warn { "Form data part with missing name ignored. Content type: '$contentType'" }
+                }
                 else -> {
                     span.setAttribute("gen_ai.request.${part.name}", content.orRedactedInput())
                 }
