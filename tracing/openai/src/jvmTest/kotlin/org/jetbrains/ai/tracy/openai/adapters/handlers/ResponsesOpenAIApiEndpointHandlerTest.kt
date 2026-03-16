@@ -316,7 +316,7 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
                 }
             }
 
-        validateStreaming(sb.toString())
+        validateStreaming(sb.toString(), expectedFinishReason = "completed")
     }
 
     @Test
