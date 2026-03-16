@@ -8,6 +8,7 @@ package org.jetbrains.ai.tracy.openai.adapters.handlers.videos.routes
 import io.opentelemetry.api.trace.Span
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpUrl
@@ -70,8 +71,8 @@ internal fun Span.traceVideoModel(video: JsonObject, prefix: String) {
         span.setAttribute("$prefix.status", it.jsonPrimitive.content)
     }
 
-    video["progress"]?.let {
-        span.setAttribute("$prefix.progress", it.jsonPrimitive.content)
+    video["progress"]?.jsonPrimitive?.longOrNull?.let {
+        span.setAttribute("$prefix.progress", it)
     }
 
     video["prompt"]?.let {
@@ -94,16 +95,16 @@ internal fun Span.traceVideoModel(video: JsonObject, prefix: String) {
         span.setAttribute("$prefix.object", it.jsonPrimitive.content)
     }
 
-    video["created_at"]?.let {
-        span.setAttribute("$prefix.created_at", it.jsonPrimitive.content)
+    video["created_at"]?.jsonPrimitive?.longOrNull?.let {
+        span.setAttribute("$prefix.created_at", it)
     }
 
-    video["completed_at"]?.let {
-        span.setAttribute("$prefix.completed_at", it.jsonPrimitive.content)
+    video["completed_at"]?.jsonPrimitive?.longOrNull?.let {
+        span.setAttribute("$prefix.completed_at", it)
     }
 
-    video["expires_at"]?.let {
-        span.setAttribute("$prefix.expires_at", it.jsonPrimitive.content)
+    video["expires_at"]?.jsonPrimitive?.longOrNull?.let {
+        span.setAttribute("$prefix.expires_at", it)
     }
 
     video["remixed_from_video_id"]?.let {
