@@ -13,6 +13,8 @@ import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.core.http.protocol.asJson
 import org.jetbrains.ai.tracy.openai.adapters.handlers.videos.VideosOpenAIApiEndpointHandler
 
+private val logger = KotlinLogging.logger {}
+
 /**
  * Handles [VideosOpenAIApiEndpointHandler.VideoRoute.GET_VIDEO] endpoint: `GET /videos/{video_id}`.
  */
@@ -35,9 +37,5 @@ internal class GetVideoHandler : VideoRouteHandler {
     override fun handleResponse(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
         span.traceVideoModel(body, "gen_ai.response.video")
-    }
-
-    companion object {
-        private val logger = KotlinLogging.logger {}
     }
 }

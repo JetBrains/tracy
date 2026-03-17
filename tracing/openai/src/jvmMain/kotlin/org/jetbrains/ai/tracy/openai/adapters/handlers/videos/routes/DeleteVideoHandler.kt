@@ -15,6 +15,8 @@ import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.core.http.protocol.asJson
 import org.jetbrains.ai.tracy.openai.adapters.handlers.videos.VideosOpenAIApiEndpointHandler
 
+private val logger = KotlinLogging.logger {}
+
 /**
  * Handles [VideosOpenAIApiEndpointHandler.VideoRoute.DELETE] endpoint: `DELETE /videos/{video_id}`.
  */
@@ -38,9 +40,5 @@ internal class DeleteVideoHandler : VideoRouteHandler {
         val body = response.body.asJson()?.jsonObject ?: return
         body["id"]?.let { span.setAttribute("gen_ai.response.video.id", it.jsonPrimitive.content) }
         body["deleted"]?.let { span.setAttribute("gen_ai.response.deleted", it.jsonPrimitive.boolean) }
-    }
-
-    companion object {
-        private val logger = KotlinLogging.logger {}
     }
 }
