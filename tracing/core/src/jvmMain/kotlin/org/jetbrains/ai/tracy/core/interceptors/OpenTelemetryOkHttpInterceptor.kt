@@ -143,8 +143,9 @@ fun instrument(client: OkHttpClient, adapter: LLMTracingAdapter): OkHttpClient {
  * Patches the OpenAI-compatible client by injecting a custom interceptor into its internal HTTP client
  * **in-place**.
  *
- * This method modifies the internal structure of the provided OpenAI-like client to replace its HTTP client interceptors
- * with the specified interceptor.
+ * This method modifies the internal structure of the provided OpenAI-like client by appending
+ * the specified interceptor into the HTTP client's interceptors list of the given OpenAI-compatible client.
+ *
  * Supports OpenAI-compatible (**in terms of internal class structure**) clients.
  *
  * @param client The instance of the OpenAI-compatible client to patch.
