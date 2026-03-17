@@ -42,6 +42,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         withMockServer { server ->
             val client = createOpenAIClient(
                 url = server.url("/").toString(),
+                apiKey = MOCK_API_KEY,
                 timeout = Duration.ofMinutes(3)
             ).apply { instrument(this) }
 
@@ -90,7 +91,8 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     fun `test VideoCreateError - error fields are traced`() = runTest {
         withMockServer { server ->
             val client = createOpenAIClient(
-                url = server.url("/").toString(), // patchedProviderUrl,
+                url = server.url("/").toString(),
+                apiKey = MOCK_API_KEY,
                 timeout = Duration.ofMinutes(3)
             ).apply { instrument(this) }
 
@@ -136,6 +138,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         withMockServer { server ->
             val client = createOpenAIClient(
                 url = server.url("/").toString(),
+                apiKey = MOCK_API_KEY,
                 timeout = Duration.ofMinutes(3)
             ).apply { instrument(this) }
 
@@ -172,6 +175,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         withMockServer { server ->
             val client = createOpenAIClient(
                 url = server.url("/").toString(),
+                apiKey = MOCK_API_KEY,
                 timeout = Duration.ofMinutes(3)
             ).apply { instrument(this) }
 
@@ -237,6 +241,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         withMockServer { server ->
             val client = createOpenAIClient(
                 url = server.url("/").toString(),
+                apiKey = MOCK_API_KEY,
                 timeout = Duration.ofMinutes(3)
             ).apply { instrument(this) }
 
@@ -276,6 +281,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         withMockServer { server ->
             val client = createOpenAIClient(
                 url = server.url("/").toString(),
+                apiKey = MOCK_API_KEY,
                 timeout = Duration.ofMinutes(3)
             ).apply { instrument(this) }
 
@@ -324,6 +330,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
                 val client = createOpenAIClient(
                     url = server.url("/").toString(),
+                    apiKey = MOCK_API_KEY,
                     timeout = Duration.ofMinutes(3)
                 ).apply { instrument(this) }
 
@@ -373,6 +380,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         withMockServer { server ->
             val client = createOpenAIClient(
                 url = server.url("/").toString(),
+                apiKey = MOCK_API_KEY,
                 timeout = Duration.ofMinutes(3)
             ).apply { instrument(this) }
 
@@ -428,6 +436,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         withMockServer { server ->
             val client = createOpenAIClient(
                 url = server.url("/").toString(),
+                apiKey = MOCK_API_KEY,
                 timeout = Duration.ofMinutes(3)
             ).apply { instrument(this) }
 
@@ -484,6 +493,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         withMockServer { server ->
             val client = createOpenAIClient(
                 url = server.url("/").toString(),
+                apiKey = MOCK_API_KEY,
                 timeout = Duration.ofMinutes(3)
             ).apply { instrument(this) }
 
@@ -545,6 +555,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         withMockServer { server ->
             val client = createOpenAIClient(
                 url = server.url("/").toString(),
+                apiKey = MOCK_API_KEY,
                 timeout = Duration.ofMinutes(3)
             ).apply { instrument(this) }
 
@@ -593,6 +604,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         withMockServer { server ->
             val client = createOpenAIClient(
                 url = server.url("/").toString(),
+                apiKey = MOCK_API_KEY,
                 timeout = Duration.ofMinutes(3)
             ).apply { instrument(this) }
 
@@ -666,6 +678,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
             val client = createOpenAIClient(
                 url = server.url("/").toString(),
+                apiKey = MOCK_API_KEY,
                 timeout = Duration.ofMinutes(1)
             ).apply { instrument(this) }
 
@@ -722,6 +735,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
             val client = createOpenAIClient(
                 url = server.url("/").toString(),
+                apiKey = MOCK_API_KEY,
                 timeout = Duration.ofMinutes(1)
             ).apply { instrument(this) }
 
@@ -776,6 +790,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
             val client = createOpenAIClient(
                 url = server.url("/").toString(),
+                apiKey = MOCK_API_KEY,
                 timeout = Duration.ofMinutes(1)
             ).apply { instrument(this) }
 
@@ -845,6 +860,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
             val client = createOpenAIClient(
                 url = server.url("/").toString(),
+                apiKey = MOCK_API_KEY,
                 timeout = Duration.ofMinutes(1)
             ).apply { instrument(this) }
 
@@ -923,5 +939,9 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             trace.attributes[AttributeKey.stringKey("gen_ai.request.model")]?.startsWith(model.asString()) == true,
             "Model should match"
         )
+    }
+
+    companion object {
+        private const val MOCK_API_KEY = "mock-api-key"
     }
 }
