@@ -33,7 +33,8 @@ import kotlin.test.assertTrue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class BaseOpenAITracingTest : BaseAITracingTest() {
-    protected val llmProviderApiKey = System.getenv("OPENAI_API_KEY")
+    protected val llmProviderApiKey: String
+        get() = System.getenv("OPENAI_API_KEY")
         ?: System.getenv("LLM_PROVIDER_API_KEY")
         ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
 
@@ -42,7 +43,8 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
      *
      * When LiteLLM is used as a provider, prefer [patchedProviderUrl].
      */
-    protected val llmProviderUrl: String = System.getenv("LLM_PROVIDER_URL") ?: PRODUCTION_URL
+    protected val llmProviderUrl: String
+        get() = System.getenv("LLM_PROVIDER_URL") ?: PRODUCTION_URL
 
     /**
      * When LiteLLM is used as a provider, the API URL gets changed to the
@@ -50,21 +52,22 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
      *
      * See [LiteLLM: Create Pass Through Endpoints](https://docs.litellm.ai/docs/proxy/pass_through)
      */
-    protected val patchedProviderUrl = when (val baseUrl = llmProviderUrl.removeSuffix("/v1")) {
-        // TODO: remove direct use of litellm
-        // when using LiteLLM, switch to the pass-through
-        "https://litellm.labs.jb.gg" -> "$baseUrl/openai"
-        else -> llmProviderUrl
-    }
+    protected val patchedProviderUrl: String
+        get() = when (val baseUrl = llmProviderUrl.removeSuffix("/v1")) {
+            // TODO: remove direct use of litellm
+            // when using LiteLLM, switch to the pass-through
+            "https://litellm.labs.jb.gg" -> "$baseUrl/openai"
+            else -> llmProviderUrl
+        }
 
     protected open fun createOpenAIClient(
-        url: String? = llmProviderUrl,
-        apiKey: String = llmProviderApiKey,
+        url: String? = null,
+        apiKey: String? = null,
         timeout: Duration = Duration.ofSeconds(60)
     ): OpenAIClient {
         return OpenAIOkHttpClient.builder()
-            .baseUrl(url)
-            .apiKey(apiKey)
+            .baseUrl(url ?: llmProviderUrl)
+            .apiKey(apiKey ?: llmProviderApiKey)
             .timeout(timeout)
             .build()
     }
