@@ -26,7 +26,7 @@ import com.anthropic.models.messages.Model
  * - For manual control, call [TracingManager.flushTraces] to ensure all trace data is exported immediately.
  *
  * To run this example:
- * * Set the `ANTHROPIC_API_KEY` (or `LLM_PROVIDER_API_KEY`) environment variable to your Anthropic API key.
+ * * Set the `ANTHROPIC_API_KEY` environment variable to your Anthropic API key.
  *
  * Run the example. Span will appear in the console output.
  */
@@ -35,11 +35,10 @@ fun main() {
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     TracingManager.traceSensitiveContent()
 
-    val apiKey = System.getenv("ANTHROPIC_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
-        ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
+    val apiToken = System.getenv("ANTHROPIC_API_KEY") ?: error("Environment variable 'ANTHROPIC_API_KEY' is not set")
 
-    val client = AnthropicOkHttpClient.builder()
-        .apiKey(apiKey)
+    val instrumentedClient = AnthropicOkHttpClient.builder()
+        .apiKey(apiToken)
         .build()
         .apply { instrument(this) }
 
@@ -50,7 +49,7 @@ fun main() {
         .model(Model.CLAUDE_OPUS_4_0)
         .build()
 
-    val result = client.messages().create(params).content().first().text().get().text()
+    val result = instrumentedClient.messages().create(params).content().first().text().get().text()
 
     println("Result: $result\nSee trace details in the console.")
     // Manual flush - alternatively, configure automatic flushing via ExporterCommonSettings

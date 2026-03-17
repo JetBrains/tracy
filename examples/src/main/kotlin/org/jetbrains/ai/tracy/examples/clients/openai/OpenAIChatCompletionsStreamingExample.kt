@@ -25,7 +25,7 @@ import org.jetbrains.ai.tracy.openai.clients.instrument
  * - For manual control, call [TracingManager.flushTraces] to ensure all trace data is exported immediately.
  *
  * To run this example:
- * * Set the `OPENAI_API_KEY` (or `LLM_PROVIDER_API_KEY`) environment variable to your OpenAI API key.
+ * * Set the `OPENAI_API_KEY` environment variable to your OpenAI API key.
  *
  * Run the example. Request and response spans will appear in the console output.
  */
@@ -34,11 +34,10 @@ fun main() {
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     TracingManager.traceSensitiveContent()
 
-    val apiKey = System.getenv("OPENAI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
-        ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
+    val apiToken = System.getenv("OPENAI_API_KEY") ?: error("Environment variable 'OPENAI_API_KEY' is not set")
 
-    val client = OpenAIOkHttpClient.builder()
-        .apiKey(apiKey)
+    val instrumentedClient = OpenAIOkHttpClient.builder()
+        .apiKey(apiToken)
         .build()
         .apply { instrument(this) }
 
@@ -53,7 +52,7 @@ fun main() {
         )
         .build()
 
-    client.chat().completions().createStreaming(params).use { stream ->
+    instrumentedClient.chat().completions().createStreaming(params).use { stream ->
         stream.stream().forEach { chunk ->
             chunk.choices().forEach { choice ->
                 choice.delta().content().ifPresent { parts ->

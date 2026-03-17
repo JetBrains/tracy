@@ -22,7 +22,7 @@ import org.jetbrains.ai.tracy.gemini.clients.instrument
  * - For manual control, call [TracingManager.flushTraces] to ensure all trace data is exported immediately.
  *
  * To run this example:
- * * Set the `GEMINI_API_KEY` (or `LLM_PROVIDER_API_KEY`) environment variable to your Gemini API key.
+ * * Set the `GEMINI_API_KEY` environment variable to your Gemini API key.
  *
  * Run the example. Request and response spans will appear in the console output.
  */
@@ -31,15 +31,14 @@ fun main() {
     TracingManager.setSdk(configureOpenTelemetrySdk(ConsoleExporterConfig()))
     TracingManager.traceSensitiveContent()
 
-    val apiKey = System.getenv("GEMINI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
-        ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
+    val apiToken = System.getenv("GEMINI_API_KEY") ?: error("Environment variable 'GEMINI_API_KEY' is not set")
 
-    val client = Client.builder()
-        .apiKey(apiKey)
+    val instrumentedClient = Client.builder()
+        .apiKey(apiToken)
         .build()
         .apply { instrument(this) }
 
-    client.models.generateContentStream(
+    instrumentedClient.models.generateContentStream(
         "gemini-2.5-flash",
         "Write a story about tracing.",
         GenerateContentConfig.builder()
