@@ -45,12 +45,16 @@ fun createTestSpanData(
         when (media) {
             is MediaContentAttributeValues.Url -> {
                 attributesBuilder.put(keys.field, media.field)
-                attributesBuilder.put(keys.url, media.url!!)
+                attributesBuilder.put(keys.url, requireNotNull(media.url) {
+                    "media.url must not be null for MediaContentAttributeValues.Url in createTestSpanData"
+                })
             }
             is MediaContentAttributeValues.Data -> {
                 attributesBuilder.put(keys.field, media.field)
                 attributesBuilder.put(keys.contentType, media.contentType)
-                attributesBuilder.put(keys.data, media.data!!)
+                attributesBuilder.put(keys.data, requireNotNull(media.data) {
+                    "media.data must not be null for MediaContentAttributeValues.Data in createTestSpanData"
+                })
             }
         }
     }
