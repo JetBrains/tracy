@@ -433,11 +433,9 @@ internal class LangfuseMediaSpanProcessor(
             ))
         }
     }
-
-    companion object {
-        private val logger = KotlinLogging.logger {}
-        private val json = Json { ignoreUnknownKeys = true }
-    }
 }
+
+private val logger = KotlinLogging.logger {}
+private val json = Json { ignoreUnknownKeys = true }
 
 private class RequestFailedException(message: String) : RuntimeException(message)
