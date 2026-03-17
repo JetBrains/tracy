@@ -15,10 +15,15 @@ import java.nio.file.Path
  *
  * This interceptor should be added to the HTTP client when running tests
  * in RECORD mode to capture and save API responses.
+ *
+ * @param fixturesDir Directory where fixtures will be stored
+ * @param sanitizer Sanitizer to clean non-deterministic data
+ * @param fixtureTag Optional tag to make fixture names unique (e.g., test name)
  */
 class RecordingInterceptor(
     fixturesDir: Path,
-    sanitizer: ResponseSanitizer
+    sanitizer: ResponseSanitizer,
+    private val fixtureTag: String? = null
 ) : Interceptor {
     private val recorder = FixtureRecorder(fixturesDir, sanitizer)
 
@@ -36,13 +41,14 @@ class RecordingInterceptor(
         val responseBody = response.body
         val bodyString = responseBody?.string() ?: ""
 
-        // Record the fixture
+        // Record the fixture with the tag
         recorder.record(
             method = method,
             path = path,
             statusCode = statusCode,
             headers = headers,
-            body = bodyString
+            body = bodyString,
+            fixtureTag = fixtureTag,
         )
 
         // Create a new response with the body content since we consumed it

@@ -28,6 +28,8 @@ import org.jetbrains.ai.tracy.test.utils.fixtures.*
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.TestInstance
 import java.io.File
 import java.nio.file.Path
@@ -42,6 +44,17 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
     protected val testMode = TestMode.current()
 
     private var mockServer: FixtureMockServer? = null
+
+    /**
+     * Current test name, captured automatically for fixture naming.
+     * Can be overridden by providing explicit `fixtureTag` to [createOpenAIClient].
+     */
+    protected var currentTestName: String? = null
+
+    @BeforeEach
+    fun captureTestName(testInfo: TestInfo) {
+        currentTestName = testInfo.displayName.sanitizeForFixtureName()
+    }
 
     protected val llmProviderApiKey: String
         get() = when (testMode) {
@@ -102,18 +115,32 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
     protected open fun createOpenAIClient(
         url: String? = llmProviderUrl,
         apiKey: String = llmProviderApiKey,
-        timeout: Duration = Duration.ofSeconds(60)
+        timeout: Duration = Duration.ofSeconds(60),
+        fixtureTag: String? = null
     ): OpenAIClient {
-        val client = OpenAIOkHttpClient.builder()
+        // Determine the fixture identifier: explicit tag > current test name > default
+        val fixtureIdentifier = fixtureTag ?: currentTestName
+
+        val builder = OpenAIOkHttpClient.builder()
             .baseUrl(url)
             .apiKey(apiKey)
             .timeout(timeout)
-            .build()
+
+        // In MOCK mode, add fixture tag header so the mock server can match the right fixture
+        if (testMode == TestMode.MOCK && fixtureIdentifier != null) {
+            builder.putHeader(FIXTURE_TAG_HEADER, fixtureIdentifier)
+        }
+
+        val client = builder.build()
 
         // add a recording interceptor in RECORD mode
         if (testMode == TestMode.RECORD) {
             val fixturesDir = getFixturesDirectory()
-            val recordingInterceptor = RecordingInterceptor(fixturesDir, sanitizer = OpenAISanitizer())
+            val recordingInterceptor = RecordingInterceptor(
+                fixturesDir = fixturesDir,
+                sanitizer = OpenAISanitizer(),
+                fixtureTag = fixtureIdentifier,
+            )
             patchOpenAICompatibleClient(client, recordingInterceptor)
         }
 
