@@ -50,7 +50,7 @@ internal fun URLBuilder.toProtocolUrl(): TracyHttpUrl {
     val params = object : TracyQueryParameters {
         private val params = builder.parameters.build()
         override fun queryParameter(name: String): String? = params[name]
-        override fun queryParameterValues(name: String): List<String> = params.getAll(name) ?: emptyList()
+        override fun queryParameterValues(name: String) = params.getAll(name) ?: emptyList()
     }
 
     return TracyHttpUrlImpl(
