@@ -31,7 +31,7 @@ class FixtureRecorder(
      * @param statusCode The HTTP status code
      * @param headers The response headers
      * @param body The response body
-     * @param fixtureName Optional custom fixture name (defaults to auto-generated name based on path)
+     * @param fixtureTag Optional tag to append to the fixture name for uniqueness (e.g., test name)
      */
     fun record(
         method: String,
@@ -39,7 +39,7 @@ class FixtureRecorder(
         statusCode: Int,
         headers: Map<String, List<String>>,
         body: String,
-        fixtureName: String? = null
+        fixtureTag: String? = null,
     ) {
         val contentType = headers["content-type"]?.firstOrNull()
             ?: headers["Content-Type"]?.firstOrNull()
@@ -55,7 +55,7 @@ class FixtureRecorder(
             body = sanitizedBody
         )
 
-        val fileName = fixtureName ?: generateFixtureName(method, path)
+        val fileName = generateFixtureName(method, path, fixtureTag)
         val fixtureFile = fixturesDir.resolve("$fileName.json")
 
         // Ensure parent directories exist
@@ -68,7 +68,7 @@ class FixtureRecorder(
         println("Recorded fixture: ${fixtureFile.toAbsolutePath()}")
     }
 
-    private fun generateFixtureName(method: String, path: String): String {
+    private fun generateFixtureName(method: String, path: String, tag: String? = null): String {
         // Convert path like "/v1/chat/completions" to "chat-completions"
         val sanitizedPath = path
             .removePrefix("/v1/")
@@ -77,7 +77,14 @@ class FixtureRecorder(
             .replace(Regex("[^a-zA-Z0-9-]"), "-")
             .lowercase()
 
-        return "${method.lowercase()}-$sanitizedPath"
+        val baseName = "${method.lowercase()}-$sanitizedPath"
+
+        // Append tag if provided
+        return if (tag != null) {
+            "$baseName-$tag"
+        } else {
+            baseName
+        }
     }
 }
 
