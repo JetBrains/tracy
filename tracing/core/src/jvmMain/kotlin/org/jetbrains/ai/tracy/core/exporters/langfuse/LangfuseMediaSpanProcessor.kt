@@ -210,9 +210,7 @@ internal class LangfuseMediaSpanProcessor(
                     field = field,
                     contentType = contentType,
                     data = data,
-                ),
-                langfuseUrl = langfuseUrl,
-                langfuseBasicAuth = langfuseBasicAuth,
+                )
             )
         } catch (err: Exception) {
             return Result.failure(err)
@@ -236,8 +234,6 @@ internal class LangfuseMediaSpanProcessor(
                     contentType = contentType,
                     data = data,
                 ),
-                langfuseUrl = langfuseUrl,
-                langfuseBasicAuth = langfuseBasicAuth,
             )
         } catch (err: Exception) {
             Result.failure(err)
@@ -259,9 +255,7 @@ internal class LangfuseMediaSpanProcessor(
      * @see LangfuseMediaUploadParams
      */
     private suspend fun uploadMediaFileToLangfuse(
-        params: LangfuseMediaUploadParams,
-        langfuseUrl: String,
-        langfuseBasicAuth: String,
+        params: LangfuseMediaUploadParams
     ): Result<LangfuseMediaUploadResponse> {
         // ensure that the media type is valid and compute hash (CPU-bound operations)
         val (decodedBytes, sha256Hash) = try {
@@ -325,8 +319,6 @@ internal class LangfuseMediaSpanProcessor(
         if (uploadResource.uploadUrl != null) {
             // If uploadUrl is present, we need to upload the file (otherwise it was already uploaded)
             val result = uploadBytesByUploadUrl(
-                langfuseUrl = langfuseUrl,
-                langfuseBasicAuth = langfuseBasicAuth,
                 bytes = decodedBytes,
                 mediaType = mediaType,
                 uploadResource = uploadResource,
@@ -376,8 +368,6 @@ internal class LangfuseMediaSpanProcessor(
      *     (This patch update indicates to Langfuse whether the previous PUT upload succeeded or failed.
      */
     private suspend fun uploadBytesByUploadUrl(
-        langfuseUrl: String,
-        langfuseBasicAuth: String,
         bytes: ByteArray,
         mediaType: MediaType,
         uploadResource: LangfusePresignedUploadURL,
