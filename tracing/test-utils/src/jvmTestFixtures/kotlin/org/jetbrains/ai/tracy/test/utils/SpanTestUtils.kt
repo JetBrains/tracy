@@ -59,6 +59,8 @@ fun createTestSpanData(
         }
     }
 
+    val attributes = attributesBuilder.build()
+
     return TestSpanData.builder()
         .setName(spanName)
         .setKind(SpanKind.INTERNAL)
@@ -74,8 +76,8 @@ fun createTestSpanData(
         .setEndEpochNanos(System.nanoTime())
         .setStatus(StatusData.ok())
         .setHasEnded(true)
-        .setAttributes(attributesBuilder.build())
-        .setTotalAttributeCount(attributesBuilder.build().size())
+        .setAttributes(attributes)
+        .setTotalAttributeCount(attributes.size())
         .setEvents(emptyList())
         .setLinks(emptyList())
         .setResource(Resource.getDefault())
