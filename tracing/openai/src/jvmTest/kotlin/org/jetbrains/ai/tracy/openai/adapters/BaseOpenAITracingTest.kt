@@ -53,7 +53,7 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
 
     @BeforeEach
     fun captureTestName(testInfo: TestInfo) {
-        currentTestName = testInfo.displayName.sanitizeForFixtureName()
+        currentTestName = createFixtureTag(testInfo)
     }
 
     protected val llmProviderApiKey: String
@@ -117,16 +117,16 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
         timeout: Duration = Duration.ofSeconds(60),
         fixtureTag: String? = null
     ): OpenAIClient {
-        // Determine the fixture identifier: explicit tag > current test name > default
-        val fixtureIdentifier = fixtureTag ?: currentTestName
+        // Determine the fixture identifier: explicit tag > current test name
+        val fixtureIdentifier = fixtureTag ?: currentTestName!!
 
         val builder = OpenAIOkHttpClient.builder()
             .baseUrl(url)
             .apiKey(apiKey)
             .timeout(timeout)
 
-        // In MOCK mode, add fixture tag header so the mock server can match the right fixture
-        if (testMode == TestMode.MOCK && fixtureIdentifier != null) {
+        // In MOCK mode, add a fixture tag header so the mock server can match the right fixture
+        if (testMode == TestMode.MOCK) {
             builder.putHeader(FIXTURE_TAG_HEADER, fixtureIdentifier)
         }
 
