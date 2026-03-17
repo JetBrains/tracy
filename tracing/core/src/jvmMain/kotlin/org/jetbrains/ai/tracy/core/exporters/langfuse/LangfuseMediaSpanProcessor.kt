@@ -365,7 +365,7 @@ internal class LangfuseMediaSpanProcessor(
      * The executed workflow is as follows:
      * 1. `PUT {uploadUrl}`: uploads the given bytes to the upload URL obtained from Langfuse.
      * 2. `PATCH /api/public/media/{mediaId}`: updates the upload status of the media content
-     *     (This patch update indicates to Langfuse whether the previous PUT upload succeeded or failed.
+     *     (This patch indicates to Langfuse whether the previous PUT upload succeeded or failed).
      */
     private suspend fun uploadBytesByUploadUrl(
         bytes: ByteArray,
