@@ -57,7 +57,7 @@ internal fun URLBuilder.toProtocolUrl(): TracyHttpUrl {
         scheme = builder.protocol.name,
         host = builder.host,
         pathSegments = builder.pathSegments,
-        parameters = params
+        parameters = params,
     )
 }
 
