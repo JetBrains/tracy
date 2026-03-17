@@ -40,7 +40,7 @@ interface TracyQueryParameters {
      * In the following example, the value list of `b` will contain `null`:
      * 1. `http://host/?a=apple&b`
      */
-    fun queryParameterValues(name: String): List<String?>?
+    fun queryParameterValues(name: String): List<String?>
 }
 
 /**
