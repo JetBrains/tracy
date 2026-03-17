@@ -71,12 +71,7 @@ class FixtureMockServer(private val fixturesDir: Path) {
                         val fixtureJson = file.readText()
                         val fixture = json.decodeFromString<HttpFixture>(fixtureJson)
 
-                        // Extract tag from filename if present
-                        // Expected format: [method]-[path]-[tag].json
-                        // e.g., "post-chat-completions-test-error-handling.json"
-                        val tag = extractTagFromFilename(file.nameWithoutExtension, fixture.method, fixture.path)
-
-                        val key = fixtureKeyOf(fixture.method, fixture.path, tag)
+                        val key = fixture.fixtureKey()
 
                         // assign the loaded fixture to the key
                         put(key, fixture)
@@ -92,36 +87,6 @@ class FixtureMockServer(private val fixturesDir: Path) {
             return fixtures
         }
 
-        /**
-         * Extracts the tag from a fixture filename.
-         *
-         * Given filename format: `[method]-[path]-tag.json`
-         * Returns the tag portion if present, or null if the filename only contains `method-path`.
-         *
-         * Examples:
-         * - "post-chat-completions-test-error-handling" → "test-error-handling"
-         * - "post-chat-completions" → null
-         */
-        private fun extractTagFromFilename(filenameWithoutExt: String, method: String, path: String): String? {
-            // Reconstruct what the base name (without tag) would look like
-            val sanitizedPath = path
-                .removePrefix("/v1/")
-                .removePrefix("/")
-                .replace("/", "-")
-                .replace(Regex("[^a-zA-Z0-9-]"), "-")
-                .lowercase()
-
-            val expectedBaseName = "${method.lowercase()}-$sanitizedPath"
-
-            // If filename is longer than the base name, the rest is the tag
-            return if (filenameWithoutExt.startsWith(expectedBaseName) && filenameWithoutExt.length > expectedBaseName.length) {
-                // Extract tag: everything after the base name, removing the leading hyphen
-                filenameWithoutExt.substring(expectedBaseName.length).removePrefix("-")
-            } else {
-                null
-            }
-        }
-
         private val json = Json { ignoreUnknownKeys = true }
         private val logger = KotlinLogging.logger {}
     }
@@ -130,6 +95,8 @@ class FixtureMockServer(private val fixturesDir: Path) {
 private class FixtureDispatcher(
     private val fixtures: Map<String, HttpFixture>
 ) : Dispatcher() {
+    private var dispatchedRequestsCount = 0
+
     override fun dispatch(request: RecordedRequest): MockResponse {
         println("FixtureDispatcher.dispatch")
         println("=".repeat(25))
@@ -142,7 +109,9 @@ private class FixtureDispatcher(
         val method = request.method ?: return notFoundResponse("Request method is null")
 
         // extract the fixture tag from the header if present
-        val fixtureTag = request.getHeader(FIXTURE_TAG_HEADER)
+        val fixtureTag = request.getHeader(FIXTURE_TAG_HEADER) ?: return notFoundResponse(
+            "No fixture tag provided in request headers, ensure '$FIXTURE_TAG_HEADER' header is set to a fixture tag"
+        )
 
         // build a list of possible fixture keys to try, in order of specificity:
         // 1. With tag (if provided)
@@ -150,16 +119,18 @@ private class FixtureDispatcher(
         // 3. Fuzzy match with tag (path without query params)
         // 4. Fuzzy match without tag
         val keys = buildList {
-            val basePath = path
-            val fuzzyPath = path.substringBefore('?')
+            val exactKey = fixtureKey(method, path, fixtureTag, index = dispatchedRequestsCount)
 
-            if (fixtureTag != null) {
-                // try tagged fixtures first
-                add(fixtureKeyOf(method, basePath, fixtureTag))
-                if (fuzzyPath != basePath) {
-                    add(fixtureKeyOf(method, fuzzyPath, fixtureTag))
-                }
-            }
+            // dropping query params
+            val fuzzyKey = fixtureKey(
+                method = method,
+                path = path.substringBefore('?'),
+                tag = fixtureTag,
+                index = dispatchedRequestsCount,
+            )
+
+            add(exactKey)
+            add(fuzzyKey)
         }
 
         println("[Dispatcher] keys: $keys")
@@ -169,15 +140,17 @@ private class FixtureDispatcher(
         if (fixture == null) {
             val errorMessage = """
                 No fixture found for keys: ${keys.joinToString(", ") { "`$it`" }}
-                Available fixtures: ${fixtures.keys.joinToString(", ")}.
-                ${if (fixtureTag != null) "Ensure fixture response for tag '${fixtureTag}' exists" 
-                 else "No fixture tag provided in request headers, ensure '$FIXTURE_TAG_HEADER' header is set to a fixture tag"}
+                Available fixture keys: ${fixtures.keys.joinToString(", ")}.
+                "Ensure fixture response associated with a fixture tag '${fixtureTag}' exists"
             """.trimIndent()
             logger.error { errorMessage }
             return notFoundResponse(errorMessage)
         }
 
         println("[Dispatcher] found fixture for key: ${fixtures.filterValues { it == fixture }.keys.firstOrNull()}")
+
+        // this request was successfully dispatched to an existing fixture response
+        dispatchedRequestsCount += 1
 
         return MockResponse()
             .setResponseCode(fixture.statusCode)
@@ -204,12 +177,30 @@ private class FixtureDispatcher(
     }
 }
 
-private fun fixtureKeyOf(method: String, path: String, tag: String? = null): String {
-    val basePath = path.removePrefix("/v1")
-    return if (tag != null) {
-        "${method.uppercase()}:$basePath:$tag"
-    } else {
-        "${method.uppercase()}:$basePath"
-    }
-}
+/**
+ *
+ */
+private fun HttpFixture.fixtureKey() = fixtureKey(
+    method = this.method,
+    path = this.path,
+    tag = this.details.tag,
+    index = this.details.index,
+)
 
+/**
+ * Generates a unique key for a fixture based on its method, path, index, and tag.
+ *
+ * Example:
+ * 1. `POST /v1/chat/completions` -> `[tag]/post-chat-completions-[index].json`
+ *
+ * Notice that a file extension is attached to match the [FixtureDetails.filename] naming format.
+ */
+private fun fixtureKey(
+    method: String,
+    path: String,
+    tag: String,
+    index: Int,
+): String {
+    val fixtureFilename = generateFixtureFilename(method, path, fixtureIndex = index, extension = "json")
+    return "$tag/$fixtureFilename"
+}

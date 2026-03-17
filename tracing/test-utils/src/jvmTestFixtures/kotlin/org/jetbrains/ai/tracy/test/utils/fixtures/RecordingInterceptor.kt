@@ -23,9 +23,10 @@ import java.nio.file.Path
 class RecordingInterceptor(
     fixturesDir: Path,
     sanitizer: ResponseSanitizer,
-    private val fixtureTag: String? = null
+    private val fixtureTag: String,
 ) : Interceptor {
     private val recorder = FixtureRecorder(fixturesDir, sanitizer)
+    private var recordedResponsesCount = 0
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
@@ -41,7 +42,9 @@ class RecordingInterceptor(
         val responseBody = response.body
         val bodyString = responseBody?.string() ?: ""
 
-        // Record the fixture with the tag
+        // Record the fixture with the tag.
+        // during the same test case, several API requests may be made;
+        // therefore, to distinguish them between each other, we track their order
         recorder.record(
             method = method,
             path = path,
@@ -49,7 +52,9 @@ class RecordingInterceptor(
             headers = headers,
             body = bodyString,
             fixtureTag = fixtureTag,
+            responseIndex = recordedResponsesCount,
         )
+        recordedResponsesCount += 1
 
         // Create a new response with the body content since we consumed it
         val clonedBody = bodyString.toResponseBody(responseBody?.contentType())

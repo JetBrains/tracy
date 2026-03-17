@@ -19,7 +19,7 @@ import kotlin.io.path.writeText
  */
 class FixtureRecorder(
     private val fixturesDir: Path,
-    private val sanitizer: ResponseSanitizer
+    private val sanitizer: ResponseSanitizer,
 ) {
     private val json = Json { prettyPrint = true }
 
@@ -31,7 +31,8 @@ class FixtureRecorder(
      * @param statusCode The HTTP status code
      * @param headers The response headers
      * @param body The response body
-     * @param fixtureTag Optional tag to append to the fixture name for uniqueness (e.g., test name)
+     * @param fixtureTag tag to use as a folder where mocked responses are stored (usually, a test case name)
+     * @param responseIndex the index of the response in the sequence of responses
      */
     fun record(
         method: String,
@@ -39,7 +40,8 @@ class FixtureRecorder(
         statusCode: Int,
         headers: Map<String, List<String>>,
         body: String,
-        fixtureTag: String? = null,
+        fixtureTag: String,
+        responseIndex: Int,
     ) {
         val contentType = headers["content-type"]?.firstOrNull()
             ?: headers["Content-Type"]?.firstOrNull()
@@ -47,49 +49,35 @@ class FixtureRecorder(
         val sanitizedBody = sanitizer.sanitizeBody(body, contentType)
         val sanitizedHeaders = sanitizer.sanitizeHeaders(headers)
 
+        val filename = generateFixtureFilename(method, path, responseIndex, extension = "json")
+        // filepath will be: `$fixturesDir/$fixtureTag/$filename.json`
+        val fixtureFile = fixturesDir.resolve(fixtureTag).resolve(filename)
+        // ensure parent directories exist
+        fixtureFile.parent?.createDirectories()
+
         val fixture = HttpFixture(
             method = method,
             path = path,
             statusCode = statusCode,
             headers = sanitizedHeaders,
-            body = sanitizedBody
+            body = sanitizedBody,
+            details = FixtureDetails(
+                filename = filename,
+                tag = fixtureTag,
+                index = responseIndex,
+            )
         )
 
-        val fileName = generateFixtureName(method, path, fixtureTag)
-        val fixtureFile = fixturesDir.resolve("$fileName.json")
-
-        // Ensure parent directories exist
-        fixtureFile.parent?.createDirectories()
-
-        // Write fixture to file
+        // Write fixture to a file
         val fixtureJson = json.encodeToString(fixture)
         fixtureFile.writeText(fixtureJson)
 
         println("Recorded fixture: ${fixtureFile.toAbsolutePath()}")
     }
-
-    private fun generateFixtureName(method: String, path: String, tag: String? = null): String {
-        // Convert path like "/v1/chat/completions" to "chat-completions"
-        val sanitizedPath = path
-            .removePrefix("/v1/")
-            .removePrefix("/")
-            .replace("/", "-")
-            .replace(Regex("[^a-zA-Z0-9-]"), "-")
-            .lowercase()
-
-        val baseName = "${method.lowercase()}-$sanitizedPath"
-
-        // Append tag if provided
-        return if (tag != null) {
-            "$baseName-$tag"
-        } else {
-            baseName
-        }
-    }
 }
 
 /**
- * Represents a recorded HTTP fixture.
+ * Represents a recorded HTTP response fixture.
  */
 @Serializable
 data class HttpFixture(
@@ -97,5 +85,16 @@ data class HttpFixture(
     val path: String,
     val statusCode: Int,
     val headers: Map<String, List<String>>,
-    val body: String
+    val body: String,
+    val details: FixtureDetails,
+)
+
+@Serializable
+data class FixtureDetails(
+    /**
+     * Expected to contain an extension as well (e.g., `my-file.json`)
+     */
+    val filename: String,
+    val tag: String,
+    val index: Int,
 )
