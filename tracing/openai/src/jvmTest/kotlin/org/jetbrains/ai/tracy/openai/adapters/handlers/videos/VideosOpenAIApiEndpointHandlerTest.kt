@@ -31,8 +31,11 @@ import java.time.Instant
 import kotlin.time.Duration.Companion.minutes
 
 /**
- * The Video API requires the Zero Retention Policy to be disabled.
- * Ensure your OpenAI API key has this option disabled before running the tests.
+ * These tests use [MockWebServer] and a mock OpenAI API key, so they do not require access
+ * to the real OpenAI Video API or any specific account configuration.
+ *
+ * If you run this test logic manually or as an integration test against the real OpenAI
+ * Video API, ensure that your OpenAI API key has the Zero Retention Policy disabled.
  */
 @Tag("openai")
 class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
