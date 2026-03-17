@@ -26,36 +26,31 @@ class RecordingInterceptor(
         val request = chain.request()
         val response = chain.proceed(request)
 
-        // Only record successful responses (2xx status codes)
-        if (response.isSuccessful) {
-            val method = request.method
-            val path = request.url.encodedPath
-            val statusCode = response.code
-            val headers = response.headers.toMultimap()
+        val method = request.method
+        val path = request.url.encodedPath
+        val statusCode = response.code
+        val headers = response.headers.toMultimap()
 
-            // TODO: when not `application/json`, don't read the body (can be octet-stream, video/mp4, etc)
-            // Read body once and create new response with buffered body
-            val responseBody = response.body
-            val bodyString = responseBody?.string() ?: ""
+        // TODO: when not `application/json`, don't read the body (can be octet-stream, video/mp4, etc)
+        // Read body once and create new response with buffered body
+        val responseBody = response.body
+        val bodyString = responseBody?.string() ?: ""
 
-            // Record the fixture
-            recorder.record(
-                method = method,
-                path = path,
-                statusCode = statusCode,
-                headers = headers,
-                body = bodyString
-            )
+        // Record the fixture
+        recorder.record(
+            method = method,
+            path = path,
+            statusCode = statusCode,
+            headers = headers,
+            body = bodyString
+        )
 
-            // Create a new response with the body content since we consumed it
-            val clonedBody = bodyString.toResponseBody(responseBody?.contentType())
-            return response.newBuilder()
-                .code(response.code)
-                .headers(response.headers)
-                .body(clonedBody)
-                .build()
-        }
-
-        return response
+        // Create a new response with the body content since we consumed it
+        val clonedBody = bodyString.toResponseBody(responseBody?.contentType())
+        return response.newBuilder()
+            .code(response.code)
+            .headers(response.headers)
+            .body(clonedBody)
+            .build()
     }
 }
