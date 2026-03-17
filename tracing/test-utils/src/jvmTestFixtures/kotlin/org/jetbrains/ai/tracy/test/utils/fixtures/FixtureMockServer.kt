@@ -95,7 +95,8 @@ class FixtureMockServer(private val fixturesDir: Path) {
 private class FixtureDispatcher(
     private val fixtures: Map<String, HttpFixture>
 ) : Dispatcher() {
-    private var dispatchedRequestsCount = 0
+    // fixture tag -> number of already dispatched requests
+    private val dispatchedRequestsCountPerFixtureTag = mutableMapOf<String, Int>()
 
     override fun dispatch(request: RecordedRequest): MockResponse {
         println("FixtureDispatcher.dispatch")
@@ -112,6 +113,8 @@ private class FixtureDispatcher(
         val fixtureTag = request.getHeader(FIXTURE_TAG_HEADER) ?: return notFoundResponse(
             "No fixture tag provided in request headers, ensure '$FIXTURE_TAG_HEADER' header is set to a fixture tag"
         )
+
+        val dispatchedRequestsCount = dispatchedRequestsCountPerFixtureTag.getOrPut(fixtureTag) { 0 }
 
         // build a list of possible fixture keys to try, in order of specificity:
         // 1. With tag (if provided)
@@ -137,6 +140,9 @@ private class FixtureDispatcher(
 
         val fixture = keys.firstNotNullOfOrNull { fixtures[it] }
 
+        println("[Dispatcher] registered fixture keys: ${fixtures.keys.toList()}")
+        println("[Dispatcher] found fixture: $fixture")
+
         if (fixture == null) {
             val errorMessage = """
                 No fixture found for keys: ${keys.joinToString(", ") { "`$it`" }}
@@ -147,10 +153,8 @@ private class FixtureDispatcher(
             return notFoundResponse(errorMessage)
         }
 
-        println("[Dispatcher] found fixture for key: ${fixtures.filterValues { it == fixture }.keys.firstOrNull()}")
-
         // this request was successfully dispatched to an existing fixture response
-        dispatchedRequestsCount += 1
+        dispatchedRequestsCountPerFixtureTag[fixtureTag] = dispatchedRequestsCount + 1
 
         return MockResponse()
             .setResponseCode(fixture.statusCode)
