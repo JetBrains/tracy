@@ -469,7 +469,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     }
 
     @Test
-    fun `test OpenAI chat completions auto tracing disable`() = runTest {
+    fun `test OpenAI chat completions auto tracing disabled`() = runTest {
         TracingManager.isTracingEnabled = false
 
         val model = ChatModel.GPT_4O_MINI
