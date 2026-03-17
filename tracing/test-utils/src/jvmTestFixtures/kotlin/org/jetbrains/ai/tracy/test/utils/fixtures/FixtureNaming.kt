@@ -97,7 +97,7 @@ fun createFixtureTag(testInfo: TestInfo): String {
  * @param displayName JUnit parameterized test display name
  * @return Pair of (index, parameterName) or (null, null) if parsing fails
  */
-private fun extractParameterInfo(displayName: String): Pair<String?, String?> {
+internal fun extractParameterInfo(displayName: String): Pair<String?, String?> {
     // Regex pattern to match: "[index] ParameterType(optionalContent)" or "[index] ParameterType"
     val pattern = Regex("""^\[(\d+)]\s+([^(]+)(?:\(.*\))?$""")
     val matchResult = pattern.find(displayName)
