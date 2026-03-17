@@ -15,6 +15,8 @@ import org.jetbrains.ai.tracy.core.http.protocol.asJson
 import org.jetbrains.ai.tracy.core.policy.orRedactedInput
 import org.jetbrains.ai.tracy.openai.adapters.handlers.videos.VideosOpenAIApiEndpointHandler
 
+private val logger = KotlinLogging.logger {}
+
 /**
  * Handles [VideosOpenAIApiEndpointHandler.VideoRoute.REMIX] endpoint: `POST /videos/{video_id}/remix`.
  */
@@ -70,9 +72,5 @@ internal class RemixVideoHandler : VideoRouteHandler {
     override fun handleResponse(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
         span.traceVideoModel(body, "gen_ai.response.video")
-    }
-
-    companion object {
-        private val logger = KotlinLogging.logger {}
     }
 }

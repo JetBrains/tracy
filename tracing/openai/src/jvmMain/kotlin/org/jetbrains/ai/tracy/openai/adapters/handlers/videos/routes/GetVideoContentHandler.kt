@@ -11,6 +11,8 @@ import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.openai.adapters.handlers.videos.VideosOpenAIApiEndpointHandler
 
+private val logger = KotlinLogging.logger {}
+
 /**
  * Handles [VideosOpenAIApiEndpointHandler.VideoRoute.VIDEO_CONTENT] endpoint: `GET /videos/{video_id}/content`.
  */
@@ -41,9 +43,5 @@ internal class GetVideoContentHandler : VideoRouteHandler {
             span.setAttribute("gen_ai.response.content_type", contentType)
         }
         span.setAttribute("gen_ai.response.is_binary_stream", true)
-    }
-
-    companion object {
-        private val logger = KotlinLogging.logger {}
     }
 }
