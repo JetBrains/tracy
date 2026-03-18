@@ -71,7 +71,7 @@ class GeminiContentGenHandler(
                 for ((index, tool) in tools.jsonArray.withIndex()) {
                     tool.jsonObject["functionDeclarations"]?.let {
                         for ((functionIndex, function) in it.jsonArray.withIndex()) {
-                            function.jsonObject["parameters"]?.jsonObject?.let { params ->
+                            function.jsonObject["parametersJsonSchema"]?.jsonObject?.let { params ->
                                 span.setAttribute(
                                     "gen_ai.tool.$index.function.$functionIndex.type",
                                     params["type"]?.jsonPrimitive?.content
@@ -292,29 +292,6 @@ class GeminiContentGenHandler(
      * Extracts `text` attribute from `parts` array if
      * `parts` contains only a single message with a single
      * `text` attribute.
-     *
-     * Examples:
-     * 1. `text` will be returned:
-     * ```json
-     * {
-     *     "parts": [
-     *         {
-     *             "text": "Hello! I am a large language model!"
-     *         }
-     *     ]
-     * }
-     * ```
-     * 2. `null` will be returned (i.e., clients are expected to attach an entire `parts` array into span):
-     * ```json
-     * {
-     *     "parts": [
-     *         {
-     *             "text": "Hello! I am a large language model.",
-     *             "thoughtSignature": "CvcBAR/123"
-     *         }
-     *     ]
-     * }
-     * ```
      */
     private fun JsonElement.singleTextMessageInParts(): String? {
         val parts = this
@@ -322,9 +299,9 @@ class GeminiContentGenHandler(
             return null
         }
         val item = parts.first().jsonObject
-        // only the 'text' attribute is present -> display it on Langfuse with Markdown rendering
-        if (item.keys.size == 1 && item.keys.first() == "text") {
-            return item["text"]?.jsonPrimitive?.content
+        // If the key attribute is present attach it
+        if ("text" in item.keys) {
+            return item["text"]?.toString()
         }
         return null
     }
