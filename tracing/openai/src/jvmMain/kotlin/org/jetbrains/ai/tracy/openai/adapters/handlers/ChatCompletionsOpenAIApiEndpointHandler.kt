@@ -16,186 +16,59 @@ import org.jetbrains.ai.tracy.core.adapters.media.isValidUrl
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.core.http.protocol.asJson
+import org.jetbrains.ai.tracy.core.model.*
 import org.jetbrains.ai.tracy.core.policy.ContentKind
 import org.jetbrains.ai.tracy.core.policy.contentTracingAllowed
 import org.jetbrains.ai.tracy.core.policy.orRedacted
-import org.jetbrains.ai.tracy.core.policy.orRedactedInput
-import org.jetbrains.ai.tracy.core.policy.orRedactedOutput
+import org.jetbrains.ai.tracy.openai.model.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.boolean
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
 
 
 /**
- * Handler for OpenAI Chat Completions API
+ * Handler for OpenAI Chat Completions API.
+ *
+ * Uses the 3-step tracing pipeline:
+ * 1. **Parse**: JSON → [ChatCompletionRequest]/[ChatCompletionResponse]
+ * 2. **Normalize**: Provider data classes → [TracedRequest]/[TracedResponse]
+ * 3. **Serialize**: Unified model → span attributes via [SpanSerializer]
  */
 internal class ChatCompletionsOpenAIApiEndpointHandler(
     private val extractor: MediaContentExtractor
 ) : EndpointApiHandler {
+
+    private val json = Json { ignoreUnknownKeys = true }
+
     override fun handleRequestAttributes(span: Span, request: TracyHttpRequest) {
         val body = request.body.asJson()?.jsonObject ?: return
-        OpenAIApiUtils.setCommonRequestAttributes(span, request)
 
-        body["messages"]?.let {
-            for ((index, message) in it.jsonArray.withIndex()) {
-                val role = message.jsonObject["role"]?.jsonPrimitive?.content
-                val kind = kindByRole(role)
+        // Step 1: Parse
+        val parsed = json.decodeFromJsonElement<ChatCompletionRequest>(body)
 
-                span.setAttribute("gen_ai.prompt.$index.role", role)
+        // Step 2: Normalize
+        val traced = normalizeRequest(parsed)
 
-                // content may be of different schemas
-                val messageContent = message.jsonObject["content"]
-                attachRequestContent(span, index, kind, messageContent)
+        // Step 3: Serialize
+        SpanSerializer.writeRequest(span, traced, extractor)
 
-                // when a tool result is encountered
-                if (role?.lowercase() == "tool") {
-                    span.setAttribute(
-                        "gen_ai.prompt.$index.tool_call_id",
-                        message.jsonObject["tool_call_id"]?.jsonPrimitive?.content
-                    )
-                }
-            }
-        }
-
-        // See: https://platform.openai.com/docs/api-reference/chat/create
-        body["tools"]?.let { tools ->
-            if (tools is JsonArray) {
-                for ((index, tool) in tools.jsonArray.withIndex()) {
-                    val toolType = tool.jsonObject["type"]?.jsonPrimitive?.content
-                    span.setAttribute("gen_ai.tool.$index.type", toolType)
-
-                    tool.jsonObject["function"]?.jsonObject?.let {
-                        val toolName = it["name"]?.jsonPrimitive?.content
-                        val toolDescription = it["description"]?.jsonPrimitive?.content
-                        val toolParameters = it["parameters"]?.jsonObject?.toString()
-                        val strict = it["strict"]?.jsonPrimitive?.boolean?.toString()
-
-                        span.setAttribute("gen_ai.tool.$index.name", toolName?.orRedactedInput())
-                        span.setAttribute("gen_ai.tool.$index.description", toolDescription?.orRedactedInput())
-                        span.setAttribute("gen_ai.tool.$index.parameters", toolParameters?.orRedactedInput())
-                        span.setAttribute("gen_ai.tool.$index.strict", strict)
-                    }
-                }
-            }
-        }
-
+        // Unmapped attributes (uses raw JsonObject — nothing is lost)
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.REQUEST)
-    }
-
-    /**
-     * Inserts the message content depending on its type.
-     *
-     * The content can be either a normal text (i.e., a string) or
-     * an array when a media input is attached (e.g., images, audio, and files).
-     *
-     * For more details on possible content structures,
-     * see [User Message Content Description](https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages-user-message-content).
-     *
-     * Additionally, see: [OpenAI Chat Completions](https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages)
-     */
-    private fun attachRequestContent(
-        span: Span,
-        index: Int,
-        kind: ContentKind,
-        content: JsonElement?,
-    ) {
-        if (content == null) {
-            span.setAttribute("gen_ai.prompt.$index.content", null)
-            return
-        }
-
-        // See content types: https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages-user-message-content
-        val result: String = when (content) {
-            is JsonPrimitive -> content.jsonPrimitive.content
-            is JsonArray -> {
-                // install upload media attributes only when tracing is allowed
-                if (contentTracingAllowed(kind)) {
-                    // array that contains entries of either image, audio, file or normal text
-                    val mediaContent = parseMediaContent(content)
-                    extractor.setUploadableContentAttributes(span, field = "input", mediaContent)
-                }
-                content.jsonArray.toString()
-            }
-
-            else -> content.toString()
-        }
-        span.setAttribute("gen_ai.prompt.$index.content", result.orRedacted(kind))
     }
 
     override fun handleResponseAttributes(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
 
-        body["choices"]?.let { choices ->
-            for ((index, choice) in choices.jsonArray.withIndex()) {
-                val index = choice.jsonObject["index"]?.jsonPrimitive?.intOrNull ?: index
+        // Step 1: Parse
+        val parsed = json.decodeFromJsonElement<ChatCompletionResponse>(body)
 
-                span.setAttribute(
-                    "gen_ai.completion.$index.finish_reason",
-                    choice.jsonObject["finish_reason"]?.jsonPrimitive?.content
-                )
+        // Step 2: Normalize
+        val traced = normalizeResponse(parsed)
 
-                choice.jsonObject["message"]?.jsonObject?.let { message ->
-                    val role = message.jsonObject["role"]?.jsonPrimitive?.content
-                    val content = message.jsonObject["content"]?.toString()
+        // Step 3: Serialize
+        SpanSerializer.writeResponse(span, traced, extractor)
 
-                    span.setAttribute("gen_ai.completion.$index.role", role)
-                    span.setAttribute("gen_ai.completion.$index.content", content?.orRedactedOutput())
-
-                    // See: https://platform.openai.com/docs/api-reference/chat/object
-                    message.jsonObject["tool_calls"]?.let { toolCalls ->
-                        // sometimes, this prop is explicitly set to null, hence, being JsonNull.
-                        // therefore, we check for the required array type
-                        if (toolCalls is JsonArray) {
-                            for ((toolCallIndex, toolCall) in toolCalls.jsonArray.withIndex()) {
-                                span.setAttribute(
-                                    "gen_ai.completion.$index.tool.$toolCallIndex.call.id",
-                                    toolCall.jsonObject["id"]?.jsonPrimitive?.content
-                                )
-                                span.setAttribute(
-                                    "gen_ai.completion.$index.tool.$toolCallIndex.call.type",
-                                    toolCall.jsonObject["type"]?.jsonPrimitive?.content
-                                )
-
-                                toolCall.jsonObject["function"]?.jsonObject?.let {
-                                    val name = it["name"]?.jsonPrimitive?.content
-                                    val arguments = it["arguments"]?.jsonPrimitive?.content
-
-                                    span.setAttribute(
-                                        "gen_ai.completion.$index.tool.$toolCallIndex.name",
-                                        name?.orRedactedOutput()
-                                    )
-                                    span.setAttribute(
-                                        "gen_ai.completion.$index.tool.$toolCallIndex.arguments",
-                                        arguments?.orRedactedOutput()
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    span.setAttribute(
-                        "gen_ai.completion.$index.annotations",
-                        message.jsonObject["annotations"].toString()
-                    )
-                }
-            }
-        }
-
-        body["usage"]?.let { usage ->
-            setUsageAttributes(span, usage.jsonObject)
-        }
-
+        // Unmapped attributes
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
     }
 
@@ -203,22 +76,16 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
         var role: String? = null
         val out = buildString {
             for (line in events.lineSequence()) {
-                if (!line.startsWith("data:")) {
-                    continue
-                }
+                if (!line.startsWith("data:")) continue
                 val data = line.removePrefix("data:").trim()
 
-                val event = runCatching {
-                    Json.parseToJsonElement(data).jsonObject
+                val chunk = runCatching {
+                    json.decodeFromString<ChatCompletionStreamChunk>(data)
                 }.getOrNull() ?: continue
 
-                val choice = event["choices"]?.jsonArray?.firstOrNull()?.jsonObject ?: continue
-                val delta = choice["delta"]?.jsonObject ?: continue
-
-                if (role == null) {
-                    role = delta["role"]?.jsonPrimitive?.content
-                }
-                delta["content"]?.jsonPrimitive?.content?.let { append(it) }
+                val delta = chunk.choices.firstOrNull()?.delta ?: continue
+                if (role == null) role = delta.role
+                delta.content?.let { append(it) }
             }
         }
 
@@ -234,84 +101,139 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
         span.recordException(exception)
     }
 
+    // --- Step 2: Normalization ---
+
+    private fun normalizeRequest(req: ChatCompletionRequest): TracedRequest {
+        val messages = req.messages.map { msg ->
+            val kind = kindByRole(msg.role)
+            TracedMessage(
+                role = msg.role,
+                content = resolveContent(msg.content),
+                contentKind = kind,
+                toolCallId = msg.toolCallId,
+            )
+        }
+
+        val tools = req.tools?.map { tool ->
+            TracedTool(
+                type = tool.type,
+                name = tool.function?.name,
+                description = tool.function?.description,
+                parameters = tool.function?.parameters?.toString(),
+                strict = tool.function?.strict?.toString(),
+            )
+        } ?: emptyList()
+
+        // Collect media content from all messages with array content
+        val mediaContent = extractMediaFromMessages(req.messages)
+
+        return TracedRequest(
+            model = req.model,
+            temperature = req.temperature,
+            messages = messages,
+            tools = tools,
+            mediaContent = mediaContent,
+        )
+    }
+
+    private fun normalizeResponse(resp: ChatCompletionResponse): TracedResponse {
+        return TracedResponse(
+            id = resp.id,
+            model = resp.model,
+            operationName = resp.objectType,
+            completions = resp.choices.map { choice ->
+                TracedCompletion(
+                    role = choice.message?.role,
+                    content = choice.message?.content,
+                    finishReason = choice.finishReason,
+                    annotations = choice.message?.annotations?.toString(),
+                    toolCalls = choice.message?.toolCalls?.map { tc ->
+                        TracedToolCall(
+                            id = tc.id,
+                            type = tc.type,
+                            name = tc.function?.name,
+                            arguments = tc.function?.arguments,
+                        )
+                    } ?: emptyList(),
+                )
+            },
+            usage = resp.usage?.let {
+                TracedUsage(inputTokens = it.promptTokens, outputTokens = it.completionTokens)
+            },
+        )
+    }
+
+    // --- Helpers ---
+
     /**
-     * Sets usage attributes (prompt_tokens/completion_tokens)
+     * Resolves polymorphic content (string | array | null) to a string.
      */
-    private fun setUsageAttributes(span: Span, usage: JsonObject) {
-        usage["prompt_tokens"]?.jsonPrimitive?.intOrNull?.let {
-            span.setAttribute(GEN_AI_USAGE_INPUT_TOKENS, it)
-        }
-        usage["completion_tokens"]?.jsonPrimitive?.intOrNull?.let {
-            span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
-        }
+    private fun resolveContent(content: JsonElement?): String? = when (content) {
+        null, is JsonNull -> null
+        is JsonPrimitive -> content.content
+        is JsonArray -> content.toString()
+        else -> content.toString()
     }
 
     /**
      * Given a role, define what content kind matches it, either input or output.
      */
     private fun kindByRole(role: String?): ContentKind = when (role) {
-        // role may be:
-        //   1. input: developer/system/user
         "developer", "system", "user" -> ContentKind.INPUT
-        //   2. output: assistant/tool/function
         else -> ContentKind.OUTPUT
     }
 
     /**
-     * Extracts media content parts (images, audio, files) from JSON content.
+     * Extracts media content parts (images, audio, files) from message content arrays.
      *
-     * As for files, supports only files attached directly in the data URL (i.e., in the `file_data` field).
-     * Files attached via file IDs (`file_id` field) are ignored.
-     * See the schema for files: [Chat Completions API: File Content Schema](https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages-user-message-content-array-of-content-parts-file-content-part-file).
-     *
-     * See endpoint details: [Chat Completions API](https://platform.openai.com/docs/api-reference/chat/create)
+     * See: [Chat Completions API](https://platform.openai.com/docs/api-reference/chat/create)
      */
-    private fun parseMediaContent(content: JsonArray): MediaContent {
-        val parts = buildList {
+    private fun extractMediaFromMessages(messages: List<ChatMessage>): MediaContent? {
+        val allParts = mutableListOf<MediaContentPart>()
+
+        for (msg in messages) {
+            val content = msg.content
+            if (content !is JsonArray) continue
+
+            val kind = kindByRole(msg.role)
+            if (!contentTracingAllowed(kind)) continue
+
             for (part in content) {
                 val type = part.jsonObject["type"]?.jsonPrimitive?.content ?: continue
-
-                val mediaPart = when (type) {
-                    "image_url" -> {
-                        val url = part.jsonObject["image_url"]?.jsonObject["url"]?.jsonPrimitive?.content ?: continue
-
-                        if (url.isValidUrl()) {
-                            MediaContentPart(resource = Resource.Url(url))
-                        } else if (url.startsWith("data:")) {
-                            MediaContentPart(resource = Resource.InlineDataUrl(url))
-                        } else {
-                            null
-                        }
-                    }
-
-                    "input_audio" -> {
-                        // data is base64-encoded
-                        val data = part.jsonObject["input_audio"]?.jsonObject["data"]?.jsonPrimitive?.content
-                            ?: continue
-                        val format = part.jsonObject["input_audio"]?.jsonObject["format"]?.jsonPrimitive?.content
-                            ?: continue
-
-                        MediaContentPart(resource = Resource.Base64(data, mediaType = "audio/$format"))
-                    }
-
-                    "file" -> {
-                        // OpenAI expects a data url with a base64-encoded PDF file
-                        val fileData = part.jsonObject["file"]?.jsonObject["file_data"]?.jsonPrimitive?.content
-                            ?: continue
-                        MediaContentPart(resource = Resource.InlineDataUrl(fileData))
-                    }
-
-                    else -> null
-                }
-
-                // append media part if it's valid
-                if (mediaPart != null) {
-                    add(mediaPart)
-                }
+                val mediaPart = parseMediaPart(type, part.jsonObject) ?: continue
+                allParts.add(mediaPart)
             }
         }
 
-        return MediaContent(parts)
+        return if (allParts.isNotEmpty()) MediaContent(allParts) else null
+    }
+
+    /**
+     * Parses a single media content part from a content array element.
+     */
+    private fun parseMediaPart(type: String, obj: JsonObject): MediaContentPart? = when (type) {
+        "image_url" -> {
+            val url = obj["image_url"]?.jsonObject?.get("url")?.jsonPrimitive?.content ?: return null
+            when {
+                url.isValidUrl() -> MediaContentPart(resource = Resource.Url(url))
+                url.startsWith("data:") -> MediaContentPart(resource = Resource.InlineDataUrl(url))
+                else -> null
+            }
+        }
+
+        "input_audio" -> {
+            val audioObj = obj["input_audio"]?.jsonObject ?: return null
+            val data = audioObj["data"]?.jsonPrimitive?.content ?: return null
+            val format = audioObj["format"]?.jsonPrimitive?.content ?: return null
+            MediaContentPart(resource = Resource.Base64(data, mediaType = "audio/$format"))
+        }
+
+        "file" -> {
+            val fileData = obj["file"]?.jsonObject?.get("file_data")?.jsonPrimitive?.content ?: return null
+            MediaContentPart(resource = Resource.InlineDataUrl(fileData))
+        }
+
+        else -> null
     }
 
     // https://platform.openai.com/docs/api-reference/chat/create

@@ -15,218 +15,230 @@ import org.jetbrains.ai.tracy.core.adapters.media.Resource
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.core.http.protocol.asJson
+import org.jetbrains.ai.tracy.core.model.*
 import org.jetbrains.ai.tracy.core.policy.ContentKind
 import org.jetbrains.ai.tracy.core.policy.contentTracingAllowed
-import org.jetbrains.ai.tracy.core.policy.orRedactedInput
-import org.jetbrains.ai.tracy.core.policy.orRedactedOutput
+import org.jetbrains.ai.tracy.gemini.model.*
 import io.opentelemetry.api.trace.Span
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
 
 /**
- * Parses Generate Content API requests and responses
+ * Parses Generate Content API requests and responses.
+ *
+ * Uses the 3-step tracing pipeline:
+ * 1. **Parse**: JSON → [GenerateContentRequest]/[GenerateContentResponse]
+ * 2. **Normalize**: Provider data classes → [TracedRequest]/[TracedResponse]
+ * 3. **Serialize**: Unified model → span attributes via [SpanSerializer]
  *
  * See [Generate Content API Docs](https://ai.google.dev/api/generate-content)
  */
 class GeminiContentGenHandler(
     private val extractor: MediaContentExtractor
 ) : EndpointApiHandler {
+
+    private val json = Json { ignoreUnknownKeys = true }
+
     override fun handleRequestAttributes(span: Span, request: TracyHttpRequest) {
-        // See: https://ai.google.dev/api/caching#Content
         val body = request.body.asJson()?.jsonObject ?: return
 
-        body["contents"]?.let {
-            for ((index, message) in it.jsonArray.withIndex()) {
-                val role = message.jsonObject["role"]?.jsonPrimitive?.content
-                span.setAttribute("gen_ai.prompt.$index.role", role)
+        // Step 1: Parse
+        val parsed = json.decodeFromJsonElement<GenerateContentRequest>(body)
 
-                val parts = message.jsonObject["parts"]
-                val textMessage = parts?.singleTextMessageInParts()
-
-                if (textMessage != null) {
-                    span.setAttribute("gen_ai.prompt.$index.content", textMessage.orRedactedInput())
-                } else {
-                    span.setAttribute("gen_ai.prompt.$index.content", parts?.toString()?.orRedactedInput())
-                }
-            }
-        }
-
-        // url ends with `[model]:[operation]`
+        // Extract model and operation from URL (Gemini-specific: url ends with `model:operation`)
         val (model, operation) = request.url.pathSegments.lastOrNull()?.split(":")
             ?.let { it.firstOrNull() to it.lastOrNull() } ?: (null to null)
 
-        if (contentTracingAllowed(ContentKind.INPUT)) {
-            val mediaContent = parseRequestMediaContent(body)
-            if (mediaContent != null) {
-                extractor.setUploadableContentAttributes(span, field = "input", mediaContent)
-            }
-        }
+        // Step 2: Normalize
+        val traced = normalizeRequest(parsed, model, operation, body)
 
-        model?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, model) }
-        operation?.let { span.setAttribute(GEN_AI_OPERATION_NAME, operation) }
+        // Step 3: Serialize
+        SpanSerializer.writeRequest(span, traced, extractor)
 
-        // extract tool calls
-        body.jsonObject["tools"]?.let { tools ->
-            if (tools is JsonArray) {
-                for ((index, tool) in tools.jsonArray.withIndex()) {
-                    tool.jsonObject["functionDeclarations"]?.let {
-                        for ((functionIndex, function) in it.jsonArray.withIndex()) {
-                            function.jsonObject["parameters"]?.jsonObject?.let { params ->
-                                span.setAttribute(
-                                    "gen_ai.tool.$index.function.$functionIndex.type",
-                                    params["type"]?.jsonPrimitive?.content
-                                )
-                            }
-
-                            val name = function.jsonObject["name"]?.jsonPrimitive?.contentOrNull
-                            val description = function.jsonObject["description"]?.jsonPrimitive?.contentOrNull
-                            val parameters = function.jsonObject["parameters"]?.toString()
-
-                            span.setAttribute(
-                                "gen_ai.tool.$index.function.$functionIndex.name",
-                                name?.orRedactedInput(),
-                            )
-                            span.setAttribute(
-                                "gen_ai.tool.$index.function.$functionIndex.description",
-                                description?.orRedactedInput(),
-                            )
-                            span.setAttribute(
-                                "gen_ai.tool.$index.function.$functionIndex.parameters",
-                                parameters?.orRedactedInput(),
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // See: https://ai.google.dev/api/generate-content#v1beta.GenerationConfig
-        body["generationConfig"]?.let { config ->
-            config.jsonObject["candidateCount"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute(GEN_AI_REQUEST_CHOICE_COUNT, it.toLong())
-            }
-            config.jsonObject["maxOutputTokens"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it.toLong())
-            }
-            config.jsonObject["temperature"]?.jsonPrimitive?.doubleOrNull?.let {
-                span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it)
-            }
-            config.jsonObject["topP"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_P, it) }
-            config.jsonObject["topK"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_K, it) }
-        }
-
+        // Unmapped attributes (uses raw JsonObject — nothing is lost)
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.REQUEST)
     }
 
     override fun handleResponseAttributes(span: Span, response: TracyHttpResponse) {
-        // See: https://ai.google.dev/api/generate-content#v1beta.GenerateContentResponse
         val body = response.body.asJson()?.jsonObject ?: return
 
-        body["responseId"]?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
-        body["modelVersion"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
+        // Step 1: Parse
+        val parsed = json.decodeFromJsonElement<GenerateContentResponse>(body)
 
-        body["candidates"]?.let {
-            for ((index, candidate) in it.jsonArray.withIndex()) {
-                candidate.jsonObject["content"]?.let { content ->
-                    span.setAttribute(
-                        "gen_ai.completion.$index.role",
-                        content.jsonObject["role"]?.jsonPrimitive?.content
-                    )
+        // Step 2: Normalize
+        val traced = normalizeResponse(parsed, body)
 
-                    // response parts
-                    val parts = content.jsonObject["parts"]
-                    val textMessage = parts?.singleTextMessageInParts()
+        // Step 3: Serialize
+        SpanSerializer.writeResponse(span, traced, extractor)
 
-                    if (textMessage != null) {
-                        span.setAttribute("gen_ai.completion.$index.content", textMessage.orRedactedOutput())
-                    } else {
-                        span.setAttribute("gen_ai.completion.$index.content", parts.toString().orRedactedOutput())
-                    }
-
-                    // collect requests for a tool call
-                    if (parts is JsonArray) {
-                        var toolCallIndex = 0
-                        for (part in parts.jsonArray) {
-                            part.jsonObject["functionCall"]?.jsonObject?.let { part ->
-                                val name = part["name"]?.jsonPrimitive?.content
-                                val args = part["args"].toString()
-
-                                span.setAttribute(
-                                    "gen_ai.completion.$index.tool.$toolCallIndex.name",
-                                    name?.orRedactedOutput()
-                                )
-                                span.setAttribute(
-                                    "gen_ai.completion.$index.tool.$toolCallIndex.arguments",
-                                    args.orRedactedOutput()
-                                )
-                                ++toolCallIndex
-                            }
-                        }
-                    }
-                }
-
-                span.setAttribute(
-                    "gen_ai.completion.$index.finish_reason",
-                    candidate.jsonObject["finishReason"]?.jsonPrimitive?.content
-                )
-            }
-        }
-
-        if (contentTracingAllowed(ContentKind.OUTPUT)) {
-            val mediaContent = parseResponseMediaContent(body)
-            if (mediaContent != null) {
-                extractor.setUploadableContentAttributes(span, field = "output", mediaContent)
-            }
-        }
-
-        body["usageMetadata"]?.let { usage ->
-            usage.jsonObject["promptTokenCount"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute(GEN_AI_USAGE_INPUT_TOKENS, it)
-            }
-            usage.jsonObject["candidatesTokenCount"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
-            }
-            usage.jsonObject["totalTokenCount"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute("gen_ai.usage.total_tokens", it.toLong())
-            }
-
-            /**
-             * The following two properties (`promptTokensDetails`, `candidatesTokensDetails`)
-             * and their inner contents are mapped into snake-cased OTEL attributes.
-             *
-             * 1. For `promptTokensDetails`:
-             *   - `"gen_ai.usage.prompt_tokens_details.0.modality"`
-             *   - `"gen_ai.usage.prompt_tokens_details.0.token_count"`
-             * 2. For `candidatesTokensDetails`:
-             *   - `"gen_ai.usage.candidates_tokens_details.0.modality"`
-             *   - `"gen_ai.usage.candidates_tokens_details.0.token_count"`
-             *
-             * See: https://ai.google.dev/api/generate-content#UsageMetadata
-             */
-            // prompt tokens details
-            extractUsageTokenDetails(span, usage, attribute = "promptTokensDetails")
-            // candidate tokens details
-            extractUsageTokenDetails(span, usage, attribute = "candidatesTokensDetails")
-        }
-
+        // Unmapped attributes
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
     }
 
     override fun handleStreaming(span: Span, events: String) = Unit
 
-    private fun parseRequestMediaContent(body: JsonObject): MediaContent? {
-        val contents = body["contents"]
-        if (contents !is JsonArray) {
-            return null
+    // --- Step 2: Normalization ---
+
+    private fun normalizeRequest(
+        req: GenerateContentRequest,
+        model: String?,
+        operation: String?,
+        rawBody: JsonObject,
+    ): TracedRequest {
+        val messages = req.contents?.map { content ->
+            TracedMessage(
+                role = content.role,
+                content = resolvePartsContent(content.parts),
+                contentKind = ContentKind.INPUT,
+            )
+        } ?: emptyList()
+
+        // Tool parsing uses raw JsonObject because the Gemini SDK serializes
+        // function declarations with complex nested schemas (parametersJsonSchema, parameters)
+        // that may not deserialize cleanly into typed data classes.
+        val tools = parseTools(rawBody)
+
+        val mediaContent = if (contentTracingAllowed(ContentKind.INPUT)) {
+            parseRequestMediaContent(rawBody)
+        } else null
+
+        return TracedRequest(
+            model = model,
+            operationName = operation,
+            temperature = req.generationConfig?.temperature,
+            topP = req.generationConfig?.topP,
+            topK = req.generationConfig?.topK,
+            maxTokens = req.generationConfig?.maxOutputTokens?.toLong(),
+            candidateCount = req.generationConfig?.candidateCount?.toLong(),
+            messages = messages,
+            tools = tools,
+            mediaContent = mediaContent,
+        )
+    }
+
+    private fun normalizeResponse(resp: GenerateContentResponse, rawBody: JsonObject): TracedResponse {
+        val completions = resp.candidates?.map { candidate ->
+            val parts = candidate.content?.parts
+            val textContent = singleTextFromParts(parts)
+            val toolCalls = extractToolCalls(parts)
+
+            TracedCompletion(
+                role = candidate.content?.role,
+                content = textContent ?: parts?.toString(),
+                finishReason = candidate.finishReason,
+                toolCalls = toolCalls,
+            )
+        } ?: emptyList()
+
+        val usage = resp.usageMetadata?.let { meta ->
+            val extras = buildMap<String, Any?> {
+                meta.totalTokenCount?.let { put("gen_ai.usage.total_tokens", it.toLong()) }
+                // Prompt tokens details
+                meta.promptTokensDetails?.forEachIndexed { i, detail ->
+                    detail.modality?.let { put("gen_ai.usage.prompt_tokens_details.$i.modality", it) }
+                    detail.tokenCount?.let { put("gen_ai.usage.prompt_tokens_details.$i.token_count", it.toLong()) }
+                }
+                // Candidates tokens details
+                meta.candidatesTokensDetails?.forEachIndexed { i, detail ->
+                    detail.modality?.let { put("gen_ai.usage.candidates_tokens_details.$i.modality", it) }
+                    detail.tokenCount?.let { put("gen_ai.usage.candidates_tokens_details.$i.token_count", it.toLong()) }
+                }
+            }
+            TracedUsage(
+                inputTokens = meta.promptTokenCount,
+                outputTokens = meta.candidatesTokenCount,
+                extraAttributes = extras,
+            )
         }
 
-        val resources: List<Resource> = buildList {
+        val mediaContent = if (contentTracingAllowed(ContentKind.OUTPUT)) {
+            parseResponseMediaContent(rawBody)
+        } else null
+
+        return TracedResponse(
+            id = resp.responseId,
+            model = resp.modelVersion,
+            completions = completions,
+            usage = usage,
+            mediaContent = mediaContent,
+        )
+    }
+
+    // --- Tool parsing (raw JsonObject) ---
+
+    /**
+     * Parses tool definitions from raw JSON body.
+     * Uses raw JsonObject navigation because the Gemini SDK serializes function declarations
+     * with fields like `parametersJsonSchema` that require careful extraction.
+     */
+    private fun parseTools(body: JsonObject): List<TracedTool> {
+        val tools = body["tools"]
+        if (tools !is JsonArray) return emptyList()
+
+        return tools.jsonArray.map { tool ->
+            TracedTool(
+                functions = tool.jsonObject["functionDeclarations"]?.jsonArray?.map { fn ->
+                    TracedToolFunction(
+                        type = fn.jsonObject["parametersJsonSchema"]?.jsonObject
+                            ?.get("type")?.jsonPrimitive?.content,
+                        name = fn.jsonObject["name"]?.jsonPrimitive?.contentOrNull,
+                        description = fn.jsonObject["description"]?.jsonPrimitive?.contentOrNull,
+                        parameters = fn.jsonObject["parameters"]?.toString(),
+                    )
+                },
+            )
+        }
+    }
+
+    // --- Helpers ---
+
+    /**
+     * Extracts text from `parts` array. If `parts` contains only a single text entry,
+     * returns just the text. Otherwise returns the full parts array as string.
+     */
+    private fun resolvePartsContent(parts: List<JsonElement>?): String? {
+        if (parts == null) return null
+        val text = singleTextFromParts(parts)
+        return text ?: parts.toString()
+    }
+
+    /**
+     * Returns the text value if parts contains exactly one text part.
+     */
+    private fun singleTextFromParts(parts: List<JsonElement>?): String? {
+        if (parts == null || parts.size != 1) return null
+        val item = parts.first()
+        if (item !is JsonObject) return null
+        if ("text" in item.keys) return item["text"]?.toString()
+        return null
+    }
+
+    /**
+     * Extracts function call tool calls from parts array.
+     */
+    private fun extractToolCalls(parts: List<JsonElement>?): List<TracedToolCall> {
+        if (parts == null) return emptyList()
+        return buildList {
+            for (part in parts) {
+                if (part !is JsonObject) continue
+                val functionCall = part["functionCall"]?.jsonObject ?: continue
+                add(
+                    TracedToolCall(
+                        name = functionCall["name"]?.jsonPrimitive?.content,
+                        arguments = functionCall["args"]?.toString(),
+                    )
+                )
+            }
+        }
+    }
+
+    private fun parseRequestMediaContent(body: JsonObject): MediaContent? {
+        val contents = body["contents"]
+        if (contents !is JsonArray) return null
+
+        val resources = buildList<Resource> {
             for (content in contents.jsonArray) {
                 val parts = content.jsonObject["parts"]
-                if (parts !is JsonArray) {
-                    continue
-                }
-
+                if (parts !is JsonArray) continue
                 for (part in parts.jsonArray) {
                     val inlineData = part.jsonObject["inlineData"]?.jsonObject ?: continue
                     val resource = inlineData.toResource() ?: continue
@@ -235,23 +247,18 @@ class GeminiContentGenHandler(
             }
         }
 
-        return MediaContent(parts = resources.map { MediaContentPart(it) })
+        return if (resources.isNotEmpty()) MediaContent(resources.map { MediaContentPart(it) }) else null
     }
 
     private fun parseResponseMediaContent(body: JsonObject): MediaContent? {
         val candidates = body["candidates"]
-        if (candidates !is JsonArray) {
-            return null
-        }
+        if (candidates !is JsonArray) return null
 
-        val resource: List<Resource> = buildList {
+        val resources = buildList<Resource> {
             for (candidate in candidates) {
                 val content = candidate.jsonObject["content"]?.jsonObject ?: continue
                 val parts = content["parts"]
-                if (parts !is JsonArray) {
-                    continue
-                }
-
+                if (parts !is JsonArray) continue
                 for (part in parts.jsonArray) {
                     val inlineData = part.jsonObject["inlineData"]?.jsonObject ?: continue
                     val resource = inlineData.toResource() ?: continue
@@ -260,89 +267,13 @@ class GeminiContentGenHandler(
             }
         }
 
-        return MediaContent(parts = resource.map { MediaContentPart(it) })
+        return if (resources.isNotEmpty()) MediaContent(resources.map { MediaContentPart(it) }) else null
     }
 
-    /**
-     * Should be executed on JSON objects that are of schema:
-     * ```json
-     * "inlineData": {
-     *    "data": "...",
-     *    "mimeType": "image/jpeg"
-     * }
-     * ```
-     *
-     * See the request body schema for the generateContent endpoint [here](https://ai.google.dev/api/generate-content?hl=en#request-body).
-     * Next, navigate to contents [(Content)](https://ai.google.dev/api/caching?hl=en#Content)
-     * then parts[] [(Part)](https://ai.google.dev/api/caching?hl=en#Part)
-     * then inlineData [(Blob)](https://ai.google.dev/api/caching#Blob).
-     *
-     * Converts JSON objects matching the schema above into [Resource].
-     */
     private fun JsonObject.toResource(): Resource? {
-        val inlineData = this
-        val data = inlineData["data"]?.jsonPrimitive?.content ?: return null
-        val mimeType = inlineData["mimeType"]?.jsonPrimitive?.content ?: return null
-
-        // NOTE: mediaType == mimeType when parameters are empty
+        val data = this["data"]?.jsonPrimitive?.content ?: return null
+        val mimeType = this["mimeType"]?.jsonPrimitive?.content ?: return null
         return Resource.Base64(data, mediaType = mimeType)
-    }
-
-    /**
-     * Extracts `text` attribute from `parts` array if
-     * `parts` contains only a single message with a single
-     * `text` attribute.
-     *
-     * Examples:
-     * 1. `text` will be returned:
-     * ```json
-     * {
-     *     "parts": [
-     *         {
-     *             "text": "Hello! I am a large language model!"
-     *         }
-     *     ]
-     * }
-     * ```
-     * 2. `null` will be returned (i.e., clients are expected to attach an entire `parts` array into span):
-     * ```json
-     * {
-     *     "parts": [
-     *         {
-     *             "text": "Hello! I am a large language model.",
-     *             "thoughtSignature": "CvcBAR/123"
-     *         }
-     *     ]
-     * }
-     * ```
-     */
-    private fun JsonElement.singleTextMessageInParts(): String? {
-        val parts = this
-        if (parts !is JsonArray || parts.size != 1) {
-            return null
-        }
-        val item = parts.first().jsonObject
-        // only the 'text' attribute is present -> display it on Langfuse with Markdown rendering
-        if (item.keys.size == 1 && item.keys.first() == "text") {
-            return item["text"]?.jsonPrimitive?.content
-        }
-        return null
-    }
-
-    private fun extractUsageTokenDetails(span: Span, usage: JsonElement, attribute: String) {
-        // turn the given attribute into snake-cased format
-        val snakeCasedAttribute = attribute.replace(Regex("([a-z])([A-Z])"), "$1_$2").lowercase()
-
-        usage.jsonObject[attribute]?.let { usage ->
-            for ((index, detail) in usage.jsonArray.withIndex()) {
-                detail.jsonObject["modality"]?.let {
-                    span.setAttribute("gen_ai.usage.$snakeCasedAttribute.$index.modality", it.jsonPrimitive.content)
-                }
-                detail.jsonObject["tokenCount"]?.jsonPrimitive?.intOrNull?.let {
-                    span.setAttribute("gen_ai.usage.$snakeCasedAttribute.$index.token_count", it.toLong())
-                }
-            }
-        }
     }
 
     private val mappedRequestAttributes: List<String> = listOf(
