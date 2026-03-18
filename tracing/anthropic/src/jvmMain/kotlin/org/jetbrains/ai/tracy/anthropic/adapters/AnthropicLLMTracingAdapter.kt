@@ -51,7 +51,7 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
     override fun getRequestBodyAttributes(span: Span, request: TracyHttpRequest) {
         val body = request.body.asJson()?.jsonObject ?: return
 
-        body["temperature"]?.jsonPrimitive?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.doubleOrNull) }
+        body["temperature"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it) }
         body["model"]?.jsonPrimitive?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it.content) }
         body["max_tokens"]?.jsonPrimitive?.intOrNull?.let { span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it.toLong()) }
 
@@ -64,14 +64,21 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
         }
 
         // system prompt
-        body["system"]?.jsonObject?.let { system ->
-            system["text"]?.jsonPrimitive?.let {
-                span.setAttribute(
-                    "gen_ai.prompt.system.content",
-                    it.content.orRedactedInput()
-                )
+        when (val system = body["system"]) {
+            is JsonPrimitive -> {
+                span.setAttribute("gen_ai.prompt.system.content", system.content.orRedactedInput())
             }
-            system["type"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.prompt.system.type", it.content) }
+            is JsonArray -> {
+                for ((index, block) in system.withIndex()) {
+                    block.jsonObject["type"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.prompt.system.$index.type", it)
+                    }
+                    block.jsonObject["text"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.prompt.system.$index.content", it.orRedactedInput())
+                    }
+                }
+            }
+            else -> {}
         }
 
         body["top_k"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_K, it) }
@@ -135,7 +142,7 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
                         // normal text message
                         span.setAttribute(
                             "gen_ai.completion.$index.content",
-                            message.jsonObject["text"]?.toString()?.orRedactedOutput()
+                            message.jsonObject["text"]?.jsonPrimitive?.content?.orRedactedOutput()
                         )
                     }
 
@@ -159,7 +166,7 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
                         )
                         span.setAttribute(
                             "gen_ai.completion.$index.tool.arguments",
-                            toolCall.jsonObject["input"].toString().orRedactedOutput()
+                            toolCall.jsonObject["input"]?.toString()?.orRedactedOutput()
                         )
                     }
 
@@ -184,10 +191,10 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
                 span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
             }
             usage["cache_creation_input_tokens"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute("gen_ai.usage.cache_creation_input_tokens", it.toLong())
+                span.setAttribute("gen_ai.usage.cache_creation.input_tokens", it.toLong())
             }
             usage["cache_read_input_tokens"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute("gen_ai.usage.cache_read_input_tokens", it.toLong())
+                span.setAttribute("gen_ai.usage.cache_read.input_tokens", it.toLong())
             }
             usage["service_tier"]?.jsonPrimitive?.let {
                 span.setAttribute("gen_ai.usage.service_tier", it.content)

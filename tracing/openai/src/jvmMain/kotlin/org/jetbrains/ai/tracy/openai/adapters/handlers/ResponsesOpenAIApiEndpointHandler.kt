@@ -71,8 +71,8 @@ internal class ResponsesOpenAIApiEndpointHandler(
 
         // because of inserting instructions property as the first prompt,
         // other input properties will have a position shifted by one
-        val instructionsInsertedAsFirstPrompt: Boolean = body["instructions"]?.jsonPrimitive?.let {
-            span.setAttribute("gen_ai.prompt.0.content", it.contentOrNull?.orRedactedInput())
+        val instructionsInsertedAsFirstPrompt: Boolean = body["instructions"]?.jsonPrimitive?.contentOrNull?.let {
+            span.setAttribute("gen_ai.prompt.0.content", it.orRedactedInput())
             span.setAttribute("gen_ai.prompt.0.role", "system")
             true
         } ?: false
