@@ -71,7 +71,12 @@ class GeminiContentGenHandler(
                 for ((index, tool) in tools.jsonArray.withIndex()) {
                     tool.jsonObject["functionDeclarations"]?.let {
                         for ((functionIndex, function) in it.jsonArray.withIndex()) {
-                            function.jsonObject["parametersJsonSchema"]?.jsonObject?.let { params ->
+                            // Support both the newer "parametersJsonSchema" (raw HTTP / Vertex AI)
+                            // and the older "parameters" (Java Gemini SDK)
+                            val paramsSchema = function.jsonObject["parametersJsonSchema"]?.jsonObject
+                                ?: function.jsonObject["parameters"]?.jsonObject
+
+                            paramsSchema?.let { params ->
                                 span.setAttribute(
                                     "gen_ai.tool.$index.function.$functionIndex.type",
                                     params["type"]?.jsonPrimitive?.content
@@ -80,7 +85,7 @@ class GeminiContentGenHandler(
 
                             val name = function.jsonObject["name"]?.jsonPrimitive?.contentOrNull
                             val description = function.jsonObject["description"]?.jsonPrimitive?.contentOrNull
-                            val parameters = function.jsonObject["parameters"]?.toString()
+                            val parameters = (function.jsonObject["parametersJsonSchema"] ?: function.jsonObject["parameters"])?.toString()
 
                             span.setAttribute(
                                 "gen_ai.tool.$index.function.$functionIndex.name",
@@ -301,7 +306,7 @@ class GeminiContentGenHandler(
         val item = parts.first().jsonObject
         // If the key attribute is present attach it
         if ("text" in item.keys) {
-            return item["text"]?.toString()
+            return item["text"]?.jsonPrimitive?.content
         }
         return null
     }
