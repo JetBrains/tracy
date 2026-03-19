@@ -12,211 +12,60 @@ import org.jetbrains.ai.tracy.core.adapters.media.*
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.core.http.protocol.asJson
+import org.jetbrains.ai.tracy.core.model.*
 import org.jetbrains.ai.tracy.core.policy.ContentKind
 import org.jetbrains.ai.tracy.core.policy.contentTracingAllowed
 import org.jetbrains.ai.tracy.core.policy.orRedactedInput
 import org.jetbrains.ai.tracy.core.policy.orRedactedOutput
+import org.jetbrains.ai.tracy.openai.model.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OUTPUT_TYPE
 import kotlinx.serialization.json.*
 
 /**
- * Handler for OpenAI Responses API
+ * Handler for OpenAI Responses API.
+ *
+ * Uses the 3-step tracing pipeline:
+ * 1. **Parse**: JSON → [ResponsesRequest]/[ResponsesResponse]
+ * 2. **Normalize**: Provider data classes → [TracedRequest]/[TracedResponse]
+ * 3. **Serialize**: Unified model → span attributes via [SpanSerializer]
  */
 internal class ResponsesOpenAIApiEndpointHandler(
     private val extractor: MediaContentExtractor
 ) : EndpointApiHandler {
+
+    private val json = Json { ignoreUnknownKeys = true }
+
     override fun handleRequestAttributes(span: Span, request: TracyHttpRequest) {
         val body = request.body.asJson()?.jsonObject ?: return
-        OpenAIApiUtils.setCommonRequestAttributes(span, request)
 
-        body["previous_response_id"]?.jsonPrimitive?.contentOrNull?.let {
-            span.setAttribute("gen_ai.request.previous_response_id", it)
-        }
-        body["store"]?.jsonPrimitive?.booleanOrNull?.let {
-            span.setAttribute("gen_ai.request.store", it)
-        }
-        body["top_p"]?.jsonPrimitive?.doubleOrNull?.let {
-            span.setAttribute(GEN_AI_REQUEST_TOP_P, it)
-        }
-        body["max_output_tokens"]?.jsonPrimitive?.longOrNull?.let {
-            span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it)
-        }
-        body["truncation"]?.jsonPrimitive?.contentOrNull?.let {
-            span.setAttribute("gen_ai.request.truncation", it)
-        }
-        body["parallel_tool_calls"]?.jsonPrimitive?.booleanOrNull?.let {
-            span.setAttribute("gen_ai.request.parallel_tool_calls", it)
-        }
-        body["stream"]?.jsonPrimitive?.booleanOrNull?.let {
-            span.setAttribute("gen_ai.request.stream", it)
-        }
-        body["response_format"]?.jsonPrimitive?.contentOrNull?.let {
-            span.setAttribute(GEN_AI_OUTPUT_TYPE, it)
-        }
-        body["tool_choice"]?.let {
-            val content = when (it) {
-                is JsonPrimitive -> it.content
-                else -> it.toString()
-            }
-            span.setAttribute("gen_ai.request.tool_choice", content)
-        }
-        body["reasoning"]?.let {
-            span.setAttribute("gen_ai.request.reasoning", it.toString())
-        }
-        body["text"]?.let {
-            span.setAttribute("gen_ai.request.text", it.toString())
-        }
+        // Step 1: Parse
+        val parsed = json.decodeFromJsonElement<ResponsesRequest>(body)
 
-        // because of inserting instructions property as the first prompt,
-        // other input properties will have a position shifted by one
-        val instructionsInsertedAsFirstPrompt: Boolean = body["instructions"]?.jsonPrimitive?.let {
-            span.setAttribute("gen_ai.prompt.0.content", it.contentOrNull?.orRedactedInput())
-            span.setAttribute("gen_ai.prompt.0.role", "system")
-            true
-        } ?: false
+        // Step 2: Normalize
+        val traced = normalizeRequest(parsed)
 
-        body["input"]?.let { inputs ->
-            when (inputs) {
-                is JsonArray -> {
-                    parseRequestInputAttributes(span, inputs, instructionsInsertedAsFirstPrompt)
-                    // attach media upload attributes only when content tracing is allowed
-                    if (contentTracingAllowed(ContentKind.INPUT)) {
-                        attachMediaContentAttributes(span, inputs)
-                    }
-                }
+        // Step 3: Serialize
+        SpanSerializer.writeRequest(span, traced, extractor)
 
-                else -> {
-                    val index = if (instructionsInsertedAsFirstPrompt) 1 else 0
-                    val content = when (inputs) {
-                        is JsonPrimitive -> inputs.contentOrNull
-                        else -> inputs.toString()
-                    }
-                    span.setAttribute("gen_ai.prompt.$index.role", "user")
-                    span.setAttribute("gen_ai.prompt.$index.content", content?.orRedactedInput())
-                }
-            }
-        }
-
-        body["tools"]?.let { tools ->
-            if (tools is JsonArray) {
-                for ((index, tool) in tools.jsonArray.withIndex()) {
-                    val toolType = tool.jsonObject["type"]?.jsonPrimitive?.contentOrNull
-                    val toolName = tool.jsonObject["name"]?.jsonPrimitive?.contentOrNull
-                    val toolDescription = tool.jsonObject["description"]?.jsonPrimitive?.contentOrNull
-                    val toolParameters = tool.jsonObject["parameters"]?.jsonObject?.toString()
-                    val strict = tool.jsonObject["strict"]?.jsonPrimitive?.boolean?.toString()
-
-                    span.setAttribute("gen_ai.tool.$index.type", toolType)
-                    span.setAttribute("gen_ai.tool.$index.name", toolName?.orRedactedInput())
-                    span.setAttribute("gen_ai.tool.$index.description", toolDescription?.orRedactedInput())
-                    span.setAttribute("gen_ai.tool.$index.parameters", toolParameters?.orRedactedInput())
-                    span.setAttribute("gen_ai.tool.$index.strict", strict)
-                }
-            }
-        }
-
+        // Unmapped attributes (uses raw JsonObject — nothing is lost)
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.REQUEST)
     }
 
-    private fun attachMediaContentAttributes(span: Span, inputs: JsonArray) {
-        // set attributes with media attachments info into the span
-        for (input in inputs) {
-            val content = input.jsonObject["content"]
-            if (content is JsonArray) {
-                val mediaContent = parseMediaContent(content)
-                extractor.setUploadableContentAttributes(span, field = "input", mediaContent)
-            }
-        }
-    }
-
-    /**
-     * Parses attributes from the Response Object of the Responses API.
-     *
-     * See [Response Object, Responses API](https://platform.openai.com/docs/api-reference/responses/object)
-     */
     override fun handleResponseAttributes(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
-        OpenAIApiUtils.setCommonResponseAttributes(span, response)
 
-        // we manually map `output` and `usage` attributes;
-        // the rest of attributes get mapped by `populateUnmappedAttributes` below.
-        body["output"]?.let { outputs ->
-            for ((index, output) in outputs.jsonArray.withIndex()) {
-                when (val type = output.jsonObject["type"]?.jsonPrimitive?.content) {
-                    "message", null -> {
-                        // See schema: https://platform.openai.com/docs/api-reference/responses/object#responses-object-output-output_message
-                        output.jsonObject["role"]?.jsonPrimitive?.content?.let {
-                            span.setAttribute("gen_ai.completion.$index.role", it)
-                        }
-                        output.jsonObject["id"]?.jsonPrimitive?.content?.let {
-                            span.setAttribute("gen_ai.completion.$index.id", it)
-                        }
-                        output.jsonObject["status"]?.jsonPrimitive?.content?.let {
-                            span.setAttribute("gen_ai.completion.$index.finish_reason", it)
-                        }
+        // Step 1: Parse
+        val parsed = json.decodeFromJsonElement<ResponsesResponse>(body)
 
-                        val content = output.jsonObject["content"]
-                        // See schema: https://platform.openai.com/docs/api-reference/responses/object#responses-object-output-output_message-content
-                        if (content is JsonArray) {
-                            // if there is a single message that has a type of `output_text`, then install it as completion content;
-                            // otherwise, set the entire array instead.
-                            if (content.size == 1 && content.first().jsonObject["type"]?.jsonPrimitive?.contentOrNull == "output_text") {
-                                val message = content
-                                    .first { it.jsonObject["type"]?.jsonPrimitive?.contentOrNull == "output_text" }
-                                    .jsonObject
+        // Step 2: Normalize
+        val traced = normalizeResponse(parsed)
 
-                                message["text"]?.jsonPrimitive?.content?.let {
-                                    span.setAttribute(
-                                        "gen_ai.completion.$index.content",
-                                        it
-                                    )
-                                }
-                                message["annotations"]?.let {
-                                    span.setAttribute(
-                                        "gen_ai.completion.$index.annotations",
-                                        it.toString()
-                                    )
-                                }
-                            } else {
-                                // set the entire array as completion content
-                                span.setAttribute("gen_ai.completion.$index.content", content.toString())
-                            }
-                        } else if (content != null) {
-                            span.setAttribute("gen_ai.completion.$index.content", content.toString())
-                        }
-                    }
+        // Step 3: Serialize
+        SpanSerializer.writeResponse(span, traced, extractor)
 
-                    else -> {
-                        // any other types, including 'function_call' and 'reasoning'
-                        // See output types: https://platform.openai.com/docs/api-reference/responses/object#responses-object-output
-                        for ((k, v) in output.jsonObject.entries) {
-                            val key = when {
-                                // prefix `function_call` with "tool_"
-                                type == "function_call" && k == "type" -> "tool_call_type"
-                                type == "function_call" -> "tool_$k"
-                                // special treatment for content of `reasoning`
-                                type == "reasoning" && k == "content" -> "output_content"
-                                // special treatment of `type` field
-                                k == "type" -> "output_type"
-                                else -> k
-                            }
-                            val value = when {
-                                v is JsonPrimitive -> v.content
-                                else -> v.toString()
-                            }
-                            span.setAttribute("gen_ai.completion.$index.$key", value.orRedactedOutput())
-                        }
-                    }
-                }
-            }
-        }
-
-        body["usage"]?.let { usage ->
-            setUsageAttributes(span, usage.jsonObject)
-        }
-
+        // Unmapped attributes
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
     }
 
@@ -226,12 +75,11 @@ internal class ResponsesOpenAIApiEndpointHandler(
             val data = line.removePrefix("data:").trim()
 
             val event = runCatching {
-                Json.parseToJsonElement(data).jsonObject
+                json.decodeFromString<ResponsesStreamEvent>(data)
             }.getOrNull() ?: continue
 
-            val type = event["type"]?.jsonPrimitive?.content
-            if (type == "response.output_text.done") {
-                event["text"]?.jsonPrimitive?.content?.let {
+            if (event.type == "response.output_text.done") {
+                event.text?.let {
                     span.setAttribute("gen_ai.completion.0.content", it.orRedactedOutput())
                     span.setAttribute("gen_ai.completion.0.finish_reason", "stop")
                 }
@@ -242,113 +90,267 @@ internal class ResponsesOpenAIApiEndpointHandler(
         span.recordException(exception)
     }
 
-    /**
-     * Parses input field of the request when it is of an array type.
-     *
-     * [instructionsInsertedAsFirstPrompt] indicates whether the "instructions" property
-     * is present in the request.
-     * If so, we shift all properties to be inserted into the span by one position,
-     * i.e., indexing starts with 1 instead of 0.
-     *
-     * See the [schema](https://platform.openai.com/docs/api-reference/responses/create#responses_create-input)
-     */
-    private fun parseRequestInputAttributes(
-        span: Span,
-        inputs: JsonArray,
-        instructionsInsertedAsFirstPrompt: Boolean,
-    ) {
-        val offset = if (instructionsInsertedAsFirstPrompt) 1 else 0
+    // --- Step 2: Normalization ---
 
-        for ((index, input) in inputs.withIndex()) {
-            // when instructions were inserted, indices of other input messages
-            // should be shifted by 1 ahead
-            val position = index + offset
+    private fun normalizeRequest(req: ResponsesRequest): TracedRequest {
+        val systemPrompt = req.instructions?.let { TracedSystemPrompt.Text(it) }
 
-            // See: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input
-            when (val type = input.jsonObject["type"]?.jsonPrimitive?.content) {
-                "message" -> {
-                    // this message can be either:
-                    //   1. Input message: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input-input_item_list-item-input_message
-                    //   2. Output message: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input-input_item_list-item-output_message
-                    // the difference is in the `role` and `content` fields
+        val messages = mutableListOf<TracedMessage>()
+        var mediaContent: MediaContent? = null
 
-                    // install primitive keys common for both input and output messages
-                    val fields = listOf("id", "role", "status", "type")
-                    for (field in fields) {
-                        input.jsonObject[field]?.jsonPrimitive?.content?.let { value ->
-                            val key = when (field) {
-                                "type" -> "input_type"
-                                else -> field
-                            }
-                            span.setAttribute("gen_ai.prompt.$position.$key", value)
-                        }
-                    }
+        when (val input = req.input) {
+            is JsonPrimitive -> {
+                messages.add(
+                    TracedMessage(role = "user", content = input.contentOrNull, contentKind = ContentKind.INPUT)
+                )
+            }
 
-                    val content = input.jsonObject["content"]
-                    if (content is JsonArray) {
-                        // if there is a single message that has a type of `input_text`, then install it as prompt content;
-                        // otherwise, set the entire array instead.
-                        if (content.size == 1 && content.first().jsonObject["type"]?.jsonPrimitive?.content == "input_text") {
-                            val message = content
-                                .first { it.jsonObject["type"]?.jsonPrimitive?.contentOrNull == "input_text" }
-                                .jsonObject
+            is JsonArray -> {
+                messages.addAll(normalizeInputItems(input))
+                mediaContent = extractMediaFromInputItems(input)
+            }
 
-                            message["text"]?.jsonPrimitive?.content?.let {
-                                span.setAttribute("gen_ai.prompt.$position.content", it.orRedactedInput())
-                            }
-                            message["type"]?.jsonPrimitive?.content?.let {
-                                span.setAttribute("gen_ai.prompt.$position.content_type", it)
-                            }
-                        } else {
-                            // set the entire array as prompt content
-                            span.setAttribute("gen_ai.prompt.$position.content", content.toString().orRedactedInput())
-                        }
-                    } else if (content != null) {
-                        val value = when (content) {
-                            is JsonPrimitive -> content.contentOrNull
-                            else -> content.toString()
-                        }
-                        span.setAttribute("gen_ai.prompt.$position.content", value?.orRedactedInput())
-                    }
+            else -> {} // null or other
+        }
+
+        val tools = req.tools?.map { tool ->
+            TracedTool(
+                type = tool.type,
+                name = tool.name,
+                description = tool.description,
+                parameters = tool.parameters?.toString(),
+                strict = tool.strict?.toString(),
+            )
+        } ?: emptyList()
+
+        val extras = buildMap<String, Any?> {
+            req.previousResponseId?.let { put("gen_ai.request.previous_response_id", it) }
+            req.store?.let { put("gen_ai.request.store", it) }
+            req.truncation?.let { put("gen_ai.request.truncation", it) }
+            req.parallelToolCalls?.let { put("gen_ai.request.parallel_tool_calls", it) }
+            req.stream?.let { put("gen_ai.request.stream", it) }
+            req.responseFormat?.let {
+                val value = when (it) {
+                    is JsonPrimitive -> it.contentOrNull
+                    else -> it.toString()
                 }
-
-                else -> {
-                    // any other types, including 'function_call_output' and 'reasoning'
-                    // See input types: https://platform.openai.com/docs/api-reference/responses/create#responses_create-input-input_item_list-item
-                    val functionCallTypes = listOf("function_call", "function_call_output")
-                    for ((k, v) in input.jsonObject.entries) {
-                        val key = when {
-                            // prefix `function_call`/`function_call_output` with "tool_"
-                            (type in functionCallTypes) && k == "type" -> "tool_call_type"
-                            (type in functionCallTypes) && k == "output" -> "output"
-                            type in functionCallTypes -> "tool_$k"
-                            // special treatment for content of `reasoning`
-                            type == "reasoning" && k == "content" -> "output_content"
-                            // special treatment of `type` field
-                            k == "type" -> "output_type"
-                            else -> k
-                        }
-                        val value = when {
-                            v is JsonPrimitive -> v.content
-                            else -> v.toString()
-                        }
-                        span.setAttribute("gen_ai.prompt.$position.$key", value.orRedactedInput())
-                    }
+                put(GEN_AI_OUTPUT_TYPE.key, value)
+            }
+            req.toolChoice?.let {
+                val value = when (it) {
+                    is JsonPrimitive -> it.content
+                    else -> it.toString()
                 }
+                put("gen_ai.request.tool_choice", value)
+            }
+            req.reasoning?.let { put("gen_ai.request.reasoning", it.toString()) }
+            req.text?.let { put("gen_ai.request.text", it.toString()) }
+        }
+
+        return TracedRequest(
+            model = req.model,
+            temperature = req.temperature,
+            topP = req.topP,
+            maxTokens = req.maxOutputTokens,
+            systemPrompt = systemPrompt,
+            messages = messages,
+            tools = tools,
+            mediaContent = mediaContent,
+            extraAttributes = extras,
+        )
+    }
+
+    private fun normalizeResponse(resp: ResponsesResponse): TracedResponse {
+        val completions = resp.output.mapNotNull { outputItem ->
+            val obj = (outputItem as? JsonObject) ?: return@mapNotNull null
+            when (obj["type"]?.jsonPrimitive?.contentOrNull) {
+                "message", null -> normalizeMessageOutput(obj)
+                "function_call" -> normalizeFunctionCallOutput(obj)
+                "reasoning" -> normalizeReasoningOutput(obj)
+                else -> null
+            }
+        }
+
+        return TracedResponse(
+            id = resp.id,
+            model = resp.model,
+            operationName = resp.objectType,
+            completions = completions,
+            usage = resp.usage?.let {
+                TracedUsage(inputTokens = it.inputTokens, outputTokens = it.outputTokens)
+            },
+        )
+    }
+
+    // --- Input item normalization ---
+
+    private fun normalizeInputItems(inputs: JsonArray): List<TracedMessage> {
+        return inputs.mapNotNull { input ->
+            val obj = (input as? JsonObject) ?: return@mapNotNull null
+            when (obj["type"]?.jsonPrimitive?.contentOrNull) {
+                "message" -> normalizeMessageInput(obj)
+                "function_call" -> normalizeFunctionCallInput(obj)
+                "function_call_output" -> normalizeFunctionCallOutputInput(obj)
+                "reasoning" -> normalizeReasoningInput(obj)
+                else -> null
             }
         }
     }
 
+    private fun normalizeMessageInput(item: JsonObject): TracedMessage {
+        val role = item["role"]?.jsonPrimitive?.contentOrNull
+        val content = resolveInputContent(item["content"])
+        val kind = kindByRole(role)
+        return TracedMessage(role = role, content = content, contentKind = kind)
+    }
+
+    private fun normalizeFunctionCallInput(item: JsonObject): TracedMessage {
+        val callId = item["call_id"]?.jsonPrimitive?.contentOrNull
+        val name = item["name"]?.jsonPrimitive?.contentOrNull
+        val arguments = item["arguments"]?.jsonPrimitive?.contentOrNull
+        return TracedMessage(
+            role = "assistant",
+            contentKind = ContentKind.OUTPUT,
+            extraAttributes = buildMap {
+                callId?.let { put("tool.0.call.id", it) }
+                put("tool.0.call.type", "function_call")
+                name?.let { put("tool.0.name", it.orRedactedInput()) }
+                arguments?.let { put("tool.0.arguments", it.orRedactedInput()) }
+            },
+        )
+    }
+
+    private fun normalizeFunctionCallOutputInput(item: JsonObject): TracedMessage {
+        val callId = item["call_id"]?.jsonPrimitive?.contentOrNull
+        val output = item["output"]?.jsonPrimitive?.contentOrNull
+        return TracedMessage(
+            role = "tool",
+            content = output,
+            contentKind = ContentKind.INPUT,
+            toolCallId = callId,
+        )
+    }
+
+    private fun normalizeReasoningInput(item: JsonObject): TracedMessage {
+        val content = item["content"]?.toString()
+        return TracedMessage(
+            role = "assistant",
+            content = content,
+            contentKind = ContentKind.OUTPUT,
+            extraAttributes = mapOf("type" to "reasoning"),
+        )
+    }
+
+    // --- Output item normalization ---
+
+    private fun normalizeMessageOutput(item: JsonObject): TracedCompletion {
+        val role = item["role"]?.jsonPrimitive?.contentOrNull
+        val status = item["status"]?.jsonPrimitive?.contentOrNull
+        val (text, annotations) = resolveOutputContent(item["content"])
+
+        return TracedCompletion(
+            role = role,
+            content = text,
+            finishReason = status,
+            annotations = annotations,
+        )
+    }
+
+    private fun normalizeFunctionCallOutput(item: JsonObject): TracedCompletion {
+        val callId = item["call_id"]?.jsonPrimitive?.contentOrNull
+        val name = item["name"]?.jsonPrimitive?.contentOrNull
+        val arguments = item["arguments"]?.jsonPrimitive?.contentOrNull
+        val status = item["status"]?.jsonPrimitive?.contentOrNull
+
+        return TracedCompletion(
+            finishReason = status,
+            toolCalls = listOf(
+                TracedToolCall(
+                    id = callId,
+                    type = "function_call",
+                    name = name,
+                    arguments = arguments,
+                )
+            ),
+        )
+    }
+
+    private fun normalizeReasoningOutput(item: JsonObject): TracedCompletion {
+        val content = item["content"]?.toString()
+
+        return TracedCompletion(
+            type = "reasoning",
+            content = content,
+        )
+    }
+
+    // --- Helpers ---
+
     /**
-     * Sets usage attributes (input_tokens/output_tokens)
+     * Resolves polymorphic input message content.
+     * If content is a JsonArray with a single `input_text` element, extracts the `text` field.
+     * Otherwise, serializes the whole element.
      */
-    private fun setUsageAttributes(span: Span, usage: JsonObject) {
-        usage["input_tokens"]?.jsonPrimitive?.intOrNull?.let {
-            span.setAttribute(GEN_AI_USAGE_INPUT_TOKENS, it)
+    private fun resolveInputContent(content: JsonElement?): String? = when (content) {
+        null, is JsonNull -> null
+        is JsonPrimitive -> content.contentOrNull
+        is JsonArray -> {
+            if (content.size == 1 && content.first().jsonObject["type"]?.jsonPrimitive?.contentOrNull == "input_text") {
+                content.first().jsonObject["text"]?.jsonPrimitive?.content
+            } else {
+                content.toString()
+            }
         }
-        usage["output_tokens"]?.jsonPrimitive?.intOrNull?.let {
-            span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
+
+        else -> content.toString()
+    }
+
+    private data class OutputContent(val text: String?, val annotations: String?)
+
+    /**
+     * Resolves polymorphic output message content.
+     * If content is a JsonArray with a single `output_text` element, extracts `text` and `annotations`.
+     * Otherwise, serializes the whole element.
+     */
+    private fun resolveOutputContent(content: JsonElement?): OutputContent = when (content) {
+        null, is JsonNull -> OutputContent(null, null)
+        is JsonArray -> {
+            if (content.size == 1 && content.first().jsonObject["type"]?.jsonPrimitive?.contentOrNull == "output_text") {
+                val message = content.first().jsonObject
+                OutputContent(
+                    text = message["text"]?.jsonPrimitive?.content,
+                    annotations = message["annotations"]?.toString(),
+                )
+            } else {
+                OutputContent(text = content.toString(), annotations = null)
+            }
         }
+
+        else -> OutputContent(text = content.toString(), annotations = null)
+    }
+
+    /**
+     * Given a role, define what content kind matches it, either input or output.
+     */
+    private fun kindByRole(role: String?): ContentKind = when (role) {
+        "developer", "system", "user" -> ContentKind.INPUT
+        else -> ContentKind.OUTPUT
+    }
+
+    /**
+     * Extracts media content from input items that have content arrays.
+     */
+    private fun extractMediaFromInputItems(inputs: JsonArray): MediaContent? {
+        if (!contentTracingAllowed(ContentKind.INPUT)) return null
+
+        val allParts = mutableListOf<MediaContentPart>()
+        for (input in inputs) {
+            val content = input.jsonObject["content"]
+            if (content is JsonArray) {
+                allParts.addAll(parseMediaContent(content).parts)
+            }
+        }
+        return if (allParts.isNotEmpty()) MediaContent(allParts) else null
     }
 
     /**
@@ -420,11 +422,9 @@ internal class ResponsesOpenAIApiEndpointHandler(
 
     // https://platform.openai.com/docs/api-reference/responses/object
     private val mappedResponseAttributes: List<String> = listOf(
-        // parsed by `OpenAIApiUtils.setCommonResponseAttributes`
         "id",
         "object",
         "model",
-
         "output",
         "usage",
     )
