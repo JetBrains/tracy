@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
 
 plugins {
     kotlin("multiplatform")
+    alias(libs.plugins.kotlin.serialization)
     id("ai.kotlin.dokka")
     `java-test-fixtures`
 }
@@ -26,6 +27,10 @@ kotlin {
                 implementation(libs.ktor.client)
                 implementation(libs.kotlin.test)
                 implementation(libs.junit)
+                implementation(libs.okhttp)
+                implementation(libs.okhttp.mockwebserver)
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.kotlin.logging)
             }
         }
     }
