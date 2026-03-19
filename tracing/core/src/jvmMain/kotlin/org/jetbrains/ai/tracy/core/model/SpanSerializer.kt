@@ -13,6 +13,7 @@ import org.jetbrains.ai.tracy.core.policy.orRedactedInput
 import org.jetbrains.ai.tracy.core.policy.orRedactedOutput
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
+import kotlinx.serialization.json.*
 
 /**
  * Serializes unified [TracedRequest] and [TracedResponse] models into flat OTel span attributes.
@@ -84,6 +85,8 @@ object SpanSerializer {
 
         // Provider-specific extras
         writeExtraAttributes(span, request.extraAttributes)
+
+        span.setAttribute("gen_ai.prompt", buildCompositeInputJson(request))
     }
 
     /**
@@ -137,6 +140,112 @@ object SpanSerializer {
 
         // Provider-specific extras
         writeExtraAttributes(span, response.extraAttributes)
+
+        span.setAttribute("gen_ai.completion", buildCompositeOutputJson(response))
+    }
+
+    private fun buildCompositeInputJson(request: TracedRequest): String {
+        return buildJsonObject {
+            // Messages (system prompt + conversation messages)
+            putJsonArray("messages") {
+                // System prompt as the first message
+                when (val sys = request.systemPrompt) {
+                    is TracedSystemPrompt.Text -> addJsonObject {
+                        put("role", "system")
+                        put("content", sys.text.orRedactedInput())
+                    }
+                    is TracedSystemPrompt.Blocks -> addJsonObject {
+                        put("role", "system")
+                        putJsonArray("content") {
+                            for (block in sys.blocks) {
+                                addJsonObject {
+                                    block.type?.let { put("type", it) }
+                                    block.content?.let { put("content", it.orRedactedInput()) }
+                                }
+                            }
+                        }
+                    }
+                    null -> {}
+                }
+                // Conversation messages
+                for (msg in request.messages) {
+                    addJsonObject {
+                        msg.role?.let { put("role", it) }
+                        msg.content?.let { put("content", it.orRedacted(msg.contentKind)) }
+                        msg.toolCallId?.let { put("tool_call_id", it) }
+                        msg.extraAttributes.forEach { (key, value) -> put(key, value) }
+                    }
+                }
+            }
+            // Tools (only if present)
+            if (request.tools.isNotEmpty()) {
+                putJsonArray("tools") {
+                    for (tool in request.tools) {
+                        addJsonObject {
+                            tool.type?.let { put("type", it) }
+                            if (tool.functions == null) {
+                                putJsonObject("function") {
+                                    putFunctionFields(tool.name, tool.description, tool.parameters)
+                                    tool.strict?.let { put("strict", it) }
+                                }
+                            } else {
+                                putJsonArray("function_declarations") {
+                                    for (fn in tool.functions) {
+                                        addJsonObject {
+                                            fn.type?.let { put("type", it) }
+                                            putFunctionFields(fn.name, fn.description, fn.parameters)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }.toString()
+    }
+
+    private fun buildCompositeOutputJson(response: TracedResponse): String {
+        return buildJsonArray {
+            for (completion in response.completions) {
+                addJsonObject {
+                    completion.role?.let { put("role", it) }
+                    completion.content?.let { put("content", it.orRedactedOutput()) }
+                    completion.finishReason?.let { put("finish_reason", it) }
+                    completion.type?.let { put("type", it) }
+                    if (completion.toolCalls.isNotEmpty()) {
+                        putJsonArray("tool_calls") {
+                            for (tc in completion.toolCalls) {
+                                addJsonObject {
+                                    tc.id?.let { put("id", it) }
+                                    tc.type?.let { put("type", it) }
+                                    putJsonObject("function") {
+                                        tc.name?.let { put("name", it.orRedactedOutput()) }
+                                        tc.arguments?.let {
+                                            val redacted = it.orRedactedOutput()
+                                            put("arguments", runCatching {
+                                                Json.parseToJsonElement(redacted)
+                                            }.getOrElse { JsonPrimitive(redacted) })
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }.toString()
+    }
+
+    private fun JsonObjectBuilder.putFunctionFields(name: String?, description: String?, parameters: String?) {
+        name?.let { put("name", it.orRedactedInput()) }
+        description?.let { put("description", it.orRedactedInput()) }
+        parameters?.let {
+            val redacted = it.orRedactedInput()
+            put("parameters", runCatching {
+                Json.parseToJsonElement(redacted)
+            }.getOrElse { JsonPrimitive(redacted) })
+        }
     }
 
     private fun writeSystemPrompt(span: Span, systemPrompt: TracedSystemPrompt?) {
