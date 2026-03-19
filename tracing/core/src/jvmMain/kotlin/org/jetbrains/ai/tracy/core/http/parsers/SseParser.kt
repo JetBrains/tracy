@@ -28,28 +28,28 @@ class SseParser(private val onEvent: (SseEvent) -> Unit) : Closeable {
     private var isFirstChunk = true
 
     /**
-     * The input [text] is expected to be already decoded with UTF-8 (see the note in [spec](https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation)).
+     * The [input] is expected to be already decoded with UTF-8
+     * (see the note in [spec](https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation)).
      */
-    fun feed(text: String) {
-        var input = text
-
-        if (isFirstChunk) {
-            isFirstChunk = false
-            if (input.startsWith(BOM_UTF8_BYTE)) {
-                input = input.substring(1)
-            }
-        }
-
+    fun feed(input: String) {
         var i = 0
         while (i < input.length) {
-            val ch = input[i]
-            when {
-                ch == '\r' -> {
+            // lines may be split by any of:
+            //  1. \r\n (CRLF): `U+000D` CARRIAGE RETURN, `U+000A` LINE FEED
+            //  2. \n (LF): `U+000A` LINE FEED
+            //  3. \r (CR): `U+000D` CARRIAGE RETURN
+            when (val ch = input[i]) {
+                // CR
+                '\r' -> {
                     processLine(lineBuffer.toString())
                     lineBuffer.clear()
-                    if (i + 1 < input.length && input[i + 1] == '\n') i++
+                    // CRLF: skip the next character
+                    if (i + 1 < input.length && input[i + 1] == '\n') {
+                        i++
+                    }
                 }
-                ch == '\n' -> {
+                // LF
+                '\n' -> {
                     processLine(lineBuffer.toString())
                     lineBuffer.clear()
                 }
@@ -59,42 +59,90 @@ class SseParser(private val onEvent: (SseEvent) -> Unit) : Closeable {
         }
     }
 
+    /**
+     *
+     * @param line An entry line of an event. The line **does NOT** end with CRLF/LF/CR; it only contains the event-related information.
+     */
     private fun processLine(line: String) {
-        if (line.isEmpty()) { dispatchEvent(); return }
-        if (line.startsWith(':')) return // comment
+        // empty line -> dispatch
+        if (line.isEmpty()) {
+            dispatchEvent()
+            return
+        }
+        // starts with colon (a comment line) -> ignore
+        if (line.startsWith(':')) {
+            return
+        }
 
         val colonIdx = line.indexOf(':')
         val field: String
         val value: String
+
         if (colonIdx == -1) {
-            field = line; value = ""
+            // no colon -> use the whole line as field name, and empty string as field value
+            field = line
+            value = ""
         } else {
+            // content before colon -> field name
             field = line.substring(0, colonIdx)
-            val start = if (colonIdx + 1 < line.length && line[colonIdx + 1] == ' ')
-                colonIdx + 2 else colonIdx + 1
+            // content after color -> field value
+            val start = if (colonIdx + 1 < line.length && line[colonIdx + 1] == ' ') {
+                // ignore the very first space after colon
+                colonIdx + 2
+            } else {
+                colonIdx + 1
+            }
             value = line.substring(start)
         }
 
         when (field) {
-            "data" -> { if (dataBuffer.isNotEmpty()) dataBuffer.append('\n'); dataBuffer.append(value) }
-            "event" -> eventType = value
-            "id" -> if ('\u0000' !in value) lastEventId = value
-            "retry" -> if (value.isNotEmpty() && value.all { it in '0'..'9' }) retryValue = value.toLongOrNull()
+            "data" -> {
+                // Steps:
+                //   1. Append field value to data buffer
+                //   2. Append a single U+000A LINE FEED (LF) character to data buffer
+                // Note: when dispatching, the trailing LF is removed; here, we simply don't add it right after
+                //       the value but rather append it to the previous value, if any.
+                if (dataBuffer.isNotEmpty()) {
+                    dataBuffer.append('\n')
+                }
+                dataBuffer.append(value)
+            }
+            "event" -> {
+                // set the event type buffer to the field value
+                eventType = value
+            }
+            "id" -> {
+                // field value doesn't contain U+0000 NULL -> set last event ID buffer to the field value
+                if ('\u0000' !in value) {
+                    lastEventId = value
+                }
+            }
+            "retry" -> {
+                // contains only ASCII digits -> interpret the field value as int in base ten
+                if (value.isNotEmpty() && value.all { it in '0'..'9' }) {
+                    retryValue = value.toLongOrNull()
+                }
+            }
         }
     }
 
     private fun dispatchEvent() {
-        if (dataBuffer.isEmpty()) { eventType = ""; return }
+        if (dataBuffer.isEmpty()) {
+            eventType = ""
+            return
+        }
+
         onEvent(SseEvent(
             data = dataBuffer.toString(),
             event = eventType.ifEmpty { "message" },
             id = lastEventId,
             retry = retryValue,
         ))
+
         dataBuffer.clear()
         eventType = ""
         retryValue = null
-        // lastEventId persists across events per spec
+        // `lastEventId` persists across events per spec
     }
 
     override fun close() {
@@ -115,5 +163,3 @@ data class SseEvent(
     val id: String = "",
     val retry: Long? = null,
 )
-
-private val BOM_UTF8_BYTE = '\uFEFF'
