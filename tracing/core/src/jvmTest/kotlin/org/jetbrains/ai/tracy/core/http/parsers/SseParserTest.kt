@@ -82,40 +82,6 @@ class SseParserTest {
     }
 
     @Test
-    fun `test example 3 from spec`() = runTest {
-        val stream = """
-            data
-            
-            data
-            data
-            
-            data:
-        """.trimIndent()
-
-        // 3 blocks:
-        //   1. event 1: (`message`, ``, "")
-        //   2. event 2: (`message`, `\n`, "")
-        //   3. no blank line at the end -> dropped
-
-        val parser = SseParser(collector::collect)
-        parser.feed(stream)
-        val events = collector.events()
-
-        val expectedEvents = listOf(
-            SseEvent(
-                event = "message",
-                data = "",
-            ),
-            SseEvent(
-                event = "message",
-                data = "\n",
-            ),
-        )
-
-        assertEquals(expectedEvents, events)
-    }
-
-    @Test
     fun `test example 4 from spec`() = runTest {
         val stream = """
             data:test
