@@ -8,7 +8,6 @@ package org.jetbrains.ai.tracy.core.http.parsers
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 /**
  * See examples from the [Specification](https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation)

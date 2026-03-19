@@ -25,8 +25,6 @@ class SseParser(private val onEvent: (SseEvent) -> Unit) : Closeable {
     private var lastEventId = ""
     private var retryValue: Long? = null
 
-    private var isFirstChunk = true
-
     /**
      * The [input] is expected to be already decoded with UTF-8
      * (see the note in [spec](https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation)).
