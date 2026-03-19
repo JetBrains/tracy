@@ -64,26 +64,21 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         validateBasicTracing(model)
         val trace = analyzeSpans().first()
 
-        // first, instructions are traced as a system prompt
+        // instructions are traced as a system prompt
         assertEquals(
             instructions,
-            trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")],
+            trace.attributes[AttributeKey.stringKey("gen_ai.prompt.system.content")],
             "Instructions should be treated as system prompt"
         )
-        assertEquals(
-            "system",
-            trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")],
-            "Instructions should be treated as system prompt"
-        )
-        // input is traced as a user prompt
+        // input is traced as a user prompt (index 0, no offset)
         assertEquals(
             prompt1,
-            trace.attributes[AttributeKey.stringKey("gen_ai.prompt.1.content")],
+            trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")],
             "Input should be treated as user prompt",
         )
         assertEquals(
             "user",
-            trace.attributes[AttributeKey.stringKey("gen_ai.prompt.1.role")],
+            trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")],
             "Input should be treated as user prompt",
         )
     }
@@ -114,19 +109,14 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         validateBasicTracing(model)
         val trace = analyzeSpans().first()
 
-        // first, instructions are traced as a system prompt
+        // instructions are traced as a system prompt
         assertEquals(
             instructions,
-            trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")],
-            "Instructions should be treated as system prompt"
-        )
-        assertEquals(
-            "system",
-            trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")],
+            trace.attributes[AttributeKey.stringKey("gen_ai.prompt.system.content")],
             "Instructions should be treated as system prompt"
         )
 
-        val tracedPrompts = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.1.content")]
+        val tracedPrompts = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
         assertNotNull(tracedPrompts)
         for (prompt in listOf(prompt1, prompt2)) {
             assertTrue(
@@ -386,11 +376,11 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         // output side
         // assume AI called a tool
         Assumptions.assumeTrue(
-            trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool_name")] != null
+            trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")] != null
         )
 
-        val toolName = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool_name")]
-        val toolArguments = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool_arguments")]
+        val toolName = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")]
+        val toolArguments = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")]
 
         if (!policy.captureOutputs) {
             assertEquals("REDACTED", toolName, "Tool name content should be redacted")
