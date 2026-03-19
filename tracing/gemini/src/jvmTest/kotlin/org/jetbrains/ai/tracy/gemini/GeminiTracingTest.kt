@@ -399,6 +399,56 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
     }
 
     @Test
+    fun `test Gemini streaming`() = runTest {
+        val client = createGeminiClient().apply { instrument(this) }
+
+        val model = "gemini-2.5-flash"
+        val sb = StringBuilder()
+        client.models.generateContentStream(
+            model,
+            "Write a haiku about tracing.",
+            GeminiGenerateContentConfig.builder()
+                .temperature(0.7f)
+                .build()
+        ).use { stream ->
+            for (chunk in stream) {
+                chunk.text()?.let { sb.append(it) }
+            }
+        }
+
+        val output = sb.toString()
+        assertTrue(output.isNotEmpty(), "Streaming should produce output")
+
+        TracingManager.flushTraces()
+
+        val traces = analyzeSpans()
+        assertTracesCount(1, traces)
+        val trace = traces.first()
+
+        // content
+        val content = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
+        assertNotNull(content)
+        assertTrue(content.isNotEmpty())
+
+        // role
+        val role = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.role")]
+        assertEquals("model", role)
+
+        // finish reason
+        val finishReason = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.finish_reason")]
+        assertNotNull(finishReason)
+
+        // usage
+        val inputTokens = trace.attributes[AttributeKey.longKey("gen_ai.usage.input_tokens")]
+        assertNotNull(inputTokens)
+        assertTrue(inputTokens > 0)
+
+        val outputTokens = trace.attributes[AttributeKey.longKey("gen_ai.usage.output_tokens")]
+        assertNotNull(outputTokens)
+        assertTrue(outputTokens > 0)
+    }
+
+    @Test
     fun `test Gemini span error code when timeout occurs`() {
         val client = createGeminiClient().apply { instrument(this) }
 

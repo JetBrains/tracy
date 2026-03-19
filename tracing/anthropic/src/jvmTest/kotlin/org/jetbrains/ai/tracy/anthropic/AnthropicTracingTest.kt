@@ -458,6 +458,56 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
     }
 
     @Test
+    fun `test Anthropic streaming`() {
+        val client = createAnthropicClient().apply { instrument(this) }
+
+        val params = MessageCreateParams.builder()
+            .addUserMessage("Write a haiku about tracing.")
+            .maxTokens(1000L)
+            .temperature(0.0)
+            .model(model)
+            .build()
+
+        val sb = StringBuilder()
+        client.messages().createStreaming(params).use { stream ->
+            stream.stream().forEach { event ->
+                event.contentBlockDelta().ifPresent { blockDelta ->
+                    blockDelta.delta().text().ifPresent { sb.append(it.text()) }
+                }
+            }
+        }
+
+        val traces = analyzeSpans()
+        assertTracesCount(1, traces)
+        val trace = traces.first()
+
+        val contentType = trace.attributes[AttributeKey.stringKey("gen_ai.completion.content.type")]
+        assertNotNull(contentType)
+        assertTrue(contentType.startsWith("text/event-stream"))
+
+        // content
+        assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")].isNullOrEmpty())
+        assertEquals(sb.toString(), trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")])
+
+        // role
+        assertEquals("assistant", trace.attributes[AttributeKey.stringKey("gen_ai.response.role")])
+
+        // finish reason
+        val finishReasons = trace.attributes[AttributeKey.stringArrayKey("gen_ai.response.finish_reasons")]
+        assertNotNull(finishReasons)
+        assertTrue(finishReasons.isNotEmpty())
+
+        // usage
+        val inputTokens = trace.attributes[AttributeKey.longKey("gen_ai.usage.input_tokens")]
+        assertNotNull(inputTokens, "Streaming response should have input_tokens")
+        assertTrue(inputTokens > 0)
+
+        val outputTokens = trace.attributes[AttributeKey.longKey("gen_ai.usage.output_tokens")]
+        assertNotNull(outputTokens, "Streaming response should have output_tokens")
+        assertTrue(outputTokens > 0)
+    }
+
+    @Test
     fun `test Anthropic additional attributes`() = runTest {
         val client = createAnthropicClient().apply { instrument(this) }
 

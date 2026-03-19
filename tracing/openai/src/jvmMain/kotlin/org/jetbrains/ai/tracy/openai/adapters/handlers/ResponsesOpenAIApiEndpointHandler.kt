@@ -221,6 +221,9 @@ internal class ResponsesOpenAIApiEndpointHandler(
     }
 
     override fun handleStreaming(span: Span, events: String): Unit = runCatching {
+        // Track tool call index per output index for function_call items
+        val toolCallCounters = mutableMapOf<Int, Int>()
+
         for (line in events.lineSequence()) {
             if (!line.startsWith("data:")) continue
             val data = line.removePrefix("data:").trim()
@@ -229,11 +232,55 @@ internal class ResponsesOpenAIApiEndpointHandler(
                 Json.parseToJsonElement(data).jsonObject
             }.getOrNull() ?: continue
 
-            val type = event["type"]?.jsonPrimitive?.content
-            if (type == "response.output_text.done") {
-                event["text"]?.jsonPrimitive?.content?.let {
-                    span.setAttribute("gen_ai.completion.0.content", it.orRedactedOutput())
-                    span.setAttribute("gen_ai.completion.0.finish_reason", "stop")
+            when (event["type"]?.jsonPrimitive?.content) {
+                "response.output_text.done" -> {
+                    val outputIndex = event["output_index"]?.jsonPrimitive?.intOrNull ?: 0
+                    event["text"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.completion.$outputIndex.content", it.orRedactedOutput())
+                    }
+                }
+
+                "response.output_item.done" -> {
+                    val outputIndex = event["output_index"]?.jsonPrimitive?.intOrNull ?: 0
+                    val item = event["item"]?.jsonObject ?: continue
+
+                    when (item["type"]?.jsonPrimitive?.content) {
+                        "message" -> {
+                            item["role"]?.jsonPrimitive?.content?.let {
+                                span.setAttribute("gen_ai.completion.$outputIndex.role", it)
+                            }
+                            item["status"]?.jsonPrimitive?.content?.let {
+                                span.setAttribute("gen_ai.completion.$outputIndex.finish_reason", it)
+                            }
+                        }
+
+                        "function_call" -> {
+                            val tcIndex = toolCallCounters.getOrPut(outputIndex) { 0 }
+                            toolCallCounters[outputIndex] = tcIndex + 1
+
+                            item["call_id"]?.jsonPrimitive?.content?.let {
+                                span.setAttribute("gen_ai.completion.$outputIndex.tool.$tcIndex.call.id", it)
+                            }
+                            item["type"]?.jsonPrimitive?.content?.let {
+                                span.setAttribute("gen_ai.completion.$outputIndex.tool.$tcIndex.call.type", it)
+                            }
+                            item["name"]?.jsonPrimitive?.content?.let {
+                                span.setAttribute("gen_ai.completion.$outputIndex.tool.$tcIndex.name", it.orRedactedOutput())
+                            }
+                            item["arguments"]?.jsonPrimitive?.content?.let {
+                                span.setAttribute("gen_ai.completion.$outputIndex.tool.$tcIndex.arguments", it.orRedactedOutput())
+                            }
+                        }
+                    }
+                }
+
+                "response.completed" -> {
+                    val response = event["response"]?.jsonObject ?: continue
+                    response["usage"]?.let { usage ->
+                        if (usage is JsonObject) {
+                            setUsageAttributes(span, usage)
+                        }
+                    }
                 }
             }
         }

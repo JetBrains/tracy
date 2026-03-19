@@ -21,12 +21,15 @@ Rules for AI agents modifying this codebase.
 - Spans emit only when SDK is installed via `TracingManager.setSdk(...)` AND `isTracingEnabled` is true
 - Missing SDK = no-op with minimal overhead — preserve this
 
-## Code Quality
+## Conventions
 
 - Keep diffs minimal — no drive-by refactoring
 - Do not add dependencies without justification
 - Add tests for behavior changes
 - Update examples if public API changes
+- Keep it simple — no unnecessary abstractions, unused variables, or constant-value params
+- Follow existing patterns — providers and endpoints share conventions; new code must stay consistent
+- Do not delete original comments in code
 
 ## Build Commands
 

@@ -20,6 +20,7 @@ import org.jetbrains.ai.tracy.core.policy.contentTracingAllowed
 import org.jetbrains.ai.tracy.core.policy.orRedactedInput
 import org.jetbrains.ai.tracy.core.policy.orRedactedOutput
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
 
@@ -184,40 +185,95 @@ class GeminiContentGenHandler(
             }
         }
 
-        body["usageMetadata"]?.let { usage ->
-            usage.jsonObject["promptTokenCount"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute(GEN_AI_USAGE_INPUT_TOKENS, it)
-            }
-            usage.jsonObject["candidatesTokenCount"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
-            }
-            usage.jsonObject["totalTokenCount"]?.jsonPrimitive?.intOrNull?.let {
-                span.setAttribute("gen_ai.usage.total_tokens", it.toLong())
-            }
-
-            /**
-             * The following two properties (`promptTokensDetails`, `candidatesTokensDetails`)
-             * and their inner contents are mapped into snake-cased OTEL attributes.
-             *
-             * 1. For `promptTokensDetails`:
-             *   - `"gen_ai.usage.prompt_tokens_details.0.modality"`
-             *   - `"gen_ai.usage.prompt_tokens_details.0.token_count"`
-             * 2. For `candidatesTokensDetails`:
-             *   - `"gen_ai.usage.candidates_tokens_details.0.modality"`
-             *   - `"gen_ai.usage.candidates_tokens_details.0.token_count"`
-             *
-             * See: https://ai.google.dev/api/generate-content#UsageMetadata
-             */
-            // prompt tokens details
-            extractUsageTokenDetails(span, usage, attribute = "promptTokensDetails")
-            // candidate tokens details
-            extractUsageTokenDetails(span, usage, attribute = "candidatesTokensDetails")
-        }
+        body["usageMetadata"]?.jsonObject?.let { setUsageAttributes(span, it) }
 
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
     }
 
-    override fun handleStreaming(span: Span, events: String) = Unit
+    override fun handleStreaming(span: Span, events: String): Unit = runCatching {
+        val contentBuilders = mutableMapOf<Int, StringBuilder>()
+        val roles = mutableMapOf<Int, String>()
+        val finishReasons = mutableMapOf<Int, String>()
+        val toolCallCounters = mutableMapOf<Int, Int>()
+
+        for (line in events.lineSequence()) {
+            if (!line.startsWith("data:")) continue
+            val data = line.removePrefix("data:").trim()
+            val chunk = runCatching { Json.parseToJsonElement(data).jsonObject }.getOrNull() ?: continue
+
+            chunk["usageMetadata"]?.jsonObject?.let { setUsageAttributes(span, it) }
+
+            val candidates = chunk["candidates"]?.jsonArray ?: continue
+            for ((index, candidate) in candidates.withIndex()) {
+                candidate.jsonObject["content"]?.jsonObject?.let { content ->
+                    content["role"]?.jsonPrimitive?.content?.let { roles.putIfAbsent(index, it) }
+
+                    content["parts"]?.jsonArray?.forEach { part ->
+                        part.jsonObject["text"]?.jsonPrimitive?.content?.let {
+                            contentBuilders.getOrPut(index) { StringBuilder() }.append(it)
+                        }
+                        part.jsonObject["functionCall"]?.jsonObject?.let { fc ->
+                            val tcIndex = toolCallCounters.getOrPut(index) { 0 }
+                            toolCallCounters[index] = tcIndex + 1
+
+                            fc["name"]?.jsonPrimitive?.content?.let {
+                                span.setAttribute("gen_ai.completion.$index.tool.$tcIndex.name", it.orRedactedOutput())
+                            }
+                            fc["args"]?.let {
+                                span.setAttribute("gen_ai.completion.$index.tool.$tcIndex.arguments", it.toString().orRedactedOutput())
+                            }
+                        }
+                    }
+                }
+
+                candidate.jsonObject["finishReason"]?.jsonPrimitive?.content?.let {
+                    finishReasons[index] = it
+                }
+            }
+        }
+
+        for ((index, content) in contentBuilders) {
+            span.setAttribute("gen_ai.completion.$index.content", content.toString().orRedactedOutput())
+        }
+        for ((index, role) in roles) {
+            span.setAttribute("gen_ai.completion.$index.role", role)
+        }
+        for ((index, reason) in finishReasons) {
+            span.setAttribute("gen_ai.completion.$index.finish_reason", reason)
+        }
+    }.getOrElse { exception ->
+        span.setStatus(StatusCode.ERROR)
+        span.recordException(exception)
+    }
+
+    /**
+     * Sets usage attributes (promptTokenCount/candidatesTokenCount/totalTokenCount).
+     *
+     * The following two properties (`promptTokensDetails`, `candidatesTokensDetails`)
+     * and their inner contents are mapped into snake-cased OTEL attributes.
+     *
+     * 1. For `promptTokensDetails`:
+     *   - `"gen_ai.usage.prompt_tokens_details.0.modality"`
+     *   - `"gen_ai.usage.prompt_tokens_details.0.token_count"`
+     * 2. For `candidatesTokensDetails`:
+     *   - `"gen_ai.usage.candidates_tokens_details.0.modality"`
+     *   - `"gen_ai.usage.candidates_tokens_details.0.token_count"`
+     *
+     * See: https://ai.google.dev/api/generate-content#UsageMetadata
+     */
+    private fun setUsageAttributes(span: Span, usage: JsonObject) {
+        usage["promptTokenCount"]?.jsonPrimitive?.intOrNull?.let {
+            span.setAttribute(GEN_AI_USAGE_INPUT_TOKENS, it)
+        }
+        usage["candidatesTokenCount"]?.jsonPrimitive?.intOrNull?.let {
+            span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
+        }
+        usage["totalTokenCount"]?.jsonPrimitive?.intOrNull?.let {
+            span.setAttribute("gen_ai.usage.total_tokens", it.toLong())
+        }
+        extractUsageTokenDetails(span, usage, attribute = "promptTokensDetails")
+        extractUsageTokenDetails(span, usage, attribute = "candidatesTokensDetails")
+    }
 
     private fun parseRequestMediaContent(body: JsonObject): MediaContent? {
         val contents = body["contents"]

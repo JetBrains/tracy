@@ -34,7 +34,7 @@ import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
+
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.serializer
 import mu.KotlinLogging
@@ -251,9 +251,8 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                     return@transformResponseBody null
                 }
 
-                val body = JsonObject(mapOf("stream" to JsonPrimitive(true)))
                 // registering response attributes into span
-                adapter.registerResponse(span, response = response.asResponseView(body))
+                adapter.registerResponse(span, response = response.asResponseView(JsonObject(emptyMap())), isStreaming = true)
 
                 val originalBody: ByteReadChannel = content
                 val tracingChannel = ByteChannel(autoFlush = true)

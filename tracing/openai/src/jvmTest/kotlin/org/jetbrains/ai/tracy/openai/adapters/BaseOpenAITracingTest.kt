@@ -206,7 +206,7 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
             .build()
     }
 
-    protected fun validateStreaming(output: String) {
+    protected fun validateStreaming(output: String, expectedFinishReason: String) {
         val traces = analyzeSpans()
         assertTracesCount(1, traces)
         val trace = traces.first()
@@ -217,6 +217,26 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
 
         assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")].isNullOrEmpty())
         assertEquals(output, trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")])
+
+        assertEquals(
+            "assistant",
+            trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.role")],
+            "Streaming response should have role attribute"
+        )
+
+        assertEquals(
+            expectedFinishReason,
+            trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.finish_reason")],
+            "Streaming response should have finish_reason attribute"
+        )
+
+        val inputTokens = trace.attributes[AttributeKey.longKey("gen_ai.usage.input_tokens")]
+        assertNotNull(inputTokens, "Streaming response should have input_tokens attribute")
+        assertTrue(inputTokens > 0, "input_tokens should be positive")
+
+        val outputTokens = trace.attributes[AttributeKey.longKey("gen_ai.usage.output_tokens")]
+        assertNotNull(outputTokens, "Streaming response should have output_tokens attribute")
+        assertTrue(outputTokens > 0, "output_tokens should be positive")
     }
 
     protected val ChatCompletionMessageToolCall.id: String

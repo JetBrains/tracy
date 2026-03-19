@@ -272,6 +272,11 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             .addUserMessage("Generate polite greeting and introduce yourself")
             .model(ChatModel.GPT_4O_MINI)
             .temperature(0.7)
+            .streamOptions(
+                ChatCompletionStreamOptions.builder()
+                    .includeUsage(true)
+                    .build()
+            )
             .build()
 
         val sb = StringBuilder()
@@ -286,7 +291,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             }
         }
 
-        validateStreaming(sb.toString())
+        validateStreaming(sb.toString(), expectedFinishReason = "stop")
     }
 
     @Test
