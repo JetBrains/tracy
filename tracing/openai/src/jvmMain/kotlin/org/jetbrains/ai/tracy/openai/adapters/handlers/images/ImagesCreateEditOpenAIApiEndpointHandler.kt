@@ -38,6 +38,7 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
         var imagesCount = 0
 
         for (part in body.parts) {
+            // TODO: TRACY-88
             val contentType = part.contentType
             if (contentType == null) {
                 logger.warn { "Missing content type of form data part '${part.name}'" }

@@ -14,6 +14,7 @@ import org.jetbrains.ai.tracy.openai.adapters.handlers.OpenAIApiUtils
 import org.jetbrains.ai.tracy.openai.adapters.handlers.ResponsesOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.images.ImagesCreateEditOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.images.ImagesCreateOpenAIApiEndpointHandler
+import org.jetbrains.ai.tracy.openai.adapters.handlers.videos.VideosOpenAIApiEndpointHandler
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
 import kotlinx.serialization.json.boolean
@@ -37,7 +38,10 @@ private enum class OpenAIApiType(val route: String) {
     IMAGES_GENERATIONS("images/generations"),
 
     // See: https://platform.openai.com/docs/api-reference/images/createEdit
-    IMAGES_EDITS("images/edits");
+    IMAGES_EDITS("images/edits"),
+
+    // See: https://platform.openai.com/docs/api-reference/videos
+    VIDEOS("videos");
 
     companion object {
         fun detect(url: TracyHttpUrl): OpenAIApiType? {
@@ -60,6 +64,7 @@ private enum class OpenAIApiType(val route: String) {
  * - **Responses API**: `/v1/responses`
  * - **Image Generation**: `/v1/images/generations`
  * - **Image Editing**: `/v1/images/edits`
+ * - **Video Generation**: `/v1/videos`
  *
  * ## Example Usage
  * ```kotlin
@@ -109,6 +114,7 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
                 val body = request.body.asJson()?.jsonObject ?: return false
                 body["stream"]?.jsonPrimitive?.boolean ?: false
             }
+            is TracyHttpRequestBody.Empty -> false
         }
     }
 
@@ -142,6 +148,10 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
 
             OpenAIApiType.IMAGES_EDITS -> handlers.getOrPut(OpenAIApiType.IMAGES_EDITS) {
                 ImagesCreateEditOpenAIApiEndpointHandler(extractor)
+            }
+
+            OpenAIApiType.VIDEOS -> handlers.getOrPut(OpenAIApiType.VIDEOS) {
+                VideosOpenAIApiEndpointHandler(extractor)
             }
 
             null -> handlers.getOrPut(OpenAIApiType.CHAT_COMPLETIONS) {

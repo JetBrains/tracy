@@ -75,6 +75,9 @@ fun loadFileAsBase64Encoded(filepath: String): String {
     return Base64.getEncoder().encodeToString(file.readBytes())
 }
 
+/**
+ * Loads a file from the `resources` directory.
+ */
 fun loadFile(filepath: String): File {
     val classLoader = Thread.currentThread().contextClassLoader
     val file = classLoader.getResource(filepath)?.file?.let { File(it) }

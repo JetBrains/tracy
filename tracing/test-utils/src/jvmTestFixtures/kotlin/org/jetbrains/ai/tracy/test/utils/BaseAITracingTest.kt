@@ -9,6 +9,7 @@ import org.jetbrains.ai.tracy.core.adapters.media.UploadableMediaContentAttribut
 import org.jetbrains.ai.tracy.core.policy.ContentCapturePolicy
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.sdk.trace.data.SpanData
+import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.provider.Arguments
@@ -32,6 +33,21 @@ abstract class BaseAITracingTest : BaseOpenTelemetryTracingTest() {
             expectedCount, traces.size,
             "Expected $expectedCount traces, but got ${traces.size}. Traces:\n${traces.joinToString(",\n") { it.toString() }}"
         )
+    }
+
+    /**
+     * Calls a given [block] with an instance of [MockWebServer].
+     *
+     * The mock server **is started before** the execution of the provided block and **is automatically shut down**.
+     */
+    protected suspend fun withMockServer(block: suspend (server: MockWebServer) -> Unit) {
+        val server = MockWebServer()
+        server.start()
+        try {
+            block(server)
+        } finally {
+            server.shutdown()
+        }
     }
 
     protected fun validateBasicTracing(url: String, model: String) {

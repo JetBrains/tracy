@@ -18,6 +18,7 @@ import kotlinx.serialization.json.JsonElement
  * @property body The body of the HTTP response, encapsulated in a [TracyHttpResponseBody] object, which can
  *                represent different response formats, such as JSON.
  * @property url The URL associated with the HTTP response (i.e., where the initial request was made to).
+ * @property requestMethod The HTTP method used by the request, which this response corresponds to.
  */
 @InternalTracyApi
 interface TracyHttpResponse {
@@ -25,6 +26,7 @@ interface TracyHttpResponse {
     val code: Int
     val body: TracyHttpResponseBody
     val url: TracyHttpUrl
+    val requestMethod: String
 
     fun isError(): Boolean
 }

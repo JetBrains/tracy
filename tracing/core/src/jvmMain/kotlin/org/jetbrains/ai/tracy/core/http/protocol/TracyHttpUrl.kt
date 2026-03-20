@@ -15,6 +15,7 @@ import okhttp3.HttpUrl
  * @property host The host of the URL, indicating the domain or IP address.
  * @property pathSegments The path segments of the URL, representing
  *                        the hierarchical structure of the resource location.
+ * @property parameters The query parameters associated with the URL.
  *
  * @see TracyHttpUrlImpl
  */
@@ -23,6 +24,23 @@ interface TracyHttpUrl {
     val scheme: String
     val host: String
     val pathSegments: List<String>
+    val parameters: TracyQueryParameters
+}
+
+@InternalTracyApi
+interface TracyQueryParameters {
+    /**
+     * Returns the first value of a query parameter with the given name, or null if not found.
+     */
+    fun queryParameter(name: String): String?
+
+    /**
+     * Returns a list of values of a query parameter with the given name, or an empty list if not found.
+     *
+     * In the following example, the value list of `b` will contain `null`:
+     * 1. `http://host/?a=apple&b`
+     */
+    fun queryParameterValues(name: String): List<String?>
 }
 
 /**
@@ -34,7 +52,8 @@ interface TracyHttpUrl {
 data class TracyHttpUrlImpl(
     override val scheme: String,
     override val host: String,
-    override val pathSegments: List<String>
+    override val pathSegments: List<String>,
+    override val parameters: TracyQueryParameters,
 ) : TracyHttpUrl
 
 /**
@@ -46,9 +65,16 @@ data class TracyHttpUrlImpl(
 @InternalTracyApi
 fun HttpUrl.toProtocolUrl(): TracyHttpUrl {
     val httpUrl = this
+
+    val params = object : TracyQueryParameters {
+        override fun queryParameter(name: String) = httpUrl.queryParameter(name)
+        override fun queryParameterValues(name: String) = httpUrl.queryParameterValues(name)
+    }
+
     return TracyHttpUrlImpl(
         scheme = httpUrl.scheme,
         host = httpUrl.host,
         pathSegments = httpUrl.pathSegments,
+        parameters = params,
     )
 }
