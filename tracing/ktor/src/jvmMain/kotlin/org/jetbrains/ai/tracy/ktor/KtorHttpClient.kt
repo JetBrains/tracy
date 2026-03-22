@@ -173,7 +173,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                     return@onRequest
                 }
 
-                val span = tracer.spanBuilder("http-client-span").startSpan()
+                val span = tracer.spanBuilder(adapter.getSpanName()).startSpan()
 
                 span.makeCurrent().use {
                     request.attributes.put(httpSpanKey, span)
