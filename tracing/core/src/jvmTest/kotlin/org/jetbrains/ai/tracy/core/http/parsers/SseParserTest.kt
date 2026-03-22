@@ -13,6 +13,7 @@ import kotlin.test.assertEquals
  * See examples from the [Specification](https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation)
  */
 class SseParserTest {
+    // TODO: test on a real server-sent-events stream (openai, anthropic, gemini - all event types)
     private val collector = EventsCollector()
 
     @Test
