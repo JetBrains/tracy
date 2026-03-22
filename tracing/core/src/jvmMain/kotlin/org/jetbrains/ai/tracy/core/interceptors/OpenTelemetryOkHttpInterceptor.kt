@@ -3,7 +3,7 @@
  * Use of this source code is governed by the Apache 2.0 license.
  */
 
-package org.jetbrains.ai.tracy.core
+package org.jetbrains.ai.tracy.core.interceptors
 
 import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
 import org.jetbrains.ai.tracy.core.http.protocol.*
@@ -21,6 +21,7 @@ import okio.Buffer
 import okio.BufferedSource
 import okio.ForwardingSource
 import okio.buffer
+import org.jetbrains.ai.tracy.core.TracingManager
 import okhttp3.Request as OkHttpRequest
 import okhttp3.Response as OkHttpResponse
 import okhttp3.ResponseBody as OkHttpResponseBody
@@ -117,15 +118,15 @@ import okhttp3.ResponseBody as OkHttpResponseBody
  *   will not result in duplicate interceptors.
  * - Tracing can be controlled globally via `TracingManager.isTracingEnabled`.
  * - **The original client is not modified; a new client instance with instrumentation is returned**.
- * - Content capture policies [TracingManager.contentCapturePolicy] can be configured to redact sensitive data.
+ * - Content capture policies [org.jetbrains.ai.tracy.core.TracingManager.contentCapturePolicy] can be configured to redact sensitive data.
  * - Error responses are automatically captured with error status and messages.
  *
  * @param client The OkHttp client to instrument
  * @param adapter The [LLMTracingAdapter] specifying which LLM provider adapter to use for tracing
  * @return **A new [OkHttpClient] instance** with OpenTelemetry tracing enabled (i.e., the initial [client] remains **unmodified**)
  *
- * @see TracingManager
- * @see TracingManager.traceSensitiveContent
+ * @see org.jetbrains.ai.tracy.core.TracingManager
+ * @see org.jetbrains.ai.tracy.core.TracingManager.traceSensitiveContent
  */
 fun instrument(client: OkHttpClient, adapter: LLMTracingAdapter): OkHttpClient {
     val clientBuilder = client.newBuilder()
@@ -215,6 +216,7 @@ class OpenTelemetryOkHttpInterceptor(
 
         val tracer = TracingManager.tracer
 
+        // TODO: use `adapter.getSpanName()`?
         val span = tracer.spanBuilder("").startSpan()
         var isStreamingRequest = false
 
@@ -246,6 +248,8 @@ class OpenTelemetryOkHttpInterceptor(
 
                 // register response
                 val response = chain.proceed(request)
+
+                println("response content type: ${response.body?.contentType()}")
 
                 return if (isStreamingRequest) {
                     val streamingMarker = JsonObject(mapOf("stream" to JsonPrimitive(true)))
@@ -283,44 +287,19 @@ class OpenTelemetryOkHttpInterceptor(
         val originalBody = originalResponse.body ?: return originalResponse
 
         val tracingBody = object : OkHttpResponseBody() {
-            private val capturedText = StringBuilder()
-
             override fun contentType() = originalBody.contentType()
-            override fun contentLength() = -1L
+            override fun contentLength() = originalBody.contentLength()
 
             override fun source(): BufferedSource {
-                val originalSource = originalBody.source()
-
-                return object : ForwardingSource(originalSource) {
-                    private val acc = Buffer()
-                    override fun read(sink: Buffer, byteCount: Long): Long {
-                        val bytesRead = try {
-                            super.read(sink, byteCount)
-                        } catch (e: Exception) {
-                            span.setStatus(StatusCode.ERROR)
-                            span.recordException(e)
-                            span.end()
-                            throw e
-                        }
-
-                        if (bytesRead > 0) {
-                            val start = sink.size - bytesRead
-                            sink.copyTo(acc, start, bytesRead)
-
-                            capturedText.append(acc.readUtf8(bytesRead))
-                        }
-
-                        return bytesRead
-                    }
-                }.buffer()
+                val forwardingSource = SseCapturingSource(
+                    delegate = originalBody.source(),
+                    adapter, span, url,
+                )
+                return forwardingSource.buffer()
             }
 
             override fun close() {
-                try {
-                    adapter.handleStreaming(span, url, capturedText.toString())
-                } finally {
-                    span.end()
-                }
+                span.end()
             }
         }
 

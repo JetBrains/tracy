@@ -38,6 +38,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.serializer
 import mu.KotlinLogging
+import org.jetbrains.ai.tracy.core.http.parsers.SseParser
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
 
@@ -257,16 +258,27 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
 
                 val originalBody: ByteReadChannel = content
                 val tracingChannel = ByteChannel(autoFlush = true)
-                val capturedText = StringBuilder()
+
+                val tracyUrl = response.request.url.toProtocolUrl()
+                val sseParser = SseParser { event ->
+                    // trace SSE event in adapter
+                    adapter.handleStreamingEvent(span, tracyUrl, event)
+                }
 
                 CoroutineScope(response.coroutineContext).launch(start = CoroutineStart.UNDISPATCHED) {
                     try {
                         val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                         while (!originalBody.isClosedForRead) {
                             val bytesRead = originalBody.readAvailable(buffer, 0, buffer.size)
-                            if (bytesRead == -1) break
+                            if (bytesRead == -1) {
+                                break
+                            }
+
                             if (bytesRead > 0) {
-                                capturedText.append(buffer.decodeToString(0, bytesRead))
+                                sseParser.feed(
+                                    input = buffer.decodeToString(0, bytesRead)
+                                )
+
                                 tracingChannel.writeFully(buffer, 0, bytesRead)
                                 tracingChannel.flush()
                             }
@@ -274,20 +286,17 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                     } catch (e: Exception) {
                         span.setStatus(StatusCode.ERROR)
                         span.recordException(e)
-                        if (!tracingChannel.isClosedForWrite) tracingChannel.close(e)
+                        if (!tracingChannel.isClosedForWrite) {
+                            tracingChannel.close(e)
+                        }
                     } finally {
-                        try {
-                            adapter.handleStreaming(
-                                span = span,
-                                url = response.request.url.toProtocolUrl(),
-                                events = capturedText.toString()
-                            )
-                        } finally {
-                            span.end()
-                            if (!tracingChannel.isClosedForWrite) tracingChannel.close()
+                        span.end()
+                        if (!tracingChannel.isClosedForWrite) {
+                            tracingChannel.close()
                         }
                     }
                 }
+
                 if (typeInfo.type != ByteReadChannel::class) null else tracingChannel
             }
         })

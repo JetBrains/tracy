@@ -17,6 +17,8 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQU
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.jetbrains.ai.tracy.core.adapters.handlers.streamingFailure
+import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 
 /**
  * Extracts request/response bodies of Image Generation API.
@@ -45,18 +47,21 @@ internal class ImagesCreateOpenAIApiEndpointHandler(
         handleImageGenerationResponseAttributes(span, response, extractor)
     }
 
-    override fun handleStreaming(span: Span, events: String) {
-        for (line in events.lineSequence()) {
-            if (!line.startsWith("data:")) {
-                continue
-            }
-            val data = Json.parseToJsonElement(line.removePrefix("data:").trim()).jsonObject
+    override fun handleStreamingEvent(
+        span: Span,
+        event: SseEvent,
+        index: Long,
+    ): Result<Boolean> {
+        val data = runCatching {
+            Json.parseToJsonElement(event.data).jsonObject
+        }.getOrNull() ?: return streamingFailure("Cannot parse event data as JSON")
 
-            handleStreamedImage(
-                span, data, extractor,
-                completedType = "image_generation.completed",
-                partialImageType = "image_generation.partial_image",
-            )
-        }
+        handleStreamedImage(
+            span, data, extractor,
+            completedType = "image_generation.completed",
+            partialImageType = "image_generation.partial_image",
+        )
+
+        return Result.success(true)
     }
 }

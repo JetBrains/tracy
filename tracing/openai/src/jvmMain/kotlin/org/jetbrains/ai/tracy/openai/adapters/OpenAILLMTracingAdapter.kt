@@ -20,6 +20,7 @@ import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mu.KotlinLogging
+import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 import java.util.concurrent.ConcurrentHashMap
 
 
@@ -112,9 +113,14 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
         }
     }
 
-    override fun handleStreaming(span: Span, url: TracyHttpUrl, events: String) {
+    override fun handleStreamingEvent(
+        span: Span,
+        url: TracyHttpUrl,
+        event: SseEvent,
+        index: Long,
+    ): Result<Boolean> {
         val handler = handlerFor(url)
-        handler.handleStreaming(span, events)
+        return handler.handleStreamingEvent(span, event, index)
     }
 
     /**

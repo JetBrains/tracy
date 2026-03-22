@@ -20,6 +20,8 @@ import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
+import org.jetbrains.ai.tracy.core.adapters.handlers.streamingFailure
+import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 
 /**
  * Handler for OpenAI Responses API
@@ -220,26 +222,29 @@ internal class ResponsesOpenAIApiEndpointHandler(
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
     }
 
-    override fun handleStreaming(span: Span, events: String): Unit = runCatching {
-        for (line in events.lineSequence()) {
-            if (!line.startsWith("data:")) continue
-            val data = line.removePrefix("data:").trim()
+    override fun handleStreamingEvent(
+        span: Span,
+        event: SseEvent,
+        index: Long,
+    ): Result<Boolean> = runCatching {
+        val event = runCatching {
+            Json.parseToJsonElement(event.data).jsonObject
+        }.getOrNull() ?: return@runCatching streamingFailure("Failed to parse SSE event")
 
-            val event = runCatching {
-                Json.parseToJsonElement(data).jsonObject
-            }.getOrNull() ?: continue
-
-            val type = event["type"]?.jsonPrimitive?.content
-            if (type == "response.output_text.done") {
-                event["text"]?.jsonPrimitive?.content?.let {
-                    span.setAttribute("gen_ai.completion.0.content", it.orRedactedOutput())
-                    span.setAttribute("gen_ai.completion.0.finish_reason", "stop")
-                }
+        val type = event["type"]?.jsonPrimitive?.content
+        if (type == "response.output_text.done") {
+            event["text"]?.jsonPrimitive?.content?.let {
+                span.setAttribute("gen_ai.completion.$index.content", it.orRedactedOutput())
+                span.setAttribute("gen_ai.completion.$index.finish_reason", "stop")
             }
         }
+
+        return@runCatching Result.success(true)
     }.getOrElse { exception ->
         span.setStatus(StatusCode.ERROR)
         span.recordException(exception)
+
+        return@getOrElse streamingFailure("Failed to handle streaming event: ${exception.message}")
     }
 
     /**
