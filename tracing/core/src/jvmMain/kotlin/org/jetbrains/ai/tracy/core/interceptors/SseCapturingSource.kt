@@ -22,7 +22,7 @@ internal class SseCapturingSource(
 ) : ForwardingSource(delegate) {
     private val parser = SseParser { event ->
         // dispatch SSE events to the adapter
-        adapter.handleStreamingEvent(span, url, event)
+        adapter.registerResponseStreamEvent(span, url, event)
     }
 
     override fun read(sink: Buffer, byteCount: Long): Long {

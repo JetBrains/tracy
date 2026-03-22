@@ -5,23 +5,22 @@
 
 package org.jetbrains.ai.tracy.openai.adapters
 
+import io.opentelemetry.api.trace.Span
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
+import mu.KotlinLogging
 import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
 import org.jetbrains.ai.tracy.core.adapters.handlers.EndpointApiHandler
 import org.jetbrains.ai.tracy.core.adapters.media.MediaContentExtractorImpl
-import org.jetbrains.ai.tracy.core.http.protocol.*
+import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
+import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
+import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
+import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpUrl
 import org.jetbrains.ai.tracy.openai.adapters.handlers.ChatCompletionsOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.OpenAIApiUtils
 import org.jetbrains.ai.tracy.openai.adapters.handlers.ResponsesOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.images.ImagesCreateEditOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.images.ImagesCreateOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.videos.VideosOpenAIApiEndpointHandler
-import io.opentelemetry.api.trace.Span
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
-import kotlinx.serialization.json.boolean
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import mu.KotlinLogging
-import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 import java.util.concurrent.ConcurrentHashMap
 
 
@@ -102,24 +101,7 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
 
     override fun getSpanName() = "OpenAI-generation"
 
-    override fun isStreamingRequest(request: TracyHttpRequest): Boolean {
-        return when (request.body) {
-            is TracyHttpRequestBody.FormData -> {
-                val data = request.body.asFormData() ?: return false
-                data.parts.filter { it.name == "stream" }.any {
-                    val value = it.content.toString(it.contentType?.charset() ?: Charsets.UTF_8)
-                    value.toBooleanStrictOrNull() ?: false
-                }
-            }
-            is TracyHttpRequestBody.Json -> {
-                val body = request.body.asJson()?.jsonObject ?: return false
-                body["stream"]?.jsonPrimitive?.boolean ?: false
-            }
-            is TracyHttpRequestBody.Empty -> false
-        }
-    }
-
-    override fun handleStreamingEvent(
+    override fun registerResponseStreamEvent(
         span: Span,
         url: TracyHttpUrl,
         event: SseEvent,
