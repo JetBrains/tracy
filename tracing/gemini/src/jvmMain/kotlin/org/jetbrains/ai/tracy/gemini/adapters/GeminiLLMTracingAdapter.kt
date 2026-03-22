@@ -58,7 +58,7 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
         handler.handleResponseAttributes(span, response)
     }
 
-    override fun getSpanName(request: TracyHttpRequest) = "Gemini-generation"
+    override fun getSpanName() = "Gemini-generation"
 
     // streaming is not supported
     override fun isStreamingRequest(request: TracyHttpRequest) = false

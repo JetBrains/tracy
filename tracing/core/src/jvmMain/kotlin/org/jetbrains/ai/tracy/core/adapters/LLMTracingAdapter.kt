@@ -51,8 +51,6 @@ import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
  */
 abstract class LLMTracingAdapter(private val genAISystem: String) {
     fun registerRequest(span: Span, request: TracyHttpRequest): Unit = runCatching {
-        span.updateName(getSpanName(request))
-
         // Pre-allocate in case the span reaches the limit
         span.setAttribute(DROPPED_ATTRIBUTES_COUNT_ATTRIBUTE_KEY, 0L)
 
@@ -122,7 +120,7 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
     protected abstract fun getResponseBodyAttributes(span: Span, response: TracyHttpResponse)
 
     // TODO: method doesn't need tracy request
-    abstract fun getSpanName(request: TracyHttpRequest): String
+    abstract fun getSpanName(): String
     // TODO: remove, interceptors should handle streaming via response mime type
     abstract fun isStreamingRequest(request: TracyHttpRequest): Boolean
 

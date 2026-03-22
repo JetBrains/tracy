@@ -205,7 +205,7 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
     }
 
-    override fun getSpanName(request: TracyHttpRequest) = "Anthropic-generation"
+    override fun getSpanName() = "Anthropic-generation"
 
     // streaming is not supported
     override fun isStreamingRequest(request: TracyHttpRequest) = false
