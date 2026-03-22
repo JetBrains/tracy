@@ -5,22 +5,21 @@
 
 package org.jetbrains.ai.tracy.openai.adapters
 
+import io.opentelemetry.api.trace.Span
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
+import mu.KotlinLogging
 import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
 import org.jetbrains.ai.tracy.core.adapters.handlers.EndpointApiHandler
 import org.jetbrains.ai.tracy.core.adapters.media.MediaContentExtractorImpl
-import org.jetbrains.ai.tracy.core.http.protocol.*
+import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
+import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
+import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
+import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpUrl
 import org.jetbrains.ai.tracy.openai.adapters.handlers.ChatCompletionsOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.OpenAIApiUtils
 import org.jetbrains.ai.tracy.openai.adapters.handlers.ResponsesOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.images.ImagesCreateEditOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.images.ImagesCreateOpenAIApiEndpointHandler
-import io.opentelemetry.api.trace.Span
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
-import kotlinx.serialization.json.boolean
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import mu.KotlinLogging
-import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 import java.util.concurrent.ConcurrentHashMap
 
 
