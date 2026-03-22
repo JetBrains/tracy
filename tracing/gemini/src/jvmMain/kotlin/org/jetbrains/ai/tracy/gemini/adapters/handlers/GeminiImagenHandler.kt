@@ -15,6 +15,7 @@ import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.core.http.protocol.asJson
 import io.opentelemetry.api.trace.Span
 import kotlinx.serialization.json.*
+import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 
 /**
  * Parses Imagen API requests and responses
@@ -87,7 +88,13 @@ class GeminiImagenHandler(
         extractor.setUploadableContentAttributes(span, field = "output", mediaContent)
     }
 
-    override fun handleStreaming(span: Span, events: String) = Unit
+    override fun handleStreamingEvent(
+        span: Span,
+        event: SseEvent,
+        index: Long
+    ): Result<Boolean> {
+        return Result.success(false)
+    }
 
     /**
      * Expects an array of schemas:

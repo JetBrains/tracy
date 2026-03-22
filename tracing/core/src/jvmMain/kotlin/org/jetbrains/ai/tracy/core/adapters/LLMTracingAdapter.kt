@@ -5,6 +5,7 @@
 
 package org.jetbrains.ai.tracy.core.adapters
 
+import io.opentelemetry.api.common.AttributeKey
 import org.jetbrains.ai.tracy.core.http.protocol.*
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
@@ -14,6 +15,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 
 
 /**
@@ -120,12 +122,34 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
     protected abstract fun getRequestBodyAttributes(span: Span, request: TracyHttpRequest)
     protected abstract fun getResponseBodyAttributes(span: Span, response: TracyHttpResponse)
 
+    // TODO: method doesn't need tracy request
     abstract fun getSpanName(request: TracyHttpRequest): String
+    // TODO: remove, interceptors should handle streaming via response mime type
     abstract fun isStreamingRequest(request: TracyHttpRequest): Boolean
-    abstract fun handleStreaming(span: Span, url: TracyHttpUrl, events: String)
+
+    // handling streaming API (server-sent events)
+    fun handleStreamingEvent(span: Span, url: TracyHttpUrl, event: SseEvent) {
+        // factory method workflow:
+        //  1. extract the index of the current event from span (0 when missing)
+        //  2. delegate assigning to the implementation:
+        //     - when assigned successfully, increment the index and store in span
+        val nextEventIndex = (span as? ReadableSpan)?.attributes?.get(STREAM_EVENTS_COUNT_KEY) ?: 0
+
+        val result = handleStreamingEvent(span, url, event, index = nextEventIndex)
+        if (result.isSuccess && result.getOrDefault(false)) {
+            // event was successfully assigned into span
+            span.setAttribute(STREAM_EVENTS_COUNT_KEY, nextEventIndex + 1)
+        }
+    }
+
+    /**
+     * @return true if the event was successfully assigned into the span, false otherwise
+     */
+    protected abstract fun handleStreamingEvent(span: Span, url: TracyHttpUrl, event: SseEvent, index: Long): Result<Boolean>
 
     companion object {
         private const val DROPPED_ATTRIBUTES_COUNT_ATTRIBUTE_KEY = "otel.dropped_attributes_count"
+        private val STREAM_EVENTS_COUNT_KEY = AttributeKey.longKey("tracy.sse.events.count")
 
         /**
          * Adds unmapped payload attributes from a JSON body to the given [Span].
@@ -134,6 +158,7 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
          * @param mappedAttributes a list of attribute keys that have already been
          *  handled and should be skipped when populating unmapped attributes
          */
+        // TODO: should be protected/internal?
         fun Span.populateUnmappedAttributes(
             body: JsonObject,
             mappedAttributes: List<String>,

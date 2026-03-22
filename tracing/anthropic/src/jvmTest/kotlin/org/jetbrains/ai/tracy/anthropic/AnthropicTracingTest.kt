@@ -7,7 +7,7 @@ package org.jetbrains.ai.tracy.anthropic
 
 import org.jetbrains.ai.tracy.anthropic.clients.instrument
 import org.jetbrains.ai.tracy.core.TracingManager
-import org.jetbrains.ai.tracy.core.patchOpenAICompatibleClient
+import org.jetbrains.ai.tracy.core.interceptors.patchOpenAICompatibleClient
 import org.jetbrains.ai.tracy.core.policy.ContentCapturePolicy
 import com.anthropic.core.JsonString
 import com.anthropic.core.JsonValue

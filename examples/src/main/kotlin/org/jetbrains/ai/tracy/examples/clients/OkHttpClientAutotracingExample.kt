@@ -6,11 +6,11 @@
 package org.jetbrains.ai.tracy.examples.clients
 
 import org.jetbrains.ai.tracy.anthropic.adapters.AnthropicLLMTracingAdapter
-import org.jetbrains.ai.tracy.core.OpenTelemetryOkHttpInterceptor
+import org.jetbrains.ai.tracy.core.interceptors.OpenTelemetryOkHttpInterceptor
 import org.jetbrains.ai.tracy.core.TracingManager
 import org.jetbrains.ai.tracy.core.configureOpenTelemetrySdk
 import org.jetbrains.ai.tracy.core.exporters.ConsoleExporterConfig
-import org.jetbrains.ai.tracy.core.instrument
+import org.jetbrains.ai.tracy.core.interceptors.instrument
 import org.jetbrains.ai.tracy.gemini.adapters.GeminiLLMTracingAdapter
 import org.jetbrains.ai.tracy.openai.adapters.OpenAILLMTracingAdapter
 import com.openai.models.ChatModel

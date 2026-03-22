@@ -21,6 +21,8 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import mu.KotlinLogging
+import org.jetbrains.ai.tracy.core.adapters.handlers.streamingFailure
+import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 import java.util.*
 
 /**
@@ -119,24 +121,22 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
         handleImageGenerationResponseAttributes(span, response, extractor)
     }
 
-    override fun handleStreaming(span: Span, events: String) {
-        for (line in events.lineSequence()) {
-            if (!line.startsWith("data:")) {
-                continue
-            }
-            val data = try {
-                Json.parseToJsonElement(line.removePrefix("data:").trim()).jsonObject
-            } catch (err: Exception) {
-                logger.trace("Failed to parse streaming data: '$line'", err)
-                null
-            } ?: continue
+    override fun handleStreamingEvent(
+        span: Span,
+        event: SseEvent,
+        index: Long,
+    ): Result<Boolean> {
+        val data = runCatching {
+            Json.parseToJsonElement(event.data).jsonObject
+        }.getOrNull() ?: return streamingFailure("Cannot parse event data as JSON")
 
-            handleStreamedImage(
-                span, data, extractor,
-                completedType = "image_edit.completed",
-                partialImageType = "image_edit.partial_image",
-            )
-        }
+        handleStreamedImage(
+            span, data, extractor,
+            completedType = "image_edit.completed",
+            partialImageType = "image_edit.partial_image",
+        )
+
+        return Result.success(true)
     }
 
     companion object {
