@@ -5,36 +5,21 @@
 
 package org.jetbrains.ai.tracy.openai.adapters.handlers
 
-import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter.Companion.PayloadType
-import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
-import org.jetbrains.ai.tracy.core.adapters.handlers.EndpointApiHandler
-import org.jetbrains.ai.tracy.core.adapters.media.MediaContent
-import org.jetbrains.ai.tracy.core.adapters.media.MediaContentExtractor
-import org.jetbrains.ai.tracy.core.adapters.media.MediaContentPart
-import org.jetbrains.ai.tracy.core.adapters.media.Resource
-import org.jetbrains.ai.tracy.core.adapters.media.isValidUrl
-import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
-import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
-import org.jetbrains.ai.tracy.core.http.protocol.asJson
-import org.jetbrains.ai.tracy.core.policy.ContentKind
-import org.jetbrains.ai.tracy.core.policy.contentTracingAllowed
-import org.jetbrains.ai.tracy.core.policy.orRedacted
-import org.jetbrains.ai.tracy.core.policy.orRedactedInput
-import org.jetbrains.ai.tracy.core.policy.orRedactedOutput
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.boolean
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
+import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter.Companion.PayloadType
+import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
+import org.jetbrains.ai.tracy.core.adapters.handlers.EndpointApiHandler
+import org.jetbrains.ai.tracy.core.adapters.handlers.streamingFailure
+import org.jetbrains.ai.tracy.core.adapters.media.*
+import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
+import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
+import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
+import org.jetbrains.ai.tracy.core.http.protocol.asJson
+import org.jetbrains.ai.tracy.core.policy.*
 
 
 /**
@@ -199,39 +184,34 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
     }
 
-    override fun handleStreaming(span: Span, events: String): Unit = runCatching {
-        var role: String? = null
-        val out = buildString {
-            for (line in events.lineSequence()) {
-                if (!line.startsWith("data:")) {
-                    continue
-                }
-                val data = line.removePrefix("data:").trim()
+    override fun handleStreamingEvent(
+        span: Span,
+        event: SseEvent,
+        index: Long,
+    ): Result<Boolean> = runCatching {
+        val event = runCatching {
+            Json.parseToJsonElement(event.data).jsonObject
+        }.getOrNull() ?: return@runCatching streamingFailure("Cannot parse event data as JSON")
 
-                val event = runCatching {
-                    Json.parseToJsonElement(data).jsonObject
-                }.getOrNull() ?: continue
+        val choice = event["choices"]?.jsonArray?.firstOrNull()?.jsonObject ?: return@runCatching streamingFailure("Event's JSON has no 'choices' field")
+        val delta = choice["delta"]?.jsonObject ?: return@runCatching streamingFailure("Event's 'choices' field has no 'delta' field")
 
-                val choice = event["choices"]?.jsonArray?.firstOrNull()?.jsonObject ?: continue
-                val delta = choice["delta"]?.jsonObject ?: continue
+        val role = delta["role"]?.jsonPrimitive?.content
+        val content = delta["content"]?.jsonPrimitive?.content
 
-                if (role == null) {
-                    role = delta["role"]?.jsonPrimitive?.content
-                }
-                delta["content"]?.jsonPrimitive?.content?.let { append(it) }
-            }
+        if (!role.isNullOrEmpty()) {
+            span.setAttribute("gen_ai.completion.$index.role", role)
         }
-
-        if (out.isNotEmpty()) {
+        if (!content.isNullOrEmpty()) {
             val kind = kindByRole(role)
-            span.setAttribute("gen_ai.completion.0.content", out.orRedacted(kind))
+            span.setAttribute("gen_ai.completion.$index.content", content.orRedacted(kind))
         }
-        role?.let { span.setAttribute("gen_ai.completion.0.role", it) }
 
-        return@runCatching
+        return@runCatching Result.success(true)
     }.getOrElse { exception ->
         span.setStatus(StatusCode.ERROR)
         span.recordException(exception)
+        return@getOrElse streamingFailure("Failed to handle streaming event: ${exception.message}")
     }
 
     /**

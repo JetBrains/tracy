@@ -33,11 +33,11 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.serializer
 import mu.KotlinLogging
+import org.jetbrains.ai.tracy.core.http.parsers.SseParser
+import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponseBody
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
 
@@ -157,7 +157,6 @@ fun instrument(client: HttpClient, adapter: LLMTracingAdapter): HttpClient {
 private class TracingPlugin(private val adapter: LLMTracingAdapter) {
     private val httpSpanKey = AttributeKey<Span>("HttpSpanKey")
     private val tracingEnabledKey = AttributeKey<Boolean>("TracingEnabledKey")
-    private val isStreamingRequestKey = AttributeKey<Boolean>("IsStreamingRequestKey")
 
     @OptIn(InternalAPI::class, InternalIoApi::class)
     fun setup(config: HttpClientConfig<*>) {
@@ -172,7 +171,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                     return@onRequest
                 }
 
-                val span = tracer.spanBuilder("http-client-span").startSpan()
+                val span = tracer.spanBuilder(adapter.getSpanName()).startSpan()
 
                 span.makeCurrent().use {
                     request.attributes.put(httpSpanKey, span)
@@ -196,77 +195,69 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                     }
 
                     val req = requestBody?.asRequestView(contentType, url = request.url.toProtocolUrl())
-
-                    request.attributes.put(
-                        isStreamingRequestKey,
-                        value = req?.let { adapter.isStreamingRequest(it) } ?: false
-                    )
-
                     if (req != null) {
                         adapter.registerRequest(span, req)
                     }
                 }
             }
 
+            // processes any response (i.e., application/json) except for SSE responses (i.e., text/stream-event)
             onResponse { response ->
                 val enabled = response.call.request.attributes[tracingEnabledKey]
-                if (!enabled) return@onResponse
-                val isStreamingRequest = response.call.request.attributes.getOrNull(isStreamingRequestKey)
-                    ?: return@onResponse
+                if (!enabled) {
+                    return@onResponse
+                }
+                // don't register SSE responses here
+                val mimeType = response.contentType()?.toContentType()?.mimeType
+                if (mimeType == "text/event-stream") {
+                    return@onResponse
+                }
                 val span = response.call.request.attributes.getOrNull(httpSpanKey)
                     ?: return@onResponse
-                if (isStreamingRequest) return@onResponse
-                val body = try {
-                    // peek the response body to avoid consuming the underlying channel
-                    val responseString = run {
-                        // NOTE: we must first peek and only then await.
-                        // otherwise there are cases when an empty body gets peeked
-                        val peeked = response.rawContent.readBuffer.peek()
-                        response.rawContent.awaitContent(Int.MAX_VALUE)
-                        peeked.request(Long.MAX_VALUE)
-                        val buffer = Buffer()
-                        buffer.write(peeked, peeked.buffer.size)
-                        buffer.readString()
-                    }
-                    Json.parseToJsonElement(responseString).jsonObject
-                } catch (exception: Exception) {
-                    logger.trace("Error while parsing response body", exception)
-                    JsonObject(emptyMap())
-                }
 
-                adapter.registerResponse(span, response = response.asResponseView(body))
+                adapter.registerResponse(span, response = response.asResponseView())
                 span.end()
             }
 
+            // processes ONLY SSE responses (i.e., text/stream-event)
             transformResponseBody { response, content, typeInfo ->
                 val enabled = response.call.request.attributes[tracingEnabledKey]
-                if (!enabled) return@transformResponseBody null
-
-                val isStreamingRequest = response.call.request.attributes.getOrNull(isStreamingRequestKey)
-                    ?: return@transformResponseBody null
+                if (!enabled) {
+                    return@transformResponseBody null
+                }
+                // skip non-SSE responses
+                val mimeType = response.contentType()?.toContentType()?.mimeType
+                if (mimeType != "text/event-stream") {
+                    return@transformResponseBody null
+                }
                 val span = response.call.request.attributes.getOrNull(httpSpanKey)
                     ?: return@transformResponseBody null
 
-                if (!isStreamingRequest) {
-                    return@transformResponseBody null
-                }
 
-                val body = JsonObject(mapOf("stream" to JsonPrimitive(true)))
-                // registering response attributes into span
-                adapter.registerResponse(span, response = response.asResponseView(body))
+                adapter.registerResponse(span, response = response.asResponseView())
 
+                // trace SSE events and register them in the adapter one by one
                 val originalBody: ByteReadChannel = content
                 val tracingChannel = ByteChannel(autoFlush = true)
-                val capturedText = StringBuilder()
+
+                val url = response.request.url.toProtocolUrl()
+                val sseParser = SseParser { event ->
+                    // trace SSE event in adapter
+                    adapter.registerResponseStreamEvent(span, url, event)
+                }
 
                 CoroutineScope(response.coroutineContext).launch(start = CoroutineStart.UNDISPATCHED) {
                     try {
                         val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                         while (!originalBody.isClosedForRead) {
                             val bytesRead = originalBody.readAvailable(buffer, 0, buffer.size)
-                            if (bytesRead == -1) break
+                            if (bytesRead == -1) {
+                                break
+                            }
                             if (bytesRead > 0) {
-                                capturedText.append(buffer.decodeToString(0, bytesRead))
+                                sseParser.feed(
+                                    input = buffer.decodeToString(0, bytesRead)
+                                )
                                 tracingChannel.writeFully(buffer, 0, bytesRead)
                                 tracingChannel.flush()
                             }
@@ -274,26 +265,53 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                     } catch (e: Exception) {
                         span.setStatus(StatusCode.ERROR)
                         span.recordException(e)
-                        if (!tracingChannel.isClosedForWrite) tracingChannel.close(e)
+                        if (!tracingChannel.isClosedForWrite) {
+                            tracingChannel.close(e)
+                        }
                     } finally {
-                        try {
-                            adapter.handleStreaming(
-                                span = span,
-                                url = response.request.url.toProtocolUrl(),
-                                events = capturedText.toString()
-                            )
-                        } finally {
-                            span.end()
-                            if (!tracingChannel.isClosedForWrite) tracingChannel.close()
+                        span.end()
+                        if (!tracingChannel.isClosedForWrite) {
+                            tracingChannel.close()
                         }
                     }
                 }
-                if (typeInfo.type != ByteReadChannel::class) null else tracingChannel
+
+                return@transformResponseBody when {
+                    typeInfo.type == ByteReadChannel::class -> tracingChannel
+                    else -> null
+                }
             }
         })
     }
 
-    private fun HttpResponse.asResponseView(body: JsonObject): TracyHttpResponse = TracyHttpResponseView(response = this, body)
+    @OptIn(InternalIoApi::class, InternalAPI::class)
+    private suspend fun HttpResponse.asResponseView(): TracyHttpResponse {
+        val response = this
+        val responseBody = when (response.contentType()?.withoutParameters()) {
+            ContentType.Application.Json -> try {
+                // peek the response body to avoid consuming the underlying channel
+                val responseString = run {
+                    // NOTE: we must first peek and only then await.
+                    // otherwise there are cases when an empty body gets peeked
+                    val peeked = response.rawContent.readBuffer.peek()
+                    response.rawContent.awaitContent(Int.MAX_VALUE)
+                    peeked.request(Long.MAX_VALUE)
+                    val buffer = Buffer()
+                    buffer.write(peeked, peeked.buffer.size)
+                    buffer.readString()
+                }
+                val json = Json.parseToJsonElement(responseString).jsonObject
+                TracyHttpResponseBody.Json(json)
+            } catch (exception: Exception) {
+                logger.trace("Error while parsing response body", exception)
+                TracyHttpResponseBody.Empty
+            }
+            ContentType.Text.EventStream -> TracyHttpResponseBody.EventStream
+            else -> TracyHttpResponseBody.Empty
+        }
+
+        return TracyHttpResponseView(response, body = responseBody)
+    }
 
     /**
      * Helper function to serialize `@Serializable` objects with an unknown type

@@ -20,6 +20,7 @@ import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
 import mu.KotlinLogging
+import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 
 /**
  * Tracing adapter for Anthropic Claude API.
@@ -204,11 +205,16 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
     }
 
-    override fun getSpanName(request: TracyHttpRequest) = "Anthropic-generation"
+    override fun getSpanName() = "Anthropic-generation"
 
-    // streaming is not supported
-    override fun isStreamingRequest(request: TracyHttpRequest) = false
-    override fun handleStreaming(span: Span, url: TracyHttpUrl, events: String) = Unit
+    override fun registerResponseStreamEvent(
+        span: Span,
+        url: TracyHttpUrl,
+        event: SseEvent,
+        index: Long
+    ): Result<Boolean> {
+        return Result.success(false)
+    }
 
     /**
      * Parses content of the `messages` field when its type is

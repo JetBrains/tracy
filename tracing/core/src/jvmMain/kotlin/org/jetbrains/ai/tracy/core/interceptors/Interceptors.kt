@@ -3,7 +3,7 @@
  * Use of this source code is governed by the Apache 2.0 license.
  */
 
-package org.jetbrains.ai.tracy.core
+package org.jetbrains.ai.tracy.core.interceptors
 
 import okhttp3.Interceptor
 
