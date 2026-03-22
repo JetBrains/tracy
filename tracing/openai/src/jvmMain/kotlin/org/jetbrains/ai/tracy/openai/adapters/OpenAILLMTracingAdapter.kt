@@ -97,23 +97,7 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
 
     override fun getSpanName() = "OpenAI-generation"
 
-    override fun isStreamingRequest(request: TracyHttpRequest): Boolean {
-        return when (request.body) {
-            is TracyHttpRequestBody.FormData -> {
-                val data = request.body.asFormData() ?: return false
-                data.parts.filter { it.name == "stream" }.any {
-                    val value = it.content.toString(it.contentType?.charset() ?: Charsets.UTF_8)
-                    value.toBooleanStrictOrNull() ?: false
-                }
-            }
-            is TracyHttpRequestBody.Json -> {
-                val body = request.body.asJson()?.jsonObject ?: return false
-                body["stream"]?.jsonPrimitive?.boolean ?: false
-            }
-        }
-    }
-
-    override fun handleStreamingEvent(
+    override fun registerResponseStreamEvent(
         span: Span,
         url: TracyHttpUrl,
         event: SseEvent,

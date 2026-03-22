@@ -12,7 +12,6 @@ import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.sdk.trace.ReadableSpan
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_SYSTEM
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
@@ -66,29 +65,23 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
 
     fun registerResponse(span: Span, response: TracyHttpResponse): Unit =
         runCatching {
-            val body = response.body.asJson()?.jsonObject ?: return
-            val isStreamingRequest = body["stream"]?.jsonPrimitive?.boolean == true
-            val mimeType = response.contentType?.mimeType
-
-            if (mimeType != null) {
-                when {
-                    mimeType == TracyContentType.Application.Json.mimeType -> {
-                        getResponseBodyAttributes(span, response)
-                    }
-                    isStreamingRequest && mimeType == TracyContentType.Text.EventStream.mimeType -> {
-                        span.setAttribute("gen_ai.response.streaming", true)
-                        span.setAttribute("gen_ai.completion.content.type", response.contentType?.asString())
-                    }
-                    else -> {
-                        span.setAttribute("gen_ai.completion.content.type", response.contentType?.asString())
-                    }
+            when (response.contentType?.mimeType) {
+                TracyContentType.Application.Json.mimeType -> {
+                    getResponseBodyAttributes(span, response)
+                }
+                TracyContentType.Text.EventStream.mimeType -> {
+                    span.setAttribute("gen_ai.response.streaming", true)
+                    span.setAttribute("gen_ai.completion.content.type", response.contentType?.asString())
+                }
+                else -> {
+                    span.setAttribute("gen_ai.completion.content.type", response.contentType?.asString())
                 }
             }
 
             span.setAttribute("http.status_code", response.code.toLong())
 
             if (response.isError()) {
-                getResponseErrorBodyAttributes(span, response.body)
+                getResponseErrorBodyAttributes(span, response)
                 span.setStatus(StatusCode.ERROR)
             } else {
                 span.setStatus(StatusCode.OK)
@@ -107,8 +100,14 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
             span.recordException(exception)
         }
 
-    protected open fun getResponseErrorBodyAttributes(span: Span, body: TracyHttpResponseBody) {
-        body.asJson()?.jsonObject["error"]?.jsonObject?.let { error ->
+    protected open fun getResponseErrorBodyAttributes(span: Span, response: TracyHttpResponse) {
+        // parse only `application/json` responses
+        if (response.contentType?.mimeType != TracyContentType.Application.Json.mimeType) {
+            return
+        }
+        val body = response.body.asJson()?.jsonObject ?: return
+
+        body["error"]?.jsonObject?.let { error ->
             error["message"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.message", it.content) }
             error["type"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.type", it.content) }
             error["param"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.param", it.content) }
@@ -119,20 +118,17 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
     protected abstract fun getRequestBodyAttributes(span: Span, request: TracyHttpRequest)
     protected abstract fun getResponseBodyAttributes(span: Span, response: TracyHttpResponse)
 
-    // TODO: method doesn't need tracy request
     abstract fun getSpanName(): String
-    // TODO: remove, interceptors should handle streaming via response mime type
-    abstract fun isStreamingRequest(request: TracyHttpRequest): Boolean
 
     // handling streaming API (server-sent events)
-    fun handleStreamingEvent(span: Span, url: TracyHttpUrl, event: SseEvent) {
+    fun registerResponseStreamEvent(span: Span, url: TracyHttpUrl, event: SseEvent) {
         // factory method workflow:
         //  1. extract the index of the current event from span (0 when missing)
         //  2. delegate assigning to the implementation:
         //     - when assigned successfully, increment the index and store in span
         val nextEventIndex = (span as? ReadableSpan)?.attributes?.get(STREAM_EVENTS_COUNT_KEY) ?: 0
 
-        val result = handleStreamingEvent(span, url, event, index = nextEventIndex)
+        val result = registerResponseStreamEvent(span, url, event, index = nextEventIndex)
         if (result.isSuccess && result.getOrDefault(false)) {
             // event was successfully assigned into span
             span.setAttribute(STREAM_EVENTS_COUNT_KEY, nextEventIndex + 1)
@@ -142,7 +138,7 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
     /**
      * @return true if the event was successfully assigned into the span, false otherwise
      */
-    protected abstract fun handleStreamingEvent(span: Span, url: TracyHttpUrl, event: SseEvent, index: Long): Result<Boolean>
+    protected abstract fun registerResponseStreamEvent(span: Span, url: TracyHttpUrl, event: SseEvent, index: Long): Result<Boolean>
 
     companion object {
         private const val DROPPED_ATTRIBUTES_COUNT_ATTRIBUTE_KEY = "otel.dropped_attributes_count"

@@ -5,21 +5,12 @@
 
 package org.jetbrains.ai.tracy.ktor
 
-import org.jetbrains.ai.tracy.core.http.protocol.TracyContentType
-import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
-import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponseBody
-import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpUrl
-import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpUrlImpl
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.request
-import io.ktor.http.URLBuilder
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import org.jetbrains.ai.tracy.core.http.protocol.*
 import io.ktor.http.Url as KtorUrl
-import io.ktor.http.charset
-import io.ktor.http.contentType
-import io.ktor.http.isSuccess
-import kotlinx.serialization.json.JsonObject
 
-internal fun io.ktor.http.ContentType.toContentType(): TracyContentType {
+internal fun ContentType.toContentType(): TracyContentType {
     val contentType = this
     return object : TracyContentType {
         override val type = contentType.contentType
@@ -31,15 +22,16 @@ internal fun io.ktor.http.ContentType.toContentType(): TracyContentType {
 }
 
 internal class TracyHttpResponseView(
-    private val response: HttpResponse,
-    body: JsonObject,
+    response: HttpResponse,
+    override val body: TracyHttpResponseBody,
 ) : TracyHttpResponse {
+    private val isError = response.status.isSuccess().not()
+
     override val contentType = response.contentType()?.toContentType()
     override val code = response.status.value
-    override val body = TracyHttpResponseBody.Json(body)
     override val url = response.request.url.toProtocolUrl()
 
-    override fun isError() = response.status.isSuccess().not()
+    override fun isError() = isError
 }
 
 internal fun URLBuilder.toProtocolUrl(): TracyHttpUrl {
