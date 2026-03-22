@@ -213,8 +213,7 @@ class OpenTelemetryOkHttpInterceptor(
 
         val tracer = TracingManager.tracer
 
-        // TODO: use `adapter.getSpanName()`?
-        val span = tracer.spanBuilder("").startSpan()
+        val span = tracer.spanBuilder(adapter.getSpanName()).startSpan()
         var isStreamingRequest = false
 
         span.makeCurrent().use { _ ->
