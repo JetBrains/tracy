@@ -130,7 +130,7 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
         val nextEventIndex = (span as? ReadableSpan)?.attributes?.get(STREAM_EVENTS_COUNT_KEY) ?: 0
 
         val result = registerResponseStreamEvent(span, url, event, index = nextEventIndex)
-        if (result.isSuccess && result.getOrDefault(false)) {
+        if (result.isSuccess) {
             // event was successfully assigned into span
             span.setAttribute(STREAM_EVENTS_COUNT_KEY, nextEventIndex + 1)
         }
@@ -139,7 +139,7 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
     /**
      * @return true if the event was successfully assigned into the span, false otherwise
      */
-    protected abstract fun registerResponseStreamEvent(span: Span, url: TracyHttpUrl, event: SseEvent, index: Long): Result<Boolean>
+    protected abstract fun registerResponseStreamEvent(span: Span, url: TracyHttpUrl, event: SseEvent, index: Long): Result<Unit>
 
     companion object {
         private const val DROPPED_ATTRIBUTES_COUNT_ATTRIBUTE_KEY = "otel.dropped_attributes_count"

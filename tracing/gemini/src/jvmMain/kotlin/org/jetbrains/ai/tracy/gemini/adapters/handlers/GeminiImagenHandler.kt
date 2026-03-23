@@ -15,6 +15,7 @@ import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.core.http.protocol.asJson
 import io.opentelemetry.api.trace.Span
 import kotlinx.serialization.json.*
+import org.jetbrains.ai.tracy.core.adapters.handlers.sse.sseHandlingFailure
 import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 
 /**
@@ -92,8 +93,8 @@ class GeminiImagenHandler(
         span: Span,
         event: SseEvent,
         index: Long
-    ): Result<Boolean> {
-        return Result.success(false)
+    ): Result<Unit> {
+        return sseHandlingFailure("Unsupported")
     }
 
     /**

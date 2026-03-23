@@ -110,7 +110,7 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
         url: TracyHttpUrl,
         event: SseEvent,
         index: Long,
-    ): Result<Boolean> {
+    ): Result<Unit> {
         val handler = handlerFor(url)
         return handler.handleStreamingEvent(span, event, index)
     }

@@ -20,7 +20,7 @@ import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
-import org.jetbrains.ai.tracy.core.adapters.handlers.streamingFailure
+import org.jetbrains.ai.tracy.core.adapters.handlers.sse.sseHandlingFailure
 import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 
 /**
@@ -148,15 +148,15 @@ internal class ResponsesOpenAIApiEndpointHandler(
         span: Span,
         event: SseEvent,
         index: Long,
-    ): Result<Boolean> = runCatching {
+    ): Result<Unit> = runCatching {
         val data = runCatching {
             Json.parseToJsonElement(event.data).jsonObject
-        }.getOrNull() ?: return@runCatching streamingFailure("Failed to parse SSE event")
+        }.getOrNull() ?: return@runCatching sseHandlingFailure("Failed to parse SSE event")
 
         val type = data["type"]?.jsonPrimitive?.content
         if (type == "response.completed") {
             val response = data["response"]?.jsonObject
-                ?: return@runCatching streamingFailure("Failed to parse response object")
+                ?: return@runCatching sseHandlingFailure("Failed to parse response object")
 
             OpenAIApiUtils.setCommonResponseAttributes(span, response)
             parseResponseAttributes(span, response)
@@ -164,12 +164,12 @@ internal class ResponsesOpenAIApiEndpointHandler(
             span.setAttribute("gen_ai.completion.0.finish_reason", "stop")
         }
 
-        return@runCatching Result.success(true)
+        return@runCatching Result.success(Unit)
     }.getOrElse { exception ->
         span.setStatus(StatusCode.ERROR)
         span.recordException(exception)
 
-        return@getOrElse streamingFailure("Failed to handle streaming event: ${exception.message}")
+        return@getOrElse sseHandlingFailure("Failed to handle streaming event: ${exception.message}")
     }
 
     private fun parseResponseAttributes(span: Span, response: JsonObject) {

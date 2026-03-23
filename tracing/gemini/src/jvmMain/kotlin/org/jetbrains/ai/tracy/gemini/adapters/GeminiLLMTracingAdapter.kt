@@ -65,7 +65,7 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
         url: TracyHttpUrl,
         event: SseEvent,
         index: Long,
-    ): Result<Boolean> {
+    ): Result<Unit> {
         val handler = selectHandler(url)
         return handler.handleStreamingEvent(span, event, index)
     }

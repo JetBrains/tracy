@@ -22,6 +22,7 @@ import org.jetbrains.ai.tracy.core.policy.orRedactedOutput
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
+import org.jetbrains.ai.tracy.core.adapters.handlers.sse.sseHandlingFailure
 import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 
 /**
@@ -222,8 +223,8 @@ class GeminiContentGenHandler(
         span: Span,
         event: SseEvent,
         index: Long
-    ): Result<Boolean> {
-        return Result.success(false)
+    ): Result<Unit> {
+        return sseHandlingFailure("Unsupported")
     }
 
     private fun parseRequestMediaContent(body: JsonObject): MediaContent? {

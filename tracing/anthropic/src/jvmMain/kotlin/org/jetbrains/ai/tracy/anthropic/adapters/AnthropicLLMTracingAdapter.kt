@@ -20,6 +20,7 @@ import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
 import mu.KotlinLogging
+import org.jetbrains.ai.tracy.core.adapters.handlers.sse.sseHandlingFailure
 import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 
 /**
@@ -212,8 +213,8 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
         url: TracyHttpUrl,
         event: SseEvent,
         index: Long
-    ): Result<Boolean> {
-        return Result.success(false)
+    ): Result<Unit> {
+        return sseHandlingFailure("Unsupported")
     }
 
     /**

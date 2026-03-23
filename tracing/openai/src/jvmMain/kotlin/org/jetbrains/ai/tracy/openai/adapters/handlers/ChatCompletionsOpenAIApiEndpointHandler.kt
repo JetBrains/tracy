@@ -13,7 +13,7 @@ import kotlinx.serialization.json.*
 import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter.Companion.PayloadType
 import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
 import org.jetbrains.ai.tracy.core.adapters.handlers.EndpointApiHandler
-import org.jetbrains.ai.tracy.core.adapters.handlers.streamingFailure
+import org.jetbrains.ai.tracy.core.adapters.handlers.sse.sseHandlingFailure
 import org.jetbrains.ai.tracy.core.adapters.media.*
 import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
@@ -188,13 +188,13 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
         span: Span,
         event: SseEvent,
         index: Long,
-    ): Result<Boolean> = runCatching {
+    ): Result<Unit> = runCatching {
         val event = runCatching {
             Json.parseToJsonElement(event.data).jsonObject
-        }.getOrNull() ?: return@runCatching streamingFailure("Cannot parse event data as JSON")
+        }.getOrNull() ?: return@runCatching sseHandlingFailure("Cannot parse event data as JSON")
 
-        val choice = event["choices"]?.jsonArray?.firstOrNull()?.jsonObject ?: return@runCatching streamingFailure("Event's JSON has no 'choices' field")
-        val delta = choice["delta"]?.jsonObject ?: return@runCatching streamingFailure("Event's 'choices' field has no 'delta' field")
+        val choice = event["choices"]?.jsonArray?.firstOrNull()?.jsonObject ?: return@runCatching sseHandlingFailure("Event's JSON has no 'choices' field")
+        val delta = choice["delta"]?.jsonObject ?: return@runCatching sseHandlingFailure("Event's 'choices' field has no 'delta' field")
 
         val role = delta["role"]?.jsonPrimitive?.content
         val content = delta["content"]?.jsonPrimitive?.content
@@ -207,11 +207,11 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
             span.setAttribute("gen_ai.completion.$index.content", content.orRedacted(kind))
         }
 
-        return@runCatching Result.success(true)
+        return@runCatching Result.success(Unit)
     }.getOrElse { exception ->
         span.setStatus(StatusCode.ERROR)
         span.recordException(exception)
-        return@getOrElse streamingFailure("Failed to handle streaming event: ${exception.message}")
+        return@getOrElse sseHandlingFailure("Failed to handle streaming event: ${exception.message}")
     }
 
     /**

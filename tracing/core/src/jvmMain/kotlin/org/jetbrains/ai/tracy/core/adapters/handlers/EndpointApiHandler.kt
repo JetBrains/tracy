@@ -16,11 +16,11 @@ import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 interface EndpointApiHandler {
     fun handleRequestAttributes(span: Span, request: TracyHttpRequest)
     fun handleResponseAttributes(span: Span, response: TracyHttpResponse)
-    fun handleStreamingEvent(span: Span, event: SseEvent, index: Long): Result<Boolean>
-}
-
-class SseEventHandlingException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
-
-fun streamingFailure(message: String): Result<Boolean> {
-    return Result.failure(SseEventHandlingException(message))
+    /**
+     * Returns success if the event was handled successfully, or an error if it could not be handled.
+     *
+     * @see org.jetbrains.ai.tracy.core.adapters.handlers.sse.sseHandlingFailure
+     * @see org.jetbrains.ai.tracy.core.adapters.handlers.sse.SseEventHandlingException
+     */
+    fun handleStreamingEvent(span: Span, event: SseEvent, index: Long): Result<Unit>
 }
