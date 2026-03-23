@@ -277,6 +277,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                         }
                     } finally {
                         span.end()
+                        sseParser.close()
                         if (!tracingChannel.isClosedForWrite) {
                             tracingChannel.close()
                         }
