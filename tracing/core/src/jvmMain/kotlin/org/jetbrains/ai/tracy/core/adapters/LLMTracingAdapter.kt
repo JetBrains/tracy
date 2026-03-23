@@ -164,7 +164,6 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
          * @param mappedAttributes a list of attribute keys that have already been
          *  handled and should be skipped when populating unmapped attributes
          */
-        // TODO: should be protected/internal?
         fun Span.populateUnmappedAttributes(
             body: JsonObject,
             mappedAttributes: List<String>,
