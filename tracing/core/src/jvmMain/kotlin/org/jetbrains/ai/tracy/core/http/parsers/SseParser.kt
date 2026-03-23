@@ -156,8 +156,8 @@ class SseParser(private val onEvent: (SseEvent) -> Unit) : Closeable {
  * @see SseParser
  */
 data class SseEvent(
-    val data: String,
     val event: String = "",
     val id: String = "",
+    val data: String,
     val retry: Long? = null,
 )
