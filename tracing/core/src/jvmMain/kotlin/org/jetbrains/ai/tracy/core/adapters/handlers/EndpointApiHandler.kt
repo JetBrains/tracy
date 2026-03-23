@@ -16,7 +16,6 @@ import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 interface EndpointApiHandler {
     fun handleRequestAttributes(span: Span, request: TracyHttpRequest)
     fun handleResponseAttributes(span: Span, response: TracyHttpResponse)
-    // fun handleStreaming(span: Span, events: String)
     fun handleStreamingEvent(span: Span, event: SseEvent, index: Long): Result<Boolean>
 }
 
