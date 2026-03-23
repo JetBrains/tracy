@@ -193,18 +193,21 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
             Json.parseToJsonElement(event.data).jsonObject
         }.getOrNull() ?: return@runCatching sseHandlingFailure("Cannot parse event data as JSON")
 
-        val choice = event["choices"]?.jsonArray?.firstOrNull()?.jsonObject ?: return@runCatching sseHandlingFailure("Event's JSON has no 'choices' field")
-        val delta = choice["delta"]?.jsonObject ?: return@runCatching sseHandlingFailure("Event's 'choices' field has no 'delta' field")
+        val choice = event["choices"]?.jsonArray?.firstOrNull()?.jsonObject
+            ?: return@runCatching sseHandlingFailure("Event's JSON has no 'choices' field")
+
+        val delta = choice["delta"]?.jsonObject
+            ?: return@runCatching sseHandlingFailure("Event's 'choices' field has no 'delta' field")
 
         val role = delta["role"]?.jsonPrimitive?.content
         val content = delta["content"]?.jsonPrimitive?.content
 
         if (!role.isNullOrEmpty()) {
-            span.setAttribute("gen_ai.completion.$index.role", role)
+            span.setAttribute("gen_ai.completion.0.role", role)
         }
         if (!content.isNullOrEmpty()) {
             val kind = kindByRole(role)
-            span.setAttribute("gen_ai.completion.$index.content", content.orRedacted(kind))
+            span.setAttribute("gen_ai.completion.0.content", content.orRedacted(kind))
         }
 
         return@runCatching Result.success(Unit)
