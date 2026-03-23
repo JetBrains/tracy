@@ -142,7 +142,7 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
     protected abstract fun registerResponseStreamEvent(span: Span, url: TracyHttpUrl, event: SseEvent, index: Long): Result<Unit>
 
     companion object {
-        private const val DROPPED_ATTRIBUTES_COUNT_ATTRIBUTE_KEY = "otel.dropped_attributes_count"
+        private val DROPPED_ATTRIBUTES_COUNT_ATTRIBUTE_KEY = AttributeKey.longKey("otel.dropped_attributes_count")
         private val STREAM_EVENTS_COUNT_KEY = AttributeKey.longKey("tracy.response.sse.events.count")
 
         /**
