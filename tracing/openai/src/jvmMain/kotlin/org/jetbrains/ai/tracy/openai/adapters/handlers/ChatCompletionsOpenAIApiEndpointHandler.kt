@@ -5,11 +5,14 @@
 
 package org.jetbrains.ai.tracy.openai.adapters.handlers
 
+import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.sdk.trace.ReadableSpan
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
 import kotlinx.serialization.json.*
+import org.jetbrains.ai.tracy.core.TracingManager
 import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter.Companion.PayloadType
 import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
 import org.jetbrains.ai.tracy.core.adapters.handlers.EndpointApiHandler
@@ -184,30 +187,50 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
     }
 
+    /**
+     * In chat completions, assistant message content arrives by deltas.
+     * Here, we accumulate deltas into the span by appending new deltas at
+     * the end of the previously assigned content attribute.
+     */
     override fun handleStreamingEvent(
         span: Span,
         event: SseEvent,
         index: Long,
     ): Result<Unit> = runCatching {
-        val event = runCatching {
+        val data = runCatching {
             Json.parseToJsonElement(event.data).jsonObject
         }.getOrNull() ?: return@runCatching sseHandlingFailure("Cannot parse event data as JSON")
 
-        val choice = event["choices"]?.jsonArray?.firstOrNull()?.jsonObject
+        val choice = data["choices"]?.jsonArray?.firstOrNull()?.jsonObject
             ?: return@runCatching sseHandlingFailure("Event's JSON has no 'choices' field")
 
         val delta = choice["delta"]?.jsonObject
             ?: return@runCatching sseHandlingFailure("Event's 'choices' field has no 'delta' field")
 
         val role = delta["role"]?.jsonPrimitive?.content
-        val content = delta["content"]?.jsonPrimitive?.content
+        val contentDelta = delta["content"]?.jsonPrimitive?.content
 
         if (!role.isNullOrEmpty()) {
             span.setAttribute("gen_ai.completion.0.role", role)
         }
-        if (!content.isNullOrEmpty()) {
-            val kind = kindByRole(role)
-            span.setAttribute("gen_ai.completion.0.content", content.orRedacted(kind))
+
+        val alreadyInstalledRole = (span as? ReadableSpan)?.attributes
+            ?.get(AttributeKey.stringKey("gen_ai.completion.0.role")) ?: role
+
+        // concatenate already traced deltas with the new one and install as content if content tracing allowed;
+        // otherwise, when tracing is disallowed, redact an empty string to derive '[REDACTED]'
+        val contentKind = kindByRole(alreadyInstalledRole)
+        val tracingAllowed = contentTracingAllowed(contentKind)
+
+        if (!contentDelta.isNullOrEmpty() && tracingAllowed) {
+            val previousDeltas = (span as? ReadableSpan)?.attributes
+                ?.get(AttributeKey.stringKey("gen_ai.completion.0.content")) ?: ""
+            val content = previousDeltas + contentDelta
+
+            span.setAttribute("gen_ai.completion.0.content", content.orRedacted(contentKind))
+        } else if (!tracingAllowed) {
+            // assign empty redacted string
+            span.setAttribute("gen_ai.completion.0.content", "".orRedacted(contentKind))
         }
 
         return@runCatching Result.success(Unit)
