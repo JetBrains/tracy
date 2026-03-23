@@ -14,6 +14,7 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_SYST
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import mu.KotlinLogging
 import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 
 
@@ -65,17 +66,24 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
 
     fun registerResponse(span: Span, response: TracyHttpResponse): Unit =
         runCatching {
-            when (response.contentType?.mimeType) {
+            val contentType = response.contentType
+            // install the content type of the response body
+            contentType?.asString()?.let {
+                span.setAttribute("gen_ai.completion.content.type", it)
+            }
+
+            // set response body attributes only for `application/json` content types;
+            // stream events are handled by `registerResponseStreamEvent`
+            when (contentType?.mimeType) {
                 TracyContentType.Application.Json.mimeType -> {
                     // TODO: register non-JSON and non-SSE responses also (e.g., video/mp4)
                     getResponseBodyAttributes(span, response)
                 }
                 TracyContentType.Text.EventStream.mimeType -> {
                     span.setAttribute("gen_ai.response.streaming", true)
-                    span.setAttribute("gen_ai.completion.content.type", response.contentType?.asString())
                 }
                 else -> {
-                    span.setAttribute("gen_ai.completion.content.type", response.contentType?.asString())
+                    logger.warn("Unsupported content type: ${contentType?.asString()}")
                 }
             }
 
@@ -144,6 +152,8 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
     companion object {
         private val DROPPED_ATTRIBUTES_COUNT_ATTRIBUTE_KEY = AttributeKey.longKey("otel.dropped_attributes_count")
         private val STREAM_EVENTS_COUNT_KEY = AttributeKey.longKey("tracy.response.sse.events.count")
+
+        private val logger = KotlinLogging.logger {}
 
         /**
          * Adds unmapped payload attributes from a JSON body to the given [Span].
