@@ -141,6 +141,8 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
         if (result.isSuccess) {
             // event was successfully assigned into span
             span.setAttribute(STREAM_EVENTS_COUNT_KEY, nextEventIndex + 1)
+        } else if (result.isFailure) {
+            logger.warn { "Failed to assign SSE event to span: ${result.exceptionOrNull()}" }
         }
     }
 
