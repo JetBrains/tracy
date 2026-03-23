@@ -250,7 +250,7 @@ class OpenTelemetryOkHttpInterceptor(
                     "${it.type}/${it.subtype}" == "text/event-stream"
                 } ?: false
 
-                // wrap trace SSE events into span when the response body is of the ` text / event-stream ` content type
+                // trace SSE events into span when the content type of the response body is `text/event-stream`
                 return when {
                     isStreamingResponse -> response.withTracedSSE(span, requestUrl = request.url.toProtocolUrl())
                     else -> response
@@ -260,6 +260,8 @@ class OpenTelemetryOkHttpInterceptor(
                 span.recordException(e)
                 throw e
             } finally {
+                // when dealing with the streaming response,
+                // its span will be closed when all events are traced (see `withTracedSSE`)
                 if (!isStreamingResponse) {
                     span.end()
                 }
@@ -279,7 +281,9 @@ class OpenTelemetryOkHttpInterceptor(
                 // capture SSE events and forward them into the adapter
                 val forwardingSource = SseCapturingSource(
                     delegate = originalBody.source(),
-                    adapter, span, requestUrl,
+                    adapter,
+                    span,
+                    requestUrl,
                 )
                 return forwardingSource.buffer()
             }
