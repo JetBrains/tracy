@@ -17,10 +17,13 @@ import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.Buffer
 import okio.BufferedSource
+import okio.ForwardingSource
+import okio.Source
 import okio.buffer
 import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
 import org.jetbrains.ai.tracy.core.http.protocol.*
 import org.jetbrains.ai.tracy.core.TracingManager
+import org.jetbrains.ai.tracy.core.http.parsers.SseParser
 import okhttp3.Request as OkHttpRequest
 import okhttp3.Response as OkHttpResponse
 import okhttp3.ResponseBody as OkHttpResponseBody
@@ -273,19 +276,21 @@ class OpenTelemetryOkHttpInterceptor(
         val originalResponse = this
         val originalBody = originalResponse.body ?: return originalResponse
 
+        // dispatch SSE events to the adapter
+        val parser = SseParser { event ->
+            adapter.registerResponseStreamEvent(span, requestUrl, event)
+        }
+
+        // wrap the source of the original body with a capturing source
+        // that forwards UTF-8-decoded bytes into SSE parser
         val originalBodyWithTracedSSE = object : OkHttpResponseBody() {
             override fun contentType() = originalBody.contentType()
             override fun contentLength() = originalBody.contentLength()
 
             override fun source(): BufferedSource {
-                // capture SSE events and forward them into the adapter
-                val forwardingSource = SseCapturingSource(
-                    delegate = originalBody.source(),
-                    adapter,
-                    span,
-                    requestUrl,
-                )
-                return forwardingSource.buffer()
+                // capture SSE events via SSE parser and forward them into the adapter
+                val sseCapturingSource = SseCapturingSource(delegate = originalBody.source(), parser)
+                return sseCapturingSource.buffer()
             }
 
             override fun close() {
@@ -354,4 +359,33 @@ class OpenTelemetryOkHttpInterceptor(
         contentType = mediaType.toContentType(),
         charset = mediaType.charset() ?: Charsets.UTF_8,
     )
+}
+
+/**
+ * Peeks bytes of the original source [delegate], decodes them as UTF-8,
+ * and forwards into SSE parser [parser].
+ */
+private class SseCapturingSource(
+    delegate: Source,
+    private val parser: SseParser,
+) : ForwardingSource(delegate) {
+    override fun read(sink: Buffer, byteCount: Long): Long {
+        val bytesRead = super.read(sink, byteCount)
+        if (bytesRead == -1L) {
+            return -1L
+        }
+
+        // peek at the bytes just written to sink
+        val text = sink.peek().apply {
+            skip(sink.size - bytesRead)
+        }.readUtf8(bytesRead)
+
+        parser.feed(text)
+        return bytesRead
+    }
+
+    override fun close() {
+        super.close()
+        parser.close()
+    }
 }
