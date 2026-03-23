@@ -143,7 +143,7 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
 
     companion object {
         private const val DROPPED_ATTRIBUTES_COUNT_ATTRIBUTE_KEY = "otel.dropped_attributes_count"
-        private val STREAM_EVENTS_COUNT_KEY = AttributeKey.longKey("tracy.sse.events.count")
+        private val STREAM_EVENTS_COUNT_KEY = AttributeKey.longKey("tracy.response.sse.events.count")
 
         /**
          * Adds unmapped payload attributes from a JSON body to the given [Span].
