@@ -7,6 +7,7 @@ package org.jetbrains.ai.tracy.openai.adapters
 
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
+import kotlinx.serialization.json.jsonObject
 import mu.KotlinLogging
 import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
 import org.jetbrains.ai.tracy.core.adapters.handlers.EndpointApiHandler
@@ -15,6 +16,7 @@ import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpUrl
+import org.jetbrains.ai.tracy.core.http.protocol.asJson
 import org.jetbrains.ai.tracy.openai.adapters.handlers.ChatCompletionsOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.OpenAIApiUtils
 import org.jetbrains.ai.tracy.openai.adapters.handlers.ResponsesOpenAIApiEndpointHandler
@@ -95,7 +97,9 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
 
     override fun getResponseBodyAttributes(span: Span, response: TracyHttpResponse) {
         val handler = handlerFor(response.url)
-        OpenAIApiUtils.setCommonResponseAttributes(span, response)
+        response.body.asJson()?.jsonObject?.let {
+            OpenAIApiUtils.setCommonResponseAttributes(span, response = it)
+        }
         handler.handleResponseAttributes(span, response)
     }
 

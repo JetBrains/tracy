@@ -140,11 +140,42 @@ internal class ResponsesOpenAIApiEndpointHandler(
      */
     override fun handleResponseAttributes(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
-        OpenAIApiUtils.setCommonResponseAttributes(span, response)
+        OpenAIApiUtils.setCommonResponseAttributes(span, response = body)
+        parseResponseAttributes(span, response = body)
+    }
 
+    override fun handleStreamingEvent(
+        span: Span,
+        event: SseEvent,
+        index: Long,
+    ): Result<Boolean> = runCatching {
+        val data = runCatching {
+            Json.parseToJsonElement(event.data).jsonObject
+        }.getOrNull() ?: return@runCatching streamingFailure("Failed to parse SSE event")
+
+        val type = data["type"]?.jsonPrimitive?.content
+        if (type == "response.completed") {
+            val response = data["response"]?.jsonObject
+                ?: return@runCatching streamingFailure("Failed to parse response object")
+
+            OpenAIApiUtils.setCommonResponseAttributes(span, response)
+            parseResponseAttributes(span, response)
+
+            span.setAttribute("gen_ai.completion.0.finish_reason", "stop")
+        }
+
+        return@runCatching Result.success(true)
+    }.getOrElse { exception ->
+        span.setStatus(StatusCode.ERROR)
+        span.recordException(exception)
+
+        return@getOrElse streamingFailure("Failed to handle streaming event: ${exception.message}")
+    }
+
+    private fun parseResponseAttributes(span: Span, response: JsonObject) {
         // we manually map `output` and `usage` attributes;
         // the rest of attributes get mapped by `populateUnmappedAttributes` below.
-        body["output"]?.let { outputs ->
+        response["output"]?.let { outputs ->
             for ((index, output) in outputs.jsonArray.withIndex()) {
                 when (val type = output.jsonObject["type"]?.jsonPrimitive?.content) {
                     "message", null -> {
@@ -215,36 +246,11 @@ internal class ResponsesOpenAIApiEndpointHandler(
             }
         }
 
-        body["usage"]?.let { usage ->
-            setUsageAttributes(span, usage.jsonObject)
+        response["usage"]?.jsonObject?.let { usage ->
+            setUsageAttributes(span, usage)
         }
 
-        span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
-    }
-
-    override fun handleStreamingEvent(
-        span: Span,
-        event: SseEvent,
-        index: Long,
-    ): Result<Boolean> = runCatching {
-        val event = runCatching {
-            Json.parseToJsonElement(event.data).jsonObject
-        }.getOrNull() ?: return@runCatching streamingFailure("Failed to parse SSE event")
-
-        val type = event["type"]?.jsonPrimitive?.content
-        if (type == "response.output_text.done") {
-            event["text"]?.jsonPrimitive?.content?.let {
-                span.setAttribute("gen_ai.completion.$index.content", it.orRedactedOutput())
-                span.setAttribute("gen_ai.completion.$index.finish_reason", "stop")
-            }
-        }
-
-        return@runCatching Result.success(true)
-    }.getOrElse { exception ->
-        span.setStatus(StatusCode.ERROR)
-        span.recordException(exception)
-
-        return@getOrElse streamingFailure("Failed to handle streaming event: ${exception.message}")
+        span.populateUnmappedAttributes(response, mappedAttributes, PayloadType.RESPONSE)
     }
 
     /**
