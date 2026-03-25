@@ -22,7 +22,7 @@ abstract class BaseGeminiTracingTest : BaseAITracingTest() {
 
     protected val llmProviderApiKey =
         System.getenv("GEMINI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
-        ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
+        ?: error("Neither GEMINI_API_KEY nor LLM_PROVIDER_API_KEY environment variables are set")
 
     protected fun validateBasicTracing(model: String) {
         validateBasicTracing(llmProviderUrl!!, model)

@@ -34,9 +34,8 @@ import kotlin.test.assertTrue
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class BaseOpenAITracingTest : BaseAITracingTest() {
     protected val llmProviderApiKey: String
-        get() = System.getenv("OPENAI_API_KEY")
-        ?: System.getenv("LLM_PROVIDER_API_KEY")
-        ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
+        get() = System.getenv("OPENAI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
+        ?: error("Neither OPENAI_API_KEY nor LLM_PROVIDER_API_KEY environment variables are set")
 
     /**
      * When no value is provided, defaults to [PRODUCTION_URL].

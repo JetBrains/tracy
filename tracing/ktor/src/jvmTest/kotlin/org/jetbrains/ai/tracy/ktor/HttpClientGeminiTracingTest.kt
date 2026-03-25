@@ -27,7 +27,7 @@ class HttpClientGeminiTracingTest : BaseAITracingTest() {
     private val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
     private val llmProviderApiKey =
         System.getenv("GEMINI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
-        ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
+        ?: error("Neither GEMINI_API_KEY nor LLM_PROVIDER_API_KEY environment variables are set")
 
     // TODO: fix
     // Gemini tests for now is only supported with LiteLLM

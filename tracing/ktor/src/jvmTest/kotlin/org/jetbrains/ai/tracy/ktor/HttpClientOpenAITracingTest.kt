@@ -638,7 +638,7 @@ class HttpClientOpenAITracingTest : BaseAITracingTest() {
         private val llmProviderUrl: String = System.getenv("LLM_PROVIDER_URL") ?: PRODUCTION_URL
         private val llmProviderApiKey =
             System.getenv("OPENAI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
-            ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
+            ?: error("Neither OPENAI_API_KEY nor LLM_PROVIDER_API_KEY environment variables are set")
 
         // llmProviderUrl = https://api.openai.com/v1, gen_ai.api_base = https://api.api.openai.com
         private val baseUrl = llmProviderUrl.let {
