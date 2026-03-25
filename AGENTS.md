@@ -82,7 +82,7 @@ Use existing providers as reference.
 
 **Steps:**
 1. Create `tracing/{provider}/` module, register it in `settings.gradle.kts`
-2. Extend `LLMTracingAdapter(genAISystem)` — override `getRequestBodyAttributes`, `getResponseBodyAttributes`, `getSpanName`, `isStreamingRequest`, `handleStreaming`
+2. Extend `LLMTracingAdapter(genAISystem)` — override `getRequestBodyAttributes`, `getResponseBodyAttributes`, `getSpanName`, and abstract `registerResponseStreamEvent`
 3. If multiple distinct API endpoints exist, implement `EndpointApiHandler` per endpoint and delegate from the adapter
 4. Add a public `instrument(client)` function — use `patchOpenAICompatibleClient()` for OpenAI-compatible SDKs, or reflection + `patchInterceptors()` for others (see `GeminiClient.kt`)
 5. Write tests extending `BaseAITracingTest`, tag with `@Tag("{provider}")`
