@@ -141,7 +141,7 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
         //  1. extract the index of the current event from span (0 when missing)
         //  2. delegate assigning to the implementation:
         //     - when assigned successfully, increment the index and store in span
-        val nextEventIndex = (span as? ReadableSpan)?.attributes?.get(STREAM_EVENTS_COUNT_KEY) ?: 0
+        val nextEventIndex: Long = (span as? ReadableSpan)?.attributes?.get(STREAM_EVENTS_COUNT_KEY) ?: 0L
 
         val result = registerResponseStreamEvent(span, url, event, index = nextEventIndex)
         if (result.isSuccess) {
