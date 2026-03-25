@@ -83,7 +83,7 @@ class SseParser(private val onEvent: (SseEvent) -> Unit) : Closeable {
         } else {
             // content before colon -> field name
             field = line.substring(0, colonIdx)
-            // content after color -> field value
+            // content after colon -> field value
             val start = if (colonIdx + 1 < line.length && line[colonIdx + 1] == ' ') {
                 // ignore the very first space after colon
                 colonIdx + 2
