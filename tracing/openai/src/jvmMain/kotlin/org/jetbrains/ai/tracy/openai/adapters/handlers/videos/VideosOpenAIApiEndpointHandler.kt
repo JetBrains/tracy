@@ -71,6 +71,7 @@ internal class VideosOpenAIApiEndpointHandler(
         val videosIndex = segments.indexOf("videos")
         if (videosIndex == -1) {
             // fallback
+            logger.warn { "Failed to detect video route. Endpoint has no `videos` path segment: ${url.pathSegments.joinToString(separator = "/")}" }
             return VideoRoute.CREATE
         }
         val containsVideoId = segments.size > (videosIndex + 1) &&
@@ -85,7 +86,10 @@ internal class VideosOpenAIApiEndpointHandler(
             method == "GET" && !containsVideoId -> VideoRoute.LIST
             method == "DELETE" && containsVideoId -> VideoRoute.DELETE
             // fallback
-            else -> VideoRoute.CREATE
+            else -> {
+                logger.warn { "Failed to detect video route: $method ${url.pathSegments.joinToString(separator = "/")}" }
+                VideoRoute.CREATE
+            }
         }
     }
 
