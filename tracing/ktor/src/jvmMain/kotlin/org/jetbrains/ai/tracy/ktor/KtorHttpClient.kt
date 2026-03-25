@@ -208,7 +208,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 }
             }
 
-            // processes any response (i.e., application/json) except for SSE responses (i.e., text/stream-event)
+            // processes any response (i.e., application/json) except for SSE responses (i.e., text/event-stream)
             onResponse { response ->
                 val enabled = response.call.request.attributes[tracingEnabledKey]
                 if (!enabled) {
@@ -226,7 +226,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 span.end()
             }
 
-            // processes ONLY SSE responses (i.e., text/stream-event)
+            // processes ONLY SSE responses (i.e., text/event-stream)
             transformResponseBody { response, content, typeInfo ->
                 val enabled = response.call.request.attributes[tracingEnabledKey]
                 if (!enabled) {
