@@ -30,15 +30,17 @@ import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
  * Extend this class to create a provider-specific adapter:
  * ```kotlin
  * class AnthropicLLMTracingAdapter : LLMTracingAdapter(GenAiSystemIncubatingValues.ANTHROPIC) {
- *     override fun getRequestBodyAttributes(span: Span, request: Request) {
+ *     override fun getSpanName() = "Anthropic-generation"
+ *
+ *     override fun getRequestBodyAttributes(span: Span, request: TracyHttpRequest) {
  *         // Parse Anthropic-specific request format
  *     }
- *     override fun getResponseBodyAttributes(span: Span, response: Response) {
+ *     override fun getResponseBodyAttributes(span: Span, response: TracyHttpResponse) {
  *         // Parse Anthropic-specific response format
  *     }
- *     override fun getSpanName(request: Request) = "Anthropic-generation"
- *     override fun isStreamingRequest(request: Request) = false
- *     override fun handleStreaming(span: Span, url: Url, events: String) = Unit
+ *     override fun registerResponseStreamEvent(span: Span, url: TracyHttpUrl, event: SseEvent, index: Long): Result<Unit> {
+ *          // Parse `event.data` JSON event (if successful, return `Result.success()`)
+ *     }
  * }
  * ```
  *
