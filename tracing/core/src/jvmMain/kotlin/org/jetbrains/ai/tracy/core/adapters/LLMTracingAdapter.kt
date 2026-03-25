@@ -83,7 +83,7 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
                     span.setAttribute("gen_ai.response.sse.streaming", true)
                 }
                 else -> {
-                    logger.warn("Unsupported content type: ${contentType?.asString()}")
+                    logger.debug { "Unsupported content type in LLMTracingAdapter: ${contentType?.asString()}" }
                 }
             }
 
