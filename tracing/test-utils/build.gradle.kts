@@ -23,6 +23,7 @@ kotlin {
             dependencies {
                 implementation(project(":tracing:core"))
                 implementation(libs.opentelemetry.sdk.testing)
+                api(libs.okhttp.mockwebserver)
                 implementation(libs.ktor.client)
                 implementation(libs.kotlin.test)
                 implementation(libs.junit)

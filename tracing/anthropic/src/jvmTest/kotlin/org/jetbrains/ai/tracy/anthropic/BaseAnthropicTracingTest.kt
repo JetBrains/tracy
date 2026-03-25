@@ -27,7 +27,7 @@ abstract class BaseAnthropicTracingTest : BaseAITracingTest() {
 
     protected val llmProviderApiKey =
         System.getenv("ANTHROPIC_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
-        ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
+        ?: error("Neither ANTHROPIC_API_KEY nor LLM_PROVIDER_API_KEY environment variables are set")
 
     protected fun createAnthropicClient(
         url: String? = llmProviderUrl,

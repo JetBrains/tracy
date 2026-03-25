@@ -30,7 +30,7 @@ class HttpClientAnthropicAITracingTest : BaseAITracingTest() {
     private val llmProviderUrl: String = System.getenv("LLM_PROVIDER_URL") ?: ANTHROPIC_API_URL
     private val llmProviderApiKey =
         System.getenv("ANTHROPIC_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
-        ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
+        ?: error("Neither ANTHROPIC_API_KEY nor LLM_PROVIDER_API_KEY environment variables are set")
 
     @Test
     fun `test nested instrumentation calls don't cause duplicative tracing`() = runTest {

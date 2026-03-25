@@ -34,7 +34,7 @@ class OpenAIClientTest : BaseOpenTelemetryTracingTest() {
 
     private val llmProviderApiKey =
         System.getenv("OPENAI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
-        ?: error("LLM_PROVIDER_API_KEY environment variable is not set")
+        ?: error("Neither OPENAI_API_KEY nor LLM_PROVIDER_API_KEY environment variables are set")
 
     private lateinit var client: OpenAIClient
 

@@ -10,6 +10,7 @@ import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponseBody
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpUrl
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpUrlImpl
+import org.jetbrains.ai.tracy.core.http.protocol.TracyQueryParameters
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.request
 import io.ktor.http.URLBuilder
@@ -38,24 +39,40 @@ internal class TracyHttpResponseView(
     override val code = response.status.value
     override val body = TracyHttpResponseBody.Json(body)
     override val url = response.request.url.toProtocolUrl()
+    override val requestMethod = response.request.method.value.uppercase()
 
     override fun isError() = response.status.isSuccess().not()
 }
 
 internal fun URLBuilder.toProtocolUrl(): TracyHttpUrl {
     val builder = this
+
+    val params = object : TracyQueryParameters {
+        private val params = builder.parameters.build()
+        override fun queryParameter(name: String): String? = params[name]
+        override fun queryParameterValues(name: String) = params.getAll(name) ?: emptyList()
+    }
+
     return TracyHttpUrlImpl(
         scheme = builder.protocol.name,
         host = builder.host,
         pathSegments = builder.pathSegments,
+        parameters = params,
     )
 }
 
 internal fun KtorUrl.toProtocolUrl(): TracyHttpUrl {
     val url = this
+
+    val params = object : TracyQueryParameters {
+        override fun queryParameter(name: String) = url.parameters[name]
+        override fun queryParameterValues(name: String) = url.parameters.getAll(name) ?: emptyList()
+    }
+
     return TracyHttpUrlImpl(
         scheme = url.protocol.name,
         host = url.host,
         pathSegments = url.segments,
+        parameters = params,
     )
 }
