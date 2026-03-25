@@ -82,7 +82,7 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
                     getResponseBodyAttributes(span, response)
                 }
                 TracyContentType.Text.EventStream.mimeType -> {
-                    span.setAttribute("gen_ai.response.sse.streaming", true)
+                    span.setAttribute("tracy.response.sse.streaming", true)
                 }
                 else -> {
                     logger.debug { "Unsupported content type in LLMTracingAdapter: ${contentType?.asString()}" }
