@@ -129,7 +129,13 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
 
     abstract fun getSpanName(): String
 
-    // handling streaming API (server-sent events)
+    /**
+     * Registers a server-sent events (SSE) response event in the given [span].
+     *
+     * @param span The [Span] instance in which the response event is registered.
+     * @param url The [TracyHttpUrl] object representing the URL associated with this SSE event.
+     * @param event The [SseEvent] to be registered. It represents a single event from the SSE stream.
+     */
     fun registerResponseStreamEvent(span: Span, url: TracyHttpUrl, event: SseEvent) {
         // factory method workflow:
         //  1. extract the index of the current event from span (0 when missing)
@@ -147,7 +153,18 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
     }
 
     /**
-     * @return true if the event was successfully assigned into the span, false otherwise
+     * Attempts to register a single SSE response event on the given [span].
+     *
+     * Implementations must:
+     * - return [Result.success] when the event has been successfully assigned to the span
+     *   (for example, attributes or other data derived from [event] have been recorded)
+     *   so that it can be counted towards the stream event index;
+     * - return [Result.failure] when the event cannot or should not be assigned
+     *   (for example, due to parsing/validation errors or unsupported event type),
+     *   optionally carrying a descriptive exception.
+     *
+     * A failure result prevents the caller from incrementing the stored SSE event index,
+     * and the contained exception (if any) will be logged (see `registerResponseStreamEvent(Span, TracyHttpUrl, SseEvent)`).
      */
     protected abstract fun registerResponseStreamEvent(span: Span, url: TracyHttpUrl, event: SseEvent, index: Long): Result<Unit>
 
