@@ -58,6 +58,7 @@ internal fun URLBuilder.toProtocolUrl(): TracyHttpUrl {
         host = builder.host,
         pathSegments = builder.pathSegments,
         parameters = params,
+        url = builder.buildString(),
     )
 }
 
@@ -74,5 +75,6 @@ internal fun KtorUrl.toProtocolUrl(): TracyHttpUrl {
         host = url.host,
         pathSegments = url.segments,
         parameters = params,
+        url = url.toString(),
     )
 }
