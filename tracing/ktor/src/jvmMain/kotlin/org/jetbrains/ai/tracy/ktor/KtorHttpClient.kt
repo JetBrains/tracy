@@ -5,14 +5,7 @@
 
 package org.jetbrains.ai.tracy.ktor
 
-import org.jetbrains.ai.tracy.core.TracingManager
-import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
-import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
-import org.jetbrains.ai.tracy.core.http.protocol.asRequestBody
-import org.jetbrains.ai.tracy.core.http.protocol.asRequestView
 import io.ktor.client.*
-import java.nio.ByteBuffer
-import java.nio.CharBuffer
 import io.ktor.client.plugins.api.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
@@ -35,13 +28,15 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.serializer
 import mu.KotlinLogging
-import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequestBody
+import org.jetbrains.ai.tracy.core.TracingManager
+import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
 import org.jetbrains.ai.tracy.core.http.parsers.SseParser
-import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponseBody
+import org.jetbrains.ai.tracy.core.http.protocol.*
+import java.nio.ByteBuffer
+import java.nio.CharBuffer
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
 
