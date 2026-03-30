@@ -82,12 +82,13 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
 
             // set response body attributes only for `application/json` content types;
             // stream events are handled by `registerResponseStreamEvent`
-            when (contentType?.mimeType) {
-                TracyContentType.Application.Json.mimeType -> {
-                    // TODO: register non-JSON and non-SSE responses also (e.g., video/mp4)
+            val mimeType = contentType?.mimeType
+            when {
+                mimeType != TracyContentType.Text.EventStream.mimeType -> {
+                    // register any non-SSE stream response types (application/json, video/mp4, etc.)
                     getResponseBodyAttributes(span, response)
                 }
-                TracyContentType.Text.EventStream.mimeType -> {
+                mimeType == TracyContentType.Text.EventStream.mimeType -> {
                     span.setAttribute("tracy.response.sse.streaming", true)
                 }
                 else -> {
