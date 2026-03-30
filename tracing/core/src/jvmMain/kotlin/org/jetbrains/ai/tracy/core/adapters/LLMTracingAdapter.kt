@@ -15,6 +15,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mu.KotlinLogging
+import org.jetbrains.ai.tracy.core.adapters.handlers.sse.SseEventHandlingUnsupported
 import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 
 
@@ -52,7 +53,12 @@ import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
  * @param genAISystem The name of the GenAI system (e.g., "openai", "anthropic", "gemini")
  */
 abstract class LLMTracingAdapter(private val genAISystem: String) {
+    private var sseHandlingUnsupportedWarningPrinted = false
+
     fun registerRequest(span: Span, request: TracyHttpRequest): Unit = runCatching {
+        // new request -> new trace
+        sseHandlingUnsupportedWarningPrinted = false
+
         // Pre-allocate in case the span reaches the limit
         span.setAttribute(DROPPED_ATTRIBUTES_COUNT_ATTRIBUTE_KEY, 0L)
 
@@ -150,7 +156,15 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
             // event was successfully assigned into span
             span.setAttribute(STREAM_EVENTS_COUNT_KEY, nextEventIndex + 1)
         } else if (result.isFailure) {
-            logger.warn { "Failed to assign SSE event to span: ${result.exceptionOrNull()}" }
+            val exception = result.exceptionOrNull()
+            when {
+                // print unsupported warning only once per trace
+                exception is SseEventHandlingUnsupported && !sseHandlingUnsupportedWarningPrinted -> {
+                    sseHandlingUnsupportedWarningPrinted = true
+                    logger.warn { "SSE event handling unsupported for ${url.asString()}" }
+                }
+                else -> logger.warn { "Failed to assign SSE event to span: $exception" }
+            }
         }
     }
 
