@@ -145,9 +145,15 @@ class SseParser(private val onEvent: (SseEvent) -> Unit) : Closeable {
     }
 
     override fun close() {
-        // purging memory: remove any unfinished/malformed event data
-        lineBuffer.clear()
-        dataBuffer.clear()
+        // flush any pending line as if the stream ended with a newline
+        if (lineBuffer.isNotEmpty()) {
+            processLine(lineBuffer.toString())
+            lineBuffer.clear()
+        }
+        // if there is any buffered event data, dispatch a final event
+        if (dataBuffer.isNotEmpty()) {
+            dispatchEvent()
+        }
     }
 }
 
