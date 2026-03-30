@@ -165,7 +165,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
         val tracer = TracingManager.tracer
 
         // duplicate plugins are ignored by the API implementation
-        config.install(createClientPlugin("NetworkParamsPlugin") {
+        config.install(createClientPlugin("TracyInterceptingPlugin") {
             onRequest { request, _ ->
                 val tracingEnabled = TracingManager.isTracingEnabled
                 request.attributes.put(tracingEnabledKey, tracingEnabled)
