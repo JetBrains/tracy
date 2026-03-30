@@ -43,11 +43,6 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
  */
 class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.GEMINI) {
     override fun getRequestBodyAttributes(span: Span, request: TracyHttpRequest) {
-        val (model, operation) = request.url.modelAndOperation()
-
-        model?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, model) }
-        operation?.let { span.setAttribute(GEN_AI_OPERATION_NAME, operation) }
-
         val handler = selectHandler(request.url)
         handler.handleRequestAttributes(span, request)
     }

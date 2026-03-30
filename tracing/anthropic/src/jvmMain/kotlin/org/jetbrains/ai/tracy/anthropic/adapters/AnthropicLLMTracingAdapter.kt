@@ -8,7 +8,6 @@ package org.jetbrains.ai.tracy.anthropic.adapters
 import org.jetbrains.ai.tracy.anthropic.model.*
 import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
 import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter.Companion.PayloadType
-import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter.Companion.populateUnmappedAttributes
 import org.jetbrains.ai.tracy.core.adapters.media.*
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
@@ -17,7 +16,6 @@ import org.jetbrains.ai.tracy.core.http.protocol.asJson
 import org.jetbrains.ai.tracy.core.model.*
 import org.jetbrains.ai.tracy.core.policy.ContentKind
 import org.jetbrains.ai.tracy.core.policy.contentTracingAllowed
-import org.jetbrains.ai.tracy.core.policy.orRedactedOutput
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
@@ -91,9 +89,9 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
 
         val tools = req.tools?.map { tool ->
             TracedTool(
+                type = "function",
                 name = tool.name,
                 description = tool.description,
-                type = tool.type,
                 parameters = tool.inputSchema?.toString(),
             )
         } ?: emptyList()
@@ -123,38 +121,29 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
     }
 
     private fun normalizeResponse(resp: AnthropicMessagesResponse): TracedResponse {
-        val completions = resp.content?.map { block ->
+        var textContent: String? = null
+        val toolCalls = mutableListOf<TracedToolCall>()
+
+        resp.content?.forEach { block ->
             when (block.type) {
-                "text" -> TracedCompletion(
-                    type = block.type,
-                    content = block.text,
-                )
-
-                "tool_use" -> {
-                    // Anthropic uses flat tool attributes without a sub-index:
-                    //   gen_ai.completion.$index.tool.call.id
-                    //   gen_ai.completion.$index.tool.call.type
-                    //   gen_ai.completion.$index.tool.name
-                    //   gen_ai.completion.$index.tool.arguments
-                    val toolExtras = buildMap {
-                        block.id?.let { put("tool.call.id", it) }
-                        block.type?.let { put("tool.call.type", it) }
-                        block.name?.let { put("tool.name", it.orRedactedOutput()) }
-                        block.input?.let { put("tool.arguments", it.toString().orRedactedOutput()) }
-                    }
-                    TracedCompletion(
-                        type = block.type,
-                        extraAttributes = toolExtras,
+                "text" -> textContent = listOfNotNull(textContent, block.text).joinToString("\n")
+                "tool_use" -> toolCalls.add(
+                    TracedToolCall(
+                        id = block.id,
+                        type = "function",
+                        name = block.name,
+                        arguments = block.input?.toString(),
                     )
-                }
-
-                else -> TracedCompletion(
-                    type = block.type,
-                    // pass the whole block as content for unknown types
-                    content = block.toString(),
                 )
             }
-        } ?: emptyList()
+        }
+
+        val completion = TracedCompletion(
+            role = resp.role ?: "assistant",
+            content = textContent,
+            finishReason = resp.stopReason,
+            toolCalls = toolCalls,
+        )
 
         val usage = resp.usage?.let { u ->
             val extras = buildMap<String, Any?> {
@@ -177,7 +166,7 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
         return TracedResponse(
             id = resp.id,
             model = resp.model,
-            completions = completions,
+            completions = listOf(completion),
             finishReasons = listOfNotNull(resp.stopReason),
             usage = usage,
             extraAttributes = extras,

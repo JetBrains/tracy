@@ -89,12 +89,9 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
         val finishReasons = trace.attributes[AttributeKey.stringArrayKey("gen_ai.response.finish_reasons")]
         Assumptions.assumeTrue { finishReasons?.contains("tool_use") == true }
 
-        // when completion is null, then the tool call index will be 0,
-        // otherwise 1 (i.e., coming after the normal assistant response)
-        val toolCallIndex = if (completion == null) 0 else 1
-
-        val toolName = trace.attributes[AttributeKey.stringKey("gen_ai.completion.$toolCallIndex.tool.name")]
-        val toolArgs = trace.attributes[AttributeKey.stringKey("gen_ai.completion.$toolCallIndex.tool.arguments")]
+        // Tool call attributes at gen_ai.completion.0.tool.0.*
+        val toolName = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")]
+        val toolArgs = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")]
 
         if (!policy.captureOutputs) {
             assertEquals("REDACTED", toolName, "Tool name content should be redacted")
@@ -148,24 +145,19 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
 
         // Check tool definitions in the request
         assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
-        assertEquals("custom", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.type")])
+        assertEquals("function", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.type")])
         assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.description")].isNullOrEmpty())
         assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.parameters")].isNullOrEmpty())
 
-        // assert tool use requests when LLM finished with a tool call
+        // assert tool use in response — merged completion at index 0
         if (trace.attributes[GEN_AI_RESPONSE_FINISH_REASONS]?.contains("tool_use") == true) {
-            // expect any of the indices to capture AI's tool call request
-            val index = listOf(0, 1).firstOrNull {
-                trace.attributes[AttributeKey.stringKey("gen_ai.completion.$it.tool.call.id")]?.isNotEmpty() == true
-            }
-
-            assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.completion.$index.tool.name")])
+            assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")])
             assertEquals(
-                "tool_use",
-                trace.attributes[AttributeKey.stringKey("gen_ai.completion.$index.tool.call.type")]
+                "function",
+                trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.call.type")]
             )
-            assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.$index.tool.call.id")].isNullOrEmpty())
-            assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.$index.tool.arguments")].isNullOrEmpty())
+            assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.call.id")].isNullOrEmpty())
+            assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")].isNullOrEmpty())
         }
     }
 
@@ -361,9 +353,9 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
 
         assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]?.commonPrefixWith(model.asString()) == "claude-haiku-4-5")
 
-        val type = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.type")]
-        assertNotNull(type)
-        assertTrue(type.isNotEmpty())
+        val role = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.role")]
+        assertNotNull(role)
+        assertEquals("assistant", role)
 
         val text = trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.content")]
         assertNotNull(text)

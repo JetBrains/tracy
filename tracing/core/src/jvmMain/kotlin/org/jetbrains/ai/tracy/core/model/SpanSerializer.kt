@@ -23,7 +23,7 @@ import kotlinx.serialization.json.*
  * - Generation config attributes (model, temperature, etc.)
  * - System prompt (text or structured blocks)
  * - Indexed messages with redaction by [ContentKind]
- * - Indexed tool definitions (flat and Gemini nested functions)
+ * - Indexed tool definitions
  * - Indexed completions with tool calls
  * - Usage statistics
  * - Media content extraction
@@ -64,18 +64,6 @@ object SpanSerializer {
             tool.description?.let { span.setAttribute("gen_ai.tool.$index.description", it.orRedactedInput()) }
             tool.parameters?.let { span.setAttribute("gen_ai.tool.$index.parameters", it.orRedactedInput()) }
             tool.strict?.let { span.setAttribute("gen_ai.tool.$index.strict", it) }
-
-            // Gemini nested function declarations
-            tool.functions?.forEachIndexed { fnIdx, fn ->
-                fn.type?.let { span.setAttribute("gen_ai.tool.$index.function.$fnIdx.type", it) }
-                fn.name?.let { span.setAttribute("gen_ai.tool.$index.function.$fnIdx.name", it.orRedactedInput()) }
-                fn.description?.let {
-                    span.setAttribute("gen_ai.tool.$index.function.$fnIdx.description", it.orRedactedInput())
-                }
-                fn.parameters?.let {
-                    span.setAttribute("gen_ai.tool.$index.function.$fnIdx.parameters", it.orRedactedInput())
-                }
-            }
         }
 
         // Media content
@@ -183,20 +171,9 @@ object SpanSerializer {
                     for (tool in request.tools) {
                         addJsonObject {
                             tool.type?.let { put("type", it) }
-                            if (tool.functions == null) {
-                                putJsonObject("function") {
-                                    putFunctionFields(tool.name, tool.description, tool.parameters)
-                                    tool.strict?.let { put("strict", it) }
-                                }
-                            } else {
-                                putJsonArray("function_declarations") {
-                                    for (fn in tool.functions) {
-                                        addJsonObject {
-                                            fn.type?.let { put("type", it) }
-                                            putFunctionFields(fn.name, fn.description, fn.parameters)
-                                        }
-                                    }
-                                }
+                            putJsonObject("function") {
+                                putFunctionFields(tool.name, tool.description, tool.parameters)
+                                tool.strict?.let { put("strict", it) }
                             }
                         }
                     }
