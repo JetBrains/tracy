@@ -10,9 +10,22 @@ package org.jetbrains.ai.tracy.core.adapters.handlers.sse
  * Should be used when handling of SSE events failed.
  *
  * @see org.jetbrains.ai.tracy.core.adapters.handlers.EndpointApiHandler.handleStreamingEvent
+ * @see sseHandlingUnsupported
  */
 fun sseHandlingFailure(message: String): Result<Unit> {
     return Result.failure(SseEventHandlingException(message))
 }
 
+/**
+ * Wraps [SseEventHandlingUnsupported] into a [Result] indicating
+ * that SSE handling is not supported in this call site.
+ *
+ * @see sseHandlingFailure
+ */
+fun sseHandlingUnsupported(): Result<Unit> {
+    return Result.failure(SseEventHandlingUnsupported())
+}
+
 class SseEventHandlingException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
+
+class SseEventHandlingUnsupported : RuntimeException("SSE event handling is not supported yet")
