@@ -240,49 +240,14 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 val span = response.call.request.attributes.getOrNull(httpSpanKey)
                     ?: return@transformResponseBody null
 
-
                 adapter.registerResponse(span, response = response.asResponseView())
 
                 // trace SSE events and register them in the adapter one by one
-                val originalBody: ByteReadChannel = content
-                val tracingChannel = ByteChannel(autoFlush = true)
-
-                val url = response.request.url.toProtocolUrl()
-                val sseParser = SseParser { event ->
-                    // trace SSE event in adapter
-                    adapter.registerResponseStreamEvent(span, url, event)
-                }
-
-                CoroutineScope(response.coroutineContext).launch(start = CoroutineStart.UNDISPATCHED) {
-                    try {
-                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                        while (!originalBody.isClosedForRead) {
-                            val bytesRead = originalBody.readAvailable(buffer, 0, buffer.size)
-                            if (bytesRead == -1) {
-                                break
-                            }
-                            if (bytesRead > 0) {
-                                sseParser.feed(
-                                    input = buffer.decodeToString(0, bytesRead)
-                                )
-                                tracingChannel.writeFully(buffer, 0, bytesRead)
-                                tracingChannel.flush()
-                            }
-                        }
-                    } catch (e: Exception) {
-                        span.setStatus(StatusCode.ERROR)
-                        span.recordException(e)
-                        if (!tracingChannel.isClosedForWrite) {
-                            tracingChannel.close(e)
-                        }
-                    } finally {
-                        span.end()
-                        sseParser.close()
-                        if (!tracingChannel.isClosedForWrite) {
-                            tracingChannel.close()
-                        }
-                    }
-                }
+                val tracingChannel = traceServerSentEvents(
+                    response = response,
+                    originalBody = content,
+                    span = span,
+                )
 
                 return@transformResponseBody when {
                     typeInfo.type == ByteReadChannel::class -> tracingChannel
@@ -290,6 +255,60 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 }
             }
         })
+    }
+
+    /**
+     * Reads available bytes from [originalBody] and feeds them into an instance of [SseParser]
+     * that registers SSE events into [adapter].
+     *
+     * The caller MUST ensure that the underlying response is indeed of `text/event-stream` MIME type.
+     */
+    private fun traceServerSentEvents(
+        response: HttpResponse,
+        originalBody: ByteReadChannel,
+        span: Span,
+    ): ByteChannel {
+        // trace SSE events and register them in the adapter one by one
+        val tracingChannel = ByteChannel(autoFlush = true)
+
+        val url = response.request.url.toProtocolUrl()
+        val sseParser = SseParser { event ->
+            // trace SSE event in adapter
+            adapter.registerResponseStreamEvent(span, url, event)
+        }
+
+        CoroutineScope(response.coroutineContext).launch(start = CoroutineStart.UNDISPATCHED) {
+            try {
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                while (!originalBody.isClosedForRead) {
+                    val bytesRead = originalBody.readAvailable(buffer, 0, buffer.size)
+                    if (bytesRead == -1) {
+                        break
+                    }
+                    if (bytesRead > 0) {
+                        sseParser.feed(
+                            input = buffer.decodeToString(0, bytesRead)
+                        )
+                        tracingChannel.writeFully(buffer, 0, bytesRead)
+                        tracingChannel.flush()
+                    }
+                }
+            } catch (e: Exception) {
+                span.setStatus(StatusCode.ERROR)
+                span.recordException(e)
+                if (!tracingChannel.isClosedForWrite) {
+                    tracingChannel.close(e)
+                }
+            } finally {
+                span.end()
+                sseParser.close()
+                if (!tracingChannel.isClosedForWrite) {
+                    tracingChannel.close()
+                }
+            }
+        }
+
+        return tracingChannel
     }
 
     @OptIn(InternalIoApi::class, InternalAPI::class)
