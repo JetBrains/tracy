@@ -25,6 +25,12 @@ interface TracyHttpUrl {
     val host: String
     val pathSegments: List<String>
     val parameters: TracyQueryParameters
+
+    fun asString(): String {
+        // TODO: add query TracyQueryParameters.asString()
+        val endpoint = pathSegments.joinToString("/")
+        return "$scheme://$host/$endpoint"
+    }
 }
 
 @InternalTracyApi
