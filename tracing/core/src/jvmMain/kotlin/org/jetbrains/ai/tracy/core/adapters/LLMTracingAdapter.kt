@@ -80,7 +80,7 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
                 span.setAttribute("gen_ai.completion.content.type", it)
             }
 
-            // set response body attributes only for `application/json` content types;
+            // set response body attributes only for non-stream content types;
             // stream events are handled by `registerResponseStreamEvent`
             val mimeType = contentType?.mimeType
             when {
