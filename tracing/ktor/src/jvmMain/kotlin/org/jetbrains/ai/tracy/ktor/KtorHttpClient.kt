@@ -282,6 +282,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
         CoroutineScope(response.coroutineContext).launch(start = CoroutineStart.UNDISPATCHED) {
             try {
                 val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+
                 // Use a stateful UTF-8 decoder so that multi-byte sequences split across
                 // read boundaries are reassembled correctly instead of producing replacement chars.
                 val utf8Decoder = Charsets.UTF_8.newDecoder()
@@ -302,13 +303,17 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                         byteBuffer.put(buffer, 0, bytesRead)
                         byteBuffer.flip()
                         charBuffer.clear()
-                        utf8Decoder.decode(byteBuffer, charBuffer, false)
-                        // Move any undecoded partial-sequence bytes to the start of the buffer.
+
+                        val endOfInput = originalBody.isClosedForRead
+                        utf8Decoder.decode(byteBuffer, charBuffer, endOfInput)
+                        // move any undecoded partial-sequence bytes to the start of the buffer
                         byteBuffer.compact()
                         charBuffer.flip()
                         if (charBuffer.hasRemaining()) {
                             sseParser.feed(charBuffer.toString())
                         }
+
+                        // forward unmodified types
                         tracingChannel.writeFully(buffer, 0, bytesRead)
                         tracingChannel.flush()
                     }
