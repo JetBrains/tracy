@@ -17,7 +17,7 @@ interface EndpointApiHandler {
     fun handleRequestAttributes(span: Span, request: TracyHttpRequest)
     fun handleResponseAttributes(span: Span, response: TracyHttpResponse)
     /**
-     * Returns success if the event was handled successfully, or an error if it could not be handled.
+     * Returns success if the event was handled successfully, or an error otherwise.
      *
      * @see org.jetbrains.ai.tracy.core.adapters.handlers.sse.sseHandlingFailure
      * @see org.jetbrains.ai.tracy.core.adapters.handlers.sse.SseEventHandlingException
