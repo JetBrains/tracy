@@ -5,15 +5,6 @@
 
 package org.jetbrains.ai.tracy.ktor
 
-import org.jetbrains.ai.tracy.core.http.protocol.TracyContentType
-import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
-import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponseBody
-import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpUrl
-import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpUrlImpl
-import org.jetbrains.ai.tracy.core.http.protocol.TracyQueryParameters
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.request
-import io.ktor.http.URLBuilder
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import org.jetbrains.ai.tracy.core.http.protocol.*
