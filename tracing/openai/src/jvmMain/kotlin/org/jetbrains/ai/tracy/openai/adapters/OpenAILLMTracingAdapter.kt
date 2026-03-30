@@ -10,7 +10,6 @@ import org.jetbrains.ai.tracy.core.adapters.handlers.EndpointApiHandler
 import org.jetbrains.ai.tracy.core.adapters.media.MediaContentExtractorImpl
 import org.jetbrains.ai.tracy.core.http.protocol.*
 import org.jetbrains.ai.tracy.openai.adapters.handlers.ChatCompletionsOpenAIApiEndpointHandler
-import org.jetbrains.ai.tracy.openai.adapters.handlers.OpenAIApiUtils
 import org.jetbrains.ai.tracy.openai.adapters.handlers.ResponsesOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.images.ImagesCreateEditOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.images.ImagesCreateOpenAIApiEndpointHandler
@@ -90,7 +89,6 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
 
     override fun getResponseBodyAttributes(span: Span, response: TracyHttpResponse) {
         val handler = handlerFor(response.url)
-        OpenAIApiUtils.setCommonResponseAttributes(span, response)
         handler.handleResponseAttributes(span, response)
     }
 

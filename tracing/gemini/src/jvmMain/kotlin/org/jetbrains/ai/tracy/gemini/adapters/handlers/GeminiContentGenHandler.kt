@@ -123,7 +123,7 @@ class GeminiContentGenHandler(
 
             TracedCompletion(
                 role = candidate.content?.role,
-                content = textContent ?: parts?.toString(),
+                content = textContent ?: if (toolCalls.isEmpty()) parts?.toString() else null,
                 finishReason = candidate.finishReason,
                 toolCalls = toolCalls,
             )
@@ -174,18 +174,18 @@ class GeminiContentGenHandler(
         val tools = body["tools"]
         if (tools !is JsonArray) return emptyList()
 
-        return tools.jsonArray.map { tool ->
-            TracedTool(
-                functions = tool.jsonObject["functionDeclarations"]?.jsonArray?.map { fn ->
-                    TracedToolFunction(
-                        type = fn.jsonObject["parametersJsonSchema"]?.jsonObject
-                            ?.get("type")?.jsonPrimitive?.content,
-                        name = fn.jsonObject["name"]?.jsonPrimitive?.contentOrNull,
-                        description = fn.jsonObject["description"]?.jsonPrimitive?.contentOrNull,
-                        parameters = fn.jsonObject["parameters"]?.toString(),
-                    )
-                },
-            )
+        return tools.jsonArray.flatMap { tool ->
+            val fns = tool.jsonObject["functionDeclarations"]?.jsonArray
+                ?: return@flatMap emptyList()
+            fns.map { fn ->
+                TracedTool(
+                    type = "function",
+                    name = fn.jsonObject["name"]?.jsonPrimitive?.contentOrNull,
+                    description = fn.jsonObject["description"]?.jsonPrimitive?.contentOrNull,
+                    parameters = (fn.jsonObject["parameters"]
+                        ?: fn.jsonObject["parametersJsonSchema"])?.toString(),
+                )
+            }
         }
     }
 
@@ -208,7 +208,7 @@ class GeminiContentGenHandler(
         if (parts == null || parts.size != 1) return null
         val item = parts.first()
         if (item !is JsonObject) return null
-        if ("text" in item.keys) return item["text"]?.toString()
+        if (item.keys.size == 1 && "text" in item.keys) return item["text"]?.jsonPrimitive?.content
         return null
     }
 
@@ -217,16 +217,21 @@ class GeminiContentGenHandler(
      */
     private fun extractToolCalls(parts: List<JsonElement>?): List<TracedToolCall> {
         if (parts == null) return emptyList()
+        var callIndex = 0
         return buildList {
             for (part in parts) {
                 if (part !is JsonObject) continue
                 val functionCall = part["functionCall"]?.jsonObject ?: continue
+                val name = functionCall["name"]?.jsonPrimitive?.content
                 add(
                     TracedToolCall(
-                        name = functionCall["name"]?.jsonPrimitive?.content,
+                        id = "call_${name ?: callIndex}", // Gemini doesn't provide tool call IDs
+                        type = "function",
+                        name = name,
                         arguments = functionCall["args"]?.toString(),
                     )
                 )
+                callIndex++
             }
         }
     }

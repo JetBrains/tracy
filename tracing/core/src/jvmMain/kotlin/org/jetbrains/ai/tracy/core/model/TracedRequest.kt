@@ -70,6 +70,7 @@ data class SystemBlock(val type: String?, val content: String?)
 
 /**
  * A tool definition from the request.
+ * All providers normalize to this flat structure with type="function".
  */
 data class TracedTool(
     val type: String? = null,
@@ -77,19 +78,4 @@ data class TracedTool(
     val description: String? = null,
     val parameters: String? = null,
     val strict: String? = null,
-    /**
-     * Gemini: nested function declarations within a single tool object.
-     * OpenAI/Anthropic leave this null (each tool has a single function).
-     */
-    val functions: List<TracedToolFunction>? = null,
-)
-
-/**
- * A function declaration nested within a Gemini tool.
- */
-data class TracedToolFunction(
-    val type: String? = null,
-    val name: String? = null,
-    val description: String? = null,
-    val parameters: String? = null,
 )

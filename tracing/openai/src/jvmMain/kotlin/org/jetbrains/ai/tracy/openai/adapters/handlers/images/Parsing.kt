@@ -14,7 +14,6 @@ import org.jetbrains.ai.tracy.core.http.protocol.asJson
 import org.jetbrains.ai.tracy.core.policy.ContentKind
 import org.jetbrains.ai.tracy.core.policy.contentTracingAllowed
 import org.jetbrains.ai.tracy.core.policy.orRedactedOutput
-import org.jetbrains.ai.tracy.openai.adapters.handlers.asString
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
@@ -165,3 +164,10 @@ private fun setUsageAttributes(span: Span, usage: JsonObject) {
         span.setAttribute(AttributeKey.longKey("gen_ai.usage.total_tokens"), it)
     }
 }
+
+internal val JsonElement.asString: String
+    get() = when (this) {
+        is JsonArray -> this.jsonArray.toString()
+        is JsonObject -> this.jsonObject.toString()
+        is JsonPrimitive -> this.jsonPrimitive.content
+    }

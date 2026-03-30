@@ -71,9 +71,9 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
 
         // input side
         val prompt = trace.attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")]
-        val name = trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.name")]
-        val description = trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.description")]
-        val parameters = trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.parameters")]
+        val name = trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")]
+        val description = trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.description")]
+        val parameters = trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.parameters")]
 
         if (!policy.captureInputs) {
             assertEquals("REDACTED", prompt, "User prompt should be redacted")
@@ -199,16 +199,17 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
         val trace = traces.first()
 
         // assert request
-        assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.name")])
+        assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
         assertEquals(
             "Say hi to the user",
-            trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.description")]
+            trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.description")]
         )
-        assertEquals("object", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.type")])
+        assertEquals("function", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.type")])
 
         // assert response
         assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")])
         assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")].isNullOrEmpty())
+        assertEquals("function", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.call.type")])
     }
 
     @Test
@@ -281,16 +282,17 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
         val trace = traces.first()
 
         // assert request
-        assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.name")])
+        assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
         assertEquals(
             "Say hi to the user",
-            trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.description")]
+            trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.description")]
         )
-        assertEquals("object", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.type")])
+        assertEquals("function", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.type")])
 
         // assert response
         assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.name")])
         assertFalse(trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.arguments")].isNullOrEmpty())
+        assertEquals("function", trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.tool.0.call.type")])
     }
 
     @Test
@@ -353,8 +355,8 @@ class GeminiTracingTest : BaseGeminiTracingTest() {
         val trace = traces.first()
 
         // Assert both tools are declared in the request
-        assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.function.0.name")])
-        assertEquals("goodbye", trace.attributes[AttributeKey.stringKey("gen_ai.tool.1.function.0.name")])
+        assertEquals("hi", trace.attributes[AttributeKey.stringKey("gen_ai.tool.0.name")])
+        assertEquals("goodbye", trace.attributes[AttributeKey.stringKey("gen_ai.tool.1.name")])
 
         // If function calls were made, assert both appear in completion metadata
         if ((trace.attributes[AttributeKey.stringKey("gen_ai.completion.0.finish_reason")]
