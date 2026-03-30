@@ -11,6 +11,8 @@ import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.core.http.protocol.asRequestBody
 import org.jetbrains.ai.tracy.core.http.protocol.asRequestView
 import io.ktor.client.*
+import java.nio.ByteBuffer
+import java.nio.CharBuffer
 import io.ktor.client.plugins.api.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
@@ -280,15 +282,33 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
         CoroutineScope(response.coroutineContext).launch(start = CoroutineStart.UNDISPATCHED) {
             try {
                 val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                // Use a stateful UTF-8 decoder so that multi-byte sequences split across
+                // read boundaries are reassembled correctly instead of producing replacement chars.
+                val utf8Decoder = Charsets.UTF_8.newDecoder()
+                // Extra 3 bytes of capacity hold at most one incomplete multi-byte sequence
+                // (a 4-byte UTF-8 code-point can leave up to 3 bytes undecoded when only
+                // the first 1–3 bytes arrive in a chunk).
+                val byteBuffer = ByteBuffer.allocate(DEFAULT_BUFFER_SIZE + 3)
+                // Each UTF-8 code unit is at least 1 byte, so the char count cannot exceed the
+                // byte count. In the worst case (all ASCII), byteBuffer holds DEFAULT_BUFFER_SIZE + 3
+                // bytes, so charBuffer needs the same capacity.
+                val charBuffer = CharBuffer.allocate(DEFAULT_BUFFER_SIZE + 3)
                 while (!originalBody.isClosedForRead) {
                     val bytesRead = originalBody.readAvailable(buffer, 0, buffer.size)
                     if (bytesRead == -1) {
                         break
                     }
                     if (bytesRead > 0) {
-                        sseParser.feed(
-                            input = buffer.decodeToString(0, bytesRead)
-                        )
+                        byteBuffer.put(buffer, 0, bytesRead)
+                        byteBuffer.flip()
+                        charBuffer.clear()
+                        utf8Decoder.decode(byteBuffer, charBuffer, false)
+                        // Move any undecoded partial-sequence bytes to the start of the buffer.
+                        byteBuffer.compact()
+                        charBuffer.flip()
+                        if (charBuffer.hasRemaining()) {
+                            sseParser.feed(charBuffer.toString())
+                        }
                         tracingChannel.writeFully(buffer, 0, bytesRead)
                         tracingChannel.flush()
                     }
