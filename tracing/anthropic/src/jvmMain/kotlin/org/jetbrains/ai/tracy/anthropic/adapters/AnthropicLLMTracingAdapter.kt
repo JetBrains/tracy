@@ -5,9 +5,16 @@
 
 package org.jetbrains.ai.tracy.anthropic.adapters
 
+import io.opentelemetry.api.trace.Span
+import io.opentelemetry.sdk.trace.ReadableSpan
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
+import kotlinx.serialization.json.*
+import mu.KotlinLogging
 import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
 import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter.Companion.PayloadType
+import org.jetbrains.ai.tracy.core.adapters.handlers.sse.sseHandlingFailure
 import org.jetbrains.ai.tracy.core.adapters.media.*
+import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpUrl
@@ -16,12 +23,6 @@ import org.jetbrains.ai.tracy.core.policy.ContentKind
 import org.jetbrains.ai.tracy.core.policy.contentTracingAllowed
 import org.jetbrains.ai.tracy.core.policy.orRedactedInput
 import org.jetbrains.ai.tracy.core.policy.orRedactedOutput
-import io.opentelemetry.api.trace.Span
-import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
-import kotlinx.serialization.json.*
-import mu.KotlinLogging
-import org.jetbrains.ai.tracy.core.adapters.handlers.sse.sseHandlingFailure
-import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 
 /**
  * Tracing adapter for Anthropic Claude API.
@@ -54,8 +55,8 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
         val body = request.body.asJson()?.jsonObject ?: return
 
         body["temperature"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it) }
-        body["model"]?.jsonPrimitive?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it.content) }
-        body["max_tokens"]?.jsonPrimitive?.intOrNull?.let { span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it.toLong()) }
+        body["model"]?.jsonPrimitive?.content?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it) }
+        body["max_tokens"]?.jsonPrimitive?.longOrNull?.let { span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it) }
 
         // metadata
         body["metadata"]?.jsonObject?.let { metadata ->
@@ -129,9 +130,27 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
         val body = response.body.asJson()?.jsonObject ?: return
 
         body["id"]?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
-        body["type"]?.let { span.setAttribute(GEN_AI_OUTPUT_TYPE, it.jsonPrimitive.content) }
+        body["type"]?.jsonPrimitive?.content?.let {
+            span.setAttribute(GEN_AI_OUTPUT_TYPE, it)
+            span.setAttribute(GEN_AI_OPERATION_NAME, it)
+        }
         body["role"]?.let { span.setAttribute("gen_ai.response.role", it.jsonPrimitive.content) }
         body["model"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
+
+        // update the span name to follow GenAI Anthropic Conventions
+        // convention: `{gen_ai.operation.name} {gen_ai.request.model}`
+        // see: https://opentelemetry.io/docs/specs/semconv/gen-ai/anthropic/#spans
+        val spanName = run {
+            val type = body["type"]?.jsonPrimitive?.contentOrNull
+            val model = (span as? ReadableSpan)
+                ?.attributes
+                ?.get(GEN_AI_REQUEST_MODEL)
+                ?: body["model"]
+            if (type != null && model != null) "$type $model" else null
+        }
+        if (spanName != null) {
+            span.updateName(spanName)
+        }
 
         // collecting response messages
         body["content"]?.let {
@@ -206,6 +225,16 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
     }
 
+    /**
+     * Sets a default span name to **"Anthropic-generation"**.
+     *
+     * This name will be overridden in [getResponseBodyAttributes] to follow GenAI Conventions for Anthropic:
+     * ```
+     * {gen_ai.operation.name} {gen_ai.request.model}
+     * ```
+     *
+     * See [GenAI Anthropic Spans](https://opentelemetry.io/docs/specs/semconv/gen-ai/anthropic/#spans)
+     */
     override fun getSpanName() = "Anthropic-generation"
 
     override fun registerResponseStreamEvent(
