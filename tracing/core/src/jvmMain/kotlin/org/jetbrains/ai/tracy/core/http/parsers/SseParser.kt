@@ -127,6 +127,7 @@ class SseParser(private val onEvent: (SseEvent) -> Unit) : Closeable {
     private fun dispatchEvent() {
         if (dataBuffer.isEmpty()) {
             eventType = ""
+            retryValue = null
             return
         }
 
