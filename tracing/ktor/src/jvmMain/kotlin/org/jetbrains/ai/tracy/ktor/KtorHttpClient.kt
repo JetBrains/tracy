@@ -239,15 +239,16 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
 
                 adapter.registerResponse(span, response = response.asResponseView())
 
-                // trace SSE events and register them in the adapter one by one
-                val tracingChannel = traceServerSentEvents(
-                    response = response,
-                    originalBody = content,
-                    span = span,
-                )
-
                 return@transformResponseBody when {
-                    typeInfo.type == ByteReadChannel::class -> tracingChannel
+                    typeInfo.type == ByteReadChannel::class -> {
+                        // trace SSE events and register them in the adapter one by one
+                        val tracingChannel = traceServerSentEvents(
+                            response = response,
+                            originalBody = content,
+                            span = span,
+                        )
+                        tracingChannel
+                    }
                     else -> null
                 }
             }
