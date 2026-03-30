@@ -5,18 +5,18 @@
 
 package org.jetbrains.ai.tracy.gemini.adapters.handlers
 
+import io.opentelemetry.api.trace.Span
+import kotlinx.serialization.json.*
 import org.jetbrains.ai.tracy.core.adapters.handlers.EndpointApiHandler
+import org.jetbrains.ai.tracy.core.adapters.handlers.sse.sseHandlingUnsupported
 import org.jetbrains.ai.tracy.core.adapters.media.MediaContent
 import org.jetbrains.ai.tracy.core.adapters.media.MediaContentExtractor
 import org.jetbrains.ai.tracy.core.adapters.media.MediaContentPart
 import org.jetbrains.ai.tracy.core.adapters.media.Resource
+import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.core.http.protocol.asJson
-import io.opentelemetry.api.trace.Span
-import kotlinx.serialization.json.*
-import org.jetbrains.ai.tracy.core.adapters.handlers.sse.sseHandlingFailure
-import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 
 /**
  * Parses Imagen API requests and responses
@@ -94,7 +94,7 @@ class GeminiImagenHandler(
         event: SseEvent,
         index: Long
     ): Result<Unit> {
-        return sseHandlingFailure("Unsupported")
+        return sseHandlingUnsupported()
     }
 
     /**

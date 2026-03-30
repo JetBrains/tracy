@@ -12,7 +12,7 @@ import kotlinx.serialization.json.*
 import mu.KotlinLogging
 import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
 import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter.Companion.PayloadType
-import org.jetbrains.ai.tracy.core.adapters.handlers.sse.sseHandlingFailure
+import org.jetbrains.ai.tracy.core.adapters.handlers.sse.sseHandlingUnsupported
 import org.jetbrains.ai.tracy.core.adapters.media.*
 import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
@@ -243,7 +243,7 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
         event: SseEvent,
         index: Long
     ): Result<Unit> {
-        return sseHandlingFailure("Unsupported")
+        return sseHandlingUnsupported()
     }
 
     /**
