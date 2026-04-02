@@ -321,9 +321,9 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test OpenAI responses API additional attributes`() = runTest {
-        // this test is only possible on a LiteLLM pass-through.
+        // this test is only possible on a LiteLLM pass-through or when mocking locally.
         // OpenAI API endpoint throws 400 Bad Request on unconventional properties, unlike LiteLLM, which ignores them
-        Assumptions.assumeTrue { llmProviderUrl.startsWith("https://litellm.labs.jb.gg") }
+        Assumptions.assumeTrue { llmProviderUrl.startsWith("https://litellm.labs.jb.gg") || isMockMode() }
 
         val client = createOpenAIClient(llmProviderUrl, llmProviderApiKey).apply { instrument(this) }
 

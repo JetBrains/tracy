@@ -111,6 +111,8 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
         mockServer?.stop()
     }
 
+    protected fun isMockMode() = testMode == TestMode.MOCK
+
     protected open fun createOpenAIClient(
         url: String? = llmProviderUrl,
         apiKey: String = llmProviderApiKey,
