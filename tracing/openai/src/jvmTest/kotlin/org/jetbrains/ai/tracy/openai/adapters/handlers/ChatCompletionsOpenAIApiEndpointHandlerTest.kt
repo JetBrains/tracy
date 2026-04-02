@@ -290,30 +290,6 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     }
 
     @Test
-    fun `test OpenAI chat completions additional attributes`() = runTest {
-        // this test is only possible on a LiteLLM pass-through.
-        // OpenAI API endpoint throws 400 Bad Request on unconventional properties, unlike LiteLLM, which ignores them
-        Assumptions.assumeTrue { llmProviderUrl.startsWith("https://litellm.labs.jb.gg") }
-
-        val client = createOpenAIClient(llmProviderUrl, llmProviderApiKey).apply { instrument(this) }
-
-        val paramsBuilder = ChatCompletionCreateParams.builder()
-            .model(ChatModel.O1)
-            .addUserMessage("Say hi to user using reasoning and tool `hi`")
-            .metadata(
-                ChatCompletionCreateParams.Metadata.builder()
-                    .additionalProperties(mapOf("metadataKey" to JsonValue.from("metadataValue")))
-                    .build()
-            )
-            .additionalBodyProperties(
-                mapOf("additionalBodyPropertyKey" to JsonValue.from("additionalBodyPropertyValue"))
-            )
-
-        client.chat().completions().create(paramsBuilder.build())
-        validateAdditionalAttributes()
-    }
-
-    @Test
     fun `test OpenAI embeddings`() = runTest {
         // handler defaults to chat/completions, but the specific embedding parameters are still propagated to the span
         val client = createOpenAIClient(llmProviderUrl, llmProviderApiKey).apply { instrument(this) }

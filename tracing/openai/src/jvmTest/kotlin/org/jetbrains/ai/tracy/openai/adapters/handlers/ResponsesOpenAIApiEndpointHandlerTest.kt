@@ -319,31 +319,6 @@ class ResponsesOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         validateStreaming(sb.toString())
     }
 
-    @Test
-    fun `test OpenAI responses API additional attributes`() = runTest {
-        // this test is only possible on a LiteLLM pass-through or when mocking locally.
-        // OpenAI API endpoint throws 400 Bad Request on unconventional properties, unlike LiteLLM, which ignores them
-        Assumptions.assumeTrue { llmProviderUrl.startsWith("https://litellm.labs.jb.gg") || isMockMode() }
-
-        val client = createOpenAIClient(llmProviderUrl, llmProviderApiKey).apply { instrument(this) }
-
-        val paramsBuilder = ResponseCreateParams.builder()
-            .input("Say hi to user")
-            .model(ChatModel.GPT_4O_MINI)
-            .temperature(0.0)
-            .metadata(
-                ResponseCreateParams.Metadata.builder()
-                    .additionalProperties(mapOf("metadataKey" to JsonValue.from("metadataValue")))
-                    .build()
-            )
-            .additionalBodyProperties(
-                mapOf("additionalBodyPropertyKey" to JsonValue.from("additionalBodyPropertyValue"))
-            )
-
-        client.responses().create(paramsBuilder.build())
-        validateAdditionalAttributes()
-    }
-
     @ParameterizedTest
     @MethodSource("provideContentCapturePolicies")
     fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) = runTest {

@@ -9,22 +9,15 @@ import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import mu.KotlinLogging
 import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
-import okio.Buffer
-import okio.BufferedSource
-import okio.ForwardingSource
-import okio.Source
-import okio.buffer
-import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
-import org.jetbrains.ai.tracy.core.http.protocol.*
+import okio.*
 import org.jetbrains.ai.tracy.core.TracingManager
+import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
 import org.jetbrains.ai.tracy.core.http.parsers.SseParser
-import java.util.concurrent.atomic.AtomicInteger
+import org.jetbrains.ai.tracy.core.http.protocol.*
 import okhttp3.Request as OkHttpRequest
 import okhttp3.Response as OkHttpResponse
 import okhttp3.ResponseBody as OkHttpResponseBody

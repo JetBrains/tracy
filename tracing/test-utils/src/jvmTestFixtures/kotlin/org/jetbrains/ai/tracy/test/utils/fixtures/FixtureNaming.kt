@@ -48,7 +48,7 @@ private const val FIXTURE_NAME_MAX_LENGTH = 128
  * Creates a fixture tag from test information.
  *
  * For regular tests, returns the sanitized test name.
- * For parameterized tests, returns: `[sanitized-test-name]_[index]-[parameterName]`
+ * For parameterized tests, returns: `[sanitized-test-name]_[index ]-[parameterName ]`
  *
  * Examples:
  * - Regular test: `"test OpenAI chat completions"` → `"openai-chat-completions"`
