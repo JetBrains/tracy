@@ -33,7 +33,7 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     fun `test generate image with different response formats`(
         responseFormat: ImageGenerateParams.ResponseFormat?
     ) = runTest(timeout = 3.minutes) {
-        assumeOpenAIEndpoint(patchedProviderUrl)
+        assumeOpenAIEndpointOrMockMode(patchedProviderUrl)
 
         val client = createOpenAIClient(
             url = patchedProviderUrl,
@@ -141,7 +141,7 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test generation of multiple images gets traced`() = runTest(timeout = 3.minutes) {
-        assumeOpenAIEndpoint(patchedProviderUrl)
+        assumeOpenAIEndpointOrMockMode(patchedProviderUrl)
 
         val client = createOpenAIClient(
             url = patchedProviderUrl,
@@ -184,7 +184,7 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test invalid param 'n=0' gets traced as an error`() = runTest {
-        assumeOpenAIEndpoint(patchedProviderUrl)
+        assumeOpenAIEndpointOrMockMode(patchedProviderUrl)
 
         val client = createOpenAIClient(
             url = patchedProviderUrl,

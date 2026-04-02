@@ -336,8 +336,8 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
      *
      * @param url The URL to be validated as an OpenAI production endpoint.
      */
-    protected fun assumeOpenAIEndpoint(url: String) {
-        Assumptions.assumeTrue(url.startsWith(PRODUCTION_URL))
+    protected fun assumeOpenAIEndpointOrMockMode(url: String) {
+        Assumptions.assumeTrue(isMockMode() || url.startsWith(PRODUCTION_URL))
     }
 }
 
