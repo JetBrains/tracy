@@ -13,8 +13,10 @@ import kotlinx.coroutines.test.runTest
 import org.jetbrains.ai.tracy.openai.adapters.BaseOpenAITracingTest
 import org.jetbrains.ai.tracy.openai.clients.instrument
 import org.junit.jupiter.api.Assumptions
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 
+@Tag("openai")
 class AdditionalAttributesOpenAIEndpointHandlerTest : BaseOpenAITracingTest() {
     @Test
     fun `test OpenAI chat completions additional attributes`() = runTest {
