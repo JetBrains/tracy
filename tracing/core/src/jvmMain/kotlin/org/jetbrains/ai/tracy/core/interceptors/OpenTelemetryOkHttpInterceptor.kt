@@ -275,8 +275,6 @@ class OpenTelemetryOkHttpInterceptor(
 
     private fun OkHttpResponse.withTracedSSE(span: Span, requestUrl: TracyHttpUrl): OkHttpResponse {
         val originalResponse = this
-        val originalBody = originalResponse.body ?: return originalResponse
-
         // dispatch SSE events to the adapter
         val parser = SseParser { event ->
             adapter.registerResponseStreamEvent(span, requestUrl, event)
@@ -285,6 +283,8 @@ class OpenTelemetryOkHttpInterceptor(
         // wrap the source of the original body with a capturing source
         // that forwards UTF-8-decoded bytes into SSE parser
         val originalBodyWithTracedSSE = object : OkHttpResponseBody() {
+            private val originalBody = originalResponse.body
+
             override fun contentType() = originalBody.contentType()
             override fun contentLength() = originalBody.contentLength()
 
@@ -295,6 +295,8 @@ class OpenTelemetryOkHttpInterceptor(
             }
 
             override fun close() {
+                super.close()
+                originalBody.close()
                 span.end()
             }
         }

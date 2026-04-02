@@ -47,9 +47,10 @@ class RecordingInterceptor(
 
         // Wrap the response body to capture bytes as they're consumed
         val capturedBytes = ByteArrayOutputStream()
-        val originalBody = response.body
 
         val capturingBody = object : ResponseBody() {
+            private val originalBody = response.body
+
             override fun contentType() = originalBody.contentType()
             override fun contentLength() = originalBody.contentLength()
 
@@ -64,6 +65,8 @@ class RecordingInterceptor(
             override fun close() {
                 // When the body is fully consumed and closed, record the fixture
                 super.close()
+                originalBody.close()
+
                 // Record the fixture with all captured bytes
                 recorder.record(
                     method = method,
