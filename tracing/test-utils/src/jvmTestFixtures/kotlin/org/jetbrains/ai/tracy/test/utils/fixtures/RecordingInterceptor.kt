@@ -8,10 +8,7 @@ package org.jetbrains.ai.tracy.test.utils.fixtures
 import okhttp3.Interceptor
 import okhttp3.Response
 import okhttp3.ResponseBody
-import okio.Buffer
-import okio.ForwardingSource
-import okio.Source
-import okio.buffer
+import okio.*
 import java.io.ByteArrayOutputStream
 import java.nio.file.Path
 
@@ -43,43 +40,39 @@ class RecordingInterceptor(
         val headers = response.headers.toMultimap()
         val contentType = response.body.contentType()?.toString()
 
+        println("RecordingInterceptor: statusCode=$statusCode")
         println("RecordingInterceptor: response content type: $contentType")
 
         // Wrap the response body to capture bytes as they're consumed
         val capturedBytes = ByteArrayOutputStream()
+        val originalBody = response.body
 
         val capturingBody = object : ResponseBody() {
-            private val originalBody = response.body
+            private val bufferedSource: BufferedSource by lazy {
+                BodyCapturingSource(
+                    delegate = originalBody.source(),
+                    onBytesRead = { bytes -> capturedBytes.write(bytes) },
+                    onClose = {
+                        // when the body is fully consumed and closed,
+                        // record the fixture with all captured bytes
+                        recorder.record(
+                            method = method,
+                            path = path,
+                            statusCode = statusCode,
+                            headers = headers,
+                            body = capturedBytes.toByteArray(),
+                            contentType = contentType,
+                            fixtureTag = fixtureTag,
+                            responseIndex = recordedResponsesCount,
+                        )
+                        recordedResponsesCount += 1
+                    }
+                ).buffer()
+            }
 
             override fun contentType() = originalBody.contentType()
             override fun contentLength() = originalBody.contentLength()
-
-            override fun source(): okio.BufferedSource {
-                val capturingSource = BodyCapturingSource(
-                    delegate = originalBody.source(),
-                    onBytesRead = { bytes -> capturedBytes.write(bytes) }
-                )
-                return capturingSource.buffer()
-            }
-
-            override fun close() {
-                // When the body is fully consumed and closed, record the fixture
-                super.close()
-                originalBody.close()
-
-                // Record the fixture with all captured bytes
-                recorder.record(
-                    method = method,
-                    path = path,
-                    statusCode = statusCode,
-                    headers = headers,
-                    body = capturedBytes.toByteArray(),
-                    contentType = contentType,
-                    fixtureTag = fixtureTag,
-                    responseIndex = recordedResponsesCount,
-                )
-                recordedResponsesCount += 1
-            }
+            override fun source() = bufferedSource
         }
 
         return response.newBuilder()
@@ -96,7 +89,8 @@ class RecordingInterceptor(
  */
 private class BodyCapturingSource(
     delegate: Source,
-    private val onBytesRead: (ByteArray) -> Unit
+    private val onBytesRead: (ByteArray) -> Unit,
+    private val onClose: () -> Unit = {},
 ) : ForwardingSource(delegate) {
     override fun read(sink: Buffer, byteCount: Long): Long {
         val bytesRead = super.read(sink, byteCount)
@@ -108,5 +102,13 @@ private class BodyCapturingSource(
             onBytesRead(captured)
         }
         return bytesRead
+    }
+
+    override fun close() {
+        try {
+            super.close()
+        } finally {
+            onClose()
+        }
     }
 }

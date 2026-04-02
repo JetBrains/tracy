@@ -24,6 +24,7 @@ import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
 import org.jetbrains.ai.tracy.core.http.protocol.*
 import org.jetbrains.ai.tracy.core.TracingManager
 import org.jetbrains.ai.tracy.core.http.parsers.SseParser
+import java.util.concurrent.atomic.AtomicInteger
 import okhttp3.Request as OkHttpRequest
 import okhttp3.Response as OkHttpResponse
 import okhttp3.ResponseBody as OkHttpResponseBody
@@ -164,7 +165,10 @@ fun <T> patchOpenAICompatibleClient(client: T, interceptor: Interceptor) {
     val okHttpClient = getFieldValue(okHttpHolder, "okHttpClient") as OkHttpClient
 
     // add a given interceptor if the current list of interceptors doesn't contain it already
+    println("Installing $interceptor:")
+    println("   Already installed interceptors: ${okHttpClient.interceptors}")
     val updatedInterceptors = patchInterceptors(okHttpClient.interceptors, interceptor)
+    println("   Updated interceptors: $updatedInterceptors")
     setFieldValue(okHttpClient, "interceptors", updatedInterceptors)
 }
 
@@ -249,10 +253,14 @@ class OpenTelemetryOkHttpInterceptor(
                 val response = chain.proceed(request)
                 adapter.registerResponse(span, response = response.asResponseView())
 
+                println("OpenTelemetryOkHttpInterceptor: response content type: ${response.body.contentType()}")
+
                 // response is of streaming type when its body MIME type is `text/event-stream`
                 isStreamingResponse = response.body.contentType()?.let {
                     "${it.type}/${it.subtype}" == "text/event-stream"
                 } ?: false
+
+                println("OpenTelemetryOkHttpInterceptor: isStreamingResponse=$isStreamingResponse")
 
                 // trace SSE events into span when the content type of the response body is `text/event-stream`
                 return when {
@@ -273,8 +281,13 @@ class OpenTelemetryOkHttpInterceptor(
         }
     }
 
+    /**
+     * Span is closed when the underlying response body is exhausted and closed.
+     */
     private fun OkHttpResponse.withTracedSSE(span: Span, requestUrl: TracyHttpUrl): OkHttpResponse {
         val originalResponse = this
+        val originalBody = originalResponse.body
+
         // dispatch SSE events to the adapter
         val parser = SseParser { event ->
             adapter.registerResponseStreamEvent(span, requestUrl, event)
@@ -283,22 +296,20 @@ class OpenTelemetryOkHttpInterceptor(
         // wrap the source of the original body with a capturing source
         // that forwards UTF-8-decoded bytes into SSE parser
         val originalBodyWithTracedSSE = object : OkHttpResponseBody() {
-            private val originalBody = originalResponse.body
-
+            private val bufferedSource: BufferedSource by lazy {
+                // capture SSE events via SSE parser and forward them into the adapter
+                SseCapturingSource(
+                    delegate = originalBody.source(),
+                    parser,
+                    // NOTE: end the span when the source is closed
+                    onClose = {
+                        span.end()
+                    },
+                ).buffer()
+            }
             override fun contentType() = originalBody.contentType()
             override fun contentLength() = originalBody.contentLength()
-
-            override fun source(): BufferedSource {
-                // capture SSE events via SSE parser and forward them into the adapter
-                val sseCapturingSource = SseCapturingSource(delegate = originalBody.source(), parser)
-                return sseCapturingSource.buffer()
-            }
-
-            override fun close() {
-                super.close()
-                originalBody.close()
-                span.end()
-            }
+            override fun source() = bufferedSource
         }
 
         return originalResponse.newBuilder()
@@ -371,6 +382,7 @@ class OpenTelemetryOkHttpInterceptor(
 private class SseCapturingSource(
     delegate: Source,
     private val parser: SseParser,
+    private val onClose: () -> Unit = {},
 ) : ForwardingSource(delegate) {
     override fun read(sink: Buffer, byteCount: Long): Long {
         val bytesRead = super.read(sink, byteCount)
@@ -388,7 +400,11 @@ private class SseCapturingSource(
     }
 
     override fun close() {
-        super.close()
-        parser.close()
+        try {
+            super.close()
+            parser.close()
+        } finally {
+            onClose()
+        }
     }
 }

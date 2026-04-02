@@ -68,7 +68,6 @@ class FixtureRecorder(
 
             println("Recorded body file: ${bodyFile.toAbsolutePath()}")
 
-            // TODO: replace with absolute
             FixtureBody.ExternalFile(
                 relativePath = bodyFilename,
                 contentType = contentType
