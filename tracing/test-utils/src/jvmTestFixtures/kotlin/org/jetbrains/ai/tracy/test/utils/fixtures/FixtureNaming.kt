@@ -87,7 +87,7 @@ fun createFixtureTag(testInfo: TestInfo): String {
 /**
  * Extracts parameter index and name from JUnit parameterized test display name.
  *
- * Expected format: `"[index] ParameterType(param1=value1, param2=value2, ...)"`
+ * Expected format: `"[index ] ParameterType(param1=value1, param2=value2, ...)"`
  *
  * Examples:
  * - `"[1] ContentCapturePolicy(captureInputs=false, captureOutputs=false)"` → (1, "ContentCapturePolicy")
