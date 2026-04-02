@@ -14,6 +14,7 @@ import okhttp3.mockwebserver.RecordedRequest
 import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.exists
+import kotlin.io.path.readBytes
 
 /**
  * Header name for specifying fixture tag in MOCK mode.
@@ -39,7 +40,7 @@ class FixtureMockServer(private val fixturesDir: Path) {
         val fixtures = loadFixtures(fixturesDir)
             ?: error("Failed to load fixtures from directory: ${fixturesDir.toAbsolutePath()}")
 
-        server.dispatcher = FixtureDispatcher(fixtures)
+        server.dispatcher = FixtureDispatcher(fixtures, fixturesDir)
         server.start()
     }
 
@@ -93,7 +94,8 @@ class FixtureMockServer(private val fixturesDir: Path) {
 }
 
 private class FixtureDispatcher(
-    private val fixtures: Map<String, HttpFixture>
+    private val fixtures: Map<String, HttpFixture>,
+    private val fixturesDir: Path,
 ) : Dispatcher() {
     // fixture tag -> number of already dispatched requests
     private val dispatchedRequestsCountPerFixtureTag = mutableMapOf<String, Int>()
@@ -156,6 +158,21 @@ private class FixtureDispatcher(
         // this request was successfully dispatched to an existing fixture response
         dispatchedRequestsCountPerFixtureTag[fixtureTag] = dispatchedRequestsCount + 1
 
+        // Load the body content based on storage type
+        val bodyContent = when (val body = fixture.body) {
+            is FixtureBody.Inline -> body.content
+            is FixtureBody.ExternalFile -> {
+                val bodyFile = fixturesDir.resolve(fixture.details.tag).resolve(body.relativePath)
+                try {
+                    // TODO: is it possible to read the body as a stream instead?
+                    bodyFile.readBytes().decodeToString()
+                } catch (e: Exception) {
+                    logger.error(e) { "Failed to read external body file: $bodyFile" }
+                    return notFoundResponse("Failed to read external body file: ${e.message}")
+                }
+            }
+        }
+
         return MockResponse()
             .setResponseCode(fixture.statusCode)
             .apply {
@@ -166,7 +183,7 @@ private class FixtureDispatcher(
                     }
                 }
             }
-            .setBody(fixture.body)
+            .setBody(bodyContent)
     }
 
     companion object {

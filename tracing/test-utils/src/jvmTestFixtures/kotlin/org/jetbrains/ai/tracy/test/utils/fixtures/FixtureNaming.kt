@@ -135,3 +135,35 @@ internal fun generateFixtureFilename(
 
     return "${method.lowercase()}-$sanitizedPath-${fixtureIndex}.${extensionWithoutDot}"
 }
+
+/**
+ * Generates a filename for storing response body content externally.
+ *
+ * The extension is determined based on the content type:
+ * - `text/event-stream` → `.sse`
+ * - `video/\*` → `.mp4`, `.avi`, etc.
+ * - `image/\*` → `.png`, `.jpg`, etc.
+ * - Other → `.bin`
+ *
+ * @param method HTTP method (GET, POST, etc.)
+ * @param path API endpoint path
+ * @param fixtureIndex Index of the response in the sequence
+ * @param contentType MIME type of the content
+ * @return Filename with appropriate extension
+ */
+internal fun generateBodyFilename(
+    method: String,
+    path: String,
+    fixtureIndex: Int,
+    contentType: String?
+): String {
+    val extension = when {
+        contentType == null -> "bin"
+        contentType.contains("event-stream", ignoreCase = true) -> "sse"
+        contentType.startsWith("video/", ignoreCase = true) -> contentType.substringAfter("/").substringBefore(";")
+        contentType.startsWith("image/", ignoreCase = true) -> contentType.substringAfter("/").substringBefore(";")
+        contentType.startsWith("audio/", ignoreCase = true) -> contentType.substringAfter("/").substringBefore(";")
+        else -> "bin"
+    }
+    return generateFixtureFilename(method, path, fixtureIndex, extension)
+}

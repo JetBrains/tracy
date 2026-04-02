@@ -7,7 +7,12 @@ package org.jetbrains.ai.tracy.test.utils.fixtures
 
 import okhttp3.Interceptor
 import okhttp3.Response
-import okhttp3.ResponseBody.Companion.toResponseBody
+import okhttp3.ResponseBody
+import okio.Buffer
+import okio.ForwardingSource
+import okio.Source
+import okio.buffer
+import java.io.ByteArrayOutputStream
 import java.nio.file.Path
 
 /**
@@ -36,32 +41,69 @@ class RecordingInterceptor(
         val path = request.url.encodedPath
         val statusCode = response.code
         val headers = response.headers.toMultimap()
+        val contentType = response.body.contentType()?.toString()
 
-        // TODO: when not `application/json`, don't read the body (can be octet-stream, video/mp4, etc)
-        // Read body once and create new response with buffered body
-        val responseBody = response.body
-        val bodyString = responseBody?.string() ?: ""
+        println("RecordingInterceptor: response content type: $contentType")
 
-        // Record the fixture with the tag.
-        // during the same test case, several API requests may be made;
-        // therefore, to distinguish them between each other, we track their order
-        recorder.record(
-            method = method,
-            path = path,
-            statusCode = statusCode,
-            headers = headers,
-            body = bodyString,
-            fixtureTag = fixtureTag,
-            responseIndex = recordedResponsesCount,
-        )
-        recordedResponsesCount += 1
+        // Wrap the response body to capture bytes as they're consumed
+        val capturedBytes = ByteArrayOutputStream()
+        val originalBody = response.body
 
-        // Create a new response with the body content since we consumed it
-        val clonedBody = bodyString.toResponseBody(responseBody?.contentType())
+        val capturingBody = object : ResponseBody() {
+            override fun contentType() = originalBody.contentType()
+            override fun contentLength() = originalBody.contentLength()
+
+            override fun source(): okio.BufferedSource {
+                val capturingSource = BodyCapturingSource(
+                    delegate = originalBody.source(),
+                    onBytesRead = { bytes -> capturedBytes.write(bytes) }
+                )
+                return capturingSource.buffer()
+            }
+
+            override fun close() {
+                // When the body is fully consumed and closed, record the fixture
+                super.close()
+                // Record the fixture with all captured bytes
+                recorder.record(
+                    method = method,
+                    path = path,
+                    statusCode = statusCode,
+                    headers = headers,
+                    body = capturedBytes.toByteArray(),
+                    contentType = contentType,
+                    fixtureTag = fixtureTag,
+                    responseIndex = recordedResponsesCount,
+                )
+                recordedResponsesCount += 1
+            }
+        }
+
         return response.newBuilder()
-            .code(response.code)
-            .headers(response.headers)
-            .body(clonedBody)
+            .body(capturingBody)
             .build()
+    }
+}
+
+/**
+ * A forwarding source that captures bytes as they're read from the delegate source.
+ *
+ * Similar to [org.jetbrains.ai.tracy.core.interceptors.SseCapturingSource],
+ * but used for recording fixtures instead of tracing.
+ */
+private class BodyCapturingSource(
+    delegate: Source,
+    private val onBytesRead: (ByteArray) -> Unit
+) : ForwardingSource(delegate) {
+    override fun read(sink: Buffer, byteCount: Long): Long {
+        val bytesRead = super.read(sink, byteCount)
+        if (bytesRead > 0L) {
+            // Peek at the bytes just written to sink
+            val captured = sink.peek().apply {
+                skip(sink.size - bytesRead)
+            }.readByteArray(bytesRead)
+            onBytesRead(captured)
+        }
+        return bytesRead
     }
 }

@@ -53,6 +53,7 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
 
     @BeforeEach
     fun captureTestName(testInfo: TestInfo) {
+        println("(mockserver: ${mockServer?.url()})")
         currentTestName = createFixtureTag(testInfo)
     }
 
