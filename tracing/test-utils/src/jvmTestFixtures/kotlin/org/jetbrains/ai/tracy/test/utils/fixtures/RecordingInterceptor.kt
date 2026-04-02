@@ -25,6 +25,7 @@ import java.nio.file.Path
 class RecordingInterceptor(
     fixturesDir: Path,
     sanitizer: ResponseSanitizer,
+    private val containingTestSuiteName: String,
     private val fixtureTag: String,
 ) : Interceptor {
     private val recorder = FixtureRecorder(fixturesDir, sanitizer)
@@ -59,9 +60,10 @@ class RecordingInterceptor(
                             method = method,
                             path = path,
                             statusCode = statusCode,
+                            contentType = contentType,
                             headers = headers,
                             body = capturedBytes.toByteArray(),
-                            contentType = contentType,
+                            containingTestSuiteName = containingTestSuiteName,
                             fixtureTag = fixtureTag,
                             responseIndex = recordedResponsesCount,
                         )

@@ -23,6 +23,12 @@ import kotlin.io.path.readBytes
 const val FIXTURE_TAG_HEADER = "X-Tracy-Fixture-Tag"
 
 /**
+ * Header name for specifying the test suite name in MOCK mode.
+ * Clients should add this header to requests to match the containing folder of a fixture.
+ */
+const val FIXTURE_TEST_SUITE_NAME_HEADER = "X-Tracy-Fixture-Test-Suite-Name"
+
+/**
  * Manages a mock HTTP server that serves responses from fixture files.
  *
  * This class loads HTTP fixtures from a directory and serves them via
@@ -97,8 +103,15 @@ private class FixtureDispatcher(
     private val fixtures: Map<String, HttpFixture>,
     private val fixturesDir: Path,
 ) : Dispatcher() {
-    // fixture tag -> number of already dispatched requests
-    private val dispatchedRequestsCountPerFixtureTag = mutableMapOf<String, Int>()
+    /**
+     * A fixture location is a containing test suite name and a fixture tag
+     * concatenated with a slash.
+     *
+     * Represents a mapping of:
+     *
+     * `"containingTestSuiteName/fixtureTag"` -> number of already dispatched requests
+     */
+    private val dispatchedRequestsCountPerFixtureLocation = mutableMapOf<String, Int>()
 
     override fun dispatch(request: RecordedRequest): MockResponse {
         println("FixtureDispatcher.dispatch")
@@ -111,58 +124,54 @@ private class FixtureDispatcher(
         val path = request.path ?: return notFoundResponse("Request path is null")
         val method = request.method ?: return notFoundResponse("Request method is null")
 
-        // extract the fixture tag from the header if present
+        // extract the fixture tag and containing test suite names from the header if present
         val fixtureTag = request.getHeader(FIXTURE_TAG_HEADER) ?: return notFoundResponse(
             "No fixture tag provided in request headers, ensure '$FIXTURE_TAG_HEADER' header is set to a fixture tag"
         )
+        val containingTestSuiteName = request.getHeader(FIXTURE_TEST_SUITE_NAME_HEADER) ?: return notFoundResponse(
+            "No containing test suite class name provided in request headers, " +
+                    "ensure '$FIXTURE_TEST_SUITE_NAME_HEADER' header is set to a class name of the containing test suite"
+        )
 
-        val dispatchedRequestsCount = dispatchedRequestsCountPerFixtureTag.getOrPut(fixtureTag) { 0 }
+        val fixtureLocation = "$containingTestSuiteName/$fixtureTag"
+        val dispatchedRequestsCount = dispatchedRequestsCountPerFixtureLocation
+            .getOrPut(fixtureLocation) { 0 }
 
-        // build a list of possible fixture keys to try, in order of specificity:
-        // 1. With tag (if provided)
-        // 2. Without tag (fallback)
-        // 3. Fuzzy match with tag (path without query params)
-        // 4. Fuzzy match without tag
-        val keys = buildList {
-            val exactKey = fixtureKey(method, path, fixtureTag, index = dispatchedRequestsCount)
-
-            // dropping query params
-            val fuzzyKey = fixtureKey(
-                method = method,
-                path = path.substringBefore('?'),
-                tag = fixtureTag,
-                index = dispatchedRequestsCount,
-            )
-
-            add(exactKey)
-            add(fuzzyKey)
-        }
-
-        println("[Dispatcher] keys: $keys")
-
-        val fixture = keys.firstNotNullOfOrNull { fixtures[it] }
+        // dropping query params of the path
+        val fixtureKey = fixtureKey(
+            method = method,
+            path = path.substringBefore('?'),
+            containingTestClassName = containingTestSuiteName,
+            tag = fixtureTag,
+            index = dispatchedRequestsCount,
+        )
+        val fixture = fixtures[fixtureKey]
 
         println("[Dispatcher] registered fixture keys: ${fixtures.keys.toList()}")
-        println("[Dispatcher] found fixture: $fixture")
 
         if (fixture == null) {
             val errorMessage = """
-                No fixture found for keys: ${keys.joinToString(", ") { "`$it`" }}
+                No fixture found for key '$fixtureKey'.
                 Available fixture keys: ${fixtures.keys.joinToString(", ")}.
-                "Ensure fixture response associated with a fixture tag '${fixtureTag}' exists"
+                Ensure fixture response associated with a fixture tag '${fixtureTag}' exists
             """.trimIndent()
             logger.error { errorMessage }
             return notFoundResponse(errorMessage)
         }
 
         // this request was successfully dispatched to an existing fixture response
-        dispatchedRequestsCountPerFixtureTag[fixtureTag] = dispatchedRequestsCount + 1
+        dispatchedRequestsCountPerFixtureLocation[fixtureLocation] = dispatchedRequestsCount + 1
 
-        // Load the body content based on storage type
+        // Load the body content based on a storage type
         val bodyContent = when (val body = fixture.body) {
             is FixtureBody.Inline -> body.content
             is FixtureBody.ExternalFile -> {
-                val bodyFile = fixturesDir.resolve(fixture.details.tag).resolve(body.relativePath)
+                // resolving under: `containingTestSuiteName/fixtureTag/bodyFilename`
+                val bodyFile = fixturesDir
+                    .resolve(containingTestSuiteName)
+                    .resolve(fixture.details.tag)
+                    .resolve(body.relativePath)
+
                 try {
                     // TODO: is it possible to read the body as a stream instead?
                     bodyFile.readBytes().decodeToString()
@@ -204,6 +213,7 @@ private class FixtureDispatcher(
 private fun HttpFixture.fixtureKey() = fixtureKey(
     method = this.method,
     path = this.path,
+    containingTestClassName = this.details.containingTestClassName,
     tag = this.details.tag,
     index = this.details.index,
 )
@@ -219,9 +229,10 @@ private fun HttpFixture.fixtureKey() = fixtureKey(
 private fun fixtureKey(
     method: String,
     path: String,
+    containingTestClassName: String,
     tag: String,
     index: Int,
 ): String {
     val fixtureFilename = generateFixtureFilename(method, path, fixtureIndex = index, extension = "json")
-    return "$tag/$fixtureFilename"
+    return "$containingTestClassName/$tag/$fixtureFilename"
 }

@@ -34,6 +34,7 @@ import org.junit.jupiter.api.TestInstance
 import java.io.File
 import java.nio.file.Path
 import java.time.Duration
+import kotlin.jvm.optionals.getOrNull
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -51,9 +52,15 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
      */
     protected var currentTestName: String? = null
 
+    /**
+     * The name of a test suite whose test cas is currently running.
+     * It is used for folder naming when recording fixtures locally.
+     */
+    private var currentContainingTestSuiteName: String? = null
+
     @BeforeEach
     fun captureTestName(testInfo: TestInfo) {
-        println("(mockserver: ${mockServer?.url()})")
+        currentContainingTestSuiteName = testInfo.testClass.getOrNull()?.simpleName
         currentTestName = createFixtureTag(testInfo)
     }
 
@@ -122,14 +129,17 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
     ): OpenAIClient {
         // Determine the fixture identifier: explicit tag > current test name
         val fixtureIdentifier = fixtureTag ?: currentTestName!!
+        val testSuiteName = currentContainingTestSuiteName ?: "unknown"
 
         val builder = OpenAIOkHttpClient.builder()
             .baseUrl(url)
             .apiKey(apiKey)
             .timeout(timeout)
 
-        // In MOCK mode, add a fixture tag header so the mock server can match the right fixture
+        // In MOCK mode, add a fixture tag and test suite name headers,
+        // so the mock server can match the right fixture
         if (testMode == TestMode.MOCK) {
+            builder.putHeader(FIXTURE_TEST_SUITE_NAME_HEADER, testSuiteName)
             builder.putHeader(FIXTURE_TAG_HEADER, fixtureIdentifier)
         }
 
@@ -141,6 +151,7 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
             val recordingInterceptor = RecordingInterceptor(
                 fixturesDir = fixturesDir,
                 sanitizer = OpenAISanitizer(),
+                containingTestSuiteName = testSuiteName,
                 fixtureTag = fixtureIdentifier,
             )
             patchOpenAICompatibleClient(client, recordingInterceptor)

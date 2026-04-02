@@ -44,14 +44,18 @@ class FixtureRecorder(
         headers: Map<String, List<String>>,
         body: ByteArray,
         contentType: String?,
+        containingTestSuiteName: String,
         fixtureTag: String,
         responseIndex: Int,
     ) {
         val sanitizedHeaders = sanitizer.sanitizeHeaders(headers)
-        val fixtureTagDir = fixturesDir.resolve(fixtureTag)
+        // resolving under: `fixtureDir/containingTestSuiteName/fixtureTag`
+        val fixtureDirectory = fixturesDir
+            .resolve(containingTestSuiteName)
+            .resolve(fixtureTag)
 
         // Ensure parent directories exist
-        fixtureTagDir.createDirectories()
+        fixtureDirectory.createDirectories()
 
         // Determine storage strategy: inline for small JSON, external file for everything else
         val fixtureBody = if (shouldStoreInline(contentType, body.size)) {
@@ -61,9 +65,9 @@ class FixtureRecorder(
             val sanitizedBody = sanitizer.sanitizeBody(bodyString, contentType)
             FixtureBody.Inline(sanitizedBody)
         } else {
-            // Store in external file
+            // Store in an external file
             val bodyFilename = generateBodyFilename(method, path, responseIndex, contentType)
-            val bodyFile = fixtureTagDir.resolve(bodyFilename)
+            val bodyFile = fixtureDirectory.resolve(bodyFilename)
             bodyFile.writeBytes(body)
 
             println("Recorded body file: ${bodyFile.toAbsolutePath()}")
@@ -75,7 +79,7 @@ class FixtureRecorder(
         }
 
         val filename = generateFixtureFilename(method, path, responseIndex, extension = "json")
-        val fixtureFile = fixtureTagDir.resolve(filename)
+        val fixtureFile = fixtureDirectory.resolve(filename)
 
         val fixture = HttpFixture(
             method = method,
@@ -84,13 +88,14 @@ class FixtureRecorder(
             headers = sanitizedHeaders,
             body = fixtureBody,
             details = FixtureDetails(
+                containingTestClassName = containingTestSuiteName,
                 filename = filename,
                 tag = fixtureTag,
                 index = responseIndex,
             )
         )
 
-        // Write fixture metadata to JSON file
+        // Write fixture metadata to the JSON file
         val fixtureJson = json.encodeToString(fixture)
         fixtureFile.writeText(fixtureJson)
 
@@ -173,12 +178,42 @@ data class HttpFixture(
     val details: FixtureDetails,
 )
 
+/**
+ * Details about a recorded fixture.
+ *
+ * Example:
+ * ```json
+ *     "details": {
+ *         "containingTestClassName": "ImagesCreateEditOpenAIApiEndpointHandlerTest",
+ *         "filename": "post-responses-0.json",
+ *         "tag": "user-prompt-is-sent-as-a-single-message-in-input-field",
+ *         "index": 0
+ *     }
+ * ```
+ */
 @Serializable
 data class FixtureDetails(
+    /**
+     * Class name of the test suite that contains a test case
+     * dedicated to this fixture.
+     */
+    val containingTestClassName: String,
     /**
      * Expected to contain an extension as well (e.g., `my-file.json`)
      */
     val filename: String,
+    /**
+     * Usually a test case name with whitespaces replaced with dashes
+     * and the leading `test` word removed.
+     *
+     * @see createFixtureTag
+     */
     val tag: String,
+    /**
+     * The index of the response in the sequence of responses.
+     *
+     * For example, when a test case calls an API twice, there will be two responses fixtures,
+     * one containing `index=0` and the other containing `index=1`.
+     */
     val index: Int,
 )
