@@ -122,6 +122,7 @@ internal fun generateFixtureFilename(
     path: String,
     fixtureIndex: Int,
     extension: String,
+    prefix: String = "",
 ): String {
     // Convert path like "/v1/chat/completions" to "chat-completions"
     val sanitizedPath = path
@@ -133,7 +134,11 @@ internal fun generateFixtureFilename(
 
     val extensionWithoutDot = extension.removePrefix(".")
 
-    return "${method.lowercase()}-$sanitizedPath-${fixtureIndex}.${extensionWithoutDot}"
+    return if (prefix.isNotEmpty()) {
+        "$prefix-${method.lowercase()}-$sanitizedPath-${fixtureIndex}.${extensionWithoutDot}"
+    } else {
+        "${method.lowercase()}-$sanitizedPath-${fixtureIndex}.${extensionWithoutDot}"
+    }
 }
 
 /**
@@ -143,7 +148,8 @@ internal fun generateFixtureFilename(
  * - `text/event-stream` → `.sse`
  * - `video/\*` → `.mp4`, `.avi`, etc.
  * - `image/\*` → `.png`, `.jpg`, etc.
- * - Other → `.bin`
+ * - `application/json` → `.json`
+ * - Other → `.in`
  *
  * @param method HTTP method (GET, POST, etc.)
  * @param path API endpoint path
@@ -158,12 +164,13 @@ internal fun generateBodyFilename(
     contentType: String?
 ): String {
     val extension = when {
-        contentType == null -> "bin"
+        contentType == null -> "in"
         contentType.contains("event-stream", ignoreCase = true) -> "sse"
         contentType.startsWith("video/", ignoreCase = true) -> contentType.substringAfter("/").substringBefore(";")
         contentType.startsWith("image/", ignoreCase = true) -> contentType.substringAfter("/").substringBefore(";")
         contentType.startsWith("audio/", ignoreCase = true) -> contentType.substringAfter("/").substringBefore(";")
-        else -> "bin"
+        contentType.startsWith("application/json", ignoreCase = true) -> "json"
+        else -> "in"
     }
-    return generateFixtureFilename(method, path, fixtureIndex, extension)
+    return generateFixtureFilename(method, path, fixtureIndex, extension, prefix = "body")
 }
