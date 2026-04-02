@@ -419,10 +419,14 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
                         }
                     """.trimIndent().toResponseBody("application/json".toMediaTypeOrNull())
 
-            response.newBuilder()
+            val newResponse = response.newBuilder()
                 .body(errorBody)
                 .code(529)
                 .build()
+            // close the original response body
+            response.body.close()
+
+            return@Interceptor newResponse
         }
 
         patchOpenAICompatibleClient(
