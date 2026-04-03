@@ -43,7 +43,7 @@ class UTF8Decoder {
         bytesRead: Int,
         endOfInput: Boolean,
     ): String {
-        if (bytesRead <= 0) {
+        if (bytesRead < 0) {
             return ""
         }
 
@@ -54,6 +54,22 @@ class UTF8Decoder {
         utf8Decoder.decode(byteBuffer, charBuffer, endOfInput)
         // move any undecoded partial-sequence bytes to the start of the buffer
         byteBuffer.compact()
+        charBuffer.flip()
+
+        return if (charBuffer.hasRemaining()) {
+            charBuffer.toString()
+        } else {
+            ""
+        }
+    }
+
+    /**
+     * Flushes any remaining state in the decoder and returns the final decoded characters.
+     * Should be called after the last call to [decode] with `endOfInput = true`.
+     */
+    fun flush(): String {
+        charBuffer.clear()
+        utf8Decoder.flush(charBuffer)
         charBuffer.flip()
 
         return if (charBuffer.hasRemaining()) {

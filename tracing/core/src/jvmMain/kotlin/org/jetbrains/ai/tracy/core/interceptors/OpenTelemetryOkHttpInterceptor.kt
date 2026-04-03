@@ -389,6 +389,18 @@ private class SseCapturingSource(
     override fun close() {
         try {
             super.close()
+            // perform final decode and flush to handle any remaining bytes
+            val remainingUtf8Inputs = listOf(
+                // decode the remaining bytes in the buffer
+                utf8Decoder.decode(byteArrayOf(), 0, endOfInput = true),
+                // flush the remaining bytes in the buffer
+                utf8Decoder.flush(),
+            )
+            for (input in remainingUtf8Inputs) {
+                if (input.isNotEmpty()) {
+                    parser.feed(input)
+                }
+            }
             parser.close()
         } finally {
             onClose()

@@ -285,7 +285,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                         break
                     }
                     if (bytesRead > 0) {
-                        val utf8Input = utf8Decoder.decode(buffer, bytesRead, endOfInput = originalBody.isClosedForRead)
+                        val utf8Input = utf8Decoder.decode(buffer, bytesRead, endOfInput = false)
                         if (utf8Input.isNotEmpty()) {
                             sseParser.feed(utf8Input)
                         }
@@ -293,6 +293,19 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                         // forward unmodified types
                         tracingChannel.writeFully(buffer, 0, bytesRead)
                         tracingChannel.flush()
+                    }
+                }
+
+                // perform final decode and flush to handle any remaining bytes
+                val remainingUtf8Inputs = listOf(
+                    // decode the remaining bytes in the buffer
+                    utf8Decoder.decode(byteArrayOf(), 0, endOfInput = true),
+                    // flush the remaining bytes in the buffer
+                    utf8Decoder.flush(),
+                )
+                for (input in remainingUtf8Inputs) {
+                    if (input.isNotEmpty()) {
+                        sseParser.feed(input)
                     }
                 }
             } catch (e: Exception) {
