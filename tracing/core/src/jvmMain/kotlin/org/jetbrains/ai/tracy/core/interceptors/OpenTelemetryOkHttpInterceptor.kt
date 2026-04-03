@@ -9,21 +9,16 @@ import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import mu.KotlinLogging
 import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
-import okio.Buffer
-import okio.BufferedSource
-import okio.ForwardingSource
-import okio.Source
-import okio.buffer
-import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
-import org.jetbrains.ai.tracy.core.http.protocol.*
+import okio.*
 import org.jetbrains.ai.tracy.core.TracingManager
+import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
 import org.jetbrains.ai.tracy.core.http.parsers.SseParser
+import org.jetbrains.ai.tracy.core.http.parsers.UTF8Decoder
+import org.jetbrains.ai.tracy.core.http.protocol.*
 import okhttp3.Request as OkHttpRequest
 import okhttp3.Response as OkHttpResponse
 import okhttp3.ResponseBody as OkHttpResponseBody
@@ -274,28 +269,29 @@ class OpenTelemetryOkHttpInterceptor(
 
     private fun OkHttpResponse.withTracedSSE(span: Span, requestUrl: TracyHttpUrl): OkHttpResponse {
         val originalResponse = this
-        val originalBody = originalResponse.body ?: return originalResponse
-
-        // dispatch SSE events to the adapter
-        val parser = SseParser { event ->
-            adapter.registerResponseStreamEvent(span, requestUrl, event)
-        }
+        val originalBody = originalResponse.body
 
         // wrap the source of the original body with a capturing source
         // that forwards UTF-8-decoded bytes into SSE parser
         val originalBodyWithTracedSSE = object : OkHttpResponseBody() {
+            private val bufferedSource: BufferedSource by lazy {
+                // capture SSE events via SSE parser and forward them into the adapter
+                SseCapturingSource(
+                    delegate = originalBody.source(),
+                    utf8Decoder = UTF8Decoder(),
+                    // dispatch SSE events to the adapter
+                    parser = SseParser { event ->
+                        adapter.registerResponseStreamEvent(span, requestUrl, event)
+                    },
+                    // NOTE: end the span when the source is closed
+                    onClose = {
+                        span.end()
+                    },
+                ).buffer()
+            }
             override fun contentType() = originalBody.contentType()
             override fun contentLength() = originalBody.contentLength()
-
-            override fun source(): BufferedSource {
-                // capture SSE events via SSE parser and forward them into the adapter
-                val sseCapturingSource = SseCapturingSource(delegate = originalBody.source(), parser)
-                return sseCapturingSource.buffer()
-            }
-
-            override fun close() {
-                span.end()
-            }
+            override fun source() = bufferedSource
         }
 
         return originalResponse.newBuilder()
@@ -367,7 +363,9 @@ class OpenTelemetryOkHttpInterceptor(
  */
 private class SseCapturingSource(
     delegate: Source,
+    private val utf8Decoder: UTF8Decoder,
     private val parser: SseParser,
+    private val onClose: () -> Unit = {},
 ) : ForwardingSource(delegate) {
     override fun read(sink: Buffer, byteCount: Long): Long {
         val bytesRead = super.read(sink, byteCount)
@@ -376,16 +374,24 @@ private class SseCapturingSource(
         }
 
         // peek at the bytes just written to sink
-        val text = sink.peek().apply {
+        val buffer = sink.peek().apply {
             skip(sink.size - bytesRead)
-        }.readUtf8(bytesRead)
+        }.readByteArray(bytesRead)
 
-        parser.feed(text)
+        val utf8Input = utf8Decoder.decode(buffer, bytesRead.toInt(), endOfInput = false)
+        if (utf8Input.isNotEmpty()) {
+            parser.feed(utf8Input)
+        }
+
         return bytesRead
     }
 
     override fun close() {
-        super.close()
-        parser.close()
+        try {
+            super.close()
+            parser.close()
+        } finally {
+            onClose()
+        }
     }
 }
