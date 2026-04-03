@@ -34,9 +34,8 @@ import mu.KotlinLogging
 import org.jetbrains.ai.tracy.core.TracingManager
 import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
 import org.jetbrains.ai.tracy.core.http.parsers.SseParser
+import org.jetbrains.ai.tracy.core.http.parsers.UTF8Decoder
 import org.jetbrains.ai.tracy.core.http.protocol.*
-import java.nio.ByteBuffer
-import java.nio.CharBuffer
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
 
@@ -277,36 +276,18 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
 
         CoroutineScope(response.coroutineContext).launch(start = CoroutineStart.UNDISPATCHED) {
             try {
+                val utf8Decoder = UTF8Decoder()
                 val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
 
-                // Use a stateful UTF-8 decoder so that multi-byte sequences split across
-                // read boundaries are reassembled correctly instead of producing replacement chars.
-                val utf8Decoder = Charsets.UTF_8.newDecoder()
-                // An extra 3 bytes of capacity hold at most one incomplete multi-byte sequence
-                // (a 4-byte UTF-8 code-point can leave up to 3 bytes undecoded when only
-                // the first 1–3 bytes arrive in a chunk).
-                val byteBuffer = ByteBuffer.allocate(DEFAULT_BUFFER_SIZE + 3)
-                // Each UTF-8 code unit is at least 1 byte, so the char count cannot exceed the
-                // byte count. In the worst case (all ASCII), byteBuffer holds DEFAULT_BUFFER_SIZE + 3
-                // bytes, so charBuffer needs the same capacity.
-                val charBuffer = CharBuffer.allocate(DEFAULT_BUFFER_SIZE + 3)
                 while (!originalBody.isClosedForRead) {
                     val bytesRead = originalBody.readAvailable(buffer, 0, buffer.size)
                     if (bytesRead == -1) {
                         break
                     }
                     if (bytesRead > 0) {
-                        byteBuffer.put(buffer, 0, bytesRead)
-                        byteBuffer.flip()
-                        charBuffer.clear()
-
-                        val endOfInput = originalBody.isClosedForRead
-                        utf8Decoder.decode(byteBuffer, charBuffer, endOfInput)
-                        // move any undecoded partial-sequence bytes to the start of the buffer
-                        byteBuffer.compact()
-                        charBuffer.flip()
-                        if (charBuffer.hasRemaining()) {
-                            sseParser.feed(charBuffer.toString())
+                        val utf8Input = utf8Decoder.decode(buffer, bytesRead, endOfInput = originalBody.isClosedForRead)
+                        if (utf8Input.isNotEmpty()) {
+                            sseParser.feed(utf8Input)
                         }
 
                         // forward unmodified types

@@ -16,6 +16,7 @@ import java.io.Closeable
  *
  * @param onEvent A callback invoked for each parsed event.
  * @see SseEvent
+ * @see UTF8Decoder
  */
 class SseParser(private val onEvent: (SseEvent) -> Unit) : Closeable {
     // state of an event being parsed
@@ -26,23 +27,28 @@ class SseParser(private val onEvent: (SseEvent) -> Unit) : Closeable {
     private var retryValue: Long? = null
 
     /**
-     * The [input] is expected to be already decoded with UTF-8
+     * **The [utf8Input] is expected to be already decoded with UTF-8**
      * (see the note in [spec](https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation)).
+     *
+     * @param utf8Input The UTF-8 encoded input text; it may contain either partial event of multiple events;
+     *                  the [onEvent] callback will be invoked for each fully parsed event.
+     *
+     * @see UTF8Decoder
      */
-    fun feed(input: String) {
+    fun feed(utf8Input: String) {
         var i = 0
-        while (i < input.length) {
+        while (i < utf8Input.length) {
             // lines may be split by any of:
             //  1. \r\n (CRLF): `U+000D` CARRIAGE RETURN, `U+000A` LINE FEED
             //  2. \n (LF): `U+000A` LINE FEED
             //  3. \r (CR): `U+000D` CARRIAGE RETURN
-            when (val ch = input[i]) {
+            when (val ch = utf8Input[i]) {
                 // CR
                 '\r' -> {
                     processLine(lineBuffer.toString())
                     lineBuffer.clear()
                     // CRLF: skip the next character
-                    if (i + 1 < input.length && input[i + 1] == '\n') {
+                    if (i + 1 < utf8Input.length && utf8Input[i + 1] == '\n') {
                         i++
                     }
                 }
