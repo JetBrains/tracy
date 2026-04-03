@@ -282,7 +282,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 // Use a stateful UTF-8 decoder so that multi-byte sequences split across
                 // read boundaries are reassembled correctly instead of producing replacement chars.
                 val utf8Decoder = Charsets.UTF_8.newDecoder()
-                // Extra 3 bytes of capacity hold at most one incomplete multi-byte sequence
+                // An extra 3 bytes of capacity hold at most one incomplete multi-byte sequence
                 // (a 4-byte UTF-8 code-point can leave up to 3 bytes undecoded when only
                 // the first 1–3 bytes arrive in a chunk).
                 val byteBuffer = ByteBuffer.allocate(DEFAULT_BUFFER_SIZE + 3)

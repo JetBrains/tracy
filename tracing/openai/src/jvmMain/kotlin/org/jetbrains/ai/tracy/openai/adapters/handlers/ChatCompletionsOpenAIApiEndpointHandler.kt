@@ -198,13 +198,15 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
     ): Result<Unit> = runCatching {
         val data = runCatching {
             Json.parseToJsonElement(event.data).jsonObject
-        }.getOrNull() ?: return@runCatching sseHandlingFailure("Cannot parse event data as JSON")
+        }.getOrElse { err ->
+            return sseHandlingFailure("Cannot parse event data as JSON: ${err.message}")
+        }
 
         val choice = data["choices"]?.jsonArray?.firstOrNull()?.jsonObject
-            ?: return@runCatching sseHandlingFailure("Event's JSON has no 'choices' field")
+            ?: return sseHandlingFailure("Event's JSON has no 'choices' field")
 
         val delta = choice["delta"]?.jsonObject
-            ?: return@runCatching sseHandlingFailure("Event's 'choices' field has no 'delta' field")
+            ?: return sseHandlingFailure("Event's 'choices' field has no 'delta' field")
 
         val role = delta["role"]?.jsonPrimitive?.content
         val contentDelta = delta["content"]?.jsonPrimitive?.content
@@ -232,11 +234,11 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
             span.setAttribute("gen_ai.completion.0.content", "".orRedacted(contentKind))
         }
 
-        return@runCatching Result.success(Unit)
-    }.getOrElse { exception ->
+        return Result.success(Unit)
+    }.getOrElse { err ->
         span.setStatus(StatusCode.ERROR)
-        span.recordException(exception)
-        return@getOrElse sseHandlingFailure("Failed to handle streaming event: ${exception.message}")
+        span.recordException(err)
+        return sseHandlingFailure("Failed to handle streaming event: ${err.message}")
     }
 
     /**
