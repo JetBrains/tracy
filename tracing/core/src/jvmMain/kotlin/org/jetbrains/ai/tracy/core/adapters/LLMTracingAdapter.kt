@@ -54,6 +54,14 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @param genAISystem The name of the GenAI system (e.g., "openai", "anthropic", "gemini")
  */
 abstract class LLMTracingAdapter(private val genAISystem: String) {
+    /**
+     * Some adapters do NOT support SSE (_Server-Sent Events_) handling, even if
+     * SSE is supported by the LLM provider API. In this case, we print a single
+     * warning per trace, not to pollute the logs with repeated warnings.
+     *
+     * This flag is used to track whether a warning has already been printed for
+     * the current trace.
+     */
     private var sseHandlingUnsupportedWarningPrinted = AtomicBoolean(false)
 
     fun registerRequest(span: Span, request: TracyHttpRequest): Unit = runCatching {
