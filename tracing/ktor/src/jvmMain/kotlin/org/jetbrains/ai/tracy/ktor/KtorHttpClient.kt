@@ -333,11 +333,45 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
             ContentType.Application.Json -> try {
                 // peek the response body to avoid consuming the underlying channel
                 val responseString = run {
-                    // NOTE: we must first peek and only then await.
-                    // otherwise there are cases when an empty body gets peeked
+                    /**
+                     * CRITICAL ORDERING REQUIREMENT: peek() MUST be called BEFORE awaitContent()
+                     *
+                     * We must first peek and only then await; otherwise,
+                     * there are cases when an empty body gets peeked.
+                     *
+                     * WHY THIS ORDER MATTERS (relies on Ktor ByteReadChannel internals):
+                     *
+                     * 1. peek() creates a kotlinx-io Source that captures a snapshot reference
+                     *    to the current state of ByteReadChannel's internal readBuffer
+                     *
+                     * 2. awaitContent() suspends until data is available, triggering async network I/O
+                     *    that fills the underlying buffer with response data
+                     *
+                     * 3. The peek source can only read data if it was created BEFORE the buffer
+                     *    was filled. The peek() call essentially registers: "I want to observe
+                     *    whatever gets written to this buffer from now on"
+                     *
+                     * WHAT BREAKS IF ORDER IS SWAPPED (await → peek → request):
+                     *
+                     * - awaitContent() fills the buffer with response data via async I/O
+                     * - By the time peek() is called, the buffer state has already been modified
+                     * - peek() captures a post-modification buffer state, creating a race condition:
+                     *   * Other operations may have already consumed the data
+                     *   * Buffer may be in an inconsistent state
+                     *   * ByteReadChannel is designed for single-consumer scenarios
+                     * - Result: peeked.request() reads an empty/inconsistent buffer even though
+                     *   data was successfully received from the network
+                     *
+                     * This is non-obvious because:
+                     * - The failure is a race condition that depends on async timing
+                     * - Ktor's ByteReadChannel buffer state changes are internal implementation details
+                     * - The kotlinx-io Source.peek() documentation doesn't explicitly document
+                     *   this ordering requirement with async I/O operations
+                     */
                     val peeked = response.rawContent.readBuffer.peek()
                     response.rawContent.awaitContent(Int.MAX_VALUE)
                     peeked.request(Long.MAX_VALUE)
+
                     val buffer = Buffer()
                     buffer.write(peeked, peeked.buffer.size)
                     buffer.readString()
