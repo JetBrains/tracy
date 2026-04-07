@@ -67,6 +67,12 @@ class OpenAISanitizer : ResponseSanitizer {
         if (mutableMap.containsKey("project_id")) {
             mutableMap["project_id"] = JsonPrimitive("sanitized-project-id")
         }
+        if (mutableMap.containsKey("call_id")) {
+            mutableMap["call_id"] = JsonPrimitive("sanitized-call-id")
+        }
+        if (mutableMap.containsKey("system_fingerprint")) {
+            mutableMap["system_fingerprint"] = JsonPrimitive("sanitized-system-fingerprint")
+        }
 
         // Sanitize timestamp fields
         val timestampKeys = listOf("created", "created_at", "completed_at", "expires_at")
