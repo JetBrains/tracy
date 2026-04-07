@@ -1,0 +1,26 @@
+{
+    "method": "POST",
+    "path": "/chat/completions",
+    "statusCode": 200,
+    "headers": {
+        "Date": [
+            "Mon, 01 Jan 2024 00:00:00 GMT"
+        ],
+        "content-type": [
+            "application/json"
+        ],
+        "strict-transport-security": [
+            "max-age=31536000; includeSubDomains"
+        ]
+    },
+    "body": {
+        "type": "inline",
+        "content": "{\"id\":\"sanitized-id\",\"created\":1234567890,\"model\":\"o1\",\"object\":\"chat.completion\",\"system_fingerprint\":\"fp_1ad138c9e7\",\"choices\":[{\"finish_reason\":\"stop\",\"index\":0,\"message\":{\"content\":\"sanitized-assistant-response\",\"role\":\"assistant\",\"annotations\":[]},\"provider_specific_fields\":{}}],\"usage\":{\"completion_tokens\":670,\"prompt_tokens\":17,\"total_tokens\":687,\"completion_tokens_details\":{\"accepted_prediction_tokens\":0,\"audio_tokens\":0,\"reasoning_tokens\":640,\"rejected_prediction_tokens\":0},\"prompt_tokens_details\":{\"audio_tokens\":0,\"cached_tokens\":0}},\"service_tier\":\"default\"}"
+    },
+    "details": {
+        "containingTestClassName": "AdditionalAttributesOpenAIEndpointHandlerTest",
+        "filename": "post-chat-completions-0.json",
+        "tag": "openai-chat-completions-additional-attributes",
+        "index": 0
+    }
+}

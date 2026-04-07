@@ -1,0 +1,35 @@
+{
+    "method": "POST",
+    "path": "/responses",
+    "statusCode": 200,
+    "headers": {
+        "Date": [
+            "Mon, 01 Jan 2024 00:00:00 GMT"
+        ],
+        "content-type": [
+            "application/json"
+        ],
+        "openai-organization": [
+            "sanitized-org-id"
+        ],
+        "openai-project": [
+            "sanitized-project-id"
+        ],
+        "openai-version": [
+            "2020-10-01"
+        ],
+        "strict-transport-security": [
+            "max-age=31536000; includeSubDomains; preload"
+        ]
+    },
+    "body": {
+        "type": "inline",
+        "content": "{\"id\":\"sanitized-id\",\"created_at\":1234567890,\"error\":null,\"incomplete_details\":null,\"instructions\":null,\"metadata\":{\"metadataKey\":\"metadataValue\"},\"model\":\"gpt-4o-mini\",\"object\":\"response\",\"output\":[{\"id\":\"sanitized-id\",\"content\":\"sanitized-assistant-response\",\"role\":\"assistant\",\"status\":\"completed\",\"type\":\"message\",\"phase\":null}],\"parallel_tool_calls\":true,\"temperature\":0.0,\"tool_choice\":\"auto\",\"tools\":[],\"top_p\":1.0,\"max_output_tokens\":null,\"previous_response_id\":null,\"reasoning\":{\"effort\":null,\"summary\":null},\"status\":\"completed\",\"text\":{\"format\":{\"type\":\"text\"},\"verbosity\":\"medium\"},\"truncation\":\"disabled\",\"usage\":{\"input_tokens\":11,\"input_tokens_details\":{\"audio_tokens\":null,\"cached_tokens\":0,\"text_tokens\":null},\"output_tokens\":42,\"output_tokens_details\":{\"reasoning_tokens\":0,\"text_tokens\":null},\"total_tokens\":53,\"cost\":null},\"user\":null,\"store\":true,\"background\":false,\"billing\":{\"payer\":\"developer\"},\"completed_at\":1234567890,\"frequency_penalty\":0.0,\"max_tool_calls\":null,\"presence_penalty\":0.0,\"prompt_cache_key\":null,\"prompt_cache_retention\":null,\"safety_identifier\":null,\"service_tier\":\"default\",\"top_logprobs\":0}"
+    },
+    "details": {
+        "containingTestClassName": "AdditionalAttributesOpenAIEndpointHandlerTest",
+        "filename": "post-responses-0.json",
+        "tag": "openai-responses-api-additional-attributes",
+        "index": 0
+    }
+}
