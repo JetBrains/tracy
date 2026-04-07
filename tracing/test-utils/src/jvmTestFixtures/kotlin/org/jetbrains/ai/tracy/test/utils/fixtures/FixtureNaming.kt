@@ -20,9 +20,6 @@ import kotlin.jvm.optionals.getOrNull
  */
 fun String.sanitizeForFixtureName(): String {
     return this
-        // Remove common test prefixes for brevity
-        .removePrefix("test ")
-        .removePrefix("Test ")
         // Remove backticks from Kotlin test names
         .replace("`", "")
         // Remove parentheses and their contents (from parameterized tests)
@@ -37,6 +34,8 @@ fun String.sanitizeForFixtureName(): String {
         .trim('-')
         // Convert to lowercase for consistency
         .lowercase()
+        // Remove common test prefixes for brevity
+        .removePrefix("test-")
         // Limit length to avoid excessively long file names
         .take(FIXTURE_NAME_MAX_LENGTH)
 }
