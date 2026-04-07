@@ -16,10 +16,10 @@ interface ResponseSanitizer {
      * Sanitizes the response body (typically JSON).
      *
      * @param body The raw response body as a string
-     * @param contentType The content type of the response (e.g., "application/json")
+     * @param mimeType The content type of the response (e.g., "application/json")
      * @return The sanitized response body
      */
-    fun sanitizeBody(body: String, contentType: String?): String
+    fun sanitizeBody(body: String, mimeType: String?): String
 
     /**
      * Sanitizes HTTP headers by removing or normalizing non-deterministic values.

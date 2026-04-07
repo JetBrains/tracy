@@ -19,11 +19,11 @@ import kotlinx.serialization.json.*
 class OpenAISanitizer : ResponseSanitizer {
     private val json = Json { prettyPrint = true }
 
-    override fun sanitizeBody(body: String, contentType: String?): String {
+    override fun sanitizeBody(body: String, mimeType: String?): String {
         // TODO: temp no sanitize
         return body
 
-        if (contentType == null || !contentType.contains("application/json")) {
+        if (mimeType == null || !mimeType.contains("application/json")) {
             return body
         }
 
