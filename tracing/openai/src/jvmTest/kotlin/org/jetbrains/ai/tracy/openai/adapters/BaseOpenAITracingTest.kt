@@ -22,6 +22,7 @@ import com.openai.models.responses.FunctionTool
 import com.openai.models.responses.Response
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
+import mu.KotlinLogging
 import org.jetbrains.ai.tracy.core.interceptors.patchOpenAICompatibleClient
 import org.jetbrains.ai.tracy.test.utils.BaseAITracingTest
 import org.jetbrains.ai.tracy.test.utils.fixtures.*
@@ -39,6 +40,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+
+private val logger = KotlinLogging.logger {}
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class BaseOpenAITracingTest : BaseAITracingTest() {
@@ -105,11 +108,11 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
             TestMode.MOCK -> {
                 val fixturesDir = getFixturesDirectory()
                 mockServer = FixtureMockServer(fixturesDir).apply { start() }
-                // TODO: log!
-                println("Test mode: MOCK - Using fixtures from $fixturesDir")
+                logger.info { "Test mode: MOCK - Using fixtures from $fixturesDir" }
+                logger.info { "Mock server started at ${mockServer?.url()}" }
             }
             TestMode.RECORD -> {
-                println("Test mode: RECORD - Will record responses to fixtures")
+                logger.info { "Test mode: RECORD - Will record responses to fixtures" }
             }
         }
     }
