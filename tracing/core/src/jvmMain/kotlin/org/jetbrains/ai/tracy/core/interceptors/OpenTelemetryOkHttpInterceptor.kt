@@ -158,10 +158,7 @@ fun <T> patchOpenAICompatibleClient(client: T, interceptor: Interceptor) {
     val okHttpClient = getFieldValue(okHttpHolder, "okHttpClient") as OkHttpClient
 
     // add a given interceptor if the current list of interceptors doesn't contain it already
-    println("Installing $interceptor:")
-    println("   Already installed interceptors: ${okHttpClient.interceptors}")
     val updatedInterceptors = patchInterceptors(okHttpClient.interceptors, interceptor)
-    println("   Updated interceptors: $updatedInterceptors")
     setFieldValue(okHttpClient, "interceptors", updatedInterceptors)
 }
 
@@ -246,14 +243,10 @@ class OpenTelemetryOkHttpInterceptor(
                 val response = chain.proceed(request)
                 adapter.registerResponse(span, response = response.asResponseView())
 
-                println("OpenTelemetryOkHttpInterceptor: response content type: ${response.body.contentType()}")
-
                 // response is of streaming type when its body MIME type is `text/event-stream`
                 isStreamingResponse = response.body.contentType()?.let {
                     "${it.type}/${it.subtype}" == "text/event-stream"
                 } ?: false
-
-                println("OpenTelemetryOkHttpInterceptor: isStreamingResponse=$isStreamingResponse")
 
                 // trace SSE events into span when the content type of the response body is `text/event-stream`
                 return when {

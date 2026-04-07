@@ -6,7 +6,6 @@
 package org.jetbrains.ai.tracy.openai.clients
 
 import com.openai.client.OpenAIClient
-import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletion
 import com.openai.models.chat.completions.ChatCompletionCreateParams
@@ -49,8 +48,7 @@ class OpenAIClientTest : BaseOpenAITracingTest() {
             assertEquals(model, attributes[GEN_AI_REQUEST_MODEL])
             assertEquals("openai", attributes[GEN_AI_SYSTEM])
             assertTrue(
-                (llmProviderUrl
-                    ?: PRODUCTION_URL).startsWith(attributes[AttributeKey.stringKey("gen_ai.api_base")].toString())
+                llmProviderUrl.startsWith(attributes[AttributeKey.stringKey("gen_ai.api_base")].toString())
             )
             assertEquals("system", attributes[AttributeKey.stringKey("gen_ai.prompt.0.role")])
             assertEquals(systemMessage, attributes[AttributeKey.stringKey("gen_ai.prompt.0.content")])

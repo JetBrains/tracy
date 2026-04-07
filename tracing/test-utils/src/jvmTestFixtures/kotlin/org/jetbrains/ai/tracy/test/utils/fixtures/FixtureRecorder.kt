@@ -70,7 +70,6 @@ class FixtureRecorder(
             bodyFile.writeBytes(response.body.content)
 
             logger.info { "Recorded body file: ${bodyFile.toAbsolutePath()}" }
-            println("Recorded body file: ${bodyFile.toAbsolutePath()}")
 
             FixtureBody.ExternalFile(
                 relativePath = bodyFilename,
@@ -105,7 +104,6 @@ class FixtureRecorder(
         fixtureFile.writeText(fixtureJson)
 
         logger.info { "Recorded fixture: ${fixtureFile.toAbsolutePath()}" }
-        println("Recorded fixture: ${fixtureFile.toAbsolutePath()}")
     }
 
     /**

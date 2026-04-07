@@ -114,13 +114,6 @@ private class FixtureDispatcher(
     private val dispatchedRequestsCountPerFixtureLocation = mutableMapOf<String, Int>()
 
     override fun dispatch(request: RecordedRequest): MockResponse {
-        println("FixtureDispatcher.dispatch")
-        println("=".repeat(25))
-        println("Request path: ${request.path}")
-        println("Request method: ${request.method}")
-        println("Request headers:\n\t${request.headers.toMultimap().toList().joinToString("\n\t") { (k, v) -> "$k: $v" }}")
-        println("=".repeat(25))
-
         val path = request.path ?: return notFoundResponse("Request path is null")
         val method = request.method ?: return notFoundResponse("Request method is null")
 
@@ -146,8 +139,6 @@ private class FixtureDispatcher(
             index = dispatchedRequestsCount,
         )
         val fixture = fixtures[fixtureKey]
-
-        println("[Dispatcher] registered fixture keys: ${fixtures.keys.toList()}")
 
         if (fixture == null) {
             val errorMessage = """
