@@ -8,7 +8,9 @@ package org.jetbrains.ai.tracy.openai.adapters.handlers.videos
 import io.opentelemetry.api.trace.Span
 import mu.KotlinLogging
 import org.jetbrains.ai.tracy.core.adapters.handlers.EndpointApiHandler
+import org.jetbrains.ai.tracy.core.adapters.handlers.sse.sseHandlingUnsupported
 import org.jetbrains.ai.tracy.core.adapters.media.MediaContentExtractor
+import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpUrl
@@ -56,10 +58,12 @@ internal class VideosOpenAIApiEndpointHandler(
         routeHandlers[route]?.handleResponse(span, response)
     }
 
-    override fun handleStreaming(span: Span, events: String) {
-        // Videos API doesn't support SSE streaming for creation
-        // Content download is binary streaming handled separately
-        logger.warn { "Videos API does not use server-sent events streaming" }
+    override fun handleStreamingEvent(
+        span: Span,
+        event: SseEvent,
+        index: Long,
+    ): Result<Unit> {
+        return sseHandlingUnsupported()
     }
 
     /**

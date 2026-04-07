@@ -5,16 +5,18 @@
 
 package org.jetbrains.ai.tracy.gemini.adapters.handlers
 
+import io.opentelemetry.api.trace.Span
+import kotlinx.serialization.json.*
 import org.jetbrains.ai.tracy.core.adapters.handlers.EndpointApiHandler
+import org.jetbrains.ai.tracy.core.adapters.handlers.sse.sseHandlingUnsupported
 import org.jetbrains.ai.tracy.core.adapters.media.MediaContent
 import org.jetbrains.ai.tracy.core.adapters.media.MediaContentExtractor
 import org.jetbrains.ai.tracy.core.adapters.media.MediaContentPart
 import org.jetbrains.ai.tracy.core.adapters.media.Resource
+import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.core.http.protocol.asJson
-import io.opentelemetry.api.trace.Span
-import kotlinx.serialization.json.*
 
 /**
  * Parses Imagen API requests and responses
@@ -87,7 +89,13 @@ class GeminiImagenHandler(
         extractor.setUploadableContentAttributes(span, field = "output", mediaContent)
     }
 
-    override fun handleStreaming(span: Span, events: String) = Unit
+    override fun handleStreamingEvent(
+        span: Span,
+        event: SseEvent,
+        index: Long
+    ): Result<Unit> {
+        return sseHandlingUnsupported()
+    }
 
     /**
      * Expects an array of schemas:

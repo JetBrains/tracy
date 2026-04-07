@@ -1,0 +1,35 @@
+{
+    "method": "POST",
+    "path": "/v1/images/generations",
+    "statusCode": 200,
+    "headers": {
+        "Date": [
+            "Mon, 01 Jan 2024 00:00:00 GMT"
+        ],
+        "content-type": [
+            "application/json"
+        ],
+        "openai-organization": [
+            "sanitized-org-id"
+        ],
+        "openai-project": [
+            "sanitized-project-id"
+        ],
+        "openai-version": [
+            "2020-10-01"
+        ],
+        "strict-transport-security": [
+            "max-age=31536000; includeSubDomains; preload"
+        ]
+    },
+    "body": {
+        "type": "inline",
+        "content": "{\"created\":1234567890,\"data\":[{\"url\":\"https://oaidalleapiprodscus.blob.core.windows.net/private/org-HxH5fxIrm2uwDEas71UvsRSe/user-YF2tsf8zhFixOq6wethLKvEp/img-GKRhFj6ddLJYkBln4gVNtMRj.png?st=2026-04-07T16%3A22%3A00Z&se=2026-04-07T18%3A22%3A00Z&sp=r&sv=2026-02-06&sr=b&rscd=inline&rsct=image/png&skoid=9346e9b9-5d29-4d37-a0a9-c6f95f09f79d&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-04-07T08%3A43%3A08Z&ske=2026-04-08T08%3A43%3A08Z&sks=b&skv=2026-02-06&sig=Bm7WON%2BKEgG2OpR612G4kHSd88/Q2%2BntDDOmAO0n7Sw%3D\"}]}"
+    },
+    "details": {
+        "containingTestClassName": "ImagesCreateOpenAIApiEndpointHandlerTest",
+        "filename": "post-images-generations-0.json",
+        "tag": "capture-policy-hides-sensitive-data_case-2-ContentCapturePolicy",
+        "index": 0
+    }
+}

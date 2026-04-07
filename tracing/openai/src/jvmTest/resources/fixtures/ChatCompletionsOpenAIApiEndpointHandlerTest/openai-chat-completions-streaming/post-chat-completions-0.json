@@ -1,0 +1,42 @@
+{
+    "method": "POST",
+    "path": "/v1/chat/completions",
+    "statusCode": 200,
+    "headers": {
+        "Date": [
+            "Mon, 01 Jan 2024 00:00:00 GMT"
+        ],
+        "access-control-expose-headers": [
+            "X-Request-ID"
+        ],
+        "content-type": [
+            "text/event-stream; charset=utf-8"
+        ],
+        "openai-organization": [
+            "sanitized-org-id"
+        ],
+        "openai-project": [
+            "sanitized-project-id"
+        ],
+        "openai-version": [
+            "2020-10-01"
+        ],
+        "strict-transport-security": [
+            "max-age=31536000; includeSubDomains; preload"
+        ],
+        "x-openai-proxy-wasm": [
+            "v0.1"
+        ]
+    },
+    "body": {
+        "type": "external_file",
+        "relativePath": "body-post-chat-completions-0.sse",
+        "contentType": "text/event-stream; charset=utf-8"
+    },
+    "details": {
+        "containingTestClassName": "ChatCompletionsOpenAIApiEndpointHandlerTest",
+        "filename": "post-chat-completions-0.json",
+        "tag": "openai-chat-completions-streaming",
+        "index": 0
+    }
+}

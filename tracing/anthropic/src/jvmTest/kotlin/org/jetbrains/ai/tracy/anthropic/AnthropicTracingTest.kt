@@ -7,7 +7,7 @@ package org.jetbrains.ai.tracy.anthropic
 
 import org.jetbrains.ai.tracy.anthropic.clients.instrument
 import org.jetbrains.ai.tracy.core.TracingManager
-import org.jetbrains.ai.tracy.core.patchOpenAICompatibleClient
+import org.jetbrains.ai.tracy.core.interceptors.patchOpenAICompatibleClient
 import org.jetbrains.ai.tracy.core.policy.ContentCapturePolicy
 import com.anthropic.core.JsonString
 import com.anthropic.core.JsonValue
@@ -419,10 +419,14 @@ class AnthropicTracingTest : BaseAnthropicTracingTest() {
                         }
                     """.trimIndent().toResponseBody("application/json".toMediaTypeOrNull())
 
-            response.newBuilder()
+            val newResponse = response.newBuilder()
                 .body(errorBody)
                 .code(529)
                 .build()
+            // close the original response body
+            response.body.close()
+
+            return@Interceptor newResponse
         }
 
         patchOpenAICompatibleClient(

@@ -5,7 +5,6 @@
 
 package org.jetbrains.ai.tracy.openai.adapters
 
-import org.jetbrains.ai.tracy.test.utils.BaseAITracingTest
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
@@ -23,19 +22,57 @@ import com.openai.models.responses.FunctionTool
 import com.openai.models.responses.Response
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
+import mu.KotlinLogging
+import org.jetbrains.ai.tracy.core.interceptors.patchOpenAICompatibleClient
+import org.jetbrains.ai.tracy.test.utils.BaseAITracingTest
+import org.jetbrains.ai.tracy.test.utils.fixtures.*
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assumptions
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.TestInstance
+import java.io.File
+import java.nio.file.Path
 import java.time.Duration
+import kotlin.jvm.optionals.getOrNull
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+private val logger = KotlinLogging.logger {}
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class BaseOpenAITracingTest : BaseAITracingTest() {
+    protected val testMode = TestMode.current()
+
+    private var mockServer: FixtureMockServer? = null
+
+    /**
+     * Current test name, captured automatically for fixture naming.
+     * Can be overridden by providing explicit `fixtureTag` to [createOpenAIClient].
+     */
+    protected var currentTestName: String? = null
+
+    /**
+     * The name of a test suite whose test cas is currently running.
+     * It is used for folder naming when recording fixtures locally.
+     */
+    private var currentContainingTestSuiteName: String? = null
+
+    @BeforeEach
+    fun captureTestName(testInfo: TestInfo) {
+        currentContainingTestSuiteName = testInfo.testClass.getOrNull()?.simpleName
+        currentTestName = createFixtureTag(testInfo)
+    }
+
     protected val llmProviderApiKey: String
-        get() = System.getenv("OPENAI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
-        ?: error("Neither OPENAI_API_KEY nor LLM_PROVIDER_API_KEY environment variables are set")
+        get() = when (testMode) {
+            TestMode.MOCK -> "mock-api-key"
+            TestMode.RECORD -> System.getenv("OPENAI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
+                ?: error("Neither OPENAI_API_KEY nor LLM_PROVIDER_API_KEY environment variables are set")
+        }
 
     /**
      * When no value is provided, defaults to [PRODUCTION_URL].
@@ -43,7 +80,10 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
      * When LiteLLM is used as a provider, prefer [patchedProviderUrl].
      */
     protected val llmProviderUrl: String
-        get() = System.getenv("LLM_PROVIDER_URL") ?: PRODUCTION_URL
+        get() = when (testMode) {
+            TestMode.MOCK -> mockServer?.url() ?: error("Mock server not initialized")
+            TestMode.RECORD -> System.getenv("LLM_PROVIDER_URL") ?: PRODUCTION_URL
+        }
 
     /**
      * When LiteLLM is used as a provider, the API URL gets changed to the
@@ -52,23 +92,82 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
      * See [LiteLLM: Create Pass Through Endpoints](https://docs.litellm.ai/docs/proxy/pass_through)
      */
     protected val patchedProviderUrl: String
-        get() = when (val baseUrl = llmProviderUrl.removeSuffix("/v1")) {
-            // TODO: remove direct use of litellm
-            // when using LiteLLM, switch to the pass-through
-            "https://litellm.labs.jb.gg" -> "$baseUrl/openai"
-            else -> llmProviderUrl
+        get() = when (testMode) {
+            TestMode.MOCK -> llmProviderUrl
+            TestMode.RECORD -> when (val baseUrl = llmProviderUrl.removeSuffix("/v1")) {
+                // TODO: remove direct use of litellm
+                // when using LiteLLM, switch to the pass-through
+                "https://litellm.labs.jb.gg" -> "$baseUrl/openai"
+                else -> llmProviderUrl
+            }
         }
 
+    @BeforeAll
+    fun setupFixturesAndStartMockServer() {
+        when (testMode) {
+            TestMode.MOCK -> {
+                val fixturesDir = getFixturesDirectory()
+                mockServer = FixtureMockServer(fixturesDir).apply { start() }
+                logger.info { "Test mode: MOCK - Using fixtures from $fixturesDir" }
+                logger.info { "Mock server started at ${mockServer?.url()}" }
+            }
+            TestMode.RECORD -> {
+                logger.info { "Test mode: RECORD - Will record responses to fixtures" }
+            }
+        }
+    }
+
+    @AfterAll
+    fun tearDownFixtures() {
+        mockServer?.stop()
+    }
+
+    protected fun isMockMode() = testMode == TestMode.MOCK
+
     protected open fun createOpenAIClient(
-        url: String? = null,
-        apiKey: String? = null,
-        timeout: Duration = Duration.ofSeconds(60)
+        url: String? = llmProviderUrl,
+        apiKey: String = llmProviderApiKey,
+        timeout: Duration = Duration.ofSeconds(60),
+        fixtureTag: String? = null
     ): OpenAIClient {
-        return OpenAIOkHttpClient.builder()
-            .baseUrl(url ?: llmProviderUrl)
-            .apiKey(apiKey ?: llmProviderApiKey)
+        // Determine the fixture identifier: explicit tag > current test name
+        val fixtureIdentifier = fixtureTag ?: currentTestName!!
+        val testSuiteName = currentContainingTestSuiteName ?: "unknown"
+
+        val builder = OpenAIOkHttpClient.builder()
+            .baseUrl(url)
+            .apiKey(apiKey)
             .timeout(timeout)
-            .build()
+
+        // In MOCK mode, add a fixture tag and test suite name headers,
+        // so the mock server can match the right fixture
+        if (testMode == TestMode.MOCK) {
+            builder.putHeader(FIXTURE_TEST_SUITE_NAME_HEADER, testSuiteName)
+            builder.putHeader(FIXTURE_TAG_HEADER, fixtureIdentifier)
+        }
+
+        val client = builder.build()
+
+        // add a recording interceptor in RECORD mode
+        if (testMode == TestMode.RECORD) {
+            val fixturesDir = getFixturesDirectory()
+            val recordingInterceptor = RecordingInterceptor(
+                fixturesDir = fixturesDir,
+                sanitizer = OpenAISanitizer(),
+                containingTestSuiteName = testSuiteName,
+                fixtureTag = fixtureIdentifier,
+            )
+            patchOpenAICompatibleClient(client, recordingInterceptor)
+        }
+
+        return client
+    }
+
+    private fun getFixturesDirectory(): Path {
+        // Get the test resources directory
+        val resourcesDir = File("src/jvmTest/resources").absoluteFile
+        val fixturesDir = resourcesDir.resolve("fixtures")
+        return fixturesDir.toPath()
     }
 
     protected fun validateBasicTracing(model: ChatModel) {
@@ -240,8 +339,8 @@ abstract class BaseOpenAITracingTest : BaseAITracingTest() {
      *
      * @param url The URL to be validated as an OpenAI production endpoint.
      */
-    protected fun assumeOpenAIEndpoint(url: String) {
-        Assumptions.assumeTrue(url.startsWith(PRODUCTION_URL))
+    protected fun assumeOpenAIEndpointOrMockMode(url: String) {
+        Assumptions.assumeTrue(isMockMode() || url.startsWith(PRODUCTION_URL))
     }
 }
 

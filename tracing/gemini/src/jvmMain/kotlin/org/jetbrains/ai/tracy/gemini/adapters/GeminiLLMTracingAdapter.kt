@@ -16,6 +16,7 @@ import org.jetbrains.ai.tracy.gemini.adapters.handlers.GeminiContentGenHandler
 import org.jetbrains.ai.tracy.gemini.adapters.handlers.GeminiImagenHandler
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
+import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 
 /**
  * Tracing adapter for Google Gemini and Imagen APIs.
@@ -57,13 +58,16 @@ class GeminiLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
         handler.handleResponseAttributes(span, response)
     }
 
-    override fun getSpanName(request: TracyHttpRequest) = "Gemini-generation"
+    override fun getSpanName() = "Gemini-generation"
 
-    // streaming is not supported
-    override fun isStreamingRequest(request: TracyHttpRequest) = false
-    override fun handleStreaming(span: Span, url: TracyHttpUrl, events: String) {
+    override fun registerResponseStreamEvent(
+        span: Span,
+        url: TracyHttpUrl,
+        event: SseEvent,
+        index: Long,
+    ): Result<Unit> {
         val handler = selectHandler(url)
-        handler.handleStreaming(span, events)
+        return handler.handleStreamingEvent(span, event, index)
     }
 
     private fun selectHandler(url: TracyHttpUrl): EndpointApiHandler = when {

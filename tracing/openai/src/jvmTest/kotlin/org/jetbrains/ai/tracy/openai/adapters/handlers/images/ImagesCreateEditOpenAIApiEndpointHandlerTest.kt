@@ -36,7 +36,7 @@ private val logger = KotlinLogging.logger {}
 class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     @Test
     fun `test tracing when editing a single image`() = runTest(timeout = 3.minutes) {
-        assumeOpenAIEndpoint(patchedProviderUrl)
+        assumeOpenAIEndpointOrMockMode(patchedProviderUrl)
 
         val client = createOpenAIClient(
             url = patchedProviderUrl,
@@ -80,7 +80,7 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test tracing when editing an image with a mask`() = runTest(timeout = 3.minutes) {
-        assumeOpenAIEndpoint(patchedProviderUrl)
+        assumeOpenAIEndpointOrMockMode(patchedProviderUrl)
 
         val client = createOpenAIClient(
             url = patchedProviderUrl,
@@ -187,7 +187,7 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test tracing when editing two images`() = runTest(timeout = 3.minutes) {
-        assumeOpenAIEndpoint(patchedProviderUrl)
+        assumeOpenAIEndpointOrMockMode(patchedProviderUrl)
 
         val client = createOpenAIClient(
             url = patchedProviderUrl,
@@ -237,7 +237,7 @@ class ImagesCreateEditOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @Test
     fun `test tracing when editing two images with streaming API`() = runTest(timeout = 3.minutes) {
-        assumeOpenAIEndpoint(patchedProviderUrl)
+        assumeOpenAIEndpointOrMockMode(patchedProviderUrl)
 
         val client = createOpenAIClient(
             url = patchedProviderUrl,

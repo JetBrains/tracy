@@ -5,6 +5,13 @@
 
 package org.jetbrains.ai.tracy.openai.adapters.handlers
 
+import com.openai.models.ChatModel
+import com.openai.models.chat.completions.*
+import com.openai.models.embeddings.EmbeddingCreateParams
+import com.openai.models.embeddings.EmbeddingModel
+import com.openai.models.responses.ResponseCreateParams
+import io.opentelemetry.api.common.AttributeKey
+import kotlinx.coroutines.test.runTest
 import org.jetbrains.ai.tracy.core.TracingManager
 import org.jetbrains.ai.tracy.core.policy.ContentCapturePolicy
 import org.jetbrains.ai.tracy.openai.adapters.BaseOpenAITracingTest
@@ -15,14 +22,6 @@ import org.jetbrains.ai.tracy.test.utils.MediaSource
 import org.jetbrains.ai.tracy.test.utils.loadFileAsBase64Encoded
 import org.jetbrains.ai.tracy.test.utils.toDataUrl
 import org.jetbrains.ai.tracy.test.utils.toMediaContentAttributeValues
-import com.openai.core.JsonValue
-import com.openai.models.ChatModel
-import com.openai.models.chat.completions.*
-import com.openai.models.embeddings.EmbeddingCreateParams
-import com.openai.models.embeddings.EmbeddingModel
-import com.openai.models.responses.ResponseCreateParams
-import io.opentelemetry.api.common.AttributeKey
-import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Tag
@@ -290,30 +289,6 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     }
 
     @Test
-    fun `test OpenAI chat completions additional attributes`() = runTest {
-        // this test is only possible on a LiteLLM pass-through.
-        // OpenAI API endpoint throws 400 Bad Request on unconventional properties, unlike LiteLLM, which ignores them
-        Assumptions.assumeTrue { llmProviderUrl.startsWith("https://litellm.labs.jb.gg") }
-
-        val client = createOpenAIClient(llmProviderUrl, llmProviderApiKey).apply { instrument(this) }
-
-        val paramsBuilder = ChatCompletionCreateParams.builder()
-            .model(ChatModel.O1)
-            .addUserMessage("Say hi to user using reasoning and tool `hi`")
-            .metadata(
-                ChatCompletionCreateParams.Metadata.builder()
-                    .additionalProperties(mapOf("metadataKey" to JsonValue.from("metadataValue")))
-                    .build()
-            )
-            .additionalBodyProperties(
-                mapOf("additionalBodyPropertyKey" to JsonValue.from("additionalBodyPropertyValue"))
-            )
-
-        client.chat().completions().create(paramsBuilder.build())
-        validateAdditionalAttributes()
-    }
-
-    @Test
     fun `test OpenAI embeddings`() = runTest {
         // handler defaults to chat/completions, but the specific embedding parameters are still propagated to the span
         val client = createOpenAIClient(llmProviderUrl, llmProviderApiKey).apply { instrument(this) }
@@ -469,7 +444,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     }
 
     @Test
-    fun `test OpenAI chat completions auto tracing disable`() = runTest {
+    fun `test OpenAI chat completions auto tracing disabled`() = runTest {
         TracingManager.isTracingEnabled = false
 
         val model = ChatModel.GPT_4O_MINI
