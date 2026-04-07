@@ -1,0 +1,36 @@
+{
+    "method": "POST",
+    "path": "/v1/images/edits",
+    "statusCode": 200,
+    "headers": {
+        "Date": [
+            "Mon, 01 Jan 2024 00:00:00 GMT"
+        ],
+        "content-type": [
+            "text/event-stream; charset=utf-8"
+        ],
+        "openai-organization": [
+            "sanitized-org-id"
+        ],
+        "openai-project": [
+            "sanitized-project-id"
+        ],
+        "openai-version": [
+            "2020-10-01"
+        ],
+        "strict-transport-security": [
+            "max-age=31536000; includeSubDomains; preload"
+        ]
+    },
+    "body": {
+        "type": "external_file",
+        "relativePath": "body-post-images-edits-0.sse",
+        "contentType": "text/event-stream; charset=utf-8"
+    },
+    "details": {
+        "containingTestClassName": "ImagesCreateEditOpenAIApiEndpointHandlerTest",
+        "filename": "post-images-edits-0.json",
+        "tag": "tracing-when-editing-two-images-with-streaming-api",
+        "index": 0
+    }
+}
