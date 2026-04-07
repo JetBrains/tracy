@@ -16,7 +16,7 @@ interface ResponseSanitizer {
      * Sanitizes the response body (typically JSON).
      *
      * @param body The raw response body as a string
-     * @param mimeType The content type of the response (e.g., "application/json")
+     * @param mimeType The content type's MIME type of the response (e.g., "application/json")
      * @return The sanitized response body
      */
     fun sanitizeBody(body: String, mimeType: String?): String
