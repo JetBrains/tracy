@@ -5,11 +5,7 @@
 
 package org.jetbrains.ai.tracy.openai.clients
 
-import org.jetbrains.ai.tracy.core.TracingManager
-import org.jetbrains.ai.tracy.core.instrumentation.processor.withSpan
-import org.jetbrains.ai.tracy.test.utils.BaseOpenTelemetryTracingTest
 import com.openai.client.OpenAIClient
-import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.core.ClientOptions.Companion.PRODUCTION_URL
 import com.openai.models.ChatModel
 import com.openai.models.chat.completions.ChatCompletion
@@ -18,38 +14,23 @@ import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_SYSTEM
-import org.junit.jupiter.api.*
-import java.time.Duration
+import org.jetbrains.ai.tracy.core.TracingManager
+import org.jetbrains.ai.tracy.core.instrumentation.processor.withSpan
+import org.jetbrains.ai.tracy.openai.adapters.BaseOpenAITracingTest
+import org.junit.jupiter.api.Tag
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @Tag("openai")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class OpenAIClientTest : BaseOpenTelemetryTracingTest() {
-    /**
-     * When no value is provided, defaults to [PRODUCTION_URL].
-     */
-    private val llmProviderUrl: String? = System.getenv("LLM_PROVIDER_URL")
-
-    private val llmProviderApiKey =
-        System.getenv("OPENAI_API_KEY") ?: System.getenv("LLM_PROVIDER_API_KEY")
-        ?: error("Neither OPENAI_API_KEY nor LLM_PROVIDER_API_KEY environment variables are set")
-
-    private lateinit var client: OpenAIClient
-
-    @BeforeAll
-    fun createClient() {
-        client = createOpenAIClient(llmProviderUrl, llmProviderApiKey).apply { instrument(this) }
-    }
-
-    @AfterAll
-    fun closeClient() {
-        client.close()
-    }
-
+class OpenAIClientTest : BaseOpenAITracingTest() {
     @Test
     fun testChat() {
+        val client = createOpenAIClient().apply { instrument(this) }
+
         val model = ChatModel.GPT_4O_MINI.asString()
         val systemMessage = "You are a helpful assistant!"
         val userMessage = "Tell me what model are you!"
@@ -92,6 +73,8 @@ class OpenAIClientTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun testNestedChat() {
+        val client = createOpenAIClient().apply { instrument(this) }
+
         chatCallingFunction(client)
 
         analyzeSpans().let { spans ->
@@ -110,6 +93,8 @@ class OpenAIClientTest : BaseOpenTelemetryTracingTest() {
 
     @Test
     fun testWithSpan() {
+        val client = createOpenAIClient().apply { instrument(this) }
+
         val customAttributeName = "testAttribute"
 
         val result = withSpan("callChat") {
@@ -141,6 +126,9 @@ class OpenAIClientTest : BaseOpenTelemetryTracingTest() {
     @Test
     fun testWithSpanTracingDisabled() {
         TracingManager.isTracingEnabled = false
+
+        val client = createOpenAIClient().apply { instrument(this) }
+
         val customAttributeName = "testAttribute"
 
         withSpan("callChat") {
@@ -170,19 +158,6 @@ private fun callChat(
 
     return client.chat().completions().create(params)
 }
-
-internal fun createOpenAIClient(
-    llmProviderUrl: String?,
-    llmProviderApiKey: String,
-    timeout: Duration = Duration.ofSeconds(60)
-): OpenAIClient {
-    return OpenAIOkHttpClient.builder()
-        .baseUrl(llmProviderUrl)
-        .apiKey(llmProviderApiKey)
-        .timeout(timeout)
-        .build()
-}
-
 
 private fun chatCallingFunction(client: OpenAIClient): String {
     val tracer = TracingManager.tracer
