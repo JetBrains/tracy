@@ -72,3 +72,51 @@ publishing {
     }
 }
 
+// Task to record test fixtures by calling real OpenAI endpoints
+tasks.register("recordFixtures") {
+    group = "verification"
+    description = "Records test fixtures by running tests against real OpenAI endpoints"
+
+    doFirst {
+        println("=".repeat(80))
+        println("Recording test fixtures from real OpenAI endpoints")
+        println("=".repeat(80))
+        println("This will:")
+        println("  1. Run tests against real LLM provider APIs")
+        println("  2. Capture and sanitize responses")
+        println("  3. Save fixtures to src/jvmTest/resources/fixtures/")
+        println("  4. Re-run tests in mock mode to verify fixtures")
+        println()
+        println("Make sure ENV variables (e.g., OPENAI_API_KEY) are set in your environment")
+        println("=".repeat(80))
+        println()
+    }
+
+    dependsOn(tasks.withType<Test>().matching {
+        it.name.contains("jvmTest") || it.name == "test"
+    }.map { testTask ->
+        testTask.apply {
+            // Set system property to enable RECORD mode
+            systemProperty("tracy.test.mode", "record")
+
+            // Filter to run only OpenAI tests
+            useJUnitPlatform {
+                includeTags("openai")
+            }
+        }
+    })
+
+    doLast {
+        println()
+        println("=".repeat(80))
+        println("Fixtures recorded successfully!")
+        println("=".repeat(80))
+        println()
+        println("Next steps:")
+        println("  1. Review the generated fixtures in src/jvmTest/resources/fixtures/")
+        println("  2. Run tests in mock mode: ./gradlew :tracing:openai:test")
+        println("  3. Commit the fixtures if they look correct")
+        println("=".repeat(80))
+    }
+}
+
