@@ -8,10 +8,14 @@ package org.jetbrains.ai.tracy.test.utils.fixtures
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import mu.KotlinLogging
+import okhttp3.MediaType
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.writeBytes
 import kotlin.io.path.writeText
+
+private val logger = KotlinLogging.logger {}
 
 /**
  * Records HTTP responses as test fixtures.
@@ -28,70 +32,71 @@ class FixtureRecorder(
     /**
      * Records an HTTP response as a fixture file.
      *
-     * @param method The HTTP method (GET, POST, etc.)
-     * @param path The API endpoint path (e.g., "/v1/chat/completions")
-     * @param statusCode The HTTP status code
-     * @param headers The response headers
-     * @param body The response body as raw bytes
-     * @param contentType The MIME type of the response (e.g., "application/json", "text/event-stream")
-     * @param fixtureTag tag to use as a folder where mocked responses are stored (usually, a test case name)
-     * @param responseIndex the index of the response in the sequence of responses
+     * @ param record The HTTP request, response, and fixture data to record
      */
-    fun record(
-        method: String,
-        path: String,
-        statusCode: Int,
-        headers: Map<String, List<String>>,
-        body: ByteArray,
-        contentType: String?,
-        containingTestSuiteName: String,
-        fixtureTag: String,
-        responseIndex: Int,
-    ) {
-        val sanitizedHeaders = sanitizer.sanitizeHeaders(headers)
+    fun record(record: Record) {
+        val (request, response, _) = record
+
+        val sanitizedHeaders = sanitizer.sanitizeHeaders(response.headers)
         // resolving under: `fixtureDir/containingTestSuiteName/fixtureTag`
         val fixtureDirectory = fixturesDir
-            .resolve(containingTestSuiteName)
-            .resolve(fixtureTag)
+            .resolve(record.fixture.containingTestSuiteName)
+            .resolve(record.fixture.tag)
 
         // Ensure parent directories exist
         fixtureDirectory.createDirectories()
 
+        val mimeType = response.body.contentType?.let { "${it.type}/${it.subtype}" }
+
         // Determine storage strategy: inline for small JSON, external file for everything else
-        val fixtureBody = if (shouldStoreInline(contentType, body.size)) {
+        val fixtureBody = if (shouldStoreInline(mimeType, bodySize = response.body.content.size)) {
             // Store inline as sanitized string
-            // TODO: pass the charset
-            val bodyString = body.toString(Charsets.UTF_8)
-            val sanitizedBody = sanitizer.sanitizeBody(bodyString, contentType)
+            val charset = response.body.contentType?.charset() ?: Charsets.UTF_8
+            val sanitizedBody = sanitizer.sanitizeBody(
+                body = response.body.content.toString(charset),
+                mimeType = mimeType,
+            )
+
             FixtureBody.Inline(sanitizedBody)
         } else {
             // Store in an external file
-            val bodyFilename = generateBodyFilename(method, path, responseIndex, contentType)
+            val bodyFilename = generateBodyFilename(
+                method = request.method,
+                path = request.path,
+                fixtureIndex = record.fixture.responseIndex,
+                contentType = mimeType,
+            )
             val bodyFile = fixtureDirectory.resolve(bodyFilename)
-            bodyFile.writeBytes(body)
+            bodyFile.writeBytes(response.body.content)
 
+            logger.info { "Recorded body file: ${bodyFile.toAbsolutePath()}" }
             println("Recorded body file: ${bodyFile.toAbsolutePath()}")
 
             FixtureBody.ExternalFile(
                 relativePath = bodyFilename,
-                contentType = contentType
+                contentType = response.body.contentType?.toString(),
             )
         }
 
-        val filename = generateFixtureFilename(method, path, responseIndex, extension = "json")
+        val filename = generateFixtureFilename(
+            method = request.method,
+            path = request.path,
+            fixtureIndex = record.fixture.responseIndex,
+            extension = "json",
+        )
         val fixtureFile = fixtureDirectory.resolve(filename)
 
         val fixture = HttpFixture(
-            method = method,
-            path = path,
-            statusCode = statusCode,
+            method = request.method,
+            path = request.path,
+            statusCode = response.statusCode,
             headers = sanitizedHeaders,
             body = fixtureBody,
             details = FixtureDetails(
-                containingTestClassName = containingTestSuiteName,
+                containingTestClassName = record.fixture.containingTestSuiteName,
                 filename = filename,
-                tag = fixtureTag,
-                index = responseIndex,
+                tag = record.fixture.tag,
+                index = record.fixture.responseIndex,
             )
         )
 
@@ -99,6 +104,7 @@ class FixtureRecorder(
         val fixtureJson = json.encodeToString(fixture)
         fixtureFile.writeText(fixtureJson)
 
+        logger.info { "Recorded fixture: ${fixtureFile.toAbsolutePath()}" }
         println("Recorded fixture: ${fixtureFile.toAbsolutePath()}")
     }
 
@@ -159,7 +165,6 @@ sealed class FixtureBody {
     @SerialName("external_file")
     @Serializable
     data class ExternalFile(
-        // TODO: make absolute
         val relativePath: String,
         val contentType: String? = null
     ) : FixtureBody()
@@ -217,3 +222,52 @@ data class FixtureDetails(
      */
     val index: Int,
 )
+
+/**
+ * Represents a recorded HTTP request, response, and associated fixture data.
+ */
+data class Record(
+    val request: Request,
+    val response: Response,
+    val fixture: Fixture,
+) {
+    /**
+     * @param method The HTTP method (GET, POST, etc.)
+     * @param path The API endpoint path (e.g., "/v1/chat/completions")
+     */
+    data class Request(
+        val method: String,
+        val path: String,
+    )
+
+    /**
+     * @param statusCode The HTTP status code
+     * @param headers The response headers
+     * @param body The response body as raw bytes
+     */
+    data class Response(
+        val statusCode: Int,
+        val headers: Map<String, List<String>>,
+        val body: Body,
+    ) {
+        /**
+         * @param contentType The MIME type of the response (e.g., "application/json", "text/event-stream")
+         */
+        data class Body(
+            val content: ByteArray,
+            val contentType: MediaType?,
+        )
+    }
+
+    /**
+     * @param containingTestSuiteName the name of the test suite that contains a test case
+     * dedicated to this fixture.
+     * @param tag tag to use as a folder where mocked responses are stored (usually, a test case name)
+     * @param responseIndex the index of the response in the sequence of responses
+     */
+    data class Fixture(
+        val containingTestSuiteName: String,
+        val tag: String,
+        val responseIndex: Int,
+    )
+}

@@ -35,15 +35,6 @@ class RecordingInterceptor(
         val request = chain.request()
         val response = chain.proceed(request)
 
-        val method = request.method
-        val path = request.url.encodedPath
-        val statusCode = response.code
-        val headers = response.headers.toMultimap()
-        val contentType = response.body.contentType()?.toString()
-
-        println("RecordingInterceptor: statusCode=$statusCode")
-        println("RecordingInterceptor: response content type: $contentType")
-
         // Wrap the response body to capture bytes as they're consumed
         val capturedBytes = ByteArrayOutputStream()
         val originalBody = response.body
@@ -56,17 +47,29 @@ class RecordingInterceptor(
                     onClose = {
                         // when the body is fully consumed and closed,
                         // record the fixture with all captured bytes
-                        recorder.record(
-                            method = method,
-                            path = path,
-                            statusCode = statusCode,
-                            contentType = contentType,
-                            headers = headers,
-                            body = capturedBytes.toByteArray(),
-                            containingTestSuiteName = containingTestSuiteName,
-                            fixtureTag = fixtureTag,
-                            responseIndex = recordedResponsesCount,
+                        val record = Record(
+                            request = Record.Request(
+                                method = request.method,
+                                path = request.url.encodedPath,
+                            ),
+                            response = Record.Response(
+                                statusCode = response.code,
+                                headers = response.headers.toMultimap(),
+                                body = Record.Response.Body(
+                                    content = capturedBytes.toByteArray(),
+                                    contentType = response.body.contentType(),
+                                )
+                            ),
+                            fixture = Record.Fixture(
+                                containingTestSuiteName = containingTestSuiteName,
+                                tag = fixtureTag,
+                                responseIndex = recordedResponsesCount,
+                            ),
                         )
+
+                        // record the fixture
+                        recorder.record(record)
+
                         recordedResponsesCount += 1
                     }
                 ).buffer()
