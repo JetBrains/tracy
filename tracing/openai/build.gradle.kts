@@ -62,30 +62,6 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
     }
 }
 
-tasks.register<Test>("recordOpenAIFixtures") {
-    description = "Runs OpenAI tests in RECORD mode against a real LLM provider to collect test fixtures."
-    group = "verification"
-
-    useJUnitPlatform {
-        includeTags("openai")
-    }
-
-    systemProperty("tracy.test.mode", "record")
-
-    System.getenv("OPENAI_API_KEY")?.let { environment("OPENAI_API_KEY", it) }
-    System.getenv("LLM_PROVIDER_API_KEY")?.let { environment("LLM_PROVIDER_API_KEY", it) }
-    System.getenv("LLM_PROVIDER_URL")?.let { environment("LLM_PROVIDER_URL", it) }
-}
-
-afterEvaluate {
-    val jvmTest = tasks.named<Test>("jvmTest")
-    tasks.named<Test>("recordOpenAIFixtures") {
-        testClassesDirs = jvmTest.get().testClassesDirs
-        classpath = jvmTest.get().classpath
-        dependsOn("jvmTestClasses")
-    }
-}
-
 publishing {
     publications.withType<MavenPublication>().configureEach {
         artifactId = "tracy-$artifactId"
