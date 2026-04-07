@@ -1,0 +1,36 @@
+{
+    "method": "POST",
+    "path": "/v1/images/edits",
+    "statusCode": 200,
+    "headers": {
+        "Date": [
+            "Mon, 01 Jan 2024 00:00:00 GMT"
+        ],
+        "content-type": [
+            "application/json"
+        ],
+        "openai-organization": [
+            "sanitized-org-id"
+        ],
+        "openai-project": [
+            "sanitized-project-id"
+        ],
+        "openai-version": [
+            "2020-10-01"
+        ],
+        "strict-transport-security": [
+            "max-age=31536000; includeSubDomains; preload"
+        ]
+    },
+    "body": {
+        "type": "external_file",
+        "relativePath": "body-post-images-edits-0.json",
+        "contentType": "application/json"
+    },
+    "details": {
+        "containingTestClassName": "ImagesCreateEditOpenAIApiEndpointHandlerTest",
+        "filename": "post-images-edits-0.json",
+        "tag": "capture-policy-hides-sensitive-data_case-3-ContentCapturePolicy",
+        "index": 0
+    }
+}

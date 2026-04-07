@@ -5,12 +5,11 @@
 
 package org.jetbrains.ai.tracy.openai.adapters.handlers
 
-import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
-import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
-import org.jetbrains.ai.tracy.core.http.protocol.asJson
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
+import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
+import org.jetbrains.ai.tracy.core.http.protocol.asJson
 
 /**
  * Common utilities for OpenAI API handling
@@ -23,19 +22,17 @@ internal object OpenAIApiUtils {
     fun setCommonRequestAttributes(span: Span, request: TracyHttpRequest) {
         val body = request.body.asJson()?.jsonObject ?: return
 
-        body["temperature"]?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it.jsonPrimitive.doubleOrNull) }
-        body["model"]?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it.jsonPrimitive.content) }
+        body["temperature"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it) }
+        body["model"]?.jsonPrimitive?.content?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it) }
     }
 
     /**
      * Sets common response attributes (id, model, object type)
      */
-    fun setCommonResponseAttributes(span: Span, response: TracyHttpResponse) {
-        val body = response.body.asJson()?.jsonObject ?: return
-
-        body["id"]?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
-        body["object"]?.let { span.setAttribute(GEN_AI_OPERATION_NAME, it.jsonPrimitive.content) }
-        body["model"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
+    fun setCommonResponseAttributes(span: Span, response: JsonObject) {
+        response["id"]?.jsonPrimitive?.content?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it) }
+        response["object"]?.jsonPrimitive?.content?.let { span.setAttribute(GEN_AI_OPERATION_NAME, it) }
+        response["model"]?.jsonPrimitive?.content?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it) }
     }
 }
 

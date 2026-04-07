@@ -1,0 +1,41 @@
+{
+    "method": "POST",
+    "path": "/v1/chat/completions",
+    "statusCode": 200,
+    "headers": {
+        "Date": [
+            "Mon, 01 Jan 2024 00:00:00 GMT"
+        ],
+        "access-control-expose-headers": [
+            "X-Request-ID"
+        ],
+        "content-type": [
+            "application/json"
+        ],
+        "openai-organization": [
+            "sanitized-org-id"
+        ],
+        "openai-project": [
+            "sanitized-project-id"
+        ],
+        "openai-version": [
+            "2020-10-01"
+        ],
+        "strict-transport-security": [
+            "max-age=31536000; includeSubDomains; preload"
+        ],
+        "x-openai-proxy-wasm": [
+            "v0.1"
+        ]
+    },
+    "body": {
+        "type": "inline",
+        "content": "{\"id\":\"sanitized-id\",\"object\":\"chat.completion\",\"created\":1234567890,\"model\":\"gpt-4o-mini-2024-07-18\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"sanitized-assistant-response\",\"refusal\":null,\"annotations\":[]},\"logprobs\":null,\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":13,\"completion_tokens\":41,\"total_tokens\":54,\"prompt_tokens_details\":{\"cached_tokens\":0,\"audio_tokens\":0},\"completion_tokens_details\":{\"reasoning_tokens\":0,\"audio_tokens\":0,\"accepted_prediction_tokens\":0,\"rejected_prediction_tokens\":0}},\"service_tier\":\"default\",\"system_fingerprint\":\"fp_f70b6dce99\"}"
+    },
+    "details": {
+        "containingTestClassName": "ChatCompletionsOpenAIApiEndpointHandlerTest",
+        "filename": "post-chat-completions-0.json",
+        "tag": "openai-chat-completions-auto-tracing",
+        "index": 0
+    }
+}

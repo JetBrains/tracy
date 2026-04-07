@@ -25,6 +25,8 @@ interface TracyHttpUrl {
     val host: String
     val pathSegments: List<String>
     val parameters: TracyQueryParameters
+
+    fun asString(): String
 }
 
 @InternalTracyApi
@@ -54,7 +56,10 @@ data class TracyHttpUrlImpl(
     override val host: String,
     override val pathSegments: List<String>,
     override val parameters: TracyQueryParameters,
-) : TracyHttpUrl
+    private val url: String,
+) : TracyHttpUrl {
+    override fun asString(): String = url
+}
 
 /**
  * Converts an instance of [HttpUrl] into a [TracyHttpUrl] object by extracting its
@@ -65,7 +70,6 @@ data class TracyHttpUrlImpl(
 @InternalTracyApi
 fun HttpUrl.toProtocolUrl(): TracyHttpUrl {
     val httpUrl = this
-
     val params = object : TracyQueryParameters {
         override fun queryParameter(name: String) = httpUrl.queryParameter(name)
         override fun queryParameterValues(name: String) = httpUrl.queryParameterValues(name)
@@ -76,5 +80,6 @@ fun HttpUrl.toProtocolUrl(): TracyHttpUrl {
         host = httpUrl.host,
         pathSegments = httpUrl.pathSegments,
         parameters = params,
+        url = httpUrl.toString()
     )
 }

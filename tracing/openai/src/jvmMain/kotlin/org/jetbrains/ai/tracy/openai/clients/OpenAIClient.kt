@@ -5,8 +5,8 @@
 
 package org.jetbrains.ai.tracy.openai.clients
 
-import org.jetbrains.ai.tracy.core.OpenTelemetryOkHttpInterceptor
-import org.jetbrains.ai.tracy.core.patchOpenAICompatibleClient
+import org.jetbrains.ai.tracy.core.interceptors.OpenTelemetryOkHttpInterceptor
+import org.jetbrains.ai.tracy.core.interceptors.patchOpenAICompatibleClient
 import org.jetbrains.ai.tracy.openai.adapters.OpenAILLMTracingAdapter
 import com.openai.client.OpenAIClient
 import org.jetbrains.ai.tracy.core.TracingManager

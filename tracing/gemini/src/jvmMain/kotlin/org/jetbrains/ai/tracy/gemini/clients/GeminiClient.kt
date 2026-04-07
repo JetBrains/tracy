@@ -5,9 +5,9 @@
 
 package org.jetbrains.ai.tracy.gemini.clients
 
-import org.jetbrains.ai.tracy.core.OpenTelemetryOkHttpInterceptor
+import org.jetbrains.ai.tracy.core.interceptors.OpenTelemetryOkHttpInterceptor
 import org.jetbrains.ai.tracy.core.TracingManager
-import org.jetbrains.ai.tracy.core.patchInterceptors
+import org.jetbrains.ai.tracy.core.interceptors.patchInterceptors
 import org.jetbrains.ai.tracy.gemini.adapters.GeminiLLMTracingAdapter
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient

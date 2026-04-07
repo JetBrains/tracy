@@ -1,0 +1,229 @@
+/*
+ * Copyright © 2026 JetBrains s.r.o. and contributors.
+ * Use of this source code is governed by the Apache 2.0 license.
+ */
+
+package org.jetbrains.ai.tracy.test.utils.fixtures
+
+import kotlinx.serialization.json.Json
+import mu.KotlinLogging
+import okhttp3.mockwebserver.Dispatcher
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
+import java.io.File
+import java.nio.file.Path
+import kotlin.io.path.exists
+import kotlin.io.path.readBytes
+
+/**
+ * Header name for specifying fixture tag in MOCK mode.
+ * Clients should add this header to requests to match specific fixture variants.
+ */
+const val FIXTURE_TAG_HEADER = "X-Tracy-Fixture-Tag"
+
+/**
+ * Header name for specifying the test suite name in MOCK mode.
+ * Clients should add this header to requests to match the containing folder of a fixture.
+ */
+const val FIXTURE_TEST_SUITE_NAME_HEADER = "X-Tracy-Fixture-Test-Suite-Name"
+
+/**
+ * Manages a mock HTTP server that serves responses from fixture files.
+ *
+ * This class loads HTTP fixtures from a directory and serves them via
+ * [MockWebServer], matching requests to fixtures based on HTTP method and path.
+ *
+ * Supports fixture tags for unique test scenarios via the `X-Tracy-Fixture-Tag` header.
+ */
+class FixtureMockServer(private val fixturesDir: Path) {
+    private val server = MockWebServer()
+
+    /**
+     * Starts the mock server and loads the test fixtures from the fixtures directory.
+     */
+    fun start() {
+        val fixtures = loadFixtures(fixturesDir)
+            ?: error("Failed to load fixtures from directory: ${fixturesDir.toAbsolutePath()}")
+
+        server.dispatcher = FixtureDispatcher(fixtures, fixturesDir)
+        server.start()
+    }
+
+    /**
+     * @return The base URL of the mock server appended with `/v1` suffix (e.g., "http://localhost:12345/v1")
+     */
+    fun url(): String = server.url("/v1").toString().removeSuffix("/")
+
+    /**
+     * Stops the mock server.
+     */
+    fun stop() {
+        server.shutdown()
+    }
+
+    companion object {
+        private fun loadFixtures(fixturesDir: Path): Map<String, HttpFixture>? {
+            if (!fixturesDir.exists()) {
+                logger.error { "Fixtures directory does not exist: ${fixturesDir.toAbsolutePath()}" }
+                return null
+            }
+
+            val fixtureFiles = File(fixturesDir.toUri()).walkTopDown()
+                .filter { it.isFile && it.extension == "json" }
+
+            val fixtures = buildMap {
+                for (file in fixtureFiles) {
+                    try {
+                        val fixtureJson = file.readText()
+                        val fixture = json.decodeFromString<HttpFixture>(fixtureJson)
+
+                        val key = fixture.fixtureKey()
+
+                        // assign the loaded fixture to the key
+                        put(key, fixture)
+
+                        logger.info { "Loaded fixture: ${file.name} -> $key" }
+                    } catch (e: Exception) {
+                        logger.trace(e) { "Failed to load fixture ${file.name}: ${e.message}" }
+                    }
+                }
+            }
+
+            logger.info { "Loaded ${fixtures.size} fixtures from ${fixturesDir.toAbsolutePath()}" }
+            return fixtures
+        }
+
+        private val json = Json { ignoreUnknownKeys = true }
+        private val logger = KotlinLogging.logger {}
+    }
+}
+
+private class FixtureDispatcher(
+    private val fixtures: Map<String, HttpFixture>,
+    private val fixturesDir: Path,
+) : Dispatcher() {
+    /**
+     * A fixture location is a containing test suite name and a fixture tag
+     * concatenated with a slash.
+     *
+     * Represents a mapping of:
+     *
+     * `"containingTestSuiteName/fixtureTag"` -> number of already dispatched requests
+     */
+    private val dispatchedRequestsCountPerFixtureLocation = mutableMapOf<String, Int>()
+
+    override fun dispatch(request: RecordedRequest): MockResponse {
+        val path = request.path ?: return notFoundResponse("Request path is null")
+        val method = request.method ?: return notFoundResponse("Request method is null")
+
+        // extract the fixture tag and containing test suite names from the header if present
+        val fixtureTag = request.getHeader(FIXTURE_TAG_HEADER) ?: return notFoundResponse(
+            "No fixture tag provided in request headers, ensure '$FIXTURE_TAG_HEADER' header is set to a fixture tag"
+        )
+        val containingTestSuiteName = request.getHeader(FIXTURE_TEST_SUITE_NAME_HEADER) ?: return notFoundResponse(
+            "No containing test suite class name provided in request headers, " +
+                    "ensure '$FIXTURE_TEST_SUITE_NAME_HEADER' header is set to a class name of the containing test suite"
+        )
+
+        val fixtureLocation = "$containingTestSuiteName/$fixtureTag"
+        val dispatchedRequestsCount = dispatchedRequestsCountPerFixtureLocation
+            .getOrPut(fixtureLocation) { 0 }
+
+        // dropping query params of the path
+        val fixtureKey = fixtureKey(
+            method = method,
+            path = path.substringBefore('?'),
+            containingTestClassName = containingTestSuiteName,
+            tag = fixtureTag,
+            index = dispatchedRequestsCount,
+        )
+        val fixture = fixtures[fixtureKey]
+
+        if (fixture == null) {
+            val errorMessage = """
+                No fixture found for key '$fixtureKey'.
+                Available fixture keys: ${fixtures.keys.joinToString(", ")}.
+                Ensure fixture response associated with a fixture tag '${fixtureTag}' exists
+            """.trimIndent()
+            logger.error { errorMessage }
+            return notFoundResponse(errorMessage)
+        }
+
+        // this request was successfully dispatched to an existing fixture response
+        dispatchedRequestsCountPerFixtureLocation[fixtureLocation] = dispatchedRequestsCount + 1
+
+        // Load the body content based on a storage type
+        val bodyContent = when (val body = fixture.body) {
+            is FixtureBody.Inline -> body.content
+            is FixtureBody.ExternalFile -> {
+                // resolving under: `containingTestSuiteName/fixtureTag/bodyFilename`
+                val bodyFile = fixturesDir
+                    .resolve(containingTestSuiteName)
+                    .resolve(fixture.details.tag)
+                    .resolve(body.relativePath)
+
+                try {
+                    // TODO: is it possible to read the body as a stream instead?
+                    bodyFile.readBytes().decodeToString()
+                } catch (e: Exception) {
+                    logger.error(e) { "Failed to read external body file: $bodyFile" }
+                    return notFoundResponse("Failed to read external body file: ${e.message}")
+                }
+            }
+        }
+
+        return MockResponse()
+            .setResponseCode(fixture.statusCode)
+            .apply {
+                // adding response headers from the fixture
+                for ((name, values) in fixture.headers) {
+                    for (value in values) {
+                        addHeader(name, value)
+                    }
+                }
+            }
+            .setBody(bodyContent)
+    }
+
+    companion object {
+        private val logger = KotlinLogging.logger {}
+
+        private fun notFoundResponse(message: String?): MockResponse {
+            return MockResponse()
+                .setResponseCode(404)
+                .addHeader("Content-Type", "application/json")
+                .setBody("{\"error\": \"${message ?: "Fixture Not Found"}\"}")
+        }
+    }
+}
+
+/**
+ *
+ */
+private fun HttpFixture.fixtureKey() = fixtureKey(
+    method = this.method,
+    path = this.path,
+    containingTestClassName = this.details.containingTestClassName,
+    tag = this.details.tag,
+    index = this.details.index,
+)
+
+/**
+ * Generates a unique key for a fixture based on its method, path, index, and tag.
+ *
+ * Example:
+ * 1. `POST /v1/chat/completions` -> `[tag]/post-chat-completions-[index].json`
+ *
+ * Notice that a file extension is attached to match the [FixtureDetails.filename] naming format.
+ */
+private fun fixtureKey(
+    method: String,
+    path: String,
+    containingTestClassName: String,
+    tag: String,
+    index: Int,
+): String {
+    val fixtureFilename = generateFixtureFilename(method, path, fixtureIndex = index, extension = "json")
+    return "$containingTestClassName/$tag/$fixtureFilename"
+}
