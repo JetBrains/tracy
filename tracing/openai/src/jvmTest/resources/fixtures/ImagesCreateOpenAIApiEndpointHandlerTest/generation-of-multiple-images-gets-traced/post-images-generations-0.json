@@ -1,0 +1,35 @@
+{
+    "method": "POST",
+    "path": "/v1/images/generations",
+    "statusCode": 200,
+    "headers": {
+        "Date": [
+            "Mon, 01 Jan 2024 00:00:00 GMT"
+        ],
+        "content-type": [
+            "application/json"
+        ],
+        "openai-organization": [
+            "sanitized-org-id"
+        ],
+        "openai-project": [
+            "sanitized-project-id"
+        ],
+        "openai-version": [
+            "2020-10-01"
+        ],
+        "strict-transport-security": [
+            "max-age=31536000; includeSubDomains; preload"
+        ]
+    },
+    "body": {
+        "type": "inline",
+        "content": "{\"created\":1234567890,\"data\":[{\"url\":\"https://oaidalleapiprodscus.blob.core.windows.net/private/org-HxH5fxIrm2uwDEas71UvsRSe/user-YF2tsf8zhFixOq6wethLKvEp/img-rY3x34c9rk4naXUzMrhuCo4X.png?st=2026-04-07T16%3A22%3A39Z&se=2026-04-07T18%3A22%3A39Z&sp=r&sv=2026-02-06&sr=b&rscd=inline&rsct=image/png&skoid=b1a0ae1f-618f-4548-84fd-8b16cacd5485&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-04-07T05%3A07%3A46Z&ske=2026-04-08T05%3A07%3A46Z&sks=b&skv=2026-02-06&sig=6PCD5VqRjDGtllnk9ZWxhNDFtrfKpo56QYyswZtXFXA%3D\"},{\"url\":\"https://oaidalleapiprodscus.blob.core.windows.net/private/org-HxH5fxIrm2uwDEas71UvsRSe/user-YF2tsf8zhFixOq6wethLKvEp/img-canjWLxbK69HIhPNMoXywFWV.png?st=2026-04-07T16%3A22%3A38Z&se=2026-04-07T18%3A22%3A38Z&sp=r&sv=2026-02-06&sr=b&rscd=inline&rsct=image/png&skoid=b1a0ae1f-618f-4548-84fd-8b16cacd5485&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-04-07T05%3A07%3A46Z&ske=2026-04-08T05%3A07%3A46Z&sks=b&skv=2026-02-06&sig=oKeVNfkDvkNQhe7XrDNyWx2zERjb9koZs09HDzjeFbE%3D\"},{\"url\":\"https://oaidalleapiprodscus.blob.core.windows.net/private/org-HxH5fxIrm2uwDEas71UvsRSe/user-YF2tsf8zhFixOq6wethLKvEp/img-bM7QGYtZylkESeRRekrhdYwr.png?st=2026-04-07T16%3A22%3A39Z&se=2026-04-07T18%3A22%3A39Z&sp=r&sv=2026-02-06&sr=b&rscd=inline&rsct=image/png&skoid=b1a0ae1f-618f-4548-84fd-8b16cacd5485&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-04-07T05%3A07%3A46Z&ske=2026-04-08T05%3A07%3A46Z&sks=b&skv=2026-02-06&sig=RwLBrdUfyIQCeaZFUyPJ5ldOHk889gbt6giXciNWhPI%3D\"}]}"
+    },
+    "details": {
+        "containingTestClassName": "ImagesCreateOpenAIApiEndpointHandlerTest",
+        "filename": "post-images-generations-0.json",
+        "tag": "generation-of-multiple-images-gets-traced",
+        "index": 0
+    }
+}
