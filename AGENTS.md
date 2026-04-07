@@ -76,6 +76,47 @@ tracy/
 4. **plugin/**: Kotlin compiler plugins for `@Trace` annotation processing
 5. **examples/**: Reference implementations (keep in sync with API changes)
 
+## Test Fixture Recording
+
+Tracy uses a dual-mode testing system to avoid calling real LLM endpoints in CI:
+
+**Mock Mode (Default)**
+- Tests run against a mock HTTP server using pre-recorded fixtures
+- Fast, offline, no API keys required
+- Fixtures stored in `tracing/{provider}/src/jvmTest/resources/fixtures/`
+
+**Record Mode**
+- Tests call real LLM endpoints and record sanitized responses as fixtures
+- Automatically sanitizes non-deterministic data (IDs, timestamps, AI outputs)
+- Used to update fixtures when API schemas change
+
+**Recording Fixtures:**
+
+```bash
+# Record OpenAI fixtures
+export OPENAI_API_KEY=sk-...
+./gradlew :tracing:openai:recordFixtures
+
+# Run tests in mock mode (default)
+./gradlew :tracing:openai:test
+
+# Run tests in record mode manually
+./gradlew :tracing:openai:test -Dtracy.test.mode=record
+```
+
+**Automated Updates:**
+- GitHub Actions workflow runs weekly to update fixtures automatically
+- Creates PR with updated fixtures for review
+- Manual trigger available via workflow_dispatch
+- See `.github/workflows/update-fixtures.yml`
+
+**Fixture Sanitization:**
+Each provider has a custom sanitizer that removes:
+- **IDs**: `id`, `request_id`, `organization_id`, etc. → `"sanitized-*"`
+- **Timestamps**: `created`, `created_at` → fixed timestamp
+- **AI Content**: Assistant messages, tool arguments → generic placeholders
+- **Rate Limit Headers**: Removed entirely
+
 ## Adding a New Provider
 
 Use existing providers as reference.
@@ -86,3 +127,6 @@ Use existing providers as reference.
 3. If multiple distinct API endpoints exist, implement `EndpointApiHandler` per endpoint and delegate from the adapter
 4. Add a public `instrument(client)` function — use `patchOpenAICompatibleClient()` for OpenAI-compatible SDKs, or reflection + `patchInterceptors()` for others (see `GeminiClient.kt`)
 5. Write tests extending `BaseAITracingTest`, tag with `@Tag("{provider}")`
+6. Create a `ResponseSanitizer` implementation for the provider in `test-utils`
+7. Add `recordFixtures` Gradle task (see `tracing/openai/build.gradle.kts`)
+8. Create fixtures directory: `src/jvmTest/resources/fixtures/`
