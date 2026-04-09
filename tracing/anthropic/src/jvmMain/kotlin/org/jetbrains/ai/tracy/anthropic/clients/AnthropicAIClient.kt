@@ -6,9 +6,9 @@
 package org.jetbrains.ai.tracy.anthropic.clients
 
 import org.jetbrains.ai.tracy.anthropic.adapters.AnthropicLLMTracingAdapter
-import org.jetbrains.ai.tracy.core.OpenTelemetryOkHttpInterceptor
+import org.jetbrains.ai.tracy.core.interceptors.OpenTelemetryOkHttpInterceptor
 import org.jetbrains.ai.tracy.core.TracingManager
-import org.jetbrains.ai.tracy.core.patchOpenAICompatibleClient
+import org.jetbrains.ai.tracy.core.interceptors.patchOpenAICompatibleClient
 import com.anthropic.client.AnthropicClient
 
 /**

@@ -3,22 +3,21 @@
  * Use of this source code is governed by the Apache 2.0 license.
  */
 
-package org.jetbrains.ai.tracy.core
+package org.jetbrains.ai.tracy.core.interceptors
 
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
-import okio.Buffer
-import okio.BufferedSource
-import okio.ForwardingSource
-import okio.buffer
+import okio.*
+import org.jetbrains.ai.tracy.core.TracingManager
 import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
+import org.jetbrains.ai.tracy.core.http.parsers.SseParser
+import org.jetbrains.ai.tracy.core.http.parsers.UTF8Decoder
 import org.jetbrains.ai.tracy.core.http.protocol.*
 import okhttp3.Request as OkHttpRequest
 import okhttp3.Response as OkHttpResponse
@@ -116,15 +115,15 @@ import okhttp3.ResponseBody as OkHttpResponseBody
  *   will not result in duplicate interceptors.
  * - Tracing can be controlled globally via `TracingManager.isTracingEnabled`.
  * - **The original client is not modified; a new client instance with instrumentation is returned**.
- * - Content capture policies [TracingManager.contentCapturePolicy] can be configured to redact sensitive data.
+ * - Content capture policies [org.jetbrains.ai.tracy.core.TracingManager.contentCapturePolicy] can be configured to redact sensitive data.
  * - Error responses are automatically captured with error status and messages.
  *
  * @param client The OkHttp client to instrument
  * @param adapter The [LLMTracingAdapter] specifying which LLM provider adapter to use for tracing
  * @return **A new [OkHttpClient] instance** with OpenTelemetry tracing enabled (i.e., the initial [client] remains **unmodified**)
  *
- * @see TracingManager
- * @see TracingManager.traceSensitiveContent
+ * @see org.jetbrains.ai.tracy.core.TracingManager
+ * @see org.jetbrains.ai.tracy.core.TracingManager.traceSensitiveContent
  */
 fun instrument(client: OkHttpClient, adapter: LLMTracingAdapter): OkHttpClient {
     val clientBuilder = client.newBuilder()
@@ -212,8 +211,9 @@ class OpenTelemetryOkHttpInterceptor(
 
         val tracer = TracingManager.tracer
 
-        val span = tracer.spanBuilder("").startSpan()
-        var isStreamingRequest = false
+        val span = tracer.spanBuilder(adapter.getSpanName()).startSpan()
+        // whether the response content type is `text/event-stream`
+        var isStreamingResponse = false
 
         span.makeCurrent().use { _ ->
             try {
@@ -237,100 +237,66 @@ class OpenTelemetryOkHttpInterceptor(
                     )
                 }
 
-                isStreamingRequest = adapter.isStreamingRequest(tracyRequest)
                 adapter.registerRequest(span, tracyRequest)
 
                 // register response
                 val response = chain.proceed(request)
+                adapter.registerResponse(span, response = response.asResponseView())
 
-                return if (isStreamingRequest) {
-                    val streamingMarker = JsonObject(mapOf("stream" to JsonPrimitive(true)))
-                    val url = request.url.toProtocolUrl()
-                    adapter.registerResponse(span, response = response.asResponseView(streamingMarker))
+                // response is of streaming type when its body MIME type is `text/event-stream`
+                isStreamingResponse = response.body.contentType()?.let {
+                    "${it.type}/${it.subtype}" == "text/event-stream"
+                } ?: false
 
-                    wrapStreamingResponse(response, url, span)
-                } else {
-                    // if the content type is `application/json`, we decode a response body;
-                    // otherwise (e.g., when the body is binary), we pass an empty JSON object as the response body.
-                    val contentType = response.body?.contentType()
-                    val mimeType = if (contentType != null) "${contentType.type}/${contentType.subtype}" else null
-                    val responseBody = when (mimeType?.lowercase()) {
-                        "application/json" -> try {
-                            val peekedBody = response.peekBody(Long.MAX_VALUE).string()
-                            Json.decodeFromString<JsonObject>(peekedBody)
-                        } catch (_: Exception) {
-                            JsonObject(emptyMap())
-                        }
-                        else -> {
-                            JsonObject(emptyMap())
-                        }
-                    }
-
-                    adapter.registerResponse(span, response = response.asResponseView(responseBody))
-                    response
+                // trace SSE events into span when the content type of the response body is `text/event-stream`
+                return when {
+                    isStreamingResponse -> response.withTracedSSE(span, requestUrl = request.url.toProtocolUrl())
+                    else -> response
                 }
             } catch (e: Exception) {
                 span.setStatus(StatusCode.ERROR)
                 span.recordException(e)
                 throw e
             } finally {
-                if (!isStreamingRequest) {
+                // when dealing with the streaming response,
+                // its span will be closed when all events are traced (see `withTracedSSE`)
+                if (!isStreamingResponse) {
                     span.end()
                 }
             }
         }
     }
 
-    private fun wrapStreamingResponse(
-        originalResponse: OkHttpResponse,
-        url: TracyHttpUrl,
-        span: Span,
-    ): OkHttpResponse {
-        val originalBody = originalResponse.body ?: return originalResponse
+    private fun OkHttpResponse.withTracedSSE(span: Span, requestUrl: TracyHttpUrl): OkHttpResponse {
+        val originalResponse = this
+        val originalBody = originalResponse.body
 
-        val tracingBody = object : OkHttpResponseBody() {
-            private val capturedText = StringBuilder()
-
+        // wrap the source of the original body with a capturing source
+        // that forwards UTF-8-decoded bytes into SSE parser
+        val originalBodyWithTracedSSE = object : OkHttpResponseBody() {
+            private val bufferedSource: BufferedSource by lazy {
+                // capture SSE events via SSE parser and forward them into the adapter
+                SseCapturingSource(
+                    delegate = originalBody.source(),
+                    utf8Decoder = UTF8Decoder(),
+                    // dispatch SSE events to the adapter
+                    parser = SseParser { event ->
+                        adapter.registerResponseStreamEvent(span, requestUrl, event)
+                    },
+                    // NOTE: end the span when the source is closed
+                    onClose = {
+                        span.end()
+                    },
+                ).buffer()
+            }
             override fun contentType() = originalBody.contentType()
-            override fun contentLength() = -1L
-
-            override fun source(): BufferedSource {
-                val originalSource = originalBody.source()
-
-                return object : ForwardingSource(originalSource) {
-                    private val acc = Buffer()
-                    override fun read(sink: Buffer, byteCount: Long): Long {
-                        val bytesRead = try {
-                            super.read(sink, byteCount)
-                        } catch (e: Exception) {
-                            span.setStatus(StatusCode.ERROR)
-                            span.recordException(e)
-                            span.end()
-                            throw e
-                        }
-
-                        if (bytesRead > 0) {
-                            val start = sink.size - bytesRead
-                            sink.copyTo(acc, start, bytesRead)
-
-                            capturedText.append(acc.readUtf8(bytesRead))
-                        }
-
-                        return bytesRead
-                    }
-                }.buffer()
-            }
-
-            override fun close() {
-                try {
-                    adapter.handleStreaming(span, url, capturedText.toString())
-                } finally {
-                    span.end()
-                }
-            }
+            override fun contentLength() = originalBody.contentLength()
+            override fun source() = bufferedSource
         }
 
-        return originalResponse.newBuilder().body(tracingBody).build()
+        return originalResponse.newBuilder()
+            .body(originalBodyWithTracedSSE)
+            .build()
     }
 
     private fun OkHttpRequest.withCopiedBodyContent(): Pair<ByteArray?, OkHttpRequest> {
@@ -357,14 +323,27 @@ class OpenTelemetryOkHttpInterceptor(
         return content to request
     }
 
-    private fun OkHttpResponse.asResponseView(body: JsonObject): TracyHttpResponse {
+    private fun OkHttpResponse.asResponseView(): TracyHttpResponse {
         val response = this
-        val mediaType = response.body?.contentType()
+        val mediaType = response.body.contentType()
+        val mimeType = mediaType?.let { "${it.type}/${it.subtype}" }
+
+        // select a body type based on the response MIME type
+        val body = when(mimeType) {
+            "application/json" -> try {
+                val json = Json.decodeFromString<JsonObject>(response.peekBody(Long.MAX_VALUE).string())
+                TracyHttpResponseBody.Json(json)
+            } catch (_: Exception) {
+                TracyHttpResponseBody.Empty
+            }
+            "text/event-stream" -> TracyHttpResponseBody.EventStream
+            else -> TracyHttpResponseBody.Empty
+        }
 
         return object : TracyHttpResponse {
             override val contentType = mediaType?.toContentType()
             override val code = response.code
-            override val body = TracyHttpResponseBody.Json(body)
+            override val body = body
             override val url = response.request.url.toProtocolUrl()
             override val requestMethod = response.request.method.uppercase()
 
@@ -376,4 +355,55 @@ class OpenTelemetryOkHttpInterceptor(
         contentType = mediaType.toContentType(),
         charset = mediaType.charset() ?: Charsets.UTF_8,
     )
+}
+
+/**
+ * Peeks bytes of the original source [delegate], decodes them as UTF-8,
+ * and forwards into SSE parser [parser].
+ */
+private class SseCapturingSource(
+    delegate: Source,
+    private val utf8Decoder: UTF8Decoder,
+    private val parser: SseParser,
+    private val onClose: () -> Unit = {},
+) : ForwardingSource(delegate) {
+    override fun read(sink: Buffer, byteCount: Long): Long {
+        val bytesRead = super.read(sink, byteCount)
+        if (bytesRead == -1L) {
+            return -1L
+        }
+
+        // peek at the bytes just written to sink
+        val buffer = sink.peek().apply {
+            skip(sink.size - bytesRead)
+        }.readByteArray(bytesRead)
+
+        val utf8Input = utf8Decoder.decode(buffer, bytesRead.toInt(), endOfInput = false)
+        if (utf8Input.isNotEmpty()) {
+            parser.feed(utf8Input)
+        }
+
+        return bytesRead
+    }
+
+    override fun close() {
+        try {
+            super.close()
+            // perform final decode and flush to handle any remaining bytes
+            val remainingUtf8Inputs = listOf(
+                // decode the remaining bytes in the buffer
+                utf8Decoder.decode(byteArrayOf(), 0, endOfInput = true),
+                // flush the remaining bytes in the buffer
+                utf8Decoder.flush(),
+            )
+            for (input in remainingUtf8Inputs) {
+                if (input.isNotEmpty()) {
+                    parser.feed(input)
+                }
+            }
+            parser.close()
+        } finally {
+            onClose()
+        }
+    }
 }
