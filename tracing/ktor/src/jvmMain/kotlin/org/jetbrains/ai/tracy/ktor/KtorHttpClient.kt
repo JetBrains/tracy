@@ -315,11 +315,12 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                     tracingChannel.close(e)
                 }
             } finally {
-                span.end()
                 sseParser.close()
                 if (!tracingChannel.isClosedForWrite) {
                     tracingChannel.close()
                 }
+                // close the span after all operations
+                span.end()
             }
         }
 
