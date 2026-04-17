@@ -57,6 +57,8 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
         getRequestBodyAttributes(span, request)
         span.setAttribute("gen_ai.api_base", "${request.url.scheme}://${request.url.host}")
         span.setAttribute(GEN_AI_SYSTEM, genAISystem)
+        span.setAttribute("http.request.method", request.method)
+        span.setAttribute("url.full", request.url.toFullUrlString())
 
         return@runCatching
     }.getOrElse { exception ->
@@ -126,6 +128,14 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
 
     companion object {
         private const val DROPPED_ATTRIBUTES_COUNT_ATTRIBUTE_KEY = "otel.dropped_attributes_count"
+
+        private fun TracyHttpUrl.toFullUrlString(): String {
+            val portSuffix = when {
+                (scheme == "https" && port == 443) || (scheme == "http" && port == 80) -> ""
+                else -> ":$port"
+            }
+            return "$scheme://$host$portSuffix/${pathSegments.joinToString("/")}"
+        }
 
         /**
          * Adds unmapped payload attributes from a JSON body to the given [Span].
