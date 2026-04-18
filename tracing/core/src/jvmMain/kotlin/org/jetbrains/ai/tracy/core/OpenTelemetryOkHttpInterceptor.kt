@@ -7,6 +7,8 @@ package org.jetbrains.ai.tracy.core
 
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.semconv.HttpAttributes
+import io.opentelemetry.semconv.UrlAttributes
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -239,6 +241,9 @@ class OpenTelemetryOkHttpInterceptor(
 
                 isStreamingRequest = adapter.isStreamingRequest(tracyRequest)
                 adapter.registerRequest(span, tracyRequest)
+
+                span.setAttribute(HttpAttributes.HTTP_REQUEST_METHOD, request.method)
+                span.setAttribute(UrlAttributes.URL_FULL, request.url.toString())
 
                 // register response
                 val response = chain.proceed(request)
