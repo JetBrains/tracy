@@ -59,6 +59,11 @@ abstract class BaseAITracingTest : BaseOpenTelemetryTracingTest() {
             url.startsWith(trace.attributes[AttributeKey.stringKey("gen_ai.api_base")].toString())
         )
 
+        assertEquals("POST", trace.attributes[AttributeKey.stringKey("http.request.method")])
+        assertTrue(
+            trace.attributes[AttributeKey.stringKey("url.full")].toString().startsWith(url)
+        )
+
         val responseModel = trace.attributes[AttributeKey.stringKey("gen_ai.response.model")]
         assertNotNull(responseModel)
         assertTrue(responseModel.startsWith(model))
