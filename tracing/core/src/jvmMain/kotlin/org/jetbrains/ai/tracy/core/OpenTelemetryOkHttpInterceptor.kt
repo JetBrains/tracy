@@ -336,10 +336,12 @@ class OpenTelemetryOkHttpInterceptor(
 
     private fun OkHttpRequest.withCopiedBodyContent(): Pair<ByteArray?, OkHttpRequest> {
         val body = this.body ?: return null to this
-        // Fall back to the Content-Type header when the body has no declared media type
-        // (e.g., some SDK-internal bodies that do not expose it via contentType()).
+        // Use the body's own content type only. When it is null the Content-Type header
+        // already present in the request builder is used as-is by OkHttp. Passing a
+        // header-derived MediaType here would cause OkHttp's BridgeInterceptor to emit a
+        // second Content-Type header alongside the one in the builder, triggering a 400
+        // from APIs that reject duplicate headers (e.g. chat/vision requests).
         val mediaType = body.contentType()
-            ?: this.header("Content-Type")?.toMediaTypeOrNull()
 
         // read body content
         val content = Buffer().let {

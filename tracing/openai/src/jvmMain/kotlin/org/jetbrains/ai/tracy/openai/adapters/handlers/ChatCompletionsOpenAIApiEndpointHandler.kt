@@ -83,7 +83,7 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                         val toolParameters = it["parameters"]?.jsonObject?.toString()
                         val strict = it["strict"]?.jsonPrimitive?.boolean?.toString()
 
-                        span.setAttribute("gen_ai.tool.$index.name", toolName?.orRedactedInput())
+                        span.setAttribute("gen_ai.tool.$index.name", toolName)
                         span.setAttribute("gen_ai.tool.$index.description", toolDescription?.orRedactedInput())
                         span.setAttribute("gen_ai.tool.$index.parameters", toolParameters?.orRedactedInput())
                         span.setAttribute("gen_ai.tool.$index.strict", strict)
@@ -175,7 +175,7 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
 
                                     span.setAttribute(
                                         "gen_ai.completion.$index.tool.$toolCallIndex.name",
-                                        name?.orRedactedOutput()
+                                        name
                                     )
                                     span.setAttribute(
                                         "gen_ai.completion.$index.tool.$toolCallIndex.arguments",
