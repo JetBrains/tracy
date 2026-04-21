@@ -22,12 +22,13 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQU
  */
 internal class ModelsOpenAIApiEndpointHandler : EndpointApiHandler {
     override fun handleRequestAttributes(span: Span, request: TracyHttpRequest) {
-        span.setAttribute(GEN_AI_OPERATION_NAME, "models.retrieve")
-
         // GET /v1/models/{id} — model ID is the last path segment
-        val modelId = request.url.pathSegments.lastOrNull { it.isNotBlank() }
-        if (modelId != null && modelId != "models") {
-            span.setAttribute(GEN_AI_REQUEST_MODEL, modelId)
+        val lastSegment = request.url.pathSegments.lastOrNull { it.isNotBlank() }
+        if (lastSegment == null || lastSegment == "models") {
+            span.setAttribute(GEN_AI_OPERATION_NAME, "models.list")
+        } else {
+            span.setAttribute(GEN_AI_OPERATION_NAME, "models.retrieve")
+            span.setAttribute(GEN_AI_REQUEST_MODEL, lastSegment)
         }
     }
 

@@ -343,16 +343,12 @@ class OpenTelemetryOkHttpInterceptor(
             it.readByteArray()
         }
 
-        val request = if (body.isOneShot()) {
-            val newBody = content.toRequestBody(mediaType)
-            this.newBuilder()
-                .method(this.method, newBody)
-                .build()
-        } else {
-            // if the body can be read multiple times,
-            // then we can reuse the same request
-            this
-        }
+        // Always rebuild from captured bytes: even non-one-shot bodies may be exhausted
+        // after writeTo() (e.g., SDK-internal stream-backed bodies that misreport isOneShot).
+        val newBody = content.toRequestBody(mediaType)
+        val request = this.newBuilder()
+            .method(this.method, newBody)
+            .build()
 
         return content to request
     }
