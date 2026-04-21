@@ -10,12 +10,15 @@ import org.jetbrains.ai.tracy.core.adapters.handlers.EndpointApiHandler
 import org.jetbrains.ai.tracy.core.adapters.media.MediaContentExtractorImpl
 import org.jetbrains.ai.tracy.core.http.protocol.*
 import org.jetbrains.ai.tracy.openai.adapters.handlers.ChatCompletionsOpenAIApiEndpointHandler
+import org.jetbrains.ai.tracy.openai.adapters.handlers.ModelsOpenAIApiEndpointHandler
+import org.jetbrains.ai.tracy.openai.adapters.handlers.ModerationsOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.OpenAIApiUtils
 import org.jetbrains.ai.tracy.openai.adapters.handlers.ResponsesOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.images.ImagesCreateEditOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.images.ImagesCreateOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.videos.VideosOpenAIApiEndpointHandler
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
@@ -41,7 +44,30 @@ private enum class OpenAIApiType(val route: String) {
     IMAGES_EDITS("images/edits"),
 
     // See: https://platform.openai.com/docs/api-reference/videos
-    VIDEOS("videos");
+    VIDEOS("videos"),
+
+    // See: https://platform.openai.com/docs/api-reference/moderations
+    MODERATIONS("moderations"),
+
+    // The trailing slash ensures the route pattern matches retrieve-by-ID paths like
+    // "/v1/models/gpt-4o-mini" but NOT the list endpoint "/v1/models".
+    // See: https://platform.openai.com/docs/api-reference/models/retrieve
+    MODELS("models/");
+
+    /**
+     * The OTel semantic operation name for this API type.
+     * Set proactively on the span so it is non-null even when the response is non-200.
+     */
+    val operationName: String
+        get() = when (this) {
+            CHAT_COMPLETIONS -> "chat.completion"
+            RESPONSES_API -> "responses"
+            IMAGES_GENERATIONS -> "image.generation"
+            IMAGES_EDITS -> "image.edit"
+            VIDEOS -> "videos"
+            MODERATIONS -> "moderations"
+            MODELS -> "models.retrieve"
+        }
 
     companion object {
         fun detect(url: TracyHttpUrl): OpenAIApiType? {
@@ -89,6 +115,12 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
     private val handlers = ConcurrentHashMap<OpenAIApiType, EndpointApiHandler>()
 
     override fun getRequestBodyAttributes(span: Span, request: TracyHttpRequest) {
+        // Set gen_ai.operation.name proactively so the attribute is present even when the API
+        // returns a non-200 response (e.g. HTTP 400), where the response body may contain no
+        // "object" field for setCommonResponseAttributes to read.
+        val operationName = OpenAIApiType.detect(request.url)?.operationName ?: "chat.completion"
+        span.setAttribute(GEN_AI_OPERATION_NAME, operationName)
+
         val handler = handlerFor(request.url)
         handler.handleRequestAttributes(span, request)
     }
@@ -152,6 +184,14 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
 
             OpenAIApiType.VIDEOS -> handlers.getOrPut(OpenAIApiType.VIDEOS) {
                 VideosOpenAIApiEndpointHandler(extractor)
+            }
+
+            OpenAIApiType.MODERATIONS -> handlers.getOrPut(OpenAIApiType.MODERATIONS) {
+                ModerationsOpenAIApiEndpointHandler()
+            }
+
+            OpenAIApiType.MODELS -> handlers.getOrPut(OpenAIApiType.MODELS) {
+                ModelsOpenAIApiEndpointHandler()
             }
 
             null -> handlers.getOrPut(OpenAIApiType.CHAT_COMPLETIONS) {

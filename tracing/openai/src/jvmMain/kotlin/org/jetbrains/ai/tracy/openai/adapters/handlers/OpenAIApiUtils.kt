@@ -28,13 +28,25 @@ internal object OpenAIApiUtils {
     }
 
     /**
-     * Sets common response attributes (id, model, object type)
+     * Sets common response attributes (id, model, object type).
+     *
+     * `gen_ai.operation.name` is set from the response body's `"object"` field only when it
+     * contains a non-blank value. Note that for some endpoints the `"object"` string does not
+     * match the OTel semantic operation name (e.g. the models-retrieve endpoint returns
+     * `"object": "model"` rather than `"models.retrieve"`). In those cases the per-handler
+     * [handleResponseAttributes][org.jetbrains.ai.tracy.core.adapters.handlers.EndpointApiHandler.handleResponseAttributes]
+     * implementation is responsible for overriding the value written here.
      */
     fun setCommonResponseAttributes(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
 
         body["id"]?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
-        body["object"]?.let { span.setAttribute(GEN_AI_OPERATION_NAME, it.jsonPrimitive.content) }
+        body["object"]?.let {
+            val value = it.jsonPrimitive.content
+            if (value.isNotBlank()) {
+                span.setAttribute(GEN_AI_OPERATION_NAME, value)
+            }
+        }
         body["model"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
     }
 }
