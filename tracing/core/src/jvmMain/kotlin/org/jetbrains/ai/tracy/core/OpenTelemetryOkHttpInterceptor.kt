@@ -223,6 +223,7 @@ class OpenTelemetryOkHttpInterceptor(
 
                 // building request view
                 val mediaType = request.body?.contentType()
+                    ?: request.header("Content-Type")?.toMediaTypeOrNull()
                 val tracyRequest = run {
                     // media type and body content are null when a request has no body content
                     // (e.g., a GET request with query params)
@@ -353,6 +354,7 @@ class OpenTelemetryOkHttpInterceptor(
         // after writeTo() (e.g., SDK-internal stream-backed bodies that misreport isOneShot).
         val newBody = content.toRequestBody(mediaType)
         val request = this.newBuilder()
+            .apply { if (mediaType != null) removeHeader("Content-Type") }
             .method(this.method, newBody)
             .build()
 

@@ -100,7 +100,9 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
             }
 
             if (response.isError()) {
-                getResponseErrorBodyAttributes(span, response.body)
+                span.setAttribute("error.type", "${response.code}")
+                runCatching { getResponseErrorBodyAttributes(span, response.body) }
+                    .onFailure { logger.warn(it) { "Failed to extract error body attributes" } }
                 // Ensure OTel-required error.type is always set for HTTP error responses.
                 // getResponseErrorBodyAttributes populates it from the provider body when available;
                 // fall back to the HTTP status code for non-standard or non-JSON bodies
@@ -129,7 +131,7 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
         }
 
     protected open fun getResponseErrorBodyAttributes(span: Span, body: TracyHttpResponseBody) {
-        body.asJson()?.jsonObject["error"]?.jsonObject?.let { error ->
+        (body.asJson()?.jsonObject?.get("error") as? JsonObject)?.let { error ->
             (error["message"] as? JsonPrimitive)?.let { span.setAttribute("gen_ai.error.message", it.content) }
             (error["type"] as? JsonPrimitive)?.let {
                 span.setAttribute("gen_ai.error.type", it.content)
