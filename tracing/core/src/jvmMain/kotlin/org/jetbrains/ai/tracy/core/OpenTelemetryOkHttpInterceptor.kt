@@ -12,6 +12,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import okhttp3.Interceptor
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.Buffer
@@ -335,7 +336,10 @@ class OpenTelemetryOkHttpInterceptor(
 
     private fun OkHttpRequest.withCopiedBodyContent(): Pair<ByteArray?, OkHttpRequest> {
         val body = this.body ?: return null to this
+        // Fall back to the Content-Type header when the body has no declared media type
+        // (e.g., some SDK-internal bodies that do not expose it via contentType()).
         val mediaType = body.contentType()
+            ?: this.header("Content-Type")?.toMediaTypeOrNull()
 
         // read body content
         val content = Buffer().let {

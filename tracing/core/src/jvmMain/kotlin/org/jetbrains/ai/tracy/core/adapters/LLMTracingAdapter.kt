@@ -14,6 +14,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import mu.KotlinLogging
 
 
 /**
@@ -66,6 +67,9 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
 
     fun registerResponse(span: Span, response: TracyHttpResponse): Unit =
         runCatching {
+            // Always record the HTTP status code first, regardless of body-parsing outcomes
+            span.setAttribute("http.status_code", response.code.toLong())
+
             val body = response.body.asJson()?.jsonObject ?: return
             val isStreamingRequest = body["stream"]?.jsonPrimitive?.boolean == true
             val mimeType = response.contentType?.mimeType
@@ -78,15 +82,17 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
                     }
                     mimeType != TracyContentType.Text.EventStream.mimeType -> {
                         // mime type can be application/json, video/mp4 (for OpenAI Video API), etc.
-                        getResponseBodyAttributes(span, response)
+                        runCatching {
+                            getResponseBodyAttributes(span, response)
+                        }.getOrElse { exception ->
+                            logger.warn(exception) { "Failed to extract response body attributes" }
+                        }
                     }
                     else -> {
                         span.setAttribute("gen_ai.completion.content.type", response.contentType?.asString())
                     }
                 }
             }
-
-            span.setAttribute("http.status_code", response.code.toLong())
 
             if (response.isError()) {
                 getResponseErrorBodyAttributes(span, response.body)
@@ -123,6 +129,8 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
     abstract fun getSpanName(request: TracyHttpRequest): String
     abstract fun isStreamingRequest(request: TracyHttpRequest): Boolean
     abstract fun handleStreaming(span: Span, url: TracyHttpUrl, events: String)
+
+    private val logger = KotlinLogging.logger {}
 
     companion object {
         private const val DROPPED_ATTRIBUTES_COUNT_ATTRIBUTE_KEY = "otel.dropped_attributes_count"

@@ -275,7 +275,7 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
 
                 val mediaPart = when (type) {
                     "image_url" -> {
-                        val url = part.jsonObject["image_url"]?.jsonObject["url"]?.jsonPrimitive?.content ?: continue
+                        val url = (part.jsonObject["image_url"] as? JsonObject)?.get("url")?.jsonPrimitive?.content ?: continue
 
                         if (url.isValidUrl()) {
                             MediaContentPart(resource = Resource.Url(url))
