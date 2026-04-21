@@ -11,23 +11,23 @@ import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
 import org.jetbrains.ai.tracy.core.http.protocol.asJson
 import org.jetbrains.ai.tracy.core.policy.orRedactedInput
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * Handler for OpenAI Embeddings API.
  *
- * Does NOT pre-set `gen_ai.operation.name` so that [OpenAIApiUtils.setCommonResponseAttributes]
- * can populate it from the response body `"object"` field (which is `"list"` for embeddings).
- *
  * See: [Embeddings API Reference](https://platform.openai.com/docs/api-reference/embeddings)
  */
 internal class EmbeddingsOpenAIApiEndpointHandler : EndpointApiHandler {
     override fun handleRequestAttributes(span: Span, request: TracyHttpRequest) {
-        // Intentionally omit pre-setting gen_ai.operation.name so that
-        // setCommonResponseAttributes correctly derives it from the response body.
+        span.setAttribute(GEN_AI_OPERATION_NAME, "embeddings")
         OpenAIApiUtils.setCommonRequestAttributes(span, request)
 
         val body = request.body.asJson()?.jsonObject ?: return
@@ -36,7 +36,7 @@ internal class EmbeddingsOpenAIApiEndpointHandler : EndpointApiHandler {
             span.setAttribute("gen_ai.request.dimensions", it.toLong())
         }
         body["encoding_format"]?.jsonPrimitive?.content?.let {
-            span.setAttribute("gen_ai.request.encoding_format", it)
+            span.setAttribute("gen_ai.request.encoding_formats", buildJsonArray { add(JsonPrimitive(it)) }.toString())
         }
     }
 
@@ -47,6 +47,10 @@ internal class EmbeddingsOpenAIApiEndpointHandler : EndpointApiHandler {
             usage["prompt_tokens"]?.jsonPrimitive?.intOrNull?.let {
                 span.setAttribute(GEN_AI_USAGE_INPUT_TOKENS, it)
             }
+        }
+
+        body["data"]?.jsonArray?.firstOrNull()?.jsonObject?.get("embedding")?.jsonArray?.size?.let {
+            span.setAttribute("gen_ai.embeddings.dimension.count", it.toLong())
         }
     }
 
