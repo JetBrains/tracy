@@ -57,6 +57,9 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
         getRequestBodyAttributes(span, request)
         span.setAttribute("gen_ai.api_base", "${request.url.scheme}://${request.url.host}")
         span.setAttribute(GEN_AI_SYSTEM, genAISystem)
+        span.setAttribute("gen_ai.provider.name", genAISystem)
+        span.setAttribute("server.address", request.url.host)
+        span.setAttribute("server.port", if (request.url.scheme == "https") 443L else 80L)
 
         return@runCatching
     }.getOrElse { exception ->
@@ -87,6 +90,9 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
             }
 
             span.setAttribute("http.status_code", response.code.toLong())
+            span.setAttribute("http.response.status_code", response.code.toLong())
+            span.setAttribute("server.address", response.url.host)
+            span.setAttribute("server.port", if (response.url.scheme == "https") 443L else 80L)
 
             if (response.isError()) {
                 getResponseErrorBodyAttributes(span, response.body)
@@ -112,6 +118,7 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
         body.asJson()?.jsonObject["error"]?.jsonObject?.let { error ->
             error["message"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.message", it.content) }
             error["type"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.type", it.content) }
+            error["type"]?.jsonPrimitive?.let { span.setAttribute("error.type", it.content) }
             error["param"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.param", it.content) }
             error["code"]?.jsonPrimitive?.let { span.setAttribute("gen_ai.error.code", it.content) }
         }
@@ -142,7 +149,11 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
             body.entries.forEach { (key, value) ->
                 if (key !in (mappedAttributes)) {
                     val attributeKey = "tracy.${payloadType.value}.$key"
-                    setAttribute(attributeKey, value.toString())
+                    val attributeValue = when (value) {
+                        is kotlinx.serialization.json.JsonPrimitive -> value.content
+                        else -> value.toString()
+                    }
+                    setAttribute(attributeKey, attributeValue)
                 }
             }
         }
