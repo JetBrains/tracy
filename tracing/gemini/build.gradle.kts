@@ -13,7 +13,7 @@ plugins {
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
 
     jvm {
         compilerOptions.jvmTarget = JVM_17
