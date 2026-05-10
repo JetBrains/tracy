@@ -37,6 +37,10 @@ internal fun handleImageGenerationResponseAttributes(
         for ((index, image) in data.withIndex()) {
             span.setAttribute("gen_ai.completion.$index.content", image.asString.orRedactedOutput())
         }
+        // extract image URL from first result
+        data.firstOrNull()?.jsonObject?.get("url")?.jsonPrimitive?.content?.let {
+            span.setAttribute("tracy.response.image.url", it)
+        }
         // install media content for further upload
         val format = body["output_format"]?.jsonPrimitive?.content ?: defaultImageFormat
         val mediaType = "image/$format"
@@ -49,12 +53,17 @@ internal fun handleImageGenerationResponseAttributes(
 
     body["usage"]?.jsonObject?.let { setUsageAttributes(span, it) }
 
-    val manuallyParsedKeys = listOf("data", "usage")
+    // Normalize `created` → `created_at` for timestamp consistency
+    body["created"]?.jsonPrimitive?.longOrNull?.let {
+        span.setAttribute("tracy.response.created_at", it)
+    }
+
+    val manuallyParsedKeys = listOf("data", "usage", "created")
     for ((key, value) in body.entries) {
         if (key in manuallyParsedKeys) {
             continue
         }
-        span.setAttribute("gen_ai.response.$key", value.asString)
+        span.setAttribute("tracy.response.$key", value.asString)
     }
 }
 
@@ -80,11 +89,11 @@ internal fun handleStreamedImage(
 
             data["usage"]?.jsonObject?.let { setUsageAttributes(span, it) }
 
-            // insert other attributes
+            // insert other attributes using tracy.response.* prefix
             val manuallyParsedKeys = listOf("b64_json", "usage")
             for ((key, value) in data.entries) {
                 if (key !in manuallyParsedKeys) {
-                    span.setAttribute("gen_ai.response.$key", value.asString)
+                    span.setAttribute("tracy.response.$key", value.asString)
                 }
             }
         }

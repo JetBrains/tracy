@@ -11,6 +11,7 @@ import org.jetbrains.ai.tracy.core.adapters.handlers.EndpointApiHandler
 import org.jetbrains.ai.tracy.core.adapters.media.*
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
+import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpUrl
 import org.jetbrains.ai.tracy.core.http.protocol.asJson
 import org.jetbrains.ai.tracy.core.policy.ContentKind
 import org.jetbrains.ai.tracy.core.policy.contentTracingAllowed
@@ -28,29 +29,51 @@ internal class ResponsesOpenAIApiEndpointHandler(
     private val extractor: MediaContentExtractor
 ) : EndpointApiHandler {
     override fun handleRequestAttributes(span: Span, request: TracyHttpRequest) {
-        val body = request.body.asJson()?.jsonObject ?: return
+        val op = detectResponsesOperation(request.url, request.method)
+        span.setAttribute("openai.api.type", "responses")
+        span.setAttribute(GEN_AI_OPERATION_NAME, op)
         OpenAIApiUtils.setCommonRequestAttributes(span, request)
 
-        body["previous_response_id"]?.jsonPrimitive?.contentOrNull?.let {
-            span.setAttribute("gen_ai.request.previous_response_id", it)
+        // For input_items list operation, extract query params and URL path info
+        // This must be BEFORE body parsing because GET requests have empty bodies
+        if (op == "response.input_items.list") {
+            request.url.pathSegments.let { segments ->
+                val responsesIndex = segments.indexOf("responses")
+                if (responsesIndex != -1 && segments.size > responsesIndex + 1) {
+                    span.setAttribute("tracy.request.response_id", segments[responsesIndex + 1])
+                }
+            }
+            request.url.parameters.queryParameter("limit")?.toLongOrNull()?.let {
+                span.setAttribute("tracy.request.limit", it)
+            }
+            request.url.parameters.queryParameter("order")?.let {
+                span.setAttribute("tracy.request.order", it)
+            }
+            request.url.parameters.queryParameter("after")?.let {
+                span.setAttribute("tracy.request.after", it)
+            }
+            request.url.parameters.queryParameter("include")?.let {
+                span.setAttribute("tracy.request.include", it)
+            }
         }
-        body["store"]?.jsonPrimitive?.booleanOrNull?.let {
-            span.setAttribute("gen_ai.request.store", it)
+
+        // Also extract `include` query param for retrieve operations
+        if (op == "response.retrieve") {
+            request.url.parameters.queryParameter("include")?.let {
+                span.setAttribute("tracy.request.include", it)
+            }
+        }
+
+        val body = request.body.asJson()?.jsonObject ?: return
+
+        body["service_tier"]?.jsonPrimitive?.contentOrNull?.let {
+            span.setAttribute("openai.request.service_tier", it)
         }
         body["top_p"]?.jsonPrimitive?.doubleOrNull?.let {
             span.setAttribute(GEN_AI_REQUEST_TOP_P, it)
         }
         body["max_output_tokens"]?.jsonPrimitive?.longOrNull?.let {
             span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it)
-        }
-        body["truncation"]?.jsonPrimitive?.contentOrNull?.let {
-            span.setAttribute("gen_ai.request.truncation", it)
-        }
-        body["parallel_tool_calls"]?.jsonPrimitive?.booleanOrNull?.let {
-            span.setAttribute("gen_ai.request.parallel_tool_calls", it)
-        }
-        body["stream"]?.jsonPrimitive?.booleanOrNull?.let {
-            span.setAttribute("gen_ai.request.stream", it)
         }
         body["response_format"]?.jsonPrimitive?.contentOrNull?.let {
             span.setAttribute(GEN_AI_OUTPUT_TYPE, it)
@@ -60,13 +83,32 @@ internal class ResponsesOpenAIApiEndpointHandler(
                 is JsonPrimitive -> it.content
                 else -> it.toString()
             }
-            span.setAttribute("gen_ai.request.tool_choice", content)
+            span.setAttribute("tracy.request.tool_choice", content)
         }
-        body["reasoning"]?.let {
-            span.setAttribute("gen_ai.request.reasoning", it.toString())
+        body["reasoning"]?.jsonObject?.let { reasoning ->
+            reasoning["effort"]?.jsonPrimitive?.contentOrNull?.let {
+                span.setAttribute("tracy.request.reasoning.effort", it)
+            }
+            reasoning["summary"]?.jsonPrimitive?.contentOrNull?.let {
+                span.setAttribute("tracy.request.reasoning.summary", it)
+            }
         }
-        body["text"]?.let {
-            span.setAttribute("gen_ai.request.text", it.toString())
+        body["text"]?.jsonObject?.let { text ->
+            text["format"]?.jsonObject?.let { format ->
+                format["type"]?.jsonPrimitive?.contentOrNull?.let {
+                    span.setAttribute("tracy.request.text.format.type", it)
+                }
+            }
+        }
+
+        // include field from body (for generate_content requests)
+        body["include"]?.let { include ->
+            val includeStr = when (include) {
+                is JsonArray -> include.jsonArray.joinToString(",") { it.jsonPrimitive.content }
+                is JsonPrimitive -> include.content
+                else -> include.toString()
+            }
+            span.setAttribute("tracy.request.include", includeStr)
         }
 
         // because of inserting instructions property as the first prompt,
@@ -113,6 +155,15 @@ internal class ResponsesOpenAIApiEndpointHandler(
                     span.setAttribute("gen_ai.tool.$index.description", toolDescription?.orRedactedInput())
                     span.setAttribute("gen_ai.tool.$index.parameters", toolParameters?.orRedactedInput())
                     span.setAttribute("gen_ai.tool.$index.strict", strict)
+
+                    // convenience attributes for the first tool
+                    if (index == 0) {
+                        toolType?.let { span.setAttribute("tracy.request.tool.type", it) }
+                        toolName?.let { span.setAttribute("tracy.request.tool.name", it.orRedactedInput()) }
+                        tool.jsonObject["search_context_size"]?.jsonPrimitive?.contentOrNull?.let {
+                            span.setAttribute("tracy.request.tool.search_context_size", it)
+                        }
+                    }
                 }
             }
         }
@@ -139,6 +190,57 @@ internal class ResponsesOpenAIApiEndpointHandler(
     override fun handleResponseAttributes(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
         OpenAIApiUtils.setCommonResponseAttributes(span, response)
+
+        // Error response handling
+        body["error"]?.jsonObject?.let { error ->
+            error["message"]?.jsonPrimitive?.contentOrNull?.let {
+                span.setAttribute("tracy.response.error.message", it)
+            }
+            error["type"]?.jsonPrimitive?.contentOrNull?.let {
+                span.setAttribute("tracy.response.error.type", it)
+            }
+            error["code"]?.jsonPrimitive?.contentOrNull?.let {
+                span.setAttribute("tracy.response.error.code", it)
+            }
+        }
+
+        body["service_tier"]?.jsonPrimitive?.contentOrNull?.let {
+            span.setAttribute("openai.response.service_tier", it)
+        }
+
+        // reasoning response attributes
+        body["reasoning"]?.jsonObject?.let { reasoning ->
+            reasoning["effort"]?.jsonPrimitive?.contentOrNull?.let {
+                span.setAttribute("tracy.response.reasoning.effort", it)
+            }
+            reasoning["summary"]?.jsonPrimitive?.contentOrNull?.let {
+                span.setAttribute("tracy.response.reasoning.summary", it)
+            }
+        }
+
+        // text.format.type from response body
+        body["text"]?.jsonObject?.let { text ->
+            text["format"]?.jsonObject?.let { format ->
+                format["type"]?.jsonPrimitive?.contentOrNull?.let {
+                    span.setAttribute("tracy.response.text.format.type", it)
+                }
+            }
+        }
+
+        // For list responses (input_items, etc.)
+        body["data"]?.let { data ->
+            if (data is JsonArray) {
+                data.firstOrNull()?.jsonObject?.let { first ->
+                    first["id"]?.jsonPrimitive?.contentOrNull?.let { span.setAttribute("tracy.response.data.id", it) }
+                    first["type"]?.jsonPrimitive?.contentOrNull?.let { span.setAttribute("tracy.response.data.type", it) }
+                }
+            }
+        }
+
+        // For input_tokens.count endpoint - input_tokens at top level
+        body["input_tokens"]?.jsonPrimitive?.intOrNull?.let {
+            span.setAttribute(GEN_AI_USAGE_INPUT_TOKENS, it)
+        }
 
         // we manually map `output` and `usage` attributes;
         // the rest of attributes get mapped by `populateUnmappedAttributes` below.
@@ -208,6 +310,19 @@ internal class ResponsesOpenAIApiEndpointHandler(
                             }
                             span.setAttribute("gen_ai.completion.$index.$key", value.orRedactedOutput())
                         }
+
+                        // convenience single-output attributes for first output
+                        if (index == 0 && type != null) {
+                            span.setAttribute("tracy.response.output.type", type)
+                            if (type == "function_call") {
+                                output.jsonObject["name"]?.jsonPrimitive?.contentOrNull?.let {
+                                    span.setAttribute("tracy.response.output.name", it.orRedactedOutput())
+                                }
+                                output.jsonObject["call_id"]?.jsonPrimitive?.contentOrNull?.let {
+                                    span.setAttribute("tracy.response.output.call_id", it)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -230,10 +345,26 @@ internal class ResponsesOpenAIApiEndpointHandler(
             }.getOrNull() ?: continue
 
             val type = event["type"]?.jsonPrimitive?.content
-            if (type == "response.output_text.done") {
-                event["text"]?.jsonPrimitive?.content?.let {
-                    span.setAttribute("gen_ai.completion.0.content", it.orRedactedOutput())
-                    span.setAttribute("gen_ai.completion.0.finish_reason", "stop")
+
+            when (type) {
+                "response.output_text.done" -> {
+                    event["text"]?.jsonPrimitive?.content?.let {
+                        span.setAttribute("gen_ai.completion.0.content", it.orRedactedOutput())
+                        span.setAttribute("gen_ai.completion.0.finish_reason", "stop")
+                    }
+                }
+                "response.completed", "response.done" -> {
+                    // Extract final response attributes from the completed event
+                    val response = event["response"]?.jsonObject ?: event
+                    response["id"]?.jsonPrimitive?.contentOrNull?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it) }
+                    response["model"]?.jsonPrimitive?.contentOrNull?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it) }
+                    response["status"]?.jsonPrimitive?.contentOrNull?.let { span.setAttribute("tracy.response.status", it) }
+                    response["object"]?.jsonPrimitive?.contentOrNull?.let { span.setAttribute("tracy.response.object", it) }
+                    response["created_at"]?.jsonPrimitive?.longOrNull?.let { span.setAttribute("tracy.response.created_at", it) }
+                    response["completed_at"]?.jsonPrimitive?.longOrNull?.let { span.setAttribute("tracy.response.completed_at", it) }
+                    response["usage"]?.jsonObject?.let { usage ->
+                        setUsageAttributes(span, usage)
+                    }
                 }
             }
         }
@@ -349,6 +480,16 @@ internal class ResponsesOpenAIApiEndpointHandler(
         usage["output_tokens"]?.jsonPrimitive?.intOrNull?.let {
             span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
         }
+        usage["input_tokens_details"]?.jsonObject?.let { details ->
+            details["cached_tokens"]?.jsonPrimitive?.intOrNull?.let {
+                span.setAttribute("gen_ai.usage.cache_read.input_tokens", it.toLong())
+            }
+        }
+        usage["output_tokens_details"]?.jsonObject?.let { details ->
+            details["reasoning_tokens"]?.jsonPrimitive?.intOrNull?.let {
+                span.setAttribute("tracy.response.usage.output_tokens_details.reasoning_tokens", it.toLong())
+            }
+        }
     }
 
     /**
@@ -398,17 +539,35 @@ internal class ResponsesOpenAIApiEndpointHandler(
         return MediaContent(parts)
     }
 
+    /**
+     * Detects the specific responses operation from URL path and HTTP method.
+     */
+    private fun detectResponsesOperation(url: TracyHttpUrl, method: String): String {
+        val segments = url.pathSegments
+        val responsesIndex = segments.indexOf("responses")
+        if (responsesIndex == -1) return "generate_content"
+        val afterResponses = segments.drop(responsesIndex + 1).filter { it.isNotBlank() }
+        return when {
+            afterResponses.isEmpty() && method == "POST" -> "generate_content"
+            afterResponses.contains("input_items") && method == "GET" -> "response.input_items.list"
+            afterResponses.contains("cancel") && method == "POST" -> "response.cancel"
+            afterResponses.contains("compact") && method == "POST" -> "response.compact"
+            afterResponses.contains("input_tokens") && method == "POST" -> "response.input_tokens.count"
+            afterResponses.size == 1 && method == "GET" -> "response.retrieve"
+            afterResponses.size == 1 && method == "DELETE" -> "response.delete"
+            // also handle compact being called as POST on root responses path with a different body
+            else -> "generate_content"
+        }
+    }
+
     // https://platform.openai.com/docs/api-reference/responses/create
+    // Only list attrs that are explicitly set with different key names (top_p→GEN_AI_REQUEST_TOP_P, etc.)
+    // Attrs handled by populateUnmappedAttributes: store, truncation, parallel_tool_calls, stream, previous_response_id
     private val mappedRequestAttributes: List<String> = listOf(
         "temperature",
         "model",
-        "previous_response_id",
-        "store",
         "top_p",
         "max_output_tokens",
-        "truncation",
-        "parallel_tool_calls",
-        "stream",
         "response_format",
         "tool_choice",
         "reasoning",
@@ -416,17 +575,24 @@ internal class ResponsesOpenAIApiEndpointHandler(
         "input",
         "instructions",
         "tools",
+        "service_tier",
+        "include",
     )
 
     // https://platform.openai.com/docs/api-reference/responses/object
     private val mappedResponseAttributes: List<String> = listOf(
         // parsed by `OpenAIApiUtils.setCommonResponseAttributes`
         "id",
-        "object",
         "model",
 
         "output",
         "usage",
+        "service_tier",
+        "reasoning",
+        "data",
+        "text",
+        "input_tokens",
+        "error",
     )
 
     private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes

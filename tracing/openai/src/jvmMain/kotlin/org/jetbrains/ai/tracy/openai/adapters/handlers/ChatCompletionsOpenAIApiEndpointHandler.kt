@@ -15,6 +15,7 @@ import org.jetbrains.ai.tracy.core.adapters.media.Resource
 import org.jetbrains.ai.tracy.core.adapters.media.isValidUrl
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponse
+import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpUrl
 import org.jetbrains.ai.tracy.core.http.protocol.asJson
 import org.jetbrains.ai.tracy.core.policy.ContentKind
 import org.jetbrains.ai.tracy.core.policy.contentTracingAllowed
@@ -23,6 +24,11 @@ import org.jetbrains.ai.tracy.core.policy.orRedactedInput
 import org.jetbrains.ai.tracy.core.policy.orRedactedOutput
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MAX_TOKENS
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_FINISH_REASONS
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_ID
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_MODEL
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_INPUT_TOKENS
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_USAGE_OUTPUT_TOKENS
 import kotlinx.serialization.json.Json
@@ -31,10 +37,12 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 
 
 /**
@@ -44,13 +52,35 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
     private val extractor: MediaContentExtractor
 ) : EndpointApiHandler {
     override fun handleRequestAttributes(span: Span, request: TracyHttpRequest) {
-        val body = request.body.asJson()?.jsonObject ?: return
+        val op = detectChatOperation(request.url, request.method)
+        span.setAttribute("openai.api.type", "chat_completions")
+        span.setAttribute(GEN_AI_OPERATION_NAME, op)
         OpenAIApiUtils.setCommonRequestAttributes(span, request)
 
-        body["messages"]?.let {
-            for ((index, message) in it.jsonArray.withIndex()) {
+        // For sub-operations, extract attributes from URL path and query params
+        setSubOperationRequestAttributes(span, request.url, request.method, op)
+
+        val body = request.body.asJson()?.jsonObject ?: return
+
+        (body["max_completion_tokens"] ?: body["max_tokens"])?.jsonPrimitive?.contentOrNull?.toLongOrNull()?.let {
+            span.setAttribute(GEN_AI_REQUEST_MAX_TOKENS, it)
+        }
+        body["stream"]?.jsonPrimitive?.booleanOrNull?.let {
+            span.setAttribute("gen_ai.request.stream", it)
+        }
+
+        body["messages"]?.let { messagesEl ->
+            val messages = messagesEl.jsonArray
+            span.setAttribute("tracy.request.messages.count", messages.size.toLong())
+
+            var systemCount = 0L
+            for ((index, message) in messages.withIndex()) {
                 val role = message.jsonObject["role"]?.jsonPrimitive?.content
                 val kind = kindByRole(role)
+
+                if (role?.lowercase() in listOf("system", "developer")) {
+                    systemCount++
+                }
 
                 span.setAttribute("gen_ai.prompt.$index.role", role)
 
@@ -66,11 +96,31 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                     )
                 }
             }
+            if (systemCount > 0) {
+                span.setAttribute("tracy.request.system_messages.count", systemCount)
+            }
+        }
+
+        // metadata count
+        body["metadata"]?.jsonObject?.let { metadata ->
+            span.setAttribute("tracy.request.metadata.count", metadata.size.toLong())
+        }
+
+        // tool_choice: extract function name when it's an object with type=function
+        body["tool_choice"]?.let { toolChoice ->
+            val toolChoiceStr = when {
+                toolChoice is JsonPrimitive -> toolChoice.content
+                toolChoice is JsonObject && toolChoice["type"]?.jsonPrimitive?.content == "function" ->
+                    toolChoice["function"]?.jsonObject?.get("name")?.jsonPrimitive?.content ?: toolChoice.toString()
+                else -> toolChoice.toString()
+            }
+            span.setAttribute("tracy.request.tool_choice", toolChoiceStr)
         }
 
         // See: https://platform.openai.com/docs/api-reference/chat/create
         body["tools"]?.let { tools ->
             if (tools is JsonArray) {
+                span.setAttribute("gen_ai.tool.definitions", tools.toString())
                 for ((index, tool) in tools.jsonArray.withIndex()) {
                     val toolType = tool.jsonObject["type"]?.jsonPrimitive?.content
                     span.setAttribute("gen_ai.tool.$index.type", toolType)
@@ -85,12 +135,60 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                         span.setAttribute("gen_ai.tool.$index.description", toolDescription?.orRedactedInput())
                         span.setAttribute("gen_ai.tool.$index.parameters", toolParameters?.orRedactedInput())
                         span.setAttribute("gen_ai.tool.$index.strict", strict)
+
+                        // set without-index version for the first tool
+                        if (index == 0) {
+                            span.setAttribute("gen_ai.tool.name", toolName?.orRedactedInput())
+                        }
                     }
                 }
             }
         }
 
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.REQUEST)
+    }
+
+    /**
+     * Detects the specific chat completions operation from URL path and HTTP method.
+     */
+    private fun detectChatOperation(url: TracyHttpUrl, method: String): String {
+        val segments = url.pathSegments
+        val completionsIndex = segments.indexOf("completions")
+        if (completionsIndex == -1) return "chat"
+        val afterCompletions = segments.drop(completionsIndex + 1).filter { it.isNotBlank() }
+        return when {
+            afterCompletions.isEmpty() && method == "GET" -> "chat.completions.list"
+            afterCompletions.size == 1 && method == "GET" -> "chat.completions.retrieve"
+            afterCompletions.size == 1 && method == "POST" -> "chat.completions.update"
+            afterCompletions.size == 1 && method == "DELETE" -> "chat.completions.delete"
+            afterCompletions.contains("messages") -> "chat.completions.messages.list"
+            else -> "chat"
+        }
+    }
+
+    /**
+     * Extracts attributes from URL path and query params for sub-operations.
+     */
+    private fun setSubOperationRequestAttributes(span: Span, url: TracyHttpUrl, method: String, op: String) {
+        val segments = url.pathSegments
+        val completionsIndex = segments.indexOf("completions")
+        if (completionsIndex == -1) return
+
+        val afterCompletions = segments.drop(completionsIndex + 1).filter { it.isNotBlank() }
+        // extract completion id if present as path segment
+        if (afterCompletions.isNotEmpty() && !afterCompletions.first().equals("messages", ignoreCase = true)) {
+            span.setAttribute("tracy.request.completion_id", afterCompletions.first())
+        }
+        // extract common list query params
+        url.parameters.queryParameter("limit")?.toLongOrNull()?.let {
+            span.setAttribute("tracy.request.limit", it)
+        }
+        url.parameters.queryParameter("order")?.let {
+            span.setAttribute("tracy.request.order", it)
+        }
+        url.parameters.queryParameter("after")?.let {
+            span.setAttribute("tracy.request.after", it)
+        }
     }
 
     /**
@@ -135,8 +233,38 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
 
     override fun handleResponseAttributes(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
+        OpenAIApiUtils.setCommonResponseAttributes(span, response)
+
+        body["service_tier"]?.jsonPrimitive?.contentOrNull?.let {
+            span.setAttribute("openai.response.service_tier", it)
+        }
+        body["system_fingerprint"]?.jsonPrimitive?.contentOrNull?.let {
+            span.setAttribute("openai.response.system_fingerprint", it)
+        }
+
+        // For list responses (completions list, messages list)
+        body["data"]?.let { data ->
+            if (data is JsonArray) {
+                val op = detectChatOperation(response.url, response.requestMethod)
+                when (op) {
+                    "chat.completions.list" -> span.setAttribute("tracy.chat.completions.count", data.size.toLong())
+                    "chat.completions.messages.list" -> span.setAttribute("tracy.chat.completion.messages.count", data.size.toLong())
+                }
+            }
+        }
 
         body["choices"]?.let { choices ->
+            val finishReasons = choices.jsonArray.mapNotNull {
+                it.jsonObject["finish_reason"]?.jsonPrimitive?.contentOrNull
+            }
+            if (finishReasons.isNotEmpty()) {
+                span.setAttribute(GEN_AI_RESPONSE_FINISH_REASONS, finishReasons)
+            }
+
+            var totalToolCalls = 0
+            var firstToolCallId: String? = null
+            var firstToolCallArguments: String? = null
+
             for ((index, choice) in choices.jsonArray.withIndex()) {
                 val index = choice.jsonObject["index"]?.jsonPrimitive?.intOrNull ?: index
 
@@ -157,10 +285,12 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                         // sometimes, this prop is explicitly set to null, hence, being JsonNull.
                         // therefore, we check for the required array type
                         if (toolCalls is JsonArray) {
+                            totalToolCalls += toolCalls.size
                             for ((toolCallIndex, toolCall) in toolCalls.jsonArray.withIndex()) {
+                                val callId = toolCall.jsonObject["id"]?.jsonPrimitive?.content
                                 span.setAttribute(
                                     "gen_ai.completion.$index.tool.$toolCallIndex.call.id",
-                                    toolCall.jsonObject["id"]?.jsonPrimitive?.content
+                                    callId
                                 )
                                 span.setAttribute(
                                     "gen_ai.completion.$index.tool.$toolCallIndex.call.type",
@@ -179,6 +309,12 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                                         "gen_ai.completion.$index.tool.$toolCallIndex.arguments",
                                         arguments?.orRedactedOutput()
                                     )
+
+                                    // capture first tool call info for convenience attributes
+                                    if (firstToolCallId == null) {
+                                        firstToolCallId = callId
+                                        firstToolCallArguments = arguments
+                                    }
                                 }
                             }
                         }
@@ -189,6 +325,12 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                         message.jsonObject["annotations"].toString()
                     )
                 }
+            }
+
+            if (totalToolCalls > 0) {
+                span.setAttribute("tracy.response.tool_call.count", totalToolCalls.toLong())
+                firstToolCallId?.let { span.setAttribute("gen_ai.tool.call.id", it) }
+                firstToolCallArguments?.let { span.setAttribute("gen_ai.tool.call.arguments", it.orRedactedOutput()) }
             }
         }
 
@@ -201,6 +343,9 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
 
     override fun handleStreaming(span: Span, events: String): Unit = runCatching {
         var role: String? = null
+        var responseId: String? = null
+        var responseModel: String? = null
+        val finishReasons = mutableListOf<String>()
         val out = buildString {
             for (line in events.lineSequence()) {
                 if (!line.startsWith("data:")) {
@@ -212,8 +357,14 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                     Json.parseToJsonElement(data).jsonObject
                 }.getOrNull() ?: continue
 
-                val choice = event["choices"]?.jsonArray?.firstOrNull()?.jsonObject ?: continue
+                if (responseId == null) responseId = event["id"]?.jsonPrimitive?.contentOrNull
+                if (responseModel == null) responseModel = event["model"]?.jsonPrimitive?.contentOrNull
+
+                val choices = event["choices"]?.jsonArray ?: continue
+                val choice = choices.firstOrNull()?.jsonObject ?: continue
                 val delta = choice["delta"]?.jsonObject ?: continue
+
+                choice["finish_reason"]?.jsonPrimitive?.contentOrNull?.let { finishReasons.add(it) }
 
                 if (role == null) {
                     role = delta["role"]?.jsonPrimitive?.content
@@ -227,6 +378,11 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
             span.setAttribute("gen_ai.completion.0.content", out.orRedacted(kind))
         }
         role?.let { span.setAttribute("gen_ai.completion.0.role", it) }
+        responseId?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it) }
+        responseModel?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it) }
+        if (finishReasons.isNotEmpty()) {
+            span.setAttribute(GEN_AI_RESPONSE_FINISH_REASONS, finishReasons)
+        }
 
         return@runCatching
     }.getOrElse { exception ->
@@ -319,14 +475,24 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
         "messages",
         "model",
         "tools",
+        "tool_choice",
         "choices",
-        "temperature"
+        "temperature",
+        "metadata",
+        "max_tokens",
+        "max_completion_tokens",
+        "stream",
     )
 
     // https://platform.openai.com/docs/api-reference/chat/object
     private val mappedResponseAttributes: List<String> = listOf(
         "choices",
-        "usage"
+        "usage",
+        "service_tier",
+        "system_fingerprint",
+        // parsed by `OpenAIApiUtils.setCommonResponseAttributes`
+        "id",
+        "model",
     )
 
     private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes

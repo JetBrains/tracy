@@ -6,7 +6,10 @@
 package org.jetbrains.ai.tracy.openai.adapters.handlers.videos.routes
 
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_ID
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_RESPONSE_MODEL
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpRequest
@@ -132,5 +135,44 @@ internal fun Span.traceVideoError(error: JsonObject, prefix: String) {
     }
     error["message"]?.let {
         span.setAttribute("$prefix.error.message", it.jsonPrimitive.content)
+    }
+}
+
+/**
+ * Traces Video response object attributes using standard OTel + tracy prefix conventions.
+ */
+internal fun Span.traceVideoResponseAttributes(video: JsonObject) {
+    val span = this
+
+    video["id"]?.jsonPrimitive?.contentOrNull?.let {
+        span.setAttribute(GEN_AI_RESPONSE_ID, it)
+    }
+    video["model"]?.jsonPrimitive?.contentOrNull?.let {
+        span.setAttribute(GEN_AI_RESPONSE_MODEL, it)
+        span.setAttribute("tracy.response.model", it)
+    }
+    video["status"]?.jsonPrimitive?.contentOrNull?.let {
+        span.setAttribute("tracy.response.status", it)
+    }
+    video["object"]?.jsonPrimitive?.contentOrNull?.let {
+        span.setAttribute("tracy.response.object", it)
+    }
+    video["created_at"]?.jsonPrimitive?.longOrNull?.let {
+        span.setAttribute("tracy.response.created_at", it)
+    }
+    video["completed_at"]?.jsonPrimitive?.longOrNull?.let {
+        span.setAttribute("tracy.response.completed_at", it)
+    }
+    video["progress"]?.jsonPrimitive?.longOrNull?.let {
+        span.setAttribute("tracy.response.progress", it)
+    }
+    video["seconds"]?.jsonPrimitive?.contentOrNull?.let {
+        span.setAttribute("tracy.response.seconds", it)
+    }
+    video["size"]?.jsonPrimitive?.contentOrNull?.let {
+        span.setAttribute("tracy.response.size", it)
+    }
+    video["expires_at"]?.jsonPrimitive?.longOrNull?.let {
+        span.setAttribute("tracy.response.expires_at", it)
     }
 }
