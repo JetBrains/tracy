@@ -21,6 +21,25 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
 import kotlinx.serialization.json.*
 import mu.KotlinLogging
 
+/** Derives the Anthropic API type and OTel operation name from a URL path segment list. */
+private fun anthropicApiTypeAndOperation(pathSegments: List<String>): Pair<String, String> {
+    // Path segment index: e.g. ["v1","messages"] or ["v1","messages","count_tokens"]
+    val segments = pathSegments.dropWhile { it.isBlank() }
+    return when {
+        segments.size >= 3 && segments[1] == "messages" && segments[2] == "count_tokens" ->
+            "count_tokens" to "count_tokens"
+        segments.size >= 3 && segments[1] == "messages" && segments[2] == "batches" ->
+            "batches" to "batches"
+        segments.size >= 2 && segments[1] == "messages" ->
+            "messages" to "chat"
+        segments.size >= 2 && segments[1] == "models" ->
+            "models" to "models"
+        segments.size >= 2 && segments[1] == "files" ->
+            "files" to "files"
+        else -> ("" to "")
+    }
+}
+
 /**
  * Tracing adapter for Anthropic Claude API.
  *
@@ -49,6 +68,10 @@ import mu.KotlinLogging
  */
 class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncubatingValues.ANTHROPIC) {
     override fun getRequestBodyAttributes(span: Span, request: TracyHttpRequest) {
+        val (apiType, operationName) = anthropicApiTypeAndOperation(request.url.pathSegments)
+        if (apiType.isNotEmpty()) span.setAttribute("anthropic.api.type", apiType)
+        if (operationName.isNotEmpty()) span.setAttribute(GEN_AI_OPERATION_NAME, operationName)
+
         val body = request.body.asJson()?.jsonObject ?: return
 
         body["temperature"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TEMPERATURE, it) }
@@ -84,6 +107,22 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
         body["top_k"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_K, it) }
         body["top_p"]?.jsonPrimitive?.doubleOrNull?.let { span.setAttribute(GEN_AI_REQUEST_TOP_P, it) }
 
+        body["stop_sequences"]?.let {
+            if (it is JsonArray) {
+                val sequences = it.jsonArray.mapNotNull { v -> v.jsonPrimitive.contentOrNull }
+                span.setAttribute(GEN_AI_REQUEST_STOP_SEQUENCES, sequences)
+            }
+        }
+
+        body["thinking"]?.jsonObject?.let { thinking ->
+            thinking["type"]?.jsonPrimitive?.contentOrNull?.let {
+                span.setAttribute("gen_ai.request.thinking.type", it)
+            }
+            thinking["budget_tokens"]?.jsonPrimitive?.intOrNull?.let {
+                span.setAttribute("gen_ai.request.thinking.budget_tokens", it.toLong())
+            }
+        }
+
         body["messages"]?.let {
             if (it is JsonArray) {
                 for ((index, message) in it.jsonArray.withIndex()) {
@@ -107,7 +146,7 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
 
                     span.setAttribute("gen_ai.tool.$index.name", name?.orRedactedInput())
                     span.setAttribute("gen_ai.tool.$index.description", description?.orRedactedInput())
-                    span.setAttribute("gen_ai.tool.$index.type", type)
+                    span.setAttribute("gen_ai.tool.$index.type", type ?: "custom")
                     span.setAttribute("gen_ai.tool.$index.parameters", parameters?.orRedactedInput())
                 }
             }
@@ -131,6 +170,11 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
         body["role"]?.let { span.setAttribute("gen_ai.response.role", it.jsonPrimitive.content) }
         body["model"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
 
+        // count_tokens response: input_tokens at top level (no usage wrapper, no content array)
+        body["input_tokens"]?.jsonPrimitive?.intOrNull?.let {
+            span.setAttribute(GEN_AI_USAGE_INPUT_TOKENS, it)
+        }
+
         // collecting response messages
         body["content"]?.let {
             for ((index, message) in it.jsonArray.withIndex()) {
@@ -143,6 +187,18 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
                         span.setAttribute(
                             "gen_ai.completion.$index.content",
                             message.jsonObject["text"]?.jsonPrimitive?.content?.orRedactedOutput()
+                        )
+                    }
+
+                    "thinking" -> {
+                        // extended thinking block
+                        span.setAttribute(
+                            "gen_ai.completion.$index.thinking",
+                            message.jsonObject["thinking"]?.jsonPrimitive?.content?.orRedactedOutput()
+                        )
+                        span.setAttribute(
+                            "gen_ai.completion.$index.content",
+                            message.toString().orRedactedOutput()
                         )
                     }
 
@@ -199,6 +255,20 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
             usage["service_tier"]?.jsonPrimitive?.let {
                 span.setAttribute("gen_ai.usage.service_tier", it.content)
             }
+        }
+
+        // list pagination (models/list, files/list, batches/list)
+        body["data"]?.let {
+            if (it is JsonArray) span.setAttribute("gen_ai.response.list.count", it.jsonArray.size.toLong())
+        }
+        body["has_more"]?.jsonPrimitive?.booleanOrNull?.let {
+            span.setAttribute("gen_ai.response.list.has_more", it)
+        }
+        body["first_id"]?.jsonPrimitive?.contentOrNull?.let {
+            span.setAttribute("gen_ai.response.list.first_id", it)
+        }
+        body["last_id"]?.jsonPrimitive?.contentOrNull?.let {
+            span.setAttribute("gen_ai.response.list.last_id", it)
         }
 
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
@@ -348,7 +418,9 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
         "top_k",
         "top_p",
         "messages",
-        "tools"
+        "tools",
+        "stop_sequences",
+        "thinking"
     )
 
     private val mappedResponseAttributes: List<String> = listOf(
@@ -358,7 +430,12 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
         "model",
         "content",
         "stop_reason",
-        "usage"
+        "usage",
+        "input_tokens",
+        "data",
+        "has_more",
+        "first_id",
+        "last_id"
     )
 
     private val mappedAttributes = mappedRequestAttributes + mappedResponseAttributes

@@ -36,6 +36,6 @@ internal class GetVideoHandler : VideoRouteHandler {
      */
     override fun handleResponse(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
-        span.traceVideoModel(body, "gen_ai.response.video")
+        span.traceVideoResponseAttributes(body)
     }
 }

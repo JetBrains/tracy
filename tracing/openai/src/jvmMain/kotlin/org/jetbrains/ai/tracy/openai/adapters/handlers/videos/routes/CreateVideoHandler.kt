@@ -67,18 +67,19 @@ internal class CreateVideoHandler(private val extractor: MediaContentExtractor) 
                     span.setAttribute(GEN_AI_REQUEST_MODEL, content)
                 }
                 "seconds" -> {
-                    span.setAttribute("gen_ai.request.seconds", content.orRedactedInput())
+                    content.toLongOrNull()?.let { span.setAttribute("tracy.request.seconds", it) }
+                        ?: span.setAttribute("tracy.request.seconds", content.orRedactedInput())
                 }
                 "size" -> {
-                    span.setAttribute("gen_ai.request.size", content.orRedactedInput())
+                    span.setAttribute("tracy.request.size", content.orRedactedInput())
                 }
                 "input_reference" -> {
                     if (contentType != null) {
-                        span.setAttribute("gen_ai.request.input_reference.content_type", contentType.asString())
+                        span.setAttribute("tracy.request.input_reference.content_type", contentType.asString())
                     }
-                    span.setAttribute("gen_ai.request.input_reference.content", content.orRedactedInput())
+                    span.setAttribute("tracy.request.input_reference.content", content.orRedactedInput())
                     if (part.filename != null) {
-                        span.setAttribute("gen_ai.request.input_reference.filename", part.filename)
+                        span.setAttribute("tracy.request.input_reference.filename", part.filename)
                     }
 
                     // add as media content part for further upload
@@ -95,7 +96,7 @@ internal class CreateVideoHandler(private val extractor: MediaContentExtractor) 
                     logger.warn { "Form data part with missing name ignored. Content type: '$contentType'" }
                 }
                 else -> {
-                    span.setAttribute("gen_ai.request.${part.name}", content.orRedactedInput())
+                    span.setAttribute("tracy.request.${part.name}", content.orRedactedInput())
                 }
             }
         }
@@ -111,7 +112,7 @@ internal class CreateVideoHandler(private val extractor: MediaContentExtractor) 
 
     override fun handleResponse(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
-        span.traceVideoModel(body, "gen_ai.response.video")
+        span.traceVideoResponseAttributes(body)
     }
 }
 

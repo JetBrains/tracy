@@ -21,9 +21,9 @@ internal class ListVideosHandler : VideoRouteHandler {
      */
     override fun handleRequest(span: Span, request: TracyHttpRequest) {
         val params = request.url.parameters
-        params.queryParameter("after")?.let { span.setAttribute("gen_ai.request.after", it) }
-        params.queryParameter("limit")?.let { span.setAttribute("gen_ai.request.limit", it) }
-        params.queryParameter("order")?.let { span.setAttribute("gen_ai.request.order", it) }
+        params.queryParameter("after")?.let { span.setAttribute("tracy.request.after", it) }
+        params.queryParameter("limit")?.toLongOrNull()?.let { span.setAttribute("tracy.request.limit", it) }
+        params.queryParameter("order")?.let { span.setAttribute("tracy.request.order", it) }
     }
 
     /**
@@ -32,20 +32,14 @@ internal class ListVideosHandler : VideoRouteHandler {
     override fun handleResponse(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
 
-        body["first_id"]?.let { span.setAttribute("gen_ai.response.first_id", it.jsonPrimitive.content) }
-        body["last_id"]?.let { span.setAttribute("gen_ai.response.last_id", it.jsonPrimitive.content) }
-        body["has_more"]?.let { span.setAttribute("gen_ai.response.has_more", it.jsonPrimitive.boolean) }
+        body["object"]?.jsonPrimitive?.contentOrNull?.let { span.setAttribute("tracy.response.object", it) }
+        body["first_id"]?.jsonPrimitive?.contentOrNull?.let { span.setAttribute("tracy.response.first_id", it) }
+        body["last_id"]?.jsonPrimitive?.contentOrNull?.let { span.setAttribute("tracy.response.last_id", it) }
+        body["has_more"]?.jsonPrimitive?.booleanOrNull?.let { span.setAttribute("tracy.response.has_more", it) }
 
         val data = body["data"]
         if (data != null && data is JsonArray) {
-            span.setAttribute("gen_ai.response.videos_count", data.size.toLong())
-            for ((index, videoElement) in data.withIndex()) {
-                if (videoElement is JsonObject) {
-                    span.traceVideoModel(videoElement, "gen_ai.response.videos.$index")
-                }
-            }
-        } else {
-            span.setAttribute("gen_ai.response.videos_count", 0L)
+            span.setAttribute("tracy.response.videos.count", data.size.toLong())
         }
     }
 }

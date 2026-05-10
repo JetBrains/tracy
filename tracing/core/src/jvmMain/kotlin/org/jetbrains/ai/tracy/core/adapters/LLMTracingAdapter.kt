@@ -10,10 +10,19 @@ import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.sdk.trace.ReadableSpan
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_SYSTEM
+import io.opentelemetry.semconv.incubating.HttpIncubatingAttributes.HTTP_RESPONSE_STATUS_CODE
+import io.opentelemetry.semconv.incubating.ServerIncubatingAttributes.SERVER_ADDRESS
+import io.opentelemetry.semconv.incubating.ServerIncubatingAttributes.SERVER_PORT
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.double
+import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
+import kotlinx.serialization.json.longOrNull
 
 
 /**
@@ -57,6 +66,9 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
         getRequestBodyAttributes(span, request)
         span.setAttribute("gen_ai.api_base", "${request.url.scheme}://${request.url.host}")
         span.setAttribute(GEN_AI_SYSTEM, genAISystem)
+        span.setAttribute("gen_ai.provider.name", genAISystem)
+        span.setAttribute(SERVER_ADDRESS, request.url.host)
+        span.setAttribute(SERVER_PORT, request.url.port.toLong())
 
         return@runCatching
     }.getOrElse { exception ->
@@ -87,9 +99,11 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
             }
 
             span.setAttribute("http.status_code", response.code.toLong())
+            span.setAttribute(HTTP_RESPONSE_STATUS_CODE, response.code.toLong())
 
             if (response.isError()) {
                 getResponseErrorBodyAttributes(span, response.body)
+                span.setAttribute("error.type", response.code.toString())
                 span.setStatus(StatusCode.ERROR)
             } else {
                 span.setStatus(StatusCode.OK)
@@ -142,7 +156,16 @@ abstract class LLMTracingAdapter(private val genAISystem: String) {
             body.entries.forEach { (key, value) ->
                 if (key !in (mappedAttributes)) {
                     val attributeKey = "tracy.${payloadType.value}.$key"
-                    setAttribute(attributeKey, value.toString())
+                    when (value) {
+                        is JsonPrimitive -> when {
+                            value.isString -> setAttribute(attributeKey, value.content)
+                            value.booleanOrNull != null -> setAttribute(attributeKey, value.boolean)
+                            value.longOrNull != null -> setAttribute(attributeKey, value.long)
+                            value.doubleOrNull != null -> setAttribute(attributeKey, value.double)
+                            else -> setAttribute(attributeKey, value.toString())
+                        }
+                        else -> setAttribute(attributeKey, value.toString())
+                    }
                 }
             }
         }
