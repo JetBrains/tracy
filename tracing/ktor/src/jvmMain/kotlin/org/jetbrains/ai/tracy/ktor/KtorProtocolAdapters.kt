@@ -40,6 +40,7 @@ internal class TracyHttpResponseView(
     override val body = TracyHttpResponseBody.Json(body)
     override val url = response.request.url.toProtocolUrl()
     override val requestMethod = response.request.method.value.uppercase()
+    override val contentLength = response.headers["Content-Length"]?.toLongOrNull()
 
     override fun isError() = response.status.isSuccess().not()
 }
@@ -56,6 +57,7 @@ internal fun URLBuilder.toProtocolUrl(): TracyHttpUrl {
     return TracyHttpUrlImpl(
         scheme = builder.protocol.name,
         host = builder.host,
+        port = builder.port,
         pathSegments = builder.pathSegments,
         parameters = params,
     )
@@ -72,6 +74,7 @@ internal fun KtorUrl.toProtocolUrl(): TracyHttpUrl {
     return TracyHttpUrlImpl(
         scheme = url.protocol.name,
         host = url.host,
+        port = url.port,
         pathSegments = url.segments,
         parameters = params,
     )

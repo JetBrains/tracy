@@ -33,9 +33,11 @@ internal class ResponsesOpenAIApiEndpointHandler(
 
         body["previous_response_id"]?.jsonPrimitive?.contentOrNull?.let {
             span.setAttribute("gen_ai.request.previous_response_id", it)
+            span.setAttribute("tracy.request.previous_response_id", it)
         }
         body["store"]?.jsonPrimitive?.booleanOrNull?.let {
             span.setAttribute("gen_ai.request.store", it)
+            span.setAttribute("tracy.request.store", it)
         }
         body["top_p"]?.jsonPrimitive?.doubleOrNull?.let {
             span.setAttribute(GEN_AI_REQUEST_TOP_P, it)
@@ -45,9 +47,11 @@ internal class ResponsesOpenAIApiEndpointHandler(
         }
         body["truncation"]?.jsonPrimitive?.contentOrNull?.let {
             span.setAttribute("gen_ai.request.truncation", it)
+            span.setAttribute("tracy.request.truncation", it)
         }
         body["parallel_tool_calls"]?.jsonPrimitive?.booleanOrNull?.let {
             span.setAttribute("gen_ai.request.parallel_tool_calls", it)
+            span.setAttribute("tracy.request.parallel_tool_calls", it)
         }
         body["stream"]?.jsonPrimitive?.booleanOrNull?.let {
             span.setAttribute("gen_ai.request.stream", it)
@@ -61,12 +65,22 @@ internal class ResponsesOpenAIApiEndpointHandler(
                 else -> it.toString()
             }
             span.setAttribute("gen_ai.request.tool_choice", content)
+            span.setAttribute("tracy.request.tool_choice", content)
         }
         body["reasoning"]?.let {
             span.setAttribute("gen_ai.request.reasoning", it.toString())
+            it.jsonObject["effort"]?.jsonPrimitive?.contentOrNull?.let { effort ->
+                span.setAttribute("tracy.request.reasoning.effort", effort)
+            }
+            it.jsonObject["summary"]?.jsonPrimitive?.contentOrNull?.let { summary ->
+                span.setAttribute("tracy.request.reasoning.summary", summary)
+            }
         }
         body["text"]?.let {
             span.setAttribute("gen_ai.request.text", it.toString())
+            it.jsonObject["format"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull?.let { type ->
+                span.setAttribute("tracy.request.text.format.type", type)
+            }
         }
 
         // because of inserting instructions property as the first prompt,
@@ -139,6 +153,16 @@ internal class ResponsesOpenAIApiEndpointHandler(
     override fun handleResponseAttributes(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
         OpenAIApiUtils.setCommonResponseAttributes(span, response)
+
+        body["object"]?.jsonPrimitive?.contentOrNull?.let { span.setAttribute("tracy.response.object", it) }
+        body["status"]?.jsonPrimitive?.contentOrNull?.let { span.setAttribute("tracy.response.status", it) }
+        body["store"]?.jsonPrimitive?.booleanOrNull?.let { span.setAttribute("tracy.response.store", it) }
+        body["created_at"]?.jsonPrimitive?.longOrNull?.let { span.setAttribute("tracy.response.created_at", it) }
+        body["background"]?.jsonPrimitive?.booleanOrNull?.let { span.setAttribute("tracy.response.background", it) }
+        body["reasoning"]?.jsonObject?.let { reasoning ->
+            reasoning["effort"]?.jsonPrimitive?.contentOrNull?.let { span.setAttribute("tracy.response.reasoning.effort", it) }
+            reasoning["summary"]?.jsonPrimitive?.contentOrNull?.let { span.setAttribute("tracy.response.reasoning.summary", it) }
+        }
 
         // we manually map `output` and `usage` attributes;
         // the rest of attributes get mapped by `populateUnmappedAttributes` below.
@@ -348,6 +372,12 @@ internal class ResponsesOpenAIApiEndpointHandler(
         }
         usage["output_tokens"]?.jsonPrimitive?.intOrNull?.let {
             span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
+        }
+        usage["input_tokens_details"]?.jsonObject?.get("cached_tokens")?.jsonPrimitive?.intOrNull?.let {
+            span.setAttribute("gen_ai.usage.cache_read.input_tokens", it.toLong())
+        }
+        usage["output_tokens_details"]?.jsonObject?.get("reasoning_tokens")?.jsonPrimitive?.intOrNull?.let {
+            span.setAttribute("tracy.response.usage.output_tokens_details.reasoning_tokens", it.toLong())
         }
     }
 
