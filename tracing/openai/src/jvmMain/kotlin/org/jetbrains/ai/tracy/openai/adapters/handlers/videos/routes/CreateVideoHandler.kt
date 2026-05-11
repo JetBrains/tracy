@@ -68,9 +68,11 @@ internal class CreateVideoHandler(private val extractor: MediaContentExtractor) 
                 }
                 "seconds" -> {
                     span.setAttribute("gen_ai.request.seconds", content.orRedactedInput())
+                    content.toLongOrNull()?.let { span.setAttribute("tracy.request.seconds", it) }
                 }
                 "size" -> {
                     span.setAttribute("gen_ai.request.size", content.orRedactedInput())
+                    span.setAttribute("tracy.request.size", content.orRedactedInput())
                 }
                 "input_reference" -> {
                     if (contentType != null) {
@@ -114,4 +116,3 @@ internal class CreateVideoHandler(private val extractor: MediaContentExtractor) 
         span.traceVideoModel(body, "gen_ai.response.video")
     }
 }
-

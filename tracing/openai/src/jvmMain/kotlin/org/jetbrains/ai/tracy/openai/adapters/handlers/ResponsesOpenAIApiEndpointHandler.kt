@@ -33,9 +33,11 @@ internal class ResponsesOpenAIApiEndpointHandler(
 
         body["previous_response_id"]?.jsonPrimitive?.contentOrNull?.let {
             span.setAttribute("gen_ai.request.previous_response_id", it)
+            span.setAttribute("tracy.request.previous_response_id", it)
         }
         body["store"]?.jsonPrimitive?.booleanOrNull?.let {
             span.setAttribute("gen_ai.request.store", it)
+            span.setAttribute("tracy.request.store", it)
         }
         body["top_p"]?.jsonPrimitive?.doubleOrNull?.let {
             span.setAttribute(GEN_AI_REQUEST_TOP_P, it)
@@ -61,12 +63,31 @@ internal class ResponsesOpenAIApiEndpointHandler(
                 else -> it.toString()
             }
             span.setAttribute("gen_ai.request.tool_choice", content)
+            span.setAttribute("tracy.request.tool_choice", content)
         }
         body["reasoning"]?.let {
             span.setAttribute("gen_ai.request.reasoning", it.toString())
+            it.jsonObject["effort"]?.jsonPrimitive?.contentOrNull?.let { effort ->
+                span.setAttribute("tracy.request.reasoning.effort", effort)
+            }
+            it.jsonObject["summary"]?.jsonPrimitive?.contentOrNull?.let { summary ->
+                span.setAttribute("tracy.request.reasoning.summary", summary)
+            }
         }
         body["text"]?.let {
             span.setAttribute("gen_ai.request.text", it.toString())
+            it.jsonObject["format"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull?.let { type ->
+                span.setAttribute("tracy.request.output_format", type)
+            }
+        }
+        body["background"]?.jsonPrimitive?.booleanOrNull?.let { span.setAttribute("tracy.request.background", it) }
+        body["prompt_cache_key"]?.jsonPrimitive?.contentOrNull?.let { span.setAttribute("tracy.request.prompt_cache_key", it) }
+        body["prompt_cache_retention"]?.jsonPrimitive?.contentOrNull?.let {
+            span.setAttribute("tracy.request.prompt_cache_retention", it)
+        }
+        body["metadata"]?.jsonObject?.let {
+            span.setAttribute("tracy.request.metadata.count", it.size.toLong())
+            span.setAttribute("tracy.request.metadata.keys", it.keys.joinToString(","))
         }
 
         // because of inserting instructions property as the first prompt,
@@ -139,6 +160,11 @@ internal class ResponsesOpenAIApiEndpointHandler(
     override fun handleResponseAttributes(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
         OpenAIApiUtils.setCommonResponseAttributes(span, response)
+        body["object"]?.jsonPrimitive?.contentOrNull?.let { obj ->
+            if (obj == "response.compaction") {
+                span.setAttribute(GEN_AI_OPERATION_NAME, "response.compact")
+            }
+        }
 
         // we manually map `output` and `usage` attributes;
         // the rest of attributes get mapped by `populateUnmappedAttributes` below.
@@ -216,6 +242,12 @@ internal class ResponsesOpenAIApiEndpointHandler(
         body["usage"]?.let { usage ->
             setUsageAttributes(span, usage.jsonObject)
         }
+        body["store"]?.jsonPrimitive?.booleanOrNull?.let { span.setAttribute("tracy.response.store", it) }
+        body["background"]?.jsonPrimitive?.booleanOrNull?.let { span.setAttribute("tracy.response.background", it) }
+        body["status"]?.jsonPrimitive?.contentOrNull?.let { span.setAttribute("tracy.response.status", it) }
+        body["created_at"]?.jsonPrimitive?.longOrNull?.let { span.setAttribute("tracy.response.created_at", it) }
+        body["completed_at"]?.jsonPrimitive?.longOrNull?.let { span.setAttribute("tracy.response.completed_at", it) }
+        body["service_tier"]?.jsonPrimitive?.contentOrNull?.let { span.setAttribute("openai.response.service_tier", it) }
 
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
     }

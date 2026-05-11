@@ -18,6 +18,7 @@ import org.jetbrains.ai.tracy.core.policy.contentTracingAllowed
 import org.jetbrains.ai.tracy.core.policy.orRedactedInput
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OUTPUT_TYPE
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import mu.KotlinLogging
@@ -99,13 +100,16 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
 
                 null -> logger.warn { "Form data part with missing name ignored. Content type: '$contentType'" }
                 else -> {
+                    val partName = part.name ?: continue
                     // since we don't know how sensitive other fields may be,
                     // we disguise their content if input tracing is disallowed.
-                    span.setAttribute("gen_ai.request.${part.name}", content.orRedactedInput())
+                    span.setAttribute("gen_ai.request.$partName", content.orRedactedInput())
+                    span.setRequestScalarAttribute(partName, content)
                 }
             }
         }
 
+        span.setAttribute(GEN_AI_OUTPUT_TYPE, "image")
         if (contentTracingAllowed(ContentKind.INPUT)) {
             extractor.setUploadableContentAttributes(
                 span,
@@ -141,5 +145,15 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
 
     companion object {
         private val logger = KotlinLogging.logger {}
+    }
+
+    private fun Span.setRequestScalarAttribute(name: String, value: String) {
+        val key = "tracy.request.$name"
+        when (name) {
+            "n", "partial_images" -> value.toLongOrNull()?.let { setAttribute(key, it) } ?: setAttribute(key, value)
+            "stream" -> value.toBooleanStrictOrNull()?.let { setAttribute("gen_ai.request.stream", it) } ?: setAttribute(key, value)
+            "prompt" -> setAttribute(key, value.orRedactedInput())
+            else -> setAttribute(key, value)
+        }
     }
 }

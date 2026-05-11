@@ -9,15 +9,25 @@ import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
 import org.jetbrains.ai.tracy.core.adapters.handlers.EndpointApiHandler
 import org.jetbrains.ai.tracy.core.adapters.media.MediaContentExtractorImpl
 import org.jetbrains.ai.tracy.core.http.protocol.*
+import org.jetbrains.ai.tracy.openai.adapters.handlers.AudioOpenAIApiEndpointHandler
+import org.jetbrains.ai.tracy.openai.adapters.handlers.BatchesOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.ChatCompletionsOpenAIApiEndpointHandler
+import org.jetbrains.ai.tracy.openai.adapters.handlers.ConversationsOpenAIApiEndpointHandler
+import org.jetbrains.ai.tracy.openai.adapters.handlers.EmbeddingsOpenAIApiEndpointHandler
+import org.jetbrains.ai.tracy.openai.adapters.handlers.FilesOpenAIApiEndpointHandler
+import org.jetbrains.ai.tracy.openai.adapters.handlers.ModelsOpenAIApiEndpointHandler
+import org.jetbrains.ai.tracy.openai.adapters.handlers.ModerationsOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.OpenAIApiUtils
 import org.jetbrains.ai.tracy.openai.adapters.handlers.ResponsesOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.images.ImagesCreateEditOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.images.ImagesCreateOpenAIApiEndpointHandler
+import org.jetbrains.ai.tracy.openai.adapters.handlers.images.ImagesVariationOpenAIApiEndpointHandler
 import org.jetbrains.ai.tracy.openai.adapters.handlers.videos.VideosOpenAIApiEndpointHandler
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GenAiSystemIncubatingValues
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mu.KotlinLogging
@@ -39,6 +49,17 @@ private enum class OpenAIApiType(val route: String) {
 
     // See: https://platform.openai.com/docs/api-reference/images/createEdit
     IMAGES_EDITS("images/edits"),
+
+    // See: https://platform.openai.com/docs/api-reference/images/createVariation
+    IMAGES_VARIATIONS("images/variations"),
+
+    AUDIO("audio"),
+    EMBEDDINGS("embeddings"),
+    FILES("files"),
+    BATCHES("batches"),
+    MODELS("models"),
+    MODERATIONS("moderations"),
+    CONVERSATIONS("conversations"),
 
     // See: https://platform.openai.com/docs/api-reference/videos
     VIDEOS("videos");
@@ -89,6 +110,7 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
     private val handlers = ConcurrentHashMap<OpenAIApiType, EndpointApiHandler>()
 
     override fun getRequestBodyAttributes(span: Span, request: TracyHttpRequest) {
+        setOpenAIApiAttributes(span, request.url, request.method)
         val handler = handlerFor(request.url)
         handler.handleRequestAttributes(span, request)
     }
@@ -105,20 +127,22 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
         return when (request.body) {
             is TracyHttpRequestBody.FormData -> {
                 val data = request.body.asFormData() ?: return false
-                data.parts.filter { it.name == "stream" }.any {
+                data.parts.filter { it.name == "stream" || it.name == "stream_format" }.any {
                     val value = it.content.toString(it.contentType?.charset() ?: Charsets.UTF_8)
-                    value.toBooleanStrictOrNull() ?: false
+                    value.toBooleanStrictOrNull() ?: (value == "sse")
                 }
             }
             is TracyHttpRequestBody.Json -> {
                 val body = request.body.asJson()?.jsonObject ?: return false
-                body["stream"]?.jsonPrimitive?.boolean ?: false
+                body["stream"]?.jsonPrimitive?.boolean
+                    ?: (body["stream_format"]?.jsonPrimitive?.contentOrNull == "sse")
             }
             is TracyHttpRequestBody.Empty -> false
         }
     }
 
     override fun handleStreaming(span: Span, url: TracyHttpUrl, events: String) {
+        setOpenAIApiAttributes(span, url, method = "POST")
         val handler = handlerFor(url)
         handler.handleStreaming(span, events)
     }
@@ -150,6 +174,38 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
                 ImagesCreateEditOpenAIApiEndpointHandler(extractor)
             }
 
+            OpenAIApiType.IMAGES_VARIATIONS -> handlers.getOrPut(OpenAIApiType.IMAGES_VARIATIONS) {
+                ImagesVariationOpenAIApiEndpointHandler(extractor)
+            }
+
+            OpenAIApiType.AUDIO -> handlers.getOrPut(OpenAIApiType.AUDIO) {
+                AudioOpenAIApiEndpointHandler()
+            }
+
+            OpenAIApiType.EMBEDDINGS -> handlers.getOrPut(OpenAIApiType.EMBEDDINGS) {
+                EmbeddingsOpenAIApiEndpointHandler()
+            }
+
+            OpenAIApiType.FILES -> handlers.getOrPut(OpenAIApiType.FILES) {
+                FilesOpenAIApiEndpointHandler()
+            }
+
+            OpenAIApiType.BATCHES -> handlers.getOrPut(OpenAIApiType.BATCHES) {
+                BatchesOpenAIApiEndpointHandler()
+            }
+
+            OpenAIApiType.MODELS -> handlers.getOrPut(OpenAIApiType.MODELS) {
+                ModelsOpenAIApiEndpointHandler()
+            }
+
+            OpenAIApiType.MODERATIONS -> handlers.getOrPut(OpenAIApiType.MODERATIONS) {
+                ModerationsOpenAIApiEndpointHandler()
+            }
+
+            OpenAIApiType.CONVERSATIONS -> handlers.getOrPut(OpenAIApiType.CONVERSATIONS) {
+                ConversationsOpenAIApiEndpointHandler()
+            }
+
             OpenAIApiType.VIDEOS -> handlers.getOrPut(OpenAIApiType.VIDEOS) {
                 VideosOpenAIApiEndpointHandler(extractor)
             }
@@ -160,6 +216,124 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
             }
         }
         return handler
+    }
+
+    private fun setOpenAIApiAttributes(span: Span, url: TracyHttpUrl, method: String) {
+        val apiType = OpenAIApiType.detect(url)
+        span.setAttribute("openai.api.type", openAIApiTypeName(apiType))
+        span.setAttribute(GEN_AI_OPERATION_NAME, operationName(url, method, apiType))
+    }
+
+    private fun openAIApiTypeName(apiType: OpenAIApiType?): String = when (apiType) {
+        OpenAIApiType.CHAT_COMPLETIONS -> "chat_completions"
+        OpenAIApiType.RESPONSES_API -> "responses"
+        OpenAIApiType.IMAGES_GENERATIONS, OpenAIApiType.IMAGES_EDITS, OpenAIApiType.IMAGES_VARIATIONS -> "images"
+        OpenAIApiType.AUDIO -> "audio"
+        OpenAIApiType.EMBEDDINGS -> "embeddings"
+        OpenAIApiType.FILES -> "files"
+        OpenAIApiType.BATCHES -> "batches"
+        OpenAIApiType.MODELS -> "models"
+        OpenAIApiType.MODERATIONS -> "moderations"
+        OpenAIApiType.CONVERSATIONS -> "conversations"
+        OpenAIApiType.VIDEOS -> "videos"
+        null -> "chat_completions"
+    }
+
+    private fun operationName(url: TracyHttpUrl, method: String, apiType: OpenAIApiType?): String {
+        val segments = url.pathSegments.filter { it.isNotBlank() && it != "v1" }
+        val normalizedMethod = method.uppercase()
+        return when (apiType) {
+            OpenAIApiType.CHAT_COMPLETIONS -> chatOperationName(segments, normalizedMethod)
+            OpenAIApiType.RESPONSES_API -> responsesOperationName(segments, normalizedMethod)
+            OpenAIApiType.IMAGES_GENERATIONS -> "generate_content"
+            OpenAIApiType.IMAGES_EDITS -> "generate_content"
+            OpenAIApiType.IMAGES_VARIATIONS -> "generate_content"
+            OpenAIApiType.AUDIO -> audioOperationName(segments)
+            OpenAIApiType.EMBEDDINGS -> "embeddings"
+            OpenAIApiType.FILES -> resourceOperationName("files", segments, normalizedMethod)
+            OpenAIApiType.BATCHES -> resourceOperationName("batches", segments, normalizedMethod)
+            OpenAIApiType.MODELS -> resourceOperationName("models", segments, normalizedMethod)
+            OpenAIApiType.MODERATIONS -> "moderations"
+            OpenAIApiType.CONVERSATIONS -> conversationsOperationName(segments, normalizedMethod)
+            OpenAIApiType.VIDEOS -> videosOperationName(segments, normalizedMethod)
+            null -> "chat"
+        }
+    }
+
+    private fun chatOperationName(segments: List<String>, method: String): String {
+        val completionsIndex = segments.indexOf("completions")
+        val tail = if (completionsIndex >= 0) segments.drop(completionsIndex + 1) else emptyList()
+        return when {
+            tail.isEmpty() && method == "POST" -> "chat"
+            tail.isEmpty() && method == "GET" -> "chat.completions.list"
+            tail.size == 1 && method == "GET" -> "chat.completions.retrieve"
+            tail.size == 1 && method == "POST" -> "chat.completions.update"
+            tail.size == 1 && method == "DELETE" -> "chat.completions.delete"
+            tail.size >= 2 && tail[1] == "messages" -> "chat.completions.messages.list"
+            else -> "chat"
+        }
+    }
+
+    private fun responsesOperationName(segments: List<String>, method: String): String {
+        val responsesIndex = segments.indexOf("responses")
+        val tail = if (responsesIndex >= 0) segments.drop(responsesIndex + 1) else emptyList()
+        return when {
+            tail.isEmpty() && method == "POST" -> "generate_content"
+            tail.size == 1 && tail[0] == "input_tokens" -> "responses.input_tokens"
+            tail.size == 1 && method == "GET" -> "responses.retrieve"
+            tail.size == 2 && tail[1] == "cancel" -> "responses.cancel"
+            tail.size == 2 && tail[1] == "input_items" -> "responses.input_items.list"
+            else -> "generate_content"
+        }
+    }
+
+    private fun audioOperationName(segments: List<String>): String = when (segments.lastOrNull()) {
+        "speech" -> "audio.speech"
+        "transcriptions" -> "audio.transcription"
+        "translations" -> "audio.translation"
+        else -> "audio"
+    }
+
+    private fun resourceOperationName(resource: String, segments: List<String>, method: String): String {
+        val index = segments.indexOf(resource)
+        val tail = if (index >= 0) segments.drop(index + 1) else emptyList()
+        return when {
+            tail.isEmpty() && method == "POST" -> "$resource.create"
+            tail.isEmpty() && method == "GET" -> "$resource.list"
+            tail.size == 1 && method == "GET" -> "$resource.retrieve"
+            tail.size == 1 && method == "DELETE" -> "$resource.delete"
+            tail.size == 2 && tail[1] == "cancel" -> "$resource.cancel"
+            else -> resource
+        }
+    }
+
+    private fun conversationsOperationName(segments: List<String>, method: String): String {
+        val index = segments.indexOf("conversations")
+        val tail = if (index >= 0) segments.drop(index + 1) else emptyList()
+        return when {
+            tail.isEmpty() && method == "POST" -> "conversations.create"
+            tail.isEmpty() && method == "GET" -> "conversations.list"
+            tail.size == 1 && method == "GET" -> "conversations.retrieve"
+            tail.size == 1 && method == "DELETE" -> "conversations.delete"
+            tail.size >= 2 && tail[1] == "items" && method == "POST" -> "conversations.items.create"
+            tail.size >= 2 && tail[1] == "items" && method == "GET" -> "conversations.items.list"
+            tail.size >= 3 && tail[1] == "items" && method == "DELETE" -> "conversations.items.delete"
+            else -> "conversations"
+        }
+    }
+
+    private fun videosOperationName(segments: List<String>, method: String): String {
+        val index = segments.indexOf("videos")
+        val tail = if (index >= 0) segments.drop(index + 1) else emptyList()
+        return when {
+            tail.isEmpty() && method == "POST" -> "videos.create"
+            tail.isEmpty() && method == "GET" -> "videos.list"
+            tail.size == 1 && method == "GET" -> "videos.retrieve"
+            tail.size == 1 && method == "DELETE" -> "videos.delete"
+            tail.size == 2 && tail[1] == "content" -> "videos.content"
+            tail.size == 2 && tail[1] == "remix" -> "videos.remix"
+            else -> "videos"
+        }
     }
 
     private val logger = KotlinLogging.logger {}
