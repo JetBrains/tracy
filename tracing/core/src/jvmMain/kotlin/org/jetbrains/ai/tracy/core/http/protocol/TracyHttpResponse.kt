@@ -19,6 +19,7 @@ import kotlinx.serialization.json.JsonElement
  *                represent different response formats, such as JSON.
  * @property url The URL associated with the HTTP response (i.e., where the initial request was made to).
  * @property requestMethod The HTTP method used by the request, which this response corresponds to.
+ * @property contentLength The response body length when known.
  */
 @InternalTracyApi
 interface TracyHttpResponse {
@@ -27,6 +28,7 @@ interface TracyHttpResponse {
     val body: TracyHttpResponseBody
     val url: TracyHttpUrl
     val requestMethod: String
+    val contentLength: Long?
 
     fun isError(): Boolean
 }

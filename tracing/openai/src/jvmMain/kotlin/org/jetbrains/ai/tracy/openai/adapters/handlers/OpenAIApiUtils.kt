@@ -34,8 +34,24 @@ internal object OpenAIApiUtils {
         val body = response.body.asJson()?.jsonObject ?: return
 
         body["id"]?.let { span.setAttribute(GEN_AI_RESPONSE_ID, it.jsonPrimitive.content) }
-        body["object"]?.let { span.setAttribute(GEN_AI_OPERATION_NAME, it.jsonPrimitive.content) }
         body["model"]?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it.jsonPrimitive.content) }
+    }
+
+    fun Span.setJsonAttribute(key: String, value: JsonElement?) {
+        when (val primitive = value as? JsonPrimitive) {
+            null -> if (value != null) setAttribute(key, value.toString())
+            else -> when {
+                primitive.booleanOrNull != null -> setAttribute(key, primitive.boolean)
+                primitive.longOrNull != null -> setAttribute(key, primitive.long)
+                primitive.doubleOrNull != null -> setAttribute(key, primitive.double)
+                else -> setAttribute(key, primitive.content)
+            }
+        }
+    }
+
+    fun Span.setJsonStringAttribute(key: String, value: JsonElement?) {
+        value ?: return
+        setAttribute(key, value.asString)
     }
 }
 

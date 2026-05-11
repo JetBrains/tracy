@@ -13,6 +13,7 @@ import org.jetbrains.ai.tracy.core.http.protocol.asJson
 import org.jetbrains.ai.tracy.core.policy.orRedactedInput
 import org.jetbrains.ai.tracy.openai.adapters.handlers.asString
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OUTPUT_TYPE
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -31,6 +32,7 @@ internal class ImagesCreateOpenAIApiEndpointHandler(
 
         body["prompt"]?.let { span.setAttribute("gen_ai.prompt.0.content", it.jsonPrimitive.content.orRedactedInput()) }
         body["model"]?.let { span.setAttribute(GEN_AI_REQUEST_MODEL, it.jsonPrimitive.content) }
+        span.setAttribute(GEN_AI_OUTPUT_TYPE, "image")
 
         val manuallyParsedKeys = listOf("prompt", "model")
         for ((key, value) in body.entries) {
@@ -38,6 +40,7 @@ internal class ImagesCreateOpenAIApiEndpointHandler(
                 continue
             }
             span.setAttribute("gen_ai.request.$key", value.asString.orRedactedInput())
+            span.setAttribute("tracy.request.$key", value.asString.orRedactedInput())
         }
     }
 

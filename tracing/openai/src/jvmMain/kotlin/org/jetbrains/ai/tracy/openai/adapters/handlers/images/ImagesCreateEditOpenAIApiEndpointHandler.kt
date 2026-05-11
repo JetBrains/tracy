@@ -18,6 +18,7 @@ import org.jetbrains.ai.tracy.core.policy.contentTracingAllowed
 import org.jetbrains.ai.tracy.core.policy.orRedactedInput
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OUTPUT_TYPE
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import mu.KotlinLogging
@@ -36,6 +37,7 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
 
         val mediaContentParts = mutableListOf<MediaContentPart>()
         var imagesCount = 0
+        span.setAttribute(GEN_AI_OUTPUT_TYPE, "image")
 
         for (part in body.parts) {
             // TODO: TRACY-88
@@ -87,6 +89,7 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
                     // base64-encoded image content
                     span.setAttribute("gen_ai.request.image.$imagesCount.content", content)
                     span.setAttribute("gen_ai.request.image.$imagesCount.contentType", contentType.asString())
+                    span.setAttribute("tracy.request.image.size_bytes", part.content.size.toLong())
                     if (part.filename != null) {
                         span.setAttribute("gen_ai.request.image.$imagesCount.filename", part.filename)
                     }
@@ -102,6 +105,7 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
                     // since we don't know how sensitive other fields may be,
                     // we disguise their content if input tracing is disallowed.
                     span.setAttribute("gen_ai.request.${part.name}", content.orRedactedInput())
+                    span.setAttribute("tracy.request.${part.name}", content.orRedactedInput())
                 }
             }
         }
