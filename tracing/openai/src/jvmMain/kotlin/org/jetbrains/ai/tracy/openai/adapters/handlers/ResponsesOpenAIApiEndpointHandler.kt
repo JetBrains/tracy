@@ -28,14 +28,17 @@ internal class ResponsesOpenAIApiEndpointHandler(
     private val extractor: MediaContentExtractor
 ) : EndpointApiHandler {
     override fun handleRequestAttributes(span: Span, request: TracyHttpRequest) {
+        setQueryAttributes(span, request)
         val body = request.body.asJson()?.jsonObject ?: return
         OpenAIApiUtils.setCommonRequestAttributes(span, request)
 
         body["previous_response_id"]?.jsonPrimitive?.contentOrNull?.let {
             span.setAttribute("gen_ai.request.previous_response_id", it)
+            span.setAttribute("tracy.request.previous_response_id", it)
         }
         body["store"]?.jsonPrimitive?.booleanOrNull?.let {
             span.setAttribute("gen_ai.request.store", it)
+            span.setAttribute("tracy.request.store", it)
         }
         body["top_p"]?.jsonPrimitive?.doubleOrNull?.let {
             span.setAttribute(GEN_AI_REQUEST_TOP_P, it)
@@ -45,9 +48,11 @@ internal class ResponsesOpenAIApiEndpointHandler(
         }
         body["truncation"]?.jsonPrimitive?.contentOrNull?.let {
             span.setAttribute("gen_ai.request.truncation", it)
+            span.setAttribute("tracy.request.truncation", it)
         }
         body["parallel_tool_calls"]?.jsonPrimitive?.booleanOrNull?.let {
             span.setAttribute("gen_ai.request.parallel_tool_calls", it)
+            span.setAttribute("tracy.request.parallel_tool_calls", it)
         }
         body["stream"]?.jsonPrimitive?.booleanOrNull?.let {
             span.setAttribute("gen_ai.request.stream", it)
@@ -61,13 +66,29 @@ internal class ResponsesOpenAIApiEndpointHandler(
                 else -> it.toString()
             }
             span.setAttribute("gen_ai.request.tool_choice", content)
+            span.setAttribute("tracy.request.tool_choice", toolChoiceName(it))
         }
         body["reasoning"]?.let {
             span.setAttribute("gen_ai.request.reasoning", it.toString())
+            it.jsonObject["effort"]?.jsonPrimitive?.contentOrNull?.let { effort ->
+                span.setAttribute("tracy.request.reasoning.effort", effort)
+            }
+            it.jsonObject["summary"]?.jsonPrimitive?.contentOrNull?.let { summary ->
+                span.setAttribute("tracy.request.reasoning.summary", summary)
+            }
         }
         body["text"]?.let {
             span.setAttribute("gen_ai.request.text", it.toString())
+            it.jsonObject["format"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull?.let { type ->
+                span.setAttribute("tracy.request.text.format.type", type)
+            }
         }
+        body["background"]?.jsonPrimitive?.booleanOrNull?.let { span.setAttribute("tracy.request.background", it) }
+        body["prompt_cache_key"]?.jsonPrimitive?.contentOrNull?.let { span.setAttribute("tracy.request.prompt_cache_key", it) }
+        body["prompt_cache_retention"]?.jsonPrimitive?.contentOrNull?.let {
+            span.setAttribute("tracy.request.prompt_cache_retention", it)
+        }
+        body["service_tier"]?.jsonPrimitive?.contentOrNull?.let { span.setAttribute("openai.request.service_tier", it) }
 
         // because of inserting instructions property as the first prompt,
         // other input properties will have a position shifted by one
@@ -113,6 +134,13 @@ internal class ResponsesOpenAIApiEndpointHandler(
                     span.setAttribute("gen_ai.tool.$index.description", toolDescription?.orRedactedInput())
                     span.setAttribute("gen_ai.tool.$index.parameters", toolParameters?.orRedactedInput())
                     span.setAttribute("gen_ai.tool.$index.strict", strict)
+                    if (index == 0) {
+                        span.setAttribute("tracy.request.tool.type", toolType)
+                        span.setAttribute("tracy.request.tool.name", toolName?.orRedactedInput())
+                        tool.jsonObject["search_context_size"]?.jsonPrimitive?.contentOrNull?.let {
+                            span.setAttribute("tracy.request.tool.search_context_size", it)
+                        }
+                    }
                 }
             }
         }
@@ -139,6 +167,17 @@ internal class ResponsesOpenAIApiEndpointHandler(
     override fun handleResponseAttributes(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
         OpenAIApiUtils.setCommonResponseAttributes(span, response)
+        body["background"]?.jsonPrimitive?.booleanOrNull?.let { span.setAttribute("tracy.response.background", it) }
+        body["completed_at"]?.jsonPrimitive?.longOrNull?.let { span.setAttribute("tracy.response.completed_at", it) }
+        body["reasoning"]?.jsonObject?.let {
+            it["effort"]?.jsonPrimitive?.contentOrNull?.let { effort ->
+                span.setAttribute("tracy.response.reasoning.effort", effort)
+            }
+            it["summary"]?.let { summary -> span.setAttribute("tracy.response.reasoning.summary", summary.toString()) }
+        }
+        body["text"]?.jsonObject?.get("format")?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull?.let {
+            span.setAttribute("tracy.response.text.format.type", it)
+        }
 
         // we manually map `output` and `usage` attributes;
         // the rest of attributes get mapped by `populateUnmappedAttributes` below.
@@ -189,6 +228,15 @@ internal class ResponsesOpenAIApiEndpointHandler(
                     }
 
                     else -> {
+                        if (index == 0) {
+                            span.setAttribute("tracy.response.output.type", type)
+                            output.jsonObject["name"]?.jsonPrimitive?.contentOrNull?.let {
+                                span.setAttribute("tracy.response.output.name", it.orRedactedOutput())
+                            }
+                            output.jsonObject["call_id"]?.jsonPrimitive?.contentOrNull?.let {
+                                span.setAttribute("tracy.response.output.call_id", it)
+                            }
+                        }
                         // any other types, including 'function_call' and 'reasoning'
                         // See output types: https://platform.openai.com/docs/api-reference/responses/object#responses-object-output
                         for ((k, v) in output.jsonObject.entries) {
@@ -214,7 +262,7 @@ internal class ResponsesOpenAIApiEndpointHandler(
         }
 
         body["usage"]?.let { usage ->
-            setUsageAttributes(span, usage.jsonObject)
+            OpenAIApiUtils.setUsageAttributes(span, usage.jsonObject)
         }
 
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
@@ -234,6 +282,31 @@ internal class ResponsesOpenAIApiEndpointHandler(
                 event["text"]?.jsonPrimitive?.content?.let {
                     span.setAttribute("gen_ai.completion.0.content", it.orRedactedOutput())
                     span.setAttribute("gen_ai.completion.0.finish_reason", "stop")
+                }
+            }
+            if (type == "response.completed") {
+                event["response"]?.jsonObject?.let { response ->
+                    OpenAIApiUtils.setCommonResponseAttributes(
+                        span,
+                        object : TracyHttpResponse {
+                            override val contentType = null
+                            override val code = 200
+                            override val body = org.jetbrains.ai.tracy.core.http.protocol.TracyHttpResponseBody.Json(response)
+                            override val url = object : org.jetbrains.ai.tracy.core.http.protocol.TracyHttpUrl {
+                                override val scheme = ""
+                                override val host = ""
+                                override val port = 0
+                                override val pathSegments = emptyList<String>()
+                                override val parameters = object : org.jetbrains.ai.tracy.core.http.protocol.TracyQueryParameters {
+                                    override fun queryParameter(name: String): String? = null
+                                    override fun queryParameterValues(name: String): List<String?> = emptyList()
+                                }
+                            }
+                            override val requestMethod = "POST"
+                            override fun isError() = false
+                        }
+                    )
+                    response["usage"]?.jsonObject?.let { OpenAIApiUtils.setUsageAttributes(span, it) }
                 }
             }
         }
@@ -349,6 +422,32 @@ internal class ResponsesOpenAIApiEndpointHandler(
         usage["output_tokens"]?.jsonPrimitive?.intOrNull?.let {
             span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
         }
+    }
+
+    private fun setQueryAttributes(span: Span, request: TracyHttpRequest) {
+        val params = request.url.parameters
+        params.queryParameter("include")?.let { span.setAttribute("tracy.request.include", it) }
+        params.queryParameterValues("include[]").filterNotNull().takeIf { it.isNotEmpty() }?.let {
+            span.setAttribute("tracy.request.include", it.joinToString(","))
+        }
+        params.queryParameter("limit")?.toLongOrNull()?.let { span.setAttribute("tracy.request.limit", it) }
+        params.queryParameter("order")?.let { span.setAttribute("tracy.request.order", it) }
+        params.queryParameter("after")?.let { span.setAttribute("tracy.request.after", it) }
+        extractPathId(request.url, "responses")?.let { span.setAttribute("tracy.request.response_id", it) }
+    }
+
+    private fun extractPathId(url: org.jetbrains.ai.tracy.core.http.protocol.TracyHttpUrl, segment: String): String? {
+        val segments = url.pathSegments.filter { it.isNotBlank() && it != "v1" }
+        val index = segments.indexOf(segment)
+        return segments.getOrNull(index + 1)?.takeUnless { it in setOf("input_items", "cancel") }
+    }
+
+    private fun toolChoiceName(toolChoice: JsonElement): String = when (toolChoice) {
+        is JsonPrimitive -> toolChoice.content
+        is JsonObject -> toolChoice["function"]?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull
+            ?: toolChoice["type"]?.jsonPrimitive?.contentOrNull
+            ?: toolChoice.toString()
+        else -> toolChoice.toString()
     }
 
     /**

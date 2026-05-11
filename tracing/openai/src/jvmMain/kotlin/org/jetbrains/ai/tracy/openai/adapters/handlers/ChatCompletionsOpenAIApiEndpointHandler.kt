@@ -31,6 +31,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -48,6 +49,13 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
         OpenAIApiUtils.setCommonRequestAttributes(span, request)
 
         body["messages"]?.let {
+            span.setAttribute("tracy.request.messages.count", it.jsonArray.size.toLong())
+            span.setAttribute(
+                "tracy.request.system_messages.count",
+                it.jsonArray.count { message ->
+                    message.jsonObject["role"]?.jsonPrimitive?.contentOrNull in listOf("developer", "system")
+                }.toLong()
+            )
             for ((index, message) in it.jsonArray.withIndex()) {
                 val role = message.jsonObject["role"]?.jsonPrimitive?.content
                 val kind = kindByRole(role)
@@ -85,9 +93,16 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                         span.setAttribute("gen_ai.tool.$index.description", toolDescription?.orRedactedInput())
                         span.setAttribute("gen_ai.tool.$index.parameters", toolParameters?.orRedactedInput())
                         span.setAttribute("gen_ai.tool.$index.strict", strict)
+                        if (index == 0) {
+                            span.setAttribute("gen_ai.tool.name", toolName?.orRedactedInput())
+                            span.setAttribute("gen_ai.tool.definitions", tools.toString().orRedactedInput())
+                        }
                     }
                 }
             }
+        }
+        body["tool_choice"]?.let {
+            span.setAttribute("tracy.request.tool_choice", toolChoiceName(it).orRedactedInput())
         }
 
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.REQUEST)
@@ -137,6 +152,12 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
         val body = response.body.asJson()?.jsonObject ?: return
 
         body["choices"]?.let { choices ->
+            span.setAttribute(
+                "gen_ai.response.finish_reasons",
+                choices.jsonArray.mapNotNull {
+                    it.jsonObject["finish_reason"]?.jsonPrimitive?.contentOrNull
+                }.joinToString(",")
+            )
             for ((index, choice) in choices.jsonArray.withIndex()) {
                 val index = choice.jsonObject["index"]?.jsonPrimitive?.intOrNull ?: index
 
@@ -157,6 +178,7 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                         // sometimes, this prop is explicitly set to null, hence, being JsonNull.
                         // therefore, we check for the required array type
                         if (toolCalls is JsonArray) {
+                            span.setAttribute("tracy.response.tool_call.count", toolCalls.size.toLong())
                             for ((toolCallIndex, toolCall) in toolCalls.jsonArray.withIndex()) {
                                 span.setAttribute(
                                     "gen_ai.completion.$index.tool.$toolCallIndex.call.id",
@@ -179,6 +201,10 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                                         "gen_ai.completion.$index.tool.$toolCallIndex.arguments",
                                         arguments?.orRedactedOutput()
                                     )
+                                    if (index == 0 && toolCallIndex == 0) {
+                                        span.setAttribute("gen_ai.tool.call.id", toolCall.jsonObject["id"]?.jsonPrimitive?.content)
+                                        span.setAttribute("gen_ai.tool.call.arguments", arguments?.orRedactedOutput())
+                                    }
                                 }
                             }
                         }
@@ -188,12 +214,15 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
                         "gen_ai.completion.$index.annotations",
                         message.jsonObject["annotations"].toString()
                     )
+                    message.jsonObject["logprobs"]?.jsonObject?.get("content")?.jsonArray?.let {
+                        span.setAttribute("tracy.response.logprobs.token.count", it.size.toLong())
+                    }
                 }
             }
         }
 
         body["usage"]?.let { usage ->
-            setUsageAttributes(span, usage.jsonObject)
+            OpenAIApiUtils.setUsageAttributes(span, usage.jsonObject)
         }
 
         span.populateUnmappedAttributes(body, mappedAttributes, PayloadType.RESPONSE)
@@ -244,6 +273,14 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
         usage["completion_tokens"]?.jsonPrimitive?.intOrNull?.let {
             span.setAttribute(GEN_AI_USAGE_OUTPUT_TOKENS, it)
         }
+    }
+
+    private fun toolChoiceName(toolChoice: JsonElement): String = when (toolChoice) {
+        is JsonPrimitive -> toolChoice.content
+        is JsonObject -> toolChoice["function"]?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull
+            ?: toolChoice["type"]?.jsonPrimitive?.contentOrNull
+            ?: toolChoice.toString()
+        else -> toolChoice.toString()
     }
 
     /**
@@ -319,6 +356,7 @@ internal class ChatCompletionsOpenAIApiEndpointHandler(
         "messages",
         "model",
         "tools",
+        "tool_choice",
         "choices",
         "temperature"
     )

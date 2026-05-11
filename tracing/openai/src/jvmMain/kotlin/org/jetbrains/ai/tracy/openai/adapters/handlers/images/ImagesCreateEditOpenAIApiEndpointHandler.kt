@@ -102,6 +102,7 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
                     // since we don't know how sensitive other fields may be,
                     // we disguise their content if input tracing is disallowed.
                     span.setAttribute("gen_ai.request.${part.name}", content.orRedactedInput())
+                    span.setAttribute("tracy.request.${part.name}", content.orRedactedInput())
                 }
             }
         }

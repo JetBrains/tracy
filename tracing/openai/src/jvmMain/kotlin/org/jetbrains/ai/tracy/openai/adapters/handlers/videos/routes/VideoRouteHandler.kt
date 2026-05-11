@@ -65,14 +65,17 @@ internal fun Span.traceVideoModel(video: JsonObject, prefix: String) {
 
     video["id"]?.let {
         span.setAttribute("$prefix.id", it.jsonPrimitive.content)
+        if (prefix == "gen_ai.response.video") span.setAttribute("gen_ai.response.id", it.jsonPrimitive.content)
     }
 
     video["status"]?.let {
         span.setAttribute("$prefix.status", it.jsonPrimitive.content)
+        if (prefix == "gen_ai.response.video") span.setAttribute("tracy.response.status", it.jsonPrimitive.content)
     }
 
     video["progress"]?.jsonPrimitive?.longOrNull?.let {
         span.setAttribute("$prefix.progress", it)
+        if (prefix == "gen_ai.response.video") span.setAttribute("tracy.response.progress", it)
     }
 
     video["prompt"]?.let {
@@ -81,22 +84,27 @@ internal fun Span.traceVideoModel(video: JsonObject, prefix: String) {
 
     video["model"]?.let {
         span.setAttribute("$prefix.model", it.jsonPrimitive.content)
+        if (prefix == "gen_ai.response.video") span.setAttribute("tracy.response.model", it.jsonPrimitive.content)
     }
 
     video["seconds"]?.let {
         span.setAttribute("$prefix.seconds", it.jsonPrimitive.content)
+        if (prefix == "gen_ai.response.video") span.setAttribute("tracy.response.seconds", it.jsonPrimitive.content)
     }
 
     video["size"]?.let {
         span.setAttribute("$prefix.size", it.jsonPrimitive.content)
+        if (prefix == "gen_ai.response.video") span.setAttribute("tracy.response.size", it.jsonPrimitive.content)
     }
 
     video["object"]?.let {
         span.setAttribute("$prefix.object", it.jsonPrimitive.content)
+        if (prefix == "gen_ai.response.video") span.setAttribute("tracy.response.object", it.jsonPrimitive.content)
     }
 
     video["created_at"]?.jsonPrimitive?.longOrNull?.let {
         span.setAttribute("$prefix.created_at", it)
+        if (prefix == "gen_ai.response.video") span.setAttribute("tracy.response.created_at", it)
     }
 
     video["completed_at"]?.jsonPrimitive?.longOrNull?.let {
