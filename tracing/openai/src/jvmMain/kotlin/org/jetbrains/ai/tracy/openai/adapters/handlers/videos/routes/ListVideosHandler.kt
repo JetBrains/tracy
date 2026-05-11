@@ -21,9 +21,18 @@ internal class ListVideosHandler : VideoRouteHandler {
      */
     override fun handleRequest(span: Span, request: TracyHttpRequest) {
         val params = request.url.parameters
-        params.queryParameter("after")?.let { span.setAttribute("gen_ai.request.after", it) }
-        params.queryParameter("limit")?.let { span.setAttribute("gen_ai.request.limit", it) }
-        params.queryParameter("order")?.let { span.setAttribute("gen_ai.request.order", it) }
+        params.queryParameter("after")?.let {
+            span.setAttribute("gen_ai.request.after", it)
+            span.setAttribute("tracy.request.after", it)
+        }
+        params.queryParameter("limit")?.let {
+            span.setAttribute("gen_ai.request.limit", it)
+            it.toLongOrNull()?.let { limit -> span.setAttribute("tracy.request.limit", limit) }
+        }
+        params.queryParameter("order")?.let {
+            span.setAttribute("gen_ai.request.order", it)
+            span.setAttribute("tracy.request.order", it)
+        }
     }
 
     /**
@@ -32,9 +41,13 @@ internal class ListVideosHandler : VideoRouteHandler {
     override fun handleResponse(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
 
+        body["object"]?.let { span.setAttribute("tracy.response.object", it.jsonPrimitive.content) }
         body["first_id"]?.let { span.setAttribute("gen_ai.response.first_id", it.jsonPrimitive.content) }
         body["last_id"]?.let { span.setAttribute("gen_ai.response.last_id", it.jsonPrimitive.content) }
-        body["has_more"]?.let { span.setAttribute("gen_ai.response.has_more", it.jsonPrimitive.boolean) }
+        body["has_more"]?.let {
+            span.setAttribute("gen_ai.response.has_more", it.jsonPrimitive.boolean)
+            span.setAttribute("tracy.response.has_more", it.jsonPrimitive.boolean)
+        }
 
         val data = body["data"]
         if (data != null && data is JsonArray) {
