@@ -36,6 +36,12 @@ internal fun handleImageGenerationResponseAttributes(
         // collect AI response content
         for ((index, image) in data.withIndex()) {
             span.setAttribute("gen_ai.completion.$index.content", image.asString.orRedactedOutput())
+            image.jsonObject["url"]?.jsonPrimitive?.contentOrNull?.let {
+                span.setAttribute("tracy.response.image.url", it.orRedactedOutput())
+            }
+            image.jsonObject["b64_json"]?.jsonPrimitive?.contentOrNull?.let {
+                span.setAttribute("tracy.response.image.b64_json.present", true)
+            }
         }
         // install media content for further upload
         val format = body["output_format"]?.jsonPrimitive?.content ?: defaultImageFormat
@@ -55,6 +61,14 @@ internal fun handleImageGenerationResponseAttributes(
             continue
         }
         span.setAttribute("gen_ai.response.$key", value.asString)
+        when (key) {
+            "created" -> value.jsonPrimitive.longOrNull?.let {
+                span.setAttribute("tracy.response.created", it)
+                span.setAttribute("tracy.response.created_at", it)
+            }
+            "output_format" -> span.setAttribute("tracy.response.output_format", value.asString)
+            "quality" -> span.setAttribute("tracy.response.quality", value.asString)
+        }
     }
 }
 
@@ -77,6 +91,7 @@ internal fun handleStreamedImage(
             """.trimIndent()
             )
             span.setAttribute("gen_ai.completion.0.content", content.asString.orRedactedOutput())
+            span.setAttribute("tracy.response.image.b64_json.present", true)
 
             data["usage"]?.jsonObject?.let { setUsageAttributes(span, it) }
 
@@ -85,6 +100,12 @@ internal fun handleStreamedImage(
             for ((key, value) in data.entries) {
                 if (key !in manuallyParsedKeys) {
                     span.setAttribute("gen_ai.response.$key", value.asString)
+                    if (key == "created") {
+                        value.jsonPrimitive.longOrNull?.let {
+                            span.setAttribute("tracy.response.created", it)
+                            span.setAttribute("tracy.response.created_at", it)
+                        }
+                    }
                 }
             }
         }

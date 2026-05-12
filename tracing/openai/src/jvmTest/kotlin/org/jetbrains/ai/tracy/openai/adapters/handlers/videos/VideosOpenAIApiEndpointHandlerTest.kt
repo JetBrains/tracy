@@ -78,7 +78,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             assertEquals(prompt, trace.attributes[AttributeKey.stringKey("gen_ai.response.video.prompt")])
             assertTrue(trace.attributes[AttributeKey.stringKey("gen_ai.response.video.model")]?.startsWith(model.asString()) == true)
             assertNotNull(trace.attributes[AttributeKey.stringKey("gen_ai.response.video.status")])
-            assertEquals("video", trace.attributes[AttributeKey.stringKey("gen_ai.operation.name")])
+            assertEquals("videos.create", trace.attributes[AttributeKey.stringKey("gen_ai.operation.name")])
             assertNotNull(trace.attributes[AttributeKey.longKey("gen_ai.response.video.created_at")])
 
             // These might be present depending on status
@@ -542,7 +542,7 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
             assertEquals(videoList.data().size.toLong(), videosCount)
             assertNotNull(trace.attributes[AttributeKey.booleanKey("gen_ai.response.has_more")])
-            assertEquals("list", trace.attributes[AttributeKey.stringKey("gen_ai.operation.name")])
+            assertEquals("videos.list", trace.attributes[AttributeKey.stringKey("gen_ai.operation.name")])
 
             // Verify individual videos are traced
             if (videosCount != null && videosCount > 0) {

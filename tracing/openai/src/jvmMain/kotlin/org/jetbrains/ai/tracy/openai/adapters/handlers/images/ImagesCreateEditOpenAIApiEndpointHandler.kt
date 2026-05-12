@@ -18,6 +18,7 @@ import org.jetbrains.ai.tracy.core.policy.contentTracingAllowed
 import org.jetbrains.ai.tracy.core.policy.orRedactedInput
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes
+import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OUTPUT_TYPE
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import mu.KotlinLogging
@@ -82,30 +83,42 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
                     )
                 }
                 // either a single image or an array of images
-                "image", "image[]" -> if (contentTracingAllowed(ContentKind.INPUT)) {
-                    // trace images only when input content tracing is allowed.
-                    // base64-encoded image content
-                    span.setAttribute("gen_ai.request.image.$imagesCount.content", content)
-                    span.setAttribute("gen_ai.request.image.$imagesCount.contentType", contentType.asString())
-                    if (part.filename != null) {
-                        span.setAttribute("gen_ai.request.image.$imagesCount.filename", part.filename)
+                "image", "image[]" -> {
+                    span.setAttribute("tracy.request.image.$imagesCount.size_bytes", part.content.size.toLong())
+                    if (imagesCount == 0) {
+                        span.setAttribute("tracy.request.image.size_bytes", part.content.size.toLong())
                     }
-                    // save image for further upload
-                    mediaContentParts.add(
-                        MediaContentPart(resource = Resource.Base64(content, contentType.asString()))
-                    )
+                    contentType.asString().let { span.setAttribute("tracy.request.image.$imagesCount.content_type", it) }
+                    part.filename?.let { span.setAttribute("tracy.request.image.$imagesCount.filename", it.orRedactedInput()) }
+
+                    if (contentTracingAllowed(ContentKind.INPUT)) {
+                        // trace images only when input content tracing is allowed.
+                        // base64-encoded image content
+                        span.setAttribute("gen_ai.request.image.$imagesCount.content", content)
+                        span.setAttribute("gen_ai.request.image.$imagesCount.contentType", contentType.asString())
+                        if (part.filename != null) {
+                            span.setAttribute("gen_ai.request.image.$imagesCount.filename", part.filename)
+                        }
+                        // save image for further upload
+                        mediaContentParts.add(
+                            MediaContentPart(resource = Resource.Base64(content, contentType.asString()))
+                        )
+                    }
                     ++imagesCount
                 }
 
                 null -> logger.warn { "Form data part with missing name ignored. Content type: '$contentType'" }
                 else -> {
+                    val partName = part.name ?: continue
                     // since we don't know how sensitive other fields may be,
                     // we disguise their content if input tracing is disallowed.
-                    span.setAttribute("gen_ai.request.${part.name}", content.orRedactedInput())
+                    span.setAttribute("gen_ai.request.$partName", content.orRedactedInput())
+                    span.setRequestScalarAttribute(partName, content)
                 }
             }
         }
 
+        span.setAttribute(GEN_AI_OUTPUT_TYPE, "image")
         if (contentTracingAllowed(ContentKind.INPUT)) {
             extractor.setUploadableContentAttributes(
                 span,
@@ -141,5 +154,15 @@ internal class ImagesCreateEditOpenAIApiEndpointHandler(
 
     companion object {
         private val logger = KotlinLogging.logger {}
+    }
+
+    private fun Span.setRequestScalarAttribute(name: String, value: String) {
+        val key = "tracy.request.$name"
+        when (name) {
+            "n", "partial_images" -> value.toLongOrNull()?.let { setAttribute(key, it) } ?: setAttribute(key, value)
+            "stream" -> value.toBooleanStrictOrNull()?.let { setAttribute("gen_ai.request.stream", it) } ?: setAttribute(key, value)
+            "prompt" -> setAttribute(key, value.orRedactedInput())
+            else -> setAttribute(key, value)
+        }
     }
 }
