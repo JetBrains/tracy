@@ -32,6 +32,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
+import java.util.Base64
 
 internal class AudioOpenAIApiEndpointHandler : EndpointApiHandler {
     override fun handleRequestAttributes(span: Span, request: TracyHttpRequest) {
@@ -46,6 +47,7 @@ internal class AudioOpenAIApiEndpointHandler : EndpointApiHandler {
             "speech" -> {
                 span.setAttribute(GEN_AI_OUTPUT_TYPE, "speech")
                 response.contentType?.asString()?.let { span.setAttribute("tracy.response.audio.content_type", it) }
+                response.bodySizeBytes?.let { span.setAttribute("tracy.response.audio.size_bytes", it) }
             }
             "transcriptions" -> handleTranscriptionResponse(span, response, "transcription")
             "translations" -> handleTranscriptionResponse(span, response, "translation")
@@ -53,6 +55,7 @@ internal class AudioOpenAIApiEndpointHandler : EndpointApiHandler {
     }
 
     override fun handleStreaming(span: Span, events: String) {
+        span.setAttribute(GEN_AI_OUTPUT_TYPE, "speech")
         span.setAttribute("tracy.response.stream.events.count", countSseEvents(events).toLong())
         var text = ""
         for (event in events.sseJsonEvents()) {
@@ -129,6 +132,10 @@ internal class EmbeddingsOpenAIApiEndpointHandler : EndpointApiHandler {
         body["usage"]?.jsonObject?.let { OpenAIApiUtils.setUsageAttributes(span, it) }
         (body["data"] as? JsonArray)?.firstOrNull()?.jsonObject?.get("embedding")?.jsonArray?.let {
             span.setAttribute("gen_ai.embeddings.dimension.count", it.size.toLong())
+        } ?: (body["data"] as? JsonArray)?.firstOrNull()?.jsonObject?.get("embedding")?.stringContent()?.let {
+            decodedFloatArraySize(it)?.let { dimension ->
+                span.setAttribute("gen_ai.embeddings.dimension.count", dimension)
+            }
         }
     }
 
@@ -160,6 +167,9 @@ internal class FilesOpenAIApiEndpointHandler : EndpointApiHandler {
 
     override fun handleResponseAttributes(span: Span, response: TracyHttpResponse) {
         val body = response.body.asJson()?.jsonObject ?: return
+        if (response.url.lastMeaningfulSegment() == "content") {
+            response.bodySizeBytes?.let { span.setAttribute("tracy.response.file.size_bytes", it) }
+        }
         if (body["data"] is JsonArray) {
             OpenAIApiUtils.setListResponseAttributes(span, body)
             return
@@ -203,7 +213,10 @@ internal class BatchesOpenAIApiEndpointHandler : EndpointApiHandler {
 
 internal class ModelsOpenAIApiEndpointHandler : EndpointApiHandler {
     override fun handleRequestAttributes(span: Span, request: TracyHttpRequest) {
-        extractPathId(request.url, "models")?.let { span.setAttribute("tracy.request.model.id", it) }
+        extractPathId(request.url, "models")?.let {
+            span.setAttribute(GEN_AI_REQUEST_MODEL, it)
+            span.setAttribute("tracy.request.model.id", it)
+        }
     }
 
     override fun handleResponseAttributes(span: Span, response: TracyHttpResponse) {
@@ -214,6 +227,8 @@ internal class ModelsOpenAIApiEndpointHandler : EndpointApiHandler {
         }
         body["id"]?.stringContent()?.let { span.setAttribute("tracy.response.model.id", it) }
         body["object"]?.stringContent()?.let { span.setAttribute("tracy.response.object", it) }
+        body["created"]?.jsonPrimitive?.longOrNull?.let { span.setAttribute("tracy.response.created", it) }
+        body["owned_by"]?.stringContent()?.let { span.setAttribute("tracy.response.owned_by", it) }
         body["deleted"]?.jsonPrimitive?.booleanOrNull?.let { span.setAttribute("tracy.response.deleted", it) }
     }
 
@@ -338,7 +353,12 @@ private fun audioFormat(part: FormPart): String? =
     part.contentType?.subtype ?: part.filename?.substringAfterLast('.', missingDelimiterValue = "")?.takeIf { it.isNotBlank() }
 
 private fun inputType(input: JsonElement): String = when (input) {
-    is JsonArray -> "array"
+    is JsonArray -> when {
+        input.all { it is JsonPrimitive && it.isString } -> "string_array"
+        input.all { it is JsonPrimitive && !it.isString } -> "token_array"
+        input.all { it is JsonObject && it["type"]?.stringContent() != null } -> "multimodal"
+        else -> "array"
+    }
     is JsonPrimitive -> when {
         input.isString -> "string"
         else -> "tokens"
@@ -352,6 +372,12 @@ private fun inputCount(input: JsonElement): Int = when (input) {
 }
 
 private fun countSseEvents(events: String): Int = events.lineSequence().count { it.startsWith("data:") }
+
+private fun decodedFloatArraySize(value: String): Long? =
+    runCatching {
+        val bytes = Base64.getDecoder().decode(value)
+        if (bytes.isNotEmpty() && bytes.size % Float.SIZE_BYTES == 0) bytes.size.toLong() / Float.SIZE_BYTES else null
+    }.getOrNull()
 
 private fun String.sseJsonEvents(): Sequence<JsonObject> = lineSequence().mapNotNull { line ->
     if (!line.startsWith("data:")) return@mapNotNull null

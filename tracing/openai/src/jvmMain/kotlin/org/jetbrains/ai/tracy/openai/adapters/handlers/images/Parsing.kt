@@ -62,7 +62,10 @@ internal fun handleImageGenerationResponseAttributes(
         }
         span.setAttribute("gen_ai.response.$key", value.asString)
         when (key) {
-            "created" -> value.jsonPrimitive.longOrNull?.let { span.setAttribute("tracy.response.created", it) }
+            "created" -> value.jsonPrimitive.longOrNull?.let {
+                span.setAttribute("tracy.response.created", it)
+                span.setAttribute("tracy.response.created_at", it)
+            }
             "output_format" -> span.setAttribute("tracy.response.output_format", value.asString)
             "quality" -> span.setAttribute("tracy.response.quality", value.asString)
         }
@@ -98,7 +101,10 @@ internal fun handleStreamedImage(
                 if (key !in manuallyParsedKeys) {
                     span.setAttribute("gen_ai.response.$key", value.asString)
                     if (key == "created") {
-                        value.jsonPrimitive.longOrNull?.let { span.setAttribute("tracy.response.created", it) }
+                        value.jsonPrimitive.longOrNull?.let {
+                            span.setAttribute("tracy.response.created", it)
+                            span.setAttribute("tracy.response.created_at", it)
+                        }
                     }
                 }
             }

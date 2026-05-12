@@ -13,6 +13,7 @@ import org.jetbrains.ai.tracy.core.http.protocol.TracyHttpUrlImpl
 import org.jetbrains.ai.tracy.core.http.protocol.TracyQueryParameters
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.request
+import io.ktor.http.HttpHeaders
 import io.ktor.http.URLBuilder
 import io.ktor.http.Url as KtorUrl
 import io.ktor.http.charset
@@ -40,6 +41,7 @@ internal class TracyHttpResponseView(
     override val body = TracyHttpResponseBody.Json(body)
     override val url = response.request.url.toProtocolUrl()
     override val requestMethod = response.request.method.value.uppercase()
+    override val bodySizeBytes = response.headers[HttpHeaders.ContentLength]?.toLongOrNull()
 
     override fun isError() = response.status.isSuccess().not()
 }

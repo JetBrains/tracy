@@ -279,10 +279,12 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
         val tail = if (responsesIndex >= 0) segments.drop(responsesIndex + 1) else emptyList()
         return when {
             tail.isEmpty() && method == "POST" -> "generate_content"
-            tail.size == 1 && tail[0] == "input_tokens" -> "responses.input_tokens"
-            tail.size == 1 && method == "GET" -> "responses.retrieve"
-            tail.size == 2 && tail[1] == "cancel" -> "responses.cancel"
-            tail.size == 2 && tail[1] == "input_items" -> "responses.input_items.list"
+            tail.isEmpty() && method == "GET" -> "responses.list"
+            tail.size == 1 && tail[0] == "input_tokens" -> "response.input_tokens.count"
+            tail.size == 1 && method == "GET" -> "response.retrieve"
+            tail.size == 1 && method == "DELETE" -> "response.delete"
+            tail.size == 2 && tail[1] == "cancel" -> "response.cancel"
+            tail.size == 2 && tail[1] == "input_items" -> "response.input_items.list"
             else -> "generate_content"
         }
     }
@@ -303,6 +305,7 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
             tail.size == 1 && method == "GET" -> "$resource.retrieve"
             tail.size == 1 && method == "DELETE" -> "$resource.delete"
             tail.size == 2 && tail[1] == "cancel" -> "$resource.cancel"
+            tail.size == 2 && tail[1] == "content" -> "$resource.content"
             else -> resource
         }
     }
@@ -314,9 +317,11 @@ class OpenAILLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIncub
             tail.isEmpty() && method == "POST" -> "conversations.create"
             tail.isEmpty() && method == "GET" -> "conversations.list"
             tail.size == 1 && method == "GET" -> "conversations.retrieve"
+            tail.size == 1 && method == "POST" -> "conversations.update"
             tail.size == 1 && method == "DELETE" -> "conversations.delete"
             tail.size >= 2 && tail[1] == "items" && method == "POST" -> "conversations.items.create"
             tail.size >= 2 && tail[1] == "items" && method == "GET" -> "conversations.items.list"
+            tail.size >= 3 && tail[1] == "items" && method == "GET" -> "conversations.items.retrieve"
             tail.size >= 3 && tail[1] == "items" && method == "DELETE" -> "conversations.items.delete"
             else -> "conversations"
         }

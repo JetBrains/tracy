@@ -55,7 +55,15 @@ internal class ImagesVariationOpenAIApiEndpointHandler(
                 null -> Unit
                 else -> {
                     part.name?.let { name ->
-                        span.setAttribute("tracy.request.$name", scalarValue(name, content))
+                        when (name) {
+                            "n", "partial_images" -> content.toLongOrNull()
+                                ?.let { span.setAttribute("tracy.request.$name", it) }
+                                ?: span.setAttribute("tracy.request.$name", content)
+                            "stream" -> content.toBooleanStrictOrNull()
+                                ?.let { span.setAttribute("gen_ai.request.stream", it) }
+                                ?: span.setAttribute("tracy.request.$name", content)
+                            else -> span.setAttribute("tracy.request.$name", scalarValue(name, content))
+                        }
                     }
                 }
             }
