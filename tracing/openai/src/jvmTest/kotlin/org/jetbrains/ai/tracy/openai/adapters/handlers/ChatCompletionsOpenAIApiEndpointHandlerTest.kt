@@ -20,7 +20,6 @@ import org.jetbrains.ai.tracy.openai.adapters.containsToolCall
 import org.jetbrains.ai.tracy.openai.adapters.name
 import org.jetbrains.ai.tracy.openai.clients.instrument
 import org.jetbrains.ai.tracy.test.utils.MediaSource
-import org.jetbrains.ai.tracy.test.utils.loadFileAsBase64Encoded
 import org.jetbrains.ai.tracy.test.utils.toDataUrl
 import org.jetbrains.ai.tracy.test.utils.toMediaContentAttributeValues
 import org.junit.jupiter.api.Assertions.*
