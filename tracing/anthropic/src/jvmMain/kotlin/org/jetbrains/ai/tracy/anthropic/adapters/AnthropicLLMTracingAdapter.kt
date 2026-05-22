@@ -140,16 +140,9 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
         // update the span name to follow GenAI Anthropic Conventions
         // convention: `{gen_ai.operation.name} {gen_ai.request.model}`
         // see: https://opentelemetry.io/docs/specs/semconv/gen-ai/anthropic/#spans
-        val spanName = run {
-            val type = body["type"]?.jsonPrimitive?.contentOrNull
-            val model = (span as? ReadableSpan)
-                ?.attributes
-                ?.get(GEN_AI_REQUEST_MODEL)
-                ?: body["model"]
-            if (type != null && model != null) "$type $model" else null
-        }
-        if (spanName != null) {
-            span.updateName(spanName)
+        val updatedSpanName = createSpanName(span, body)
+        if (updatedSpanName != null) {
+            span.updateName(updatedSpanName)
         }
 
         // collecting response messages
@@ -369,6 +362,27 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
         }
 
         return resources
+    }
+
+    /**
+     * Constructs the span name, following GenAI Anthropic Conventions:
+     * The convention: `{gen_ai.operation.name} {gen_ai.request.model}`
+     *
+     * See: [Semantic conventions for Anthropic client operations](https://opentelemetry.io/docs/specs/semconv/gen-ai/anthropic/#spans)
+     */
+    private fun createSpanName(span: Span, body: JsonObject): String? {
+        val type = body["type"]?.jsonPrimitive?.contentOrNull
+        val model = (span as? ReadableSpan)
+            ?.attributes
+            ?.get(GEN_AI_REQUEST_MODEL)
+            ?: body["model"]
+        // new name is either as in the convention or
+        // null when either of the components missing
+        return if (type != null && model != null) {
+            "$type $model"
+        } else {
+            null
+        }
     }
 
     private val extractor: MediaContentExtractor = MediaContentExtractorImpl()
