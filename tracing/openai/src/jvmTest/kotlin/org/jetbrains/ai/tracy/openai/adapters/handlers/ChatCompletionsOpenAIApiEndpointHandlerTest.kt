@@ -573,24 +573,5 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             )
             .build()
     )
-
-    private fun partAudio(filepath: String): ChatCompletionContentPart {
-        val audioData = loadFileAsBase64Encoded(filepath)
         val format = when (val ext = filepath.substringAfterLast(".")) {
-            "wav" -> ChatCompletionContentPartInputAudio.InputAudio.Format.WAV
-            "mp3" -> ChatCompletionContentPartInputAudio.InputAudio.Format.MP3
-            else -> error("Unsupported file format $ext at $filepath")
-        }
-
-        return ChatCompletionContentPart.ofInputAudio(
-            ChatCompletionContentPartInputAudio.builder()
-                .inputAudio(
-                    ChatCompletionContentPartInputAudio.InputAudio.builder()
-                        .format(format)
-                        .data(audioData)
-                        .build()
-                )
-                .build(),
-        )
-    }
 }
