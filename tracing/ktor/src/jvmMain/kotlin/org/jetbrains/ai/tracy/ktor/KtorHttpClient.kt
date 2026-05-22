@@ -259,6 +259,8 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
      * that registers SSE events into [adapter].
      *
      * The caller MUST ensure that the underlying response is indeed of `text/event-stream` MIME type.
+     *
+     * **IMPORTANT**: This function closes the span automatically on original body source exhaustion.
      */
     private fun traceServerSentEvents(
         response: HttpResponse,
