@@ -215,11 +215,15 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 if (mimeType == "text/event-stream") {
                     return@onResponse
                 }
+
+                // ensure span is cloned when the response is registered
                 val span = response.call.request.attributes.getOrNull(httpSpanKey)
                     ?: return@onResponse
-
-                adapter.registerResponse(span, response = response.asResponseView())
-                span.end()
+                try {
+                    adapter.registerResponse(span, response = response.asResponseView())
+                } finally {
+                    span.end()
+                }
             }
 
             // processes ONLY SSE responses (i.e., text/event-stream)
