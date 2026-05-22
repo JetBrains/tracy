@@ -237,13 +237,16 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 if (mimeType != "text/event-stream") {
                     return@transformResponseBody null
                 }
+
+                // register SSE response into the span and attempt to wrap
+                // it with an SSE-tracing function.
                 val span = response.call.request.attributes.getOrNull(httpSpanKey)
                     ?: return@transformResponseBody null
 
                 adapter.registerResponse(span, response = response.asResponseView())
 
-                return@transformResponseBody when {
-                    typeInfo.type == ByteReadChannel::class -> {
+                val tracingChannel = when (typeInfo.type) {
+                    ByteReadChannel::class -> {
                         // trace SSE events and register them in the adapter one by one
                         val tracingChannel = traceServerSentEvents(
                             response = response,
@@ -254,6 +257,13 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                     }
                     else -> null
                 }
+                // end span manually when the tracing channel was NOT wrapped
+                // with SSE tracing function, which closes span internally.
+                if (tracingChannel == null) {
+                    span.end()
+                }
+
+                return@transformResponseBody tracingChannel
             }
         })
     }
