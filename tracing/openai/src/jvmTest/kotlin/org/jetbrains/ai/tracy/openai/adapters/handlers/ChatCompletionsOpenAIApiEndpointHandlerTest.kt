@@ -438,7 +438,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
     }
 
     @Test
-    fun `test OpenAI chat completions auto tracing disable`() = runTest {
+    fun `test OpenAI chat completions auto tracing disabled`() = runTest {
         TracingManager.isTracingEnabled = false
 
         val model = ChatModel.GPT_4O_MINI
@@ -446,7 +446,7 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
         val params = ChatCompletionCreateParams.builder()
             .addUserMessage("Generate polite greeting and introduce yourself")
-            .model(model).temperature(1.1).build()
+            .model(model).temperature(0.7).build()
 
         client.chat().completions().create(params)
 
