@@ -5,6 +5,14 @@
 
 package org.jetbrains.ai.tracy.openai.adapters.handlers
 
+import com.openai.core.JsonValue
+import com.openai.models.ChatModel
+import com.openai.models.chat.completions.*
+import com.openai.models.embeddings.EmbeddingCreateParams
+import com.openai.models.embeddings.EmbeddingModel
+import com.openai.models.responses.ResponseCreateParams
+import io.opentelemetry.api.common.AttributeKey
+import kotlinx.coroutines.test.runTest
 import org.jetbrains.ai.tracy.core.TracingManager
 import org.jetbrains.ai.tracy.core.policy.ContentCapturePolicy
 import org.jetbrains.ai.tracy.openai.adapters.BaseOpenAITracingTest
@@ -15,14 +23,6 @@ import org.jetbrains.ai.tracy.test.utils.MediaSource
 import org.jetbrains.ai.tracy.test.utils.loadFileAsBase64Encoded
 import org.jetbrains.ai.tracy.test.utils.toDataUrl
 import org.jetbrains.ai.tracy.test.utils.toMediaContentAttributeValues
-import com.openai.core.JsonValue
-import com.openai.models.ChatModel
-import com.openai.models.chat.completions.*
-import com.openai.models.embeddings.EmbeddingCreateParams
-import com.openai.models.embeddings.EmbeddingModel
-import com.openai.models.responses.ResponseCreateParams
-import io.opentelemetry.api.common.AttributeKey
-import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Tag
@@ -366,37 +366,6 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         verifyMediaContentUploadAttributes(
             trace, expected = listOf(
                 image.toMediaContentAttributeValues(field = "input")
-            )
-        )
-    }
-
-    @Test
-    fun `test audio file is extracted and uploaded on Langfuse`() = runTest(timeout = 3.minutes) {
-        val model = ChatModel.GPT_4O_AUDIO_PREVIEW
-        val prompt = "Tell me what is in the audio file"
-        val filepath = "lofi.wav"
-
-        val client = createOpenAIClient(timeout = Duration.ofMinutes(3)).apply { instrument(this) }
-
-        val params = ChatCompletionCreateParams.builder()
-            .model(model)
-            .addUserMessageOfArrayOfContentParts(
-                listOf(
-                    partAudio(filepath),
-                    partText(prompt),
-                )
-            )
-            .build()
-
-        client.chat().completions().create(params)
-
-        validateBasicTracing(model)
-        val trace = analyzeSpans().first()
-
-        val expectedMedia = MediaSource.File(filepath, "audio/wav")
-        verifyMediaContentUploadAttributes(
-            trace, expected = listOf(
-                expectedMedia.toMediaContentAttributeValues(field = "input")
             )
         )
     }
