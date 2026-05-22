@@ -573,5 +573,4 @@ class ChatCompletionsOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
             )
             .build()
     )
-        val format = when (val ext = filepath.substringAfterLast(".")) {
 }
