@@ -287,7 +287,7 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
 
     @ParameterizedTest
     @MethodSource("provideContentCapturePolicies")
-    fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) = runTest(timeout = 3.minutes) {
+    fun `test capture policy hides sensitive data`(policy: ContentCapturePolicy) = runTest(timeout = 5.minutes) {
         TracingManager.withCapturingPolicy(policy)
 
         val client = createOpenAIClient(
@@ -296,11 +296,12 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         ).apply { instrument(this) }
 
         val promptMessage = "generate an image of a cat"
-        val model = ImageModel.DALL_E_2
+        val model = ImageModel.GPT_IMAGE_1_MINI
         val params = ImageGenerateParams.builder()
             .prompt(promptMessage)
             .model(model)
-            .size(ImageGenerateParams.Size._256X256)
+            .size(ImageGenerateParams.Size._1024X1024)
+            .outputFormat(ImageGenerateParams.OutputFormat.JPEG)
             .n(1)
             .build()
 
@@ -327,9 +328,10 @@ class ImagesCreateOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
         val uploads = buildList {
             if (policy.captureOutputs) {
                 add(
-                    MediaContentAttributeValues.Url(
+                    MediaContentAttributeValues.Data(
                         field = "output",
-                        url = null,
+                        contentType = "image/jpeg",
+                        data = null,
                     )
                 )
             }
