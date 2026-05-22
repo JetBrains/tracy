@@ -267,6 +267,18 @@ class OpenTelemetryOkHttpInterceptor(
         }
     }
 
+    /**
+     * Wraps an original body source with an [SseCapturingSource]
+     * that parses response SSE events and traces them via [adapter].
+     *
+     * **IMPORTANT**: [span] will be closed by [SseCapturingSource] when
+     * the underlying response body source gets exhausted.
+     *
+     * @return a newly built response instance that wraps the body source
+     *         of the original response with SSE event streaming functionality.
+     *
+     * @see SseCapturingSource
+     */
     private fun OkHttpResponse.withTracedSSE(span: Span, requestUrl: TracyHttpUrl): OkHttpResponse {
         val originalResponse = this
         val originalBody = originalResponse.body
