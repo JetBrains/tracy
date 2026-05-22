@@ -201,23 +201,17 @@ internal class ResponsesOpenAIApiEndpointHandler(
                                     .jsonObject
 
                                 message["text"]?.jsonPrimitive?.content?.let {
-                                    span.setAttribute(
-                                        "gen_ai.completion.$index.content",
-                                        it
-                                    )
+                                    span.setAttribute("gen_ai.completion.$index.content", it.orRedactedInput())
                                 }
                                 message["annotations"]?.let {
-                                    span.setAttribute(
-                                        "gen_ai.completion.$index.annotations",
-                                        it.toString()
-                                    )
+                                    span.setAttribute("gen_ai.completion.$index.annotations", it.toString())
                                 }
                             } else {
                                 // set the entire array as completion content
-                                span.setAttribute("gen_ai.completion.$index.content", content.toString())
+                                span.setAttribute("gen_ai.completion.$index.content", content.toString().orRedactedInput())
                             }
                         } else if (content != null) {
-                            span.setAttribute("gen_ai.completion.$index.content", content.toString())
+                            span.setAttribute("gen_ai.completion.$index.content", content.toString().orRedactedInput())
                         }
                     }
 
