@@ -202,8 +202,10 @@ class VideosOpenAIApiEndpointHandlerTest : BaseOpenAITracingTest() {
                 .model(model)
                 .size(size)
                 .inputReference(
-                    MultipartField.builder<InputStream>()
-                        .value(file.inputStream())
+                    MultipartField.builder<VideoCreateParams.InputReference>()
+                        .value(
+                            VideoCreateParams.InputReference.ofStream(file.inputStream())
+                        )
                         .contentType(referenceFile.contentType)
                         .filename(referenceFile.filepath)
                         .build()
