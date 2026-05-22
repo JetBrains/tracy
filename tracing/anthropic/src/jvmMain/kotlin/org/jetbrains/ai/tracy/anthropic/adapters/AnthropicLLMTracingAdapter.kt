@@ -227,6 +227,8 @@ class AnthropicLLMTracingAdapter : LLMTracingAdapter(genAISystem = GenAiSystemIn
      * ```
      *
      * See [GenAI Anthropic Spans](https://opentelemetry.io/docs/specs/semconv/gen-ai/anthropic/#spans)
+     *
+     * @see createSpanName
      */
     override fun getSpanName() = "Anthropic-generation"
 
