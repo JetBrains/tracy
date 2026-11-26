@@ -22,7 +22,7 @@ import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPER
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OUTPUT_TYPE
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.ai.tracy.core.adapters.handlers.sse.sseHandlingFailure
 import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 import java.util.*

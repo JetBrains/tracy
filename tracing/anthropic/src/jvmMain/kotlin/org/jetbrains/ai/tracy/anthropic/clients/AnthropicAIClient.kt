@@ -10,7 +10,7 @@ import org.jetbrains.ai.tracy.core.interceptors.OpenTelemetryOkHttpInterceptor
 import org.jetbrains.ai.tracy.core.TracingManager
 import org.jetbrains.ai.tracy.core.interceptors.patchOpenAICompatibleClient
 import com.anthropic.client.AnthropicClient
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
 

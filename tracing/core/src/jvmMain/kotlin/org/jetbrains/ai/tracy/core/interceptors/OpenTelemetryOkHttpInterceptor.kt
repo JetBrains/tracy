@@ -10,7 +10,7 @@ import io.opentelemetry.api.trace.StatusCode
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.OkHttpClient

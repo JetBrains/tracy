@@ -30,6 +30,7 @@ kotlin {
                 api(libs.opentelemetry.sdk)
                 implementation(libs.apache.mime4j.core)
                 implementation(libs.kotlin.logging)
+                implementation(libs.slf4j.api)
                 implementation(libs.kotlin.reflect)
                 implementation(libs.kotlinx.coroutines)
                 implementation(libs.kotlinx.serialization.json)

@@ -7,7 +7,7 @@ package org.jetbrains.ai.tracy.core.http.parsers
 
 import org.jetbrains.ai.tracy.core.http.protocol.TracyContentType
 import org.jetbrains.ai.tracy.core.http.protocol.toContentType
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import okhttp3.MediaType
 import okio.Buffer
 import org.apache.james.mime4j.parser.AbstractContentHandler
@@ -189,7 +189,7 @@ private class MultipartContentHandler : AbstractContentHandler() {
                 // therefore, we skip it
                 val contentType = parseContentType(contentType = field.body)
                 if (contentType == null) {
-                    logger.warn("Failed to parse Content-Type header: ${field.body}")
+                    logger.warn { "Failed to parse Content-Type header: ${field.body}" }
                 }
 
                 // if this field is the first one encountered, and it is a `multipart/form-data`,

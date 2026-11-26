@@ -19,7 +19,7 @@ import com.openai.models.images.ImageModel
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME
 import kotlinx.coroutines.test.runTest
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import okhttp3.mockwebserver.MockResponse
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Assumptions.assumeFalse

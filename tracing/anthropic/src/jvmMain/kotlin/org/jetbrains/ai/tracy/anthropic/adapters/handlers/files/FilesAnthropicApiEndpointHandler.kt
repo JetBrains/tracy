@@ -7,7 +7,7 @@ package org.jetbrains.ai.tracy.anthropic.adapters.handlers.files
 
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.ai.tracy.anthropic.adapters.handlers.files.routes.CreateFileHandler
 import org.jetbrains.ai.tracy.anthropic.adapters.handlers.files.routes.DeleteFileHandler
 import org.jetbrains.ai.tracy.anthropic.adapters.handlers.files.routes.GetFileContentHandler

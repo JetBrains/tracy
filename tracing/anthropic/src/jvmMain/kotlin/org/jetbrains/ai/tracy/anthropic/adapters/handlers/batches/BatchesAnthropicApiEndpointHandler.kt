@@ -7,7 +7,7 @@ package org.jetbrains.ai.tracy.anthropic.adapters.handlers.batches
 
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_OPERATION_NAME
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.ai.tracy.anthropic.adapters.handlers.batches.routes.CancelBatchHandler
 import org.jetbrains.ai.tracy.anthropic.adapters.handlers.batches.routes.CreateBatchHandler
 import org.jetbrains.ai.tracy.anthropic.adapters.handlers.batches.routes.DeleteBatchHandler
