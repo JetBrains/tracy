@@ -11,7 +11,7 @@ import org.jetbrains.ai.tracy.core.http.parsers.MultipartFormDataParser
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.nio.charset.Charset
 
 private val logger = KotlinLogging.logger {}
@@ -92,7 +92,7 @@ fun ByteArray.asRequestBody(contentType: TracyContentType, charset: Charset): Tr
             val json = try {
                 Json.parseToJsonElement(string = bytes.toString(charset)).jsonObject
             } catch (err: Exception) {
-                logger.trace("Error while parsing request body", err)
+                logger.trace(err) { "Error while parsing request body" }
                 null
             } ?: return null
 

@@ -8,7 +8,7 @@ package org.jetbrains.ai.tracy.openai.adapters.handlers.videos.routes
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.GEN_AI_REQUEST_MODEL
 import kotlinx.serialization.json.jsonObject
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.ai.tracy.core.adapters.handlers.RouteHandler
 import org.jetbrains.ai.tracy.core.adapters.media.MediaContent
 import org.jetbrains.ai.tracy.core.adapters.media.MediaContentExtractor

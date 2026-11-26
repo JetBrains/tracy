@@ -6,7 +6,7 @@
 package org.jetbrains.ai.tracy.openai.adapters.handlers.videos
 
 import io.opentelemetry.api.trace.Span
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.ai.tracy.core.adapters.handlers.EndpointApiHandler
 import org.jetbrains.ai.tracy.core.adapters.handlers.sse.sseHandlingUnsupported
 import org.jetbrains.ai.tracy.core.adapters.handlers.RouteHandler

@@ -9,7 +9,7 @@ import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.sdk.trace.ReadableSpan
 import io.opentelemetry.semconv.incubating.GenAiIncubatingAttributes.*
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.ai.tracy.anthropic.adapters.handlers.CountTokensAnthropicApiEndpointHandler
 import org.jetbrains.ai.tracy.anthropic.adapters.handlers.batches.BatchesAnthropicApiEndpointHandler
 import org.jetbrains.ai.tracy.anthropic.adapters.handlers.files.FilesAnthropicApiEndpointHandler

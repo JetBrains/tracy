@@ -30,7 +30,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.serializer
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.ai.tracy.core.TracingManager
 import org.jetbrains.ai.tracy.core.adapters.LLMTracingAdapter
 import org.jetbrains.ai.tracy.core.http.parsers.SseParser
@@ -189,7 +189,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                         else -> {
                             if (request.body !is EmptyContent && bodyContent == null) {
                                 // this case means that the body is present but couldn't be parsed correctly
-                                logger.warn("Either body or content type are null; request body will be empty")
+                                logger.warn { "Either body or content type are null; request body will be empty" }
                             }
                             null
                         }
@@ -396,7 +396,7 @@ private class TracingPlugin(private val adapter: LLMTracingAdapter) {
                 val json = Json.parseToJsonElement(responseString).jsonObject
                 TracyHttpResponseBody.Json(json)
             } catch (exception: Exception) {
-                logger.trace("Error while parsing response body", exception)
+                logger.trace(exception) { "Error while parsing response body" }
                 TracyHttpResponseBody.Empty
             }
             ContentType.Text.EventStream -> TracyHttpResponseBody.EventStream

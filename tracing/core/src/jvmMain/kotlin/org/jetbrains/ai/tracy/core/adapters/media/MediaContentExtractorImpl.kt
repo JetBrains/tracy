@@ -9,7 +9,7 @@ import org.jetbrains.ai.tracy.core.adapters.media.DataUrl.Companion.parseBase64
 import org.jetbrains.ai.tracy.core.adapters.media.DataUrl.Companion.parseInlineDataUrl
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.sdk.trace.ReadableSpan
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 
 /**
  * Implementation of a media content extractor.

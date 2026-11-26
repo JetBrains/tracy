@@ -14,7 +14,7 @@ import io.opentelemetry.sdk.common.CompletableResultCode
 import io.opentelemetry.sdk.common.export.MemoryMode
 import io.opentelemetry.sdk.trace.data.SpanData
 import io.opentelemetry.sdk.trace.export.SpanExporter
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.InterruptedIOException
 import java.net.UnknownHostException
 import java.util.function.Consumer
@@ -179,14 +179,14 @@ private class DiagnosticHttpSender(
                 is InterruptedIOException -> logger.error { buildDiagnosticMessageTimeout() }
                 is UnknownHostException -> logger.error { buildDiagnosticMessageUnknownHost() }
                 else -> {
-                    logger.error(
+                    logger.error {
                         """
                         | Failed to export traces.
                         | Error message: '${error.message}'
                         | The stacktrace:
                         | ${error.stackTraceToString()}
                     """.trimMargin()
-                    )
+                    }
                 }
             }
             // continue with the original callback

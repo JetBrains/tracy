@@ -15,7 +15,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.ai.tracy.core.adapters.handlers.sse.SseEventHandlingUnsupported
 import org.jetbrains.ai.tracy.core.http.parsers.SseEvent
 import java.util.concurrent.atomic.AtomicBoolean
